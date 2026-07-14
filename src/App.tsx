@@ -69,7 +69,9 @@ export default function App() {
                     path="/profile"
                     element={
                       <RequireAuth>
-                        <ProfilePage />
+                        <RequireIntake>
+                          <ProfilePage />
+                        </RequireIntake>
                       </RequireAuth>
                     }
                   />

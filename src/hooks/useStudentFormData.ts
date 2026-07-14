@@ -9,14 +9,19 @@ function getDistrictPasscode(): string {
   return import.meta.env.VITE_DISTRICT_ENCRYPTION_PASSCODE ?? 'district-default-key';
 }
 
-export function useStudentFormData() {
+export function useStudentFormData(enabled: boolean) {
   const [formData, setFormData] = useState<IntakeFormData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (!enabled) {
+      setFormData(null);
+      return null;
+    }
+
     const session = getStudentSession();
-    if (!session) {
+    if (!session?.hasSubmission) {
       setFormData(null);
       return null;
     }
@@ -41,7 +46,7 @@ export function useStudentFormData() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     void load();

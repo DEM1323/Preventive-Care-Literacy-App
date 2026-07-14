@@ -5,15 +5,12 @@ import { useToast } from '../../context/ToastContext';
 import { Button } from '../../components/atoms/Button';
 import { Input } from '../../components/atoms/Input';
 import { requestAccessCode, verifyAccessCode } from '../../utils/sheets';
-import { saveStudentSession } from '../../utils/studentSession';
-import { decryptPayload } from '../../utils/crypto';
-import type { EncryptedBundle } from '../../types/submission';
-import type { IntakeFormData } from '../../types/intake';
+import { getStudentSession, saveStudentSession } from '../../utils/studentSession';
 
 type Step = 'email' | 'code';
 
 export function SignInPage() {
-  const { isLoggedIn, login, intake, markIntakeSubmitted } = useAppState();
+  const { isLoggedIn, login, intake, syncIntakeOnLogin } = useAppState();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>('email');
@@ -21,8 +18,10 @@ export function SignInPage() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
 
-  if (isLoggedIn) {
-    return <Navigate to={intake.completed ? '/dashboard' : '/intake'} replace />;
+  const session = getStudentSession();
+  if (isLoggedIn && session) {
+    const destination = session.hasSubmission && intake.completed ? '/dashboard' : '/intake';
+    return <Navigate to={destination} replace />;
   }
 
   const handleRequestCode = async (e: FormEvent) => {
@@ -53,31 +52,27 @@ export function SignInPage() {
         return;
       }
 
-      const session = saveStudentSession({
+      const normalizedEmail = email.trim().toLowerCase();
+      const hasSubmission = result.data.hasSubmission;
+
+      saveStudentSession({
         sessionToken: result.data.sessionToken,
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         emailHash: result.data.emailHash,
         dataKeySalt: result.data.dataKeySalt,
+        hasSubmission,
       });
 
-      let displayName = email.split('@')[0];
-      if (result.data.hasSubmission && result.data.submission?.encryptedPayload) {
-        try {
-          const passcode = import.meta.env.VITE_DISTRICT_ENCRYPTION_PASSCODE ?? 'district-default-key';
-          const bundle = JSON.parse(result.data.submission.encryptedPayload) as EncryptedBundle;
-          const existing = await decryptPayload<IntakeFormData>(passcode, bundle);
-          displayName = existing.name || displayName;
-        } catch {
-          // Decryption stays client-side only; continue login without plaintext
-        }
-      }
+      syncIntakeOnLogin(hasSubmission, result.data.submission?.version);
+      login(normalizedEmail.split('@')[0], normalizedEmail);
 
-      login(displayName, session.email);
-      if (result.data.hasSubmission) {
-        markIntakeSubmitted(result.data.submission?.version);
+      if (hasSubmission) {
+        showToast('Welcome Back', 'Signed in successfully.', 'fa-key text-emerald-500');
+        navigate('/dashboard');
+      } else {
+        showToast('Welcome', 'Please complete your health history form to continue.', 'fa-file-medical text-emerald-500');
+        navigate('/intake');
       }
-      showToast('Access Granted', `Welcome back, ${displayName}!`, 'fa-key text-emerald-500');
-      navigate(result.data.hasSubmission ? '/dashboard' : '/intake');
     } finally {
       setLoading(false);
     }

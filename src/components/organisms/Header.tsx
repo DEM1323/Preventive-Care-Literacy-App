@@ -2,13 +2,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAppState } from '../../context/AppStateContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { getStudentSession } from '../../utils/studentSession';
 import { LanguageToggle } from '../molecules/LanguageToggle';
 
 export function Header() {
-  const { isLoggedIn, logout } = useAppState();
+  const { isLoggedIn, logout, intake } = useAppState();
   const { t } = useLanguage();
   const online = useOnlineStatus();
   const navigate = useNavigate();
+  const session = getStudentSession();
+  const canAccessDashboard = intake.completed && (session?.hasSubmission ?? false);
 
   return (
     <header className="bg-emerald-700 text-white shadow-md sticky top-0 z-50">
@@ -31,17 +34,21 @@ export function Header() {
 
         {isLoggedIn && (
           <nav className="hidden md:flex space-x-6">
-            <Link to="/dashboard" className="hover:text-emerald-100 transition font-medium flex items-center space-x-2">
-              <i className="fa-solid fa-house text-sm" />
-              <span>{t('navHome')}</span>
-            </Link>
+            {canAccessDashboard && (
+              <>
+                <Link to="/dashboard" className="hover:text-emerald-100 transition font-medium flex items-center space-x-2">
+                  <i className="fa-solid fa-house text-sm" />
+                  <span>{t('navHome')}</span>
+                </Link>
+                <Link to="/profile" className="hover:text-emerald-100 transition font-medium flex items-center space-x-2">
+                  <i className="fa-solid fa-user-astronaut text-sm" />
+                  <span>{t('navProfile')}</span>
+                </Link>
+              </>
+            )}
             <Link to="/intake" className="hover:text-emerald-100 transition font-medium flex items-center space-x-2">
               <i className="fa-solid fa-file-invoice text-sm" />
               <span>{t('navNurse')}</span>
-            </Link>
-            <Link to="/profile" className="hover:text-emerald-100 transition font-medium flex items-center space-x-2">
-              <i className="fa-solid fa-user-astronaut text-sm" />
-              <span>{t('navProfile')}</span>
             </Link>
           </nav>
         )}

@@ -211,6 +211,20 @@ function upsertSubmission(emailHash, studentIdHash, encryptedPayload) {
   return version;
 }
 
+function authorizeMailApp() {
+  // Run this ONCE from the Apps Script editor to grant send-mail permission.
+  var recipient = Session.getActiveUser().getEmail();
+  if (!recipient) {
+    throw new Error('Could not determine your Google account email. Run while logged into the script owner account.');
+  }
+  MailApp.sendEmail({
+    to: recipient,
+    subject: 'PrevCare — MailApp authorization test',
+    body: 'MailApp is authorized. Student access codes can now be sent to any email address.',
+  });
+  return 'Test email sent to ' + recipient;
+}
+
 function handleRequestCode(body) {
   var email = normalizeEmail(body.email);
   if (!email || email.indexOf('@') === -1) {
@@ -220,16 +234,26 @@ function handleRequestCode(body) {
   var code = generateCode();
   storeAccessCode(emailHash, code);
 
-  MailApp.sendEmail({
-    to: email,
-    subject: 'PrevCare Access Code',
-    body:
-      'Your single-use PrevCare access code is: ' +
-      code +
-      '\n\nThis code expires in ' +
-      CODE_TTL_MINUTES +
-      ' minutes and can only be used once.\n\nIf you did not request this, ignore this email.',
-  });
+  try {
+    MailApp.sendEmail({
+      to: email,
+      subject: 'PrevCare Access Code',
+      body:
+        'Your single-use PrevCare access code is: ' +
+        code +
+        '\n\nThis code expires in ' +
+        CODE_TTL_MINUTES +
+        ' minutes and can only be used once.\n\nIf you did not request this, ignore this email.',
+    });
+  } catch (mailErr) {
+    var msg = String(mailErr.message || mailErr);
+    if (msg.indexOf('script.send_mail') !== -1 || msg.indexOf('permission') !== -1) {
+      throw new Error(
+        'Mail permission not granted. In Apps Script, run authorizeMailApp() once, approve Send email access, then redeploy the Web App.'
+      );
+    }
+    throw new Error('Could not send email to ' + email + ': ' + msg);
+  }
 
   return { success: true, message: 'Access code sent' };
 }

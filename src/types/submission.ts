@@ -30,6 +30,7 @@ export interface StudentSession {
   emailHash: string;
   dataKeySalt: string;
   expiresAt: string;
+  hasSubmission: boolean;
 }
 
 export const STUDENT_SESSION_KEY = 'prevcare_student_session';

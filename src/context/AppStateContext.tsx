@@ -2,11 +2,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   type ReactNode,
 } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { clearStudentSession, isStudentSessionValid } from '../utils/studentSession';
+import { clearStudentSession, getStudentSession, isStudentSessionValid } from '../utils/studentSession';
 
 interface User {
   name: string;
@@ -28,6 +29,7 @@ interface AppStateContextValue {
   login: (name: string, email: string) => void;
   logout: () => void;
   markIntakeSubmitted: (version?: number) => void;
+  syncIntakeOnLogin: (hasSubmission: boolean, version?: number) => void;
   toggleSkill: (moduleId: string, index: number, checked: boolean) => void;
   getModuleProgress: (moduleId: string, totalSkills: number) => number;
   awardBadge: (moduleId: string) => void;
@@ -48,6 +50,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     {}
   );
   const [earnedBadges, setEarnedBadges] = useLocalStorage<string[]>('prevcare_earnedBadges', []);
+
+  useEffect(() => {
+    const session = getStudentSession();
+    if (!session || !isLoggedIn) return;
+    if (!session.hasSubmission && intake.completed) {
+      setIntake({
+        completed: false,
+        lastUpdatedAt: null,
+        version: 0,
+      });
+    }
+  }, [isLoggedIn, intake.completed, setIntake]);
 
   const login = useCallback(
     (name: string, email: string) => {
@@ -71,6 +85,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       });
     },
     [setIntake, intake.version]
+  );
+
+  const syncIntakeOnLogin = useCallback(
+    (hasSubmission: boolean, version?: number) => {
+      if (hasSubmission) {
+        setIntake({
+          completed: true,
+          lastUpdatedAt: new Date().toISOString(),
+          version: version ?? 1,
+        });
+      } else {
+        setIntake({
+          completed: false,
+          lastUpdatedAt: null,
+          version: 0,
+        });
+      }
+    },
+    [setIntake]
   );
 
   const toggleSkill = useCallback(
@@ -117,6 +150,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       markIntakeSubmitted,
+      syncIntakeOnLogin,
       toggleSkill,
       getModuleProgress,
       awardBadge,
@@ -130,6 +164,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       markIntakeSubmitted,
+      syncIntakeOnLogin,
       toggleSkill,
       getModuleProgress,
       awardBadge,

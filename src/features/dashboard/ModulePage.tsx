@@ -8,6 +8,7 @@ import { useModules } from '../../context/ModulesContext';
 import { useToast } from '../../context/ToastContext';
 import { useSpeech } from '../../hooks/useSpeech';
 import { useStudentFormData } from '../../hooks/useStudentFormData';
+import { getStudentSession } from '../../utils/studentSession';
 import type { ModuleId } from '../../types/module';
 import { capitalizeModuleId } from '../../types/module';
 
@@ -21,7 +22,8 @@ export function ModulePage() {
   const { language, t } = useLanguage();
   const { speak } = useSpeech(language);
   const { modulesProgress, toggleSkill, getModuleProgress, earnedBadges, awardBadge } = useAppState();
-  const { formData: intakeData } = useStudentFormData();
+  const session = getStudentSession();
+  const { formData: intakeData } = useStudentFormData(session?.hasSubmission ?? false);
   const { showToast } = useToast();
   const [tab, setTab] = useState<Tab>('knowledge');
 

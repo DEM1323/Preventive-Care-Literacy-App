@@ -12,7 +12,7 @@ import { EMPTY_INTAKE, type IntakeFormData, type IntakeStep } from '../../types/
 import { validateIntakeStep } from '../../utils/validation';
 import { encryptPayload, hashStudentId } from '../../utils/crypto';
 import { submitFormUpdate } from '../../utils/sheets';
-import { getStudentSession } from '../../utils/studentSession';
+import { getStudentSession, saveStudentSession } from '../../utils/studentSession';
 
 const TOTAL_STEPS = 6;
 
@@ -21,25 +21,35 @@ export function IntakeWizardPage() {
   const { t } = useLanguage();
   const { showToast } = useToast();
   const navigate = useNavigate();
-  const { formData: existingData, loading: loadingExisting, reload } = useStudentFormData();
+  const session = getStudentSession();
+  const canLoadExisting = session?.hasSubmission ?? false;
+  const { formData: existingData, loading: loadingExisting, reload } = useStudentFormData(canLoadExisting);
   const [step, setStep] = useState<IntakeStep>(1);
   const [data, setData] = useState<IntakeFormData>({
     ...EMPTY_INTAKE,
-    name: user.name,
     email: user.email,
   });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
 
+  // Returning students with a prior submission: load encrypted answers on demand only
   useEffect(() => {
-    if (existingData && !loaded) {
+    if (canLoadExisting && existingData && !prefilled) {
       setData({ ...existingData, email: user.email, consent: false });
-      setLoaded(true);
+      setPrefilled(true);
     }
-  }, [existingData, loaded, user.email]);
+  }, [canLoadExisting, existingData, prefilled, user.email]);
 
-  const isUpdate = intake.completed || !!existingData;
+  // First-time students: keep email only, never autofill other fields from local state
+  useEffect(() => {
+    if (!canLoadExisting) {
+      setData({ ...EMPTY_INTAKE, email: user.email });
+      setPrefilled(false);
+    }
+  }, [canLoadExisting, user.email]);
+
+  const isUpdate = canLoadExisting && intake.completed;
   const submitLabel = isUpdate ? 'Save Form Update' : t('submit');
 
   const update = <K extends keyof IntakeFormData>(key: K, value: IntakeFormData[K]) => {
@@ -69,8 +79,8 @@ export function IntakeWizardPage() {
       return;
     }
 
-    const session = getStudentSession();
-    if (!session) {
+    const activeSession = getStudentSession();
+    if (!activeSession) {
       showToast('Session Expired', 'Please sign in again.', 'fa-lock text-rose-500');
       navigate('/sign-in');
       return;
@@ -79,14 +89,15 @@ export function IntakeWizardPage() {
     setSubmitting(true);
     try {
       const passcode = import.meta.env.VITE_DISTRICT_ENCRYPTION_PASSCODE ?? 'district-default-key';
-      const payload = { ...data, email: session.email };
+      const payload = { ...data, email: activeSession.email };
       const bundle = await encryptPayload(passcode, payload);
       const studentIdHash = await hashStudentId(data.studentId);
-      const result = await submitFormUpdate(session, bundle, studentIdHash);
+      const result = await submitFormUpdate(activeSession, bundle, studentIdHash);
 
+      saveStudentSession({ ...activeSession, hasSubmission: true });
       markIntakeSubmitted(result.version);
       showToast(
-        isUpdate ? 'Update Pushed' : 'Survey Uploaded',
+        isUpdate ? 'Update Saved' : 'Survey Uploaded',
         result.queued ? t('submitQueued') : t('submitSuccess'),
         'fa-circle-check text-green-500'
       );
@@ -104,7 +115,11 @@ export function IntakeWizardPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold">{t('intakeTitle')}</h2>
-            <p className="text-emerald-100 text-sm mt-1">{t('intakeSubtitle')}</p>
+            <p className="text-emerald-100 text-sm mt-1">
+              {isUpdate
+                ? 'Update your health history form below.'
+                : 'Complete this form to access your learning dashboard.'}
+            </p>
           </div>
           {isUpdate && (
             <span className="bg-emerald-800/50 text-emerald-100 text-xs font-bold px-3 py-1 rounded-full shrink-0">
@@ -114,7 +129,7 @@ export function IntakeWizardPage() {
         </div>
       </div>
 
-      {loadingExisting && (
+      {canLoadExisting && loadingExisting && (
         <p className="px-8 pt-4 text-sm text-slate-500">Loading your encrypted form...</p>
       )}
 

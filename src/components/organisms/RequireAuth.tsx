@@ -12,6 +12,8 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
 export function RequireIntake({ children }: { children: ReactNode }) {
   const { intake } = useAppState();
-  if (!intake.completed) return <Navigate to="/intake" replace />;
+  const session = getStudentSession();
+  const hasCompletedIntake = intake.completed && (session?.hasSubmission ?? false);
+  if (!hasCompletedIntake) return <Navigate to="/intake" replace />;
   return children;
 }

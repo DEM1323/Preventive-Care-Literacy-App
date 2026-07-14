@@ -12,7 +12,10 @@ export function getStudentSession(): StudentSession | null {
       sessionStorage.removeItem(STUDENT_SESSION_KEY);
       return null;
     }
-    return session;
+    return {
+      ...session,
+      hasSubmission: session.hasSubmission ?? false,
+    };
   } catch {
     return null;
   }
