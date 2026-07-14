@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { IntakeFormData } from '../types/intake';
 import type { EncryptedBundle } from '../types/submission';
-import { decryptStudentPayload } from '../utils/crypto';
+import { decryptPayload } from '../utils/crypto';
 import { fetchStudentSubmission } from '../utils/sheets';
 import { getStudentSession } from '../utils/studentSession';
+
+function getDistrictPasscode(): string {
+  return import.meta.env.VITE_DISTRICT_ENCRYPTION_PASSCODE ?? 'district-default-key';
+}
 
 export function useStudentFormData() {
   const [formData, setFormData] = useState<IntakeFormData | null>(null);
@@ -27,11 +31,7 @@ export function useStudentFormData() {
       }
 
       const bundle = JSON.parse(submission.encryptedPayload) as EncryptedBundle;
-      const data = await decryptStudentPayload<IntakeFormData>(
-        session.email,
-        session.dataKeySalt,
-        bundle
-      );
+      const data = await decryptPayload<IntakeFormData>(getDistrictPasscode(), bundle);
       setFormData(data);
       return data;
     } catch {

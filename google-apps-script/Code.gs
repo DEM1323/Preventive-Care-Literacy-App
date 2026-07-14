@@ -184,19 +184,30 @@ function getLatestSubmission(emailHash) {
   return latest;
 }
 
-function appendSubmission(emailHash, studentIdHash, encryptedPayload) {
+function upsertSubmission(emailHash, studentIdHash, encryptedPayload) {
   setupSheet_(SUBMISSIONS_SHEET, SUBMISSION_HEADERS);
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SUBMISSIONS_SHEET);
-  const latest = getLatestSubmission(emailHash);
-  const version = latest ? latest.version + 1 : 1;
-  sheet.appendRow([
-    new Date().toISOString(),
-    emailHash,
-    studentIdHash,
-    encryptedPayload,
-    version,
-    'received',
-  ]);
+  const rows = sheet.getDataRange().getValues();
+  const now = new Date().toISOString();
+  var existingRowIndex = -1;
+  var version = 1;
+
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][1] === emailHash) {
+      existingRowIndex = i + 1;
+      version = Number(rows[i][4] || 1) + 1;
+      break;
+    }
+  }
+
+  if (existingRowIndex > 0) {
+    sheet.getRange(existingRowIndex, 1, existingRowIndex, 6).setValues([
+      [now, emailHash, studentIdHash, encryptedPayload, version, 'updated'],
+    ]);
+  } else {
+    sheet.appendRow([now, emailHash, studentIdHash, encryptedPayload, 1, 'received']);
+  }
+
   return version;
 }
 
@@ -260,7 +271,7 @@ function handleSubmitUpdate(body) {
     throw new Error('Session mismatch');
   }
 
-  var version = appendSubmission(
+  var version = upsertSubmission(
     emailHash,
     body.studentIdHash || '',
     body.encryptedPayload || ''
@@ -343,7 +354,7 @@ function doPost(e) {
     // Legacy submit (append only, no session)
     if (body.encryptedPayload) {
       var emailHash = body.emailHash || body.studentIdHash || '';
-      appendSubmission(emailHash, body.studentIdHash || '', body.encryptedPayload);
+      upsertSubmission(emailHash, body.studentIdHash || '', body.encryptedPayload);
       return jsonResponse({ success: true });
     }
 

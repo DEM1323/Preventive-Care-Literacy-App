@@ -24,13 +24,14 @@
 1. Student enters email → app calls `requestCode` → GAS emails a 6-digit code
 2. Student enters code → `verifyCode` → returns session token + encryption salt
 3. Form data is encrypted **in the browser** before any submit
-4. Updates append a new version row — previous versions are kept
+4. Updates **overwrite** the student's existing row (one record per email hash)
 
 ## Privacy model
 
 - Google Sheets stores **ciphertext only**
 - Plaintext emails are used only transiently to send the access code via Gmail
-- The nurse dashboard shows metadata (hashes, version, timestamp) — **not decrypted form contents**
+- The nurse dashboard decrypts submissions **locally in the browser** using the district decrypt key
+- Google Sheets stores **ciphertext only** — never plaintext
 
 ## Modules CMS (optional)
 

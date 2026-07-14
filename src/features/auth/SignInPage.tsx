@@ -6,7 +6,7 @@ import { Button } from '../../components/atoms/Button';
 import { Input } from '../../components/atoms/Input';
 import { requestAccessCode, verifyAccessCode } from '../../utils/sheets';
 import { saveStudentSession } from '../../utils/studentSession';
-import { decryptStudentPayload } from '../../utils/crypto';
+import { decryptPayload } from '../../utils/crypto';
 import type { EncryptedBundle } from '../../types/submission';
 import type { IntakeFormData } from '../../types/intake';
 
@@ -63,12 +63,9 @@ export function SignInPage() {
       let displayName = email.split('@')[0];
       if (result.data.hasSubmission && result.data.submission?.encryptedPayload) {
         try {
+          const passcode = import.meta.env.VITE_DISTRICT_ENCRYPTION_PASSCODE ?? 'district-default-key';
           const bundle = JSON.parse(result.data.submission.encryptedPayload) as EncryptedBundle;
-          const existing = await decryptStudentPayload<IntakeFormData>(
-            session.email,
-            session.dataKeySalt,
-            bundle
-          );
+          const existing = await decryptPayload<IntakeFormData>(passcode, bundle);
           displayName = existing.name || displayName;
         } catch {
           // Decryption stays client-side only; continue login without plaintext

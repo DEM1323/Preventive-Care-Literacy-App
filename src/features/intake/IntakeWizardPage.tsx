@@ -10,7 +10,7 @@ import { useToast } from '../../context/ToastContext';
 import { useStudentFormData } from '../../hooks/useStudentFormData';
 import { EMPTY_INTAKE, type IntakeFormData, type IntakeStep } from '../../types/intake';
 import { validateIntakeStep } from '../../utils/validation';
-import { encryptStudentPayload, hashStudentId } from '../../utils/crypto';
+import { encryptPayload, hashStudentId } from '../../utils/crypto';
 import { submitFormUpdate } from '../../utils/sheets';
 import { getStudentSession } from '../../utils/studentSession';
 
@@ -40,7 +40,7 @@ export function IntakeWizardPage() {
   }, [existingData, loaded, user.email]);
 
   const isUpdate = intake.completed || !!existingData;
-  const submitLabel = isUpdate ? 'Push Update to Nurse Dashboard' : t('submit');
+  const submitLabel = isUpdate ? 'Save Form Update' : t('submit');
 
   const update = <K extends keyof IntakeFormData>(key: K, value: IntakeFormData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }));
@@ -78,8 +78,9 @@ export function IntakeWizardPage() {
 
     setSubmitting(true);
     try {
+      const passcode = import.meta.env.VITE_DISTRICT_ENCRYPTION_PASSCODE ?? 'district-default-key';
       const payload = { ...data, email: session.email };
-      const bundle = await encryptStudentPayload(session.email, session.dataKeySalt, payload);
+      const bundle = await encryptPayload(passcode, payload);
       const studentIdHash = await hashStudentId(data.studentId);
       const result = await submitFormUpdate(session, bundle, studentIdHash);
 
