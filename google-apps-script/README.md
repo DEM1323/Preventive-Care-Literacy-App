@@ -1,39 +1,37 @@
 # Google Apps Script Setup
 
-1. Create a new Google Sheet (you do **not** need to add headers manually).
+1. Create a new Google Sheet.
 2. Open **Extensions → Apps Script** and paste [`Code.gs`](./Code.gs).
-3. Go to **Project Settings → Script Properties** and add:
-   - `EXECUTION_TOKEN` = a strong random string (match `VITE_GAS_EXECUTION_TOKEN` in `.env`)
-4. In the Apps Script editor, select **`setupSheet`** from the function dropdown and click **Run**.
-   - Authorize the script when prompted.
-   - This creates the **Submissions** tab and writes the header row if missing.
-   - **Note:** If you already created an empty "Submissions" tab, the old script skipped headers — re-run after updating `Code.gs`, or delete the empty tab and run again.
+3. Add Script Property `EXECUTION_TOKEN` (match `VITE_GAS_EXECUTION_TOKEN` in `.env`).
+4. Run **`setupAllSheets`** once from the editor and authorize:
+   - Spreadsheet access
+   - **Send email** (for student access codes)
 5. **Deploy → New deployment → Web app**
    - Execute as: **Me**
    - Who has access: **Anyone**
-6. Copy the Web App URL into `.env`:
-   ```
-   VITE_GAS_SUBMIT_URL=https://script.google.com/macros/s/.../exec
-   VITE_GAS_EXECUTION_TOKEN=your-token
-   ```
+6. Copy the Web App URL into `.env` as `VITE_GAS_SUBMIT_URL`.
 
-## Modules CMS Sheet (optional)
+## Sheets created automatically
 
-Create a second sheet tab **Modules** with columns:
+| Tab | Purpose |
+|-----|---------|
+| **Submissions** | Encrypted form versions (push updates append new rows) |
+| **StudentRegistry** | Email hash → encryption salt (no plaintext email stored) |
+| **AccessCodes** | Hashed single-use login codes |
 
-| module_id | icon | badge_icon | badge_name | en_script | en_knowledge_1 | en_skill_1 | ... |
+## Student auth flow
 
-Publish the sheet (Anyone with link can view) and set:
+1. Student enters email → app calls `requestCode` → GAS emails a 6-digit code
+2. Student enters code → `verifyCode` → returns session token + encryption salt
+3. Form data is encrypted **in the browser** before any submit
+4. Updates append a new version row — previous versions are kept
 
-```
-VITE_MODULES_SHEET_URL=https://docs.google.com/spreadsheets/d/SHEET_ID/gviz/tq?tqx=out:json&sheet=Modules
-```
+## Privacy model
 
-The app falls back to bundled module content when this URL is not configured.
+- Google Sheets stores **ciphertext only**
+- Plaintext emails are used only transiently to send the access code via Gmail
+- The nurse dashboard shows metadata (hashes, version, timestamp) — **not decrypted form contents**
 
-## Security Notes
+## Modules CMS (optional)
 
-- Student health data is encrypted client-side before POST.
-- The Google Sheet stores only ciphertext in `encrypted_payload`.
-- Nurses decrypt locally in the `/nurse` dashboard using the district passcode.
-- Rotate `VITE_DISTRICT_ENCRYPTION_PASSCODE` if the repository is public.
+Publish a **Modules** tab and set `VITE_MODULES_SHEET_URL` — see main README.

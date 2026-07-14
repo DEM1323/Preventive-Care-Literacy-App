@@ -7,6 +7,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useModules } from '../../context/ModulesContext';
 import { useToast } from '../../context/ToastContext';
 import { useSpeech } from '../../hooks/useSpeech';
+import { useStudentFormData } from '../../hooks/useStudentFormData';
 import type { ModuleId } from '../../types/module';
 import { capitalizeModuleId } from '../../types/module';
 
@@ -19,7 +20,8 @@ export function ModulePage() {
   const module = modules[moduleId];
   const { language, t } = useLanguage();
   const { speak } = useSpeech(language);
-  const { modulesProgress, toggleSkill, getModuleProgress, intake, earnedBadges, awardBadge } = useAppState();
+  const { modulesProgress, toggleSkill, getModuleProgress, earnedBadges, awardBadge } = useAppState();
+  const { formData: intakeData } = useStudentFormData();
   const { showToast } = useToast();
   const [tab, setTab] = useState<Tab>('knowledge');
 
@@ -150,15 +152,15 @@ export function ModulePage() {
         {tab === 'application' && (
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl text-sm text-slate-700">
-              {intake.data ? (
+              {intakeData ? (
                 <ul className="list-disc pl-5 space-y-1">
-                  {intake.data.insuranceStatus === 'No' && (
+                  {intakeData.insuranceStatus === 'No' && (
                     <li>Explore community clinics that offer sliding-scale fees for uninsured students.</li>
                   )}
-                  {intake.data.allergies === 'Yes' && (
-                    <li>Bring your allergy list ({intake.data.allergiesDetail}) to every clinic visit.</li>
+                  {intakeData.allergies === 'Yes' && (
+                    <li>Bring your allergy list ({intakeData.allergiesDetail}) to every clinic visit.</li>
                   )}
-                  {intake.data.stableHousing === 'No' && (
+                  {intakeData.stableHousing === 'No' && (
                     <li>Ask your school nurse about housing and food resource referrals.</li>
                   )}
                   <li>Practice scheduling a preventive check-up using skills from this module.</li>

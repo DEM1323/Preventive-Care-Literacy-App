@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAppState } from '../../context/AppStateContext';
 import { useModules } from '../../context/ModulesContext';
@@ -31,6 +32,24 @@ export function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {intake.completed && (
+        <div className="bg-white border border-emerald-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <p className="font-bold text-slate-900 text-sm">Health form on file</p>
+            <p className="text-xs text-slate-500">
+              Version {intake.version || 1}
+              {intake.lastUpdatedAt ? ` · Last updated ${new Date(intake.lastUpdatedAt).toLocaleDateString()}` : ''}
+            </p>
+          </div>
+          <Link
+            to="/intake"
+            className="inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-sm transition"
+          >
+            Push Form Update
+          </Link>
+        </div>
+      )}
 
       <div>
         <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center space-x-2">

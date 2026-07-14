@@ -1,10 +1,12 @@
 import { Navigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useAppState } from '../../context/AppStateContext';
+import { getStudentSession } from '../../utils/studentSession';
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { isLoggedIn } = useAppState();
-  if (!isLoggedIn) return <Navigate to="/sign-in" replace />;
+  const session = getStudentSession();
+  if (!isLoggedIn || !session) return <Navigate to="/sign-in" replace />;
   return children;
 }
 

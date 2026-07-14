@@ -1,3 +1,5 @@
+import type { EncryptedBundle } from '../types/submission';
+
 function toBase64(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes));
 }
@@ -9,6 +11,10 @@ function fromBase64(base64: string): Uint8Array {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes;
+}
+
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
 }
 
 async function deriveKey(passcode: string, salt: Uint8Array): Promise<CryptoKey> {
@@ -35,10 +41,14 @@ async function deriveKey(passcode: string, salt: Uint8Array): Promise<CryptoKey>
   );
 }
 
+function studentPassphrase(email: string, dataKeySalt: string): string {
+  return `${normalizeEmail(email)}|${dataKeySalt}`;
+}
+
 export async function encryptPayload(
   passcode: string,
   payload: object
-): Promise<{ v: number; salt: string; iv: string; ciphertext: string }> {
+): Promise<EncryptedBundle> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(passcode, salt);
@@ -47,11 +57,19 @@ export async function encryptPayload(
   const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
 
   return {
-    v: 1,
+    v: 2,
     salt: toBase64(salt),
     iv: toBase64(iv),
     ciphertext: toBase64(new Uint8Array(encrypted)),
   };
+}
+
+export async function encryptStudentPayload(
+  email: string,
+  dataKeySalt: string,
+  payload: object
+): Promise<EncryptedBundle> {
+  return encryptPayload(studentPassphrase(email, dataKeySalt), payload);
 }
 
 export async function decryptPayload<T>(
@@ -71,8 +89,22 @@ export async function decryptPayload<T>(
   }
 }
 
+export async function decryptStudentPayload<T>(
+  email: string,
+  dataKeySalt: string,
+  bundle: { salt: string; iv: string; ciphertext: string }
+): Promise<T> {
+  return decryptPayload(studentPassphrase(email, dataKeySalt), bundle);
+}
+
 export async function hashStudentId(studentId: string): Promise<string> {
   const encoded = new TextEncoder().encode(studentId);
   const hash = await crypto.subtle.digest('SHA-256', encoded);
   return toBase64(new Uint8Array(hash)).slice(0, 16);
+}
+
+export async function hashEmail(email: string): Promise<string> {
+  const encoded = new TextEncoder().encode(normalizeEmail(email));
+  const hash = await crypto.subtle.digest('SHA-256', encoded);
+  return toBase64(new Uint8Array(hash)).slice(0, 22);
 }

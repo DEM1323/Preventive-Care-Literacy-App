@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import type { IntakeFormData } from '../types/intake';
+import { clearStudentSession, isStudentSessionValid } from '../utils/studentSession';
 
 interface User {
   name: string;
@@ -15,7 +15,8 @@ interface User {
 
 interface IntakeState {
   completed: boolean;
-  data: IntakeFormData | null;
+  lastUpdatedAt: string | null;
+  version: number;
 }
 
 interface AppStateContextValue {
@@ -26,7 +27,7 @@ interface AppStateContextValue {
   earnedBadges: string[];
   login: (name: string, email: string) => void;
   logout: () => void;
-  completeIntake: (data: IntakeFormData) => void;
+  markIntakeSubmitted: (version?: number) => void;
   toggleSkill: (moduleId: string, index: number, checked: boolean) => void;
   getModuleProgress: (moduleId: string, totalSkills: number) => number;
   awardBadge: (moduleId: string) => void;
@@ -39,7 +40,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useLocalStorage<User>('prevcare_user', { name: '', email: '' });
   const [intake, setIntake] = useLocalStorage<IntakeState>('prevcare_intake', {
     completed: false,
-    data: null,
+    lastUpdatedAt: null,
+    version: 0,
   });
   const [modulesProgress, setModulesProgress] = useLocalStorage<Record<string, number[]>>(
     'prevcare_modulesProgress',
@@ -50,21 +52,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     (name: string, email: string) => {
       setIsLoggedIn(true);
-      setUser({ name, email });
+      setUser({ name: name || email.split('@')[0], email });
     },
     [setIsLoggedIn, setUser]
   );
 
   const logout = useCallback(() => {
     setIsLoggedIn(false);
+    clearStudentSession();
   }, [setIsLoggedIn]);
 
-  const completeIntake = useCallback(
-    (data: IntakeFormData) => {
-      setIntake({ completed: true, data });
-      setUser((prev) => ({ ...prev, name: data.name }));
+  const markIntakeSubmitted = useCallback(
+    (version?: number) => {
+      setIntake({
+        completed: true,
+        lastUpdatedAt: new Date().toISOString(),
+        version: version ?? intake.version + 1,
+      });
     },
-    [setIntake, setUser]
+    [setIntake, intake.version]
   );
 
   const toggleSkill = useCallback(
@@ -98,29 +104,32 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [setEarnedBadges]
   );
 
+  const sessionValid = isStudentSessionValid();
+  const effectiveLoggedIn = isLoggedIn && sessionValid;
+
   const value = useMemo(
     () => ({
-      isLoggedIn,
+      isLoggedIn: effectiveLoggedIn,
       user,
       intake,
       modulesProgress,
       earnedBadges,
       login,
       logout,
-      completeIntake,
+      markIntakeSubmitted,
       toggleSkill,
       getModuleProgress,
       awardBadge,
     }),
     [
-      isLoggedIn,
+      effectiveLoggedIn,
       user,
       intake,
       modulesProgress,
       earnedBadges,
       login,
       logout,
-      completeIntake,
+      markIntakeSubmitted,
       toggleSkill,
       getModuleProgress,
       awardBadge,
@@ -135,4 +144,3 @@ export function useAppState() {
   if (!ctx) throw new Error('useAppState must be used within AppStateProvider');
   return ctx;
 }
-
