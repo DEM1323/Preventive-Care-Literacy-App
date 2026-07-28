@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AudioButton } from '../../components/atoms/AudioButton';
 import { ClinicLocator } from '../../components/organisms/ClinicLocator';
 import { useAppState } from '../../context/AppStateContext';
+import { useIntakeSchema } from '../../context/IntakeSchemaContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useModules } from '../../context/ModulesContext';
 import { useToast } from '../../context/ToastContext';
@@ -14,11 +15,16 @@ import { capitalizeModuleId } from '../../types/module';
 
 type Tab = 'knowledge' | 'skills' | 'application';
 
+function fieldByHint(fields: { fieldId: string; moduleHint: string }[], hint: string) {
+  return fields.find((f) => f.moduleHint === hint)?.fieldId;
+}
+
 export function ModulePage() {
   const { id } = useParams<{ id: string }>();
   const moduleId = id as ModuleId;
   const { modules } = useModules();
   const module = modules[moduleId];
+  const { schema } = useIntakeSchema();
   const { language, t } = useLanguage();
   const { speak } = useSpeech(language);
   const { modulesProgress, toggleSkill, getModuleProgress, earnedBadges, awardBadge } = useAppState();
@@ -32,6 +38,18 @@ export function ModulePage() {
   const progress = getModuleProgress(moduleId, totalSkills);
   const checked = modulesProgress[moduleId] ?? [];
   const skillsStarted = checked.length > 0;
+
+  const hintIds = useMemo(() => {
+    const fields = schema.fields.filter((f) => f.enabled && f.moduleHint);
+    return {
+      insurance: fieldByHint(fields, 'insurance') ?? 'insuranceStatus',
+      allergies: fieldByHint(fields, 'allergies') ?? 'allergies',
+      allergiesDetail:
+        fields.find((f) => f.moduleHint === 'allergies' && f.fieldId.toLowerCase().includes('detail'))
+          ?.fieldId ?? 'allergiesDetail',
+      housing: fieldByHint(fields, 'housing') ?? 'stableHousing',
+    };
+  }, [schema.fields]);
 
   useEffect(() => {
     if (progress === 100 && module && !earnedBadges.includes(moduleId)) {
@@ -156,13 +174,16 @@ export function ModulePage() {
             <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl text-sm text-slate-700">
               {intakeData ? (
                 <ul className="list-disc pl-5 space-y-1">
-                  {intakeData.insuranceStatus === 'No' && (
+                  {String(intakeData[hintIds.insurance] ?? '') === 'No' && (
                     <li>Explore community clinics that offer sliding-scale fees for uninsured students.</li>
                   )}
-                  {intakeData.allergies === 'Yes' && (
-                    <li>Bring your allergy list ({intakeData.allergiesDetail}) to every clinic visit.</li>
+                  {String(intakeData[hintIds.allergies] ?? '') === 'Yes' && (
+                    <li>
+                      Bring your allergy list ({String(intakeData[hintIds.allergiesDetail] ?? '')}) to
+                      every clinic visit.
+                    </li>
                   )}
-                  {intakeData.stableHousing === 'No' && (
+                  {String(intakeData[hintIds.housing] ?? '') === 'No' && (
                     <li>Ask your school nurse about housing and food resource referrals.</li>
                   )}
                   <li>Practice scheduling a preventive check-up using skills from this module.</li>

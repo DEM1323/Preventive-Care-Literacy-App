@@ -11,6 +11,7 @@
 const SUBMISSIONS_SHEET = 'Submissions';
 const STUDENT_REGISTRY_SHEET = 'StudentRegistry';
 const ACCESS_CODES_SHEET = 'AccessCodes';
+const NURSE_ROSTER_SHEET = 'NurseRoster';
 
 const SUBMISSION_HEADERS = [
   'timestamp',
@@ -22,6 +23,16 @@ const SUBMISSION_HEADERS = [
 ];
 const REGISTRY_HEADERS = ['email_hash', 'data_key_salt', 'created_at'];
 const ACCESS_HEADERS = ['email_hash', 'code_hash', 'expires_at', 'used', 'created_at'];
+const ROSTER_HEADERS = [
+  'email',
+  'active',
+  'display_name',
+  'student_id',
+  'grade',
+  'homeroom',
+  'notes',
+  'updated_at',
+];
 
 const SCRIPT_TOKEN = PropertiesService.getScriptProperties().getProperty('EXECUTION_TOKEN');
 const CODE_TTL_MINUTES = 10;
@@ -31,6 +42,7 @@ function setupAllSheets() {
   setupSheet_(SUBMISSIONS_SHEET, SUBMISSION_HEADERS);
   setupSheet_(STUDENT_REGISTRY_SHEET, REGISTRY_HEADERS);
   setupSheet_(ACCESS_CODES_SHEET, ACCESS_HEADERS);
+  setupSheet_(NURSE_ROSTER_SHEET, ROSTER_HEADERS);
 }
 
 function setupSheet_(name, headers) {
@@ -73,6 +85,34 @@ function normalizeEmail(email) {
   return String(email || '')
     .trim()
     .toLowerCase();
+}
+
+function normalizeHash(value) {
+  return String(value || '').trim();
+}
+
+function isTruthyActive_(value) {
+  if (value === true || value === 1) return true;
+  var s = String(value || '')
+    .trim()
+    .toLowerCase();
+  return s === 'true' || s === 'yes' || s === 'y' || s === '1';
+}
+
+function isEmailAllowlisted_(email) {
+  setupSheet_(NURSE_ROSTER_SHEET, ROSTER_HEADERS);
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(NURSE_ROSTER_SHEET);
+  var rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) {
+    return false;
+  }
+  var target = normalizeEmail(email);
+  for (var i = 1; i < rows.length; i++) {
+    var rowEmail = normalizeEmail(rows[i][0]);
+    if (!rowEmail || rowEmail !== target) continue;
+    if (isTruthyActive_(rows[i][1])) return true;
+  }
+  return false;
 }
 
 function hashValue(value) {
@@ -125,7 +165,7 @@ function getOrCreateDataKeySalt(emailHash) {
   rows.shift();
 
   for (var i = 0; i < rows.length; i++) {
-    if (rows[i][0] === emailHash) {
+    if (normalizeHash(rows[i][0]) === normalizeHash(emailHash)) {
       return rows[i][1];
     }
   }
@@ -148,10 +188,11 @@ function verifyAccessCode(emailHash, code) {
   const rows = sheet.getDataRange().getValues();
   const codeHash = hashValue(code);
   const now = Date.now();
+  var targetHash = normalizeHash(emailHash);
 
   for (var i = rows.length - 1; i >= 1; i--) {
     var row = rows[i];
-    if (row[0] !== emailHash) continue;
+    if (normalizeHash(row[0]) !== targetHash) continue;
     if (row[3] === true) continue;
     if (new Date(row[2]).getTime() < now) continue;
     if (row[1] !== codeHash) continue;
@@ -161,44 +202,64 @@ function verifyAccessCode(emailHash, code) {
   return false;
 }
 
+function submissionTimestamp_(value) {
+  if (value instanceof Date) return value.toISOString();
+  return String(value || '');
+}
+
 function getLatestSubmission(emailHash) {
   setupSheet_(SUBMISSIONS_SHEET, SUBMISSION_HEADERS);
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SUBMISSIONS_SHEET);
   const rows = sheet.getDataRange().getValues();
   rows.shift();
 
+  var targetHash = normalizeHash(emailHash);
   var latest = null;
   for (var i = 0; i < rows.length; i++) {
-    if (rows[i][1] !== emailHash) continue;
-    if (!latest || Number(rows[i][4] || 0) >= Number(latest.version)) {
-      latest = {
-        timestamp: rows[i][0],
-        emailHash: rows[i][1],
-        studentIdHash: rows[i][2],
-        encryptedPayload: rows[i][3],
-        version: Number(rows[i][4] || 1),
-        submissionStatus: rows[i][5] || 'received',
-      };
+    if (normalizeHash(rows[i][1]) !== targetHash) continue;
+    var candidate = {
+      timestamp: submissionTimestamp_(rows[i][0]),
+      emailHash: rows[i][1],
+      studentIdHash: rows[i][2],
+      encryptedPayload: rows[i][3],
+      version: Number(rows[i][4] || 1),
+      submissionStatus: rows[i][5] || 'received',
+    };
+    if (
+      !latest ||
+      candidate.version > latest.version ||
+      (candidate.version === latest.version &&
+        new Date(candidate.timestamp).getTime() >= new Date(latest.timestamp).getTime())
+    ) {
+      latest = candidate;
     }
   }
   return latest;
 }
 
+/**
+ * Upsert by email_hash. If duplicate rows exist, update the highest-version row
+ * and return the new timestamp (source of truth for "last updated").
+ */
 function upsertSubmission(emailHash, studentIdHash, encryptedPayload) {
   setupSheet_(SUBMISSIONS_SHEET, SUBMISSION_HEADERS);
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SUBMISSIONS_SHEET);
   const rows = sheet.getDataRange().getValues();
   const now = new Date().toISOString();
+  var targetHash = normalizeHash(emailHash);
   var existingRowIndex = -1;
-  var version = 1;
+  var maxVersion = 0;
 
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][1] === emailHash) {
+    if (normalizeHash(rows[i][1]) !== targetHash) continue;
+    var rowVersion = Number(rows[i][4] || 1);
+    if (existingRowIndex < 0 || rowVersion >= maxVersion) {
       existingRowIndex = i + 1;
-      version = Number(rows[i][4] || 1) + 1;
-      break;
+      maxVersion = rowVersion;
     }
   }
+
+  var version = maxVersion > 0 ? maxVersion + 1 : 1;
 
   if (existingRowIndex > 0) {
     sheet.getRange(existingRowIndex, 1, existingRowIndex, 6).setValues([
@@ -206,9 +267,10 @@ function upsertSubmission(emailHash, studentIdHash, encryptedPayload) {
     ]);
   } else {
     sheet.appendRow([now, emailHash, studentIdHash, encryptedPayload, 1, 'received']);
+    version = 1;
   }
 
-  return version;
+  return { version: version, timestamp: now };
 }
 
 function authorizeMailApp() {
@@ -220,7 +282,7 @@ function authorizeMailApp() {
   MailApp.sendEmail({
     to: recipient,
     subject: 'PrevCare — MailApp authorization test',
-    body: 'MailApp is authorized. Student access codes can now be sent to any email address.',
+    body: 'MailApp is authorized. Student access codes can now be sent to any email address on the NurseRoster.',
   });
   return 'Test email sent to ' + recipient;
 }
@@ -229,6 +291,9 @@ function handleRequestCode(body) {
   var email = normalizeEmail(body.email);
   if (!email || email.indexOf('@') === -1) {
     throw new Error('Valid email required');
+  }
+  if (!isEmailAllowlisted_(email)) {
+    throw new Error('Email not on school roster. Contact your school nurse.');
   }
   var emailHash = hashValue(email);
   var code = generateCode();
@@ -264,6 +329,9 @@ function handleVerifyCode(body) {
   if (!email || !code) {
     throw new Error('Email and code required');
   }
+  if (!isEmailAllowlisted_(email)) {
+    throw new Error('Email not on school roster. Contact your school nurse.');
+  }
 
   var emailHash = hashValue(email);
   if (!verifyAccessCode(emailHash, code)) {
@@ -291,17 +359,17 @@ function handleSubmitUpdate(body) {
   if (!emailHash) {
     throw new Error('Session expired. Please sign in again.');
   }
-  if (body.emailHash && body.emailHash !== emailHash) {
+  if (body.emailHash && normalizeHash(body.emailHash) !== normalizeHash(emailHash)) {
     throw new Error('Session mismatch');
   }
 
-  var version = upsertSubmission(
+  var result = upsertSubmission(
     emailHash,
     body.studentIdHash || '',
     body.encryptedPayload || ''
   );
 
-  return { success: true, version: version };
+  return { success: true, version: result.version, timestamp: result.timestamp };
 }
 
 function handleGetSubmission(sessionToken) {
@@ -335,7 +403,7 @@ function doGet(e) {
       var submissions = data.map(function (row, index) {
         return {
           id: String(index + 1),
-          timestamp: row[0],
+          timestamp: submissionTimestamp_(row[0]),
           emailHash: row[1],
           studentIdHash: row[2],
           encryptedPayload: row[3],

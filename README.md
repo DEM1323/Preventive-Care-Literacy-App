@@ -19,13 +19,17 @@ bun run dev
 
 Copy `.env.example` to `.env` for local Google Apps Script integration.
 
+## Nurse handoff
+
+School nurses maintain roster, modules, and intake form wording in Google Sheets. See **[docs/NURSE_GUIDE.md](docs/NURSE_GUIDE.md)**.
+
 ## Routes
 
 | Route | Description |
 |-------|-------------|
 | `/` | Hero / landing |
-| `/sign-in` | Student sign-in |
-| `/intake` | 6-step encrypted health history wizard |
+| `/sign-in` | Student sign-in (roster allowlist required) |
+| `/intake` | Schema-driven encrypted health history wizard |
 | `/dashboard` | Learning module grid |
 | `/module/:id` | K → S → A lesson view |
 | `/profile` | Progress & badges |
@@ -72,9 +76,19 @@ Go to **Settings → Secrets and variables → Actions** and add:
 | `VITE_GAS_EXECUTION_TOKEN` | Apps Script execution token |
 | `VITE_DISTRICT_ENCRYPTION_PASSCODE` | Client-side encryption passcode |
 | `VITE_NURSE_DASHBOARD_PASSCODE` | Nurse dashboard gate passcode |
-| `VITE_MODULES_SHEET_URL` | (Optional) Google Sheet CMS URL |
+| `VITE_MODULES_SHEET_URL` | Published Modules sheet JSON URL (required for nurse lesson edits) |
+| `VITE_INTAKE_SHEET_URL` | Published IntakeFields sheet JSON URL (required for nurse form edits) |
 
 These are baked into the static build at deploy time. Never commit `.env` to the repo.
+
+### Publishing a content sheet URL
+
+1. In Google Sheets: **File → Share → Publish to web**
+2. Choose the **Modules** or **IntakeFields** tab
+3. Format: **JSON** (or use a Google Visualization / gviz JSON endpoint for that tab)
+4. Copy the URL into the matching `VITE_*_SHEET_URL` secret and redeploy
+
+Column schemas are documented in [docs/NURSE_GUIDE.md](docs/NURSE_GUIDE.md).
 
 ## Google Backend
 

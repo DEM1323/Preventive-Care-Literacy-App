@@ -63,7 +63,7 @@ export function SignInPage() {
         hasSubmission,
       });
 
-      syncIntakeOnLogin(hasSubmission, result.data.submission?.version);
+      syncIntakeOnLogin(hasSubmission, result.data.submission?.timestamp ?? null);
       login(normalizedEmail.split('@')[0], normalizedEmail);
 
       if (hasSubmission) {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { IntakeFormData } from '../types/intake';
+import type { IntakeFormData } from '../types/intakeSchema';
 import type { EncryptedBundle } from '../types/submission';
 import { decryptPayload } from '../utils/crypto';
 import { fetchStudentSubmission } from '../utils/sheets';

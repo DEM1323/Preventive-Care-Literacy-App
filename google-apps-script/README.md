@@ -7,8 +7,9 @@
 5. Run **`setupAllSheets`** once and authorize spreadsheet access.
 6. Run **`authorizeMailApp`** once and authorize **Send email** when prompted.
    - This sends a test email to **your** Google account (the script owner).
-   - Required before students can receive access codes at **any** address (@gmail.com, @school.edu, etc.).
-7. **Deploy → Manage deployments → Edit → New version → Deploy**
+   - Required before students can receive access codes.
+7. Add student emails to the **NurseRoster** tab (`active` = `TRUE`) before they can sign in.
+8. **Deploy → Manage deployments → Edit → New version → Deploy**
    - Execute as: **Me**
    - Who has access: **Anyone**
 
@@ -34,27 +35,35 @@ Supported. The code is sent **to** the address the student enters. Notes:
 - The email is sent **from** the Google account that owns/deploys the script.
 - Some school filters may block it — check spam/junk folders.
 - Google Workspace admins can restrict Apps Script mail; ask IT if codes never arrive after authorization.
+- The address must appear on **NurseRoster** with `active=TRUE`.
 
 ## Sheets created automatically
 
 | Tab | Purpose |
 |-----|---------|
-| **Submissions** | Encrypted form (one row per student, overwritten on update) |
+| **Submissions** | Encrypted form (one row per student, overwritten on update; `timestamp` = last updated) |
 | **StudentRegistry** | Email hash → encryption salt |
 | **AccessCodes** | Hashed single-use login codes |
+| **NurseRoster** | Nurse-editable allowlist (`email`, `active`, optional metadata) |
 
 ## Student auth flow
 
-1. Student enters email → app calls `requestCode` → GAS emails a 6-digit code
+1. Student enters email → app calls `requestCode` → GAS checks NurseRoster → emails a 6-digit code
 2. Student enters code → `verifyCode` → returns session token
 3. Form data is encrypted **in the browser** before submit
-4. Updates **overwrite** the student's existing row
+4. Updates **overwrite** the student's existing row and refresh `timestamp`
 
 ## Privacy model
 
-- Google Sheets stores **ciphertext only** — never plaintext
+- Google Sheets stores **ciphertext only** in Submissions — never plaintext health answers
 - Nurses decrypt **locally in the browser** with the district decrypt key
+- NurseRoster stores plaintext emails for access control only
 
-## Modules CMS (optional)
+## Content CMS (Modules + IntakeFields)
 
-Publish a **Modules** tab and set `VITE_MODULES_SHEET_URL` — see main README.
+Publish separate sheets/tabs and set:
+
+- `VITE_MODULES_SHEET_URL` — lesson content
+- `VITE_INTAKE_SHEET_URL` — intake field schema / labels
+
+See [docs/NURSE_GUIDE.md](../docs/NURSE_GUIDE.md) for column headers and nurse workflows.

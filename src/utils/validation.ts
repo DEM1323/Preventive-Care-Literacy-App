@@ -1,41 +1,67 @@
-import type { IntakeFormData, IntakeStep } from '../types/intake';
+import type { IntakeFieldConfig, IntakeFormData } from '../types/intakeSchema';
 
-export function validateIntakeStep(step: IntakeStep, data: IntakeFormData): string | null {
-  switch (step) {
-    case 1:
-      if (!data.name.trim()) return 'Full name is required';
-      if (!data.dob) return 'Date of birth is required';
-      if (!data.studentId.trim()) return 'Student ID is required';
-      if (!data.address.trim()) return 'Address is required';
-      if (!data.phone.trim()) return 'Phone is required';
-      if (!data.email.trim()) return 'Email is required';
-      return null;
-    case 2:
-      if (data.medConditions === 'Yes' && !data.medConditionsDetail.trim()) {
-        return 'Please describe medical conditions';
-      }
-      return null;
-    case 3:
-      if (data.allergies === 'Yes' && !data.allergiesDetail.trim()) {
-        return 'Please list allergies';
-      }
-      return null;
-    case 4:
-      if (data.medications === 'Yes' && !data.medicationsDetail.trim()) {
-        return 'Please list medications';
-      }
-      return null;
-    case 5:
-      if (!data.pcpName.trim()) return 'Primary care provider name is required';
-      if (!data.pcpPhone.trim()) return 'Primary care provider phone is required';
-      if (!data.clinicName.trim()) return 'Clinic name is required';
-      if (!data.clinicPhone.trim()) return 'Clinic phone is required';
-      if (!data.lastCheckup) return 'Last checkup date is required';
-      return null;
-    case 6:
-      if (!data.consent) return 'Consent is required';
-      return null;
-    default:
-      return null;
+function isFieldVisible(field: IntakeFieldConfig, data: IntakeFormData): boolean {
+  if (!field.enabled) return false;
+  if (!field.showIfField) return true;
+  return String(data[field.showIfField] ?? '') === field.showIfValue;
+}
+
+function fieldLabel(field: IntakeFieldConfig): string {
+  return field.labels.en ?? field.fieldId;
+}
+
+export function getEnabledSteps(fields: IntakeFieldConfig[]): number[] {
+  const steps = new Set<number>();
+  for (const f of fields) {
+    if (f.enabled) steps.add(f.step);
   }
+  return Array.from(steps).sort((a, b) => a - b);
+}
+
+export function getFieldsForStep(fields: IntakeFieldConfig[], step: number): IntakeFieldConfig[] {
+  return fields
+    .filter((f) => f.enabled && f.step === step)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+export function validateIntakeStep(
+  step: number,
+  data: IntakeFormData,
+  fields: IntakeFieldConfig[]
+): string | null {
+  const stepFields = getFieldsForStep(fields, step);
+
+  for (const field of stepFields) {
+    if (!isFieldVisible(field, data)) continue;
+
+    if (field.type === 'checkbox') {
+      if (field.required && !data[field.fieldId]) {
+        return field.fieldId === 'consent'
+          ? 'Consent is required'
+          : `${fieldLabel(field)} is required`;
+      }
+      continue;
+    }
+
+    if (field.type === 'yesno') {
+      const value = String(data[field.fieldId] ?? '');
+      if (field.required && value !== 'Yes' && value !== 'No') {
+        return `${fieldLabel(field)} is required`;
+      }
+      continue;
+    }
+
+    if (!field.required) continue;
+
+    const value = String(data[field.fieldId] ?? '').trim();
+    if (!value) {
+      return `${fieldLabel(field)} is required`;
+    }
+  }
+
+  return null;
+}
+
+export function isFieldShown(field: IntakeFieldConfig, data: IntakeFormData): boolean {
+  return isFieldVisible(field, data);
 }

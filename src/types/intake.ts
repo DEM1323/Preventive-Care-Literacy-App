@@ -1,53 +1,11 @@
-export interface IntakeFormData {
-  name: string;
-  dob: string;
-  studentId: string;
-  address: string;
-  phone: string;
-  email: string;
-  medConditions: 'Yes' | 'No';
-  medConditionsDetail: string;
-  visionConcerns: 'Yes' | 'No';
-  allergies: 'Yes' | 'No';
-  allergiesDetail: string;
-  medications: 'Yes' | 'No';
-  medicationsDetail: string;
-  pcpName: string;
-  pcpPhone: string;
-  clinicName: string;
-  clinicPhone: string;
-  lastCheckup: string;
-  safeAtHome: 'Yes' | 'No';
-  stableHousing: 'Yes' | 'No';
-  reliableFood: 'Yes' | 'No';
-  insuranceStatus: 'Yes' | 'No';
-  consent: boolean;
-}
+export type { IntakeFormData } from './intakeSchema';
+export { buildEmptyIntake } from '../data/intake.fallback';
+export { intakeFieldsFallback as EMPTY_INTAKE_FIELDS } from '../data/intake.fallback';
 
-export const EMPTY_INTAKE: IntakeFormData = {
-  name: '',
-  dob: '',
-  studentId: '',
-  address: '',
-  phone: '',
-  email: '',
-  medConditions: 'No',
-  medConditionsDetail: '',
-  visionConcerns: 'No',
-  allergies: 'No',
-  allergiesDetail: '',
-  medications: 'No',
-  medicationsDetail: '',
-  pcpName: '',
-  pcpPhone: '',
-  clinicName: '',
-  clinicPhone: '',
-  lastCheckup: '',
-  safeAtHome: 'Yes',
-  stableHousing: 'Yes',
-  reliableFood: 'Yes',
-  insuranceStatus: 'No',
-  consent: false,
-};
+import { buildEmptyIntake, intakeFieldsFallback } from '../data/intake.fallback';
+import type { IntakeFormData } from './intakeSchema';
 
-export type IntakeStep = 1 | 2 | 3 | 4 | 5 | 6;
+/** @deprecated Prefer buildEmptyIntake(schema.fields, email) */
+export const EMPTY_INTAKE: IntakeFormData = buildEmptyIntake(intakeFieldsFallback);
+
+export type IntakeStep = number;

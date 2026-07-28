@@ -38,8 +38,9 @@ export function DashboardPage() {
           <div>
             <p className="font-bold text-slate-900 text-sm">Health form on file</p>
             <p className="text-xs text-slate-500">
-              Version {intake.version || 1}
-              {intake.lastUpdatedAt ? ` · Last updated ${new Date(intake.lastUpdatedAt).toLocaleDateString()}` : ''}
+              {intake.lastUpdatedAt
+                ? `Last updated ${new Date(intake.lastUpdatedAt).toLocaleString()}`
+                : 'On file'}
             </p>
           </div>
           <Link

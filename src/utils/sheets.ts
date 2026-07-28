@@ -1,8 +1,13 @@
 import type { EncryptedBundle, PendingSubmission, StudentSession, SubmissionRow } from '../types/submission';
 import type { ModuleRecord } from '../types/module';
+import type { IntakeFieldConfig, IntakeFieldType, IntakeSchema } from '../types/intakeSchema';
+import type { LanguageCode } from '../types/language';
 import { modulesFallback } from '../data/modules.fallback';
+import { getFallbackIntakeSchema, intakeMetaFallback } from '../data/intake.fallback';
 
 const PENDING_KEY = 'prevcare_pending_submissions';
+const LANGS: LanguageCode[] = ['en', 'es', 'pt', 'fr', 'ht'];
+const FIELD_TYPES: IntakeFieldType[] = ['text', 'date', 'tel', 'email', 'textarea', 'yesno', 'checkbox'];
 
 function getGasUrl(): string | undefined {
   return import.meta.env.VITE_GAS_SUBMIT_URL;
@@ -14,6 +19,60 @@ function getGasToken(): string | undefined {
 
 function getModulesSheetUrl(): string | undefined {
   return import.meta.env.VITE_MODULES_SHEET_URL;
+}
+
+function getIntakeSheetUrl(): string | undefined {
+  return import.meta.env.VITE_INTAKE_SHEET_URL;
+}
+
+function parseTruthy(value: string | undefined): boolean {
+  const s = String(value ?? '')
+    .trim()
+    .toLowerCase();
+  return s === 'true' || s === 'yes' || s === 'y' || s === '1';
+}
+
+/** Parse Google published / gviz JSON into flat header→value row objects. */
+export function parsePublishedSheetRows(text: string): Record<string, string>[] | null {
+  const jsonStart = text.indexOf('{');
+  const jsonEnd = text.lastIndexOf('}');
+  if (jsonStart === -1 || jsonEnd === -1) return null;
+
+  try {
+    const parsed = JSON.parse(text.slice(jsonStart, jsonEnd + 1)) as {
+      table?: {
+        cols?: { label?: string; id?: string }[];
+        rows?: Array<Record<string, string> | { c?: Array<{ v?: string | number | boolean | null } | null> }>;
+      };
+    };
+
+    const table = parsed.table;
+    if (!table?.rows?.length) return null;
+
+    const first = table.rows[0] as Record<string, unknown>;
+    if (first && !('c' in first)) {
+      return table.rows as Record<string, string>[];
+    }
+
+    const cols = (table.cols ?? []).map((c) =>
+      String(c.label || c.id || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+    );
+
+    return (table.rows as { c?: Array<{ v?: string | number | boolean | null } | null> }[]).map((row) => {
+      const obj: Record<string, string> = {};
+      (row.c ?? []).forEach((cell, i) => {
+        const key = cols[i];
+        if (!key) return;
+        obj[key] = cell?.v == null ? '' : String(cell.v);
+      });
+      return obj;
+    });
+  } catch {
+    return null;
+  }
 }
 
 async function gasPost(body: Record<string, unknown>): Promise<Response | null> {
@@ -128,7 +187,7 @@ export async function submitFormUpdate(
   session: StudentSession,
   bundle: EncryptedBundle,
   studentIdHash: string
-): Promise<{ queued: boolean; version?: number }> {
+): Promise<{ queued: boolean; timestamp?: string }> {
   if (!navigator.onLine) {
     queuePending({
       id: crypto.randomUUID(),
@@ -162,7 +221,7 @@ export async function submitFormUpdate(
     return { queued: true };
   }
 
-  const data = (await response.json()) as { version?: number; error?: string };
+  const data = (await response.json()) as { timestamp?: string; version?: number; error?: string };
   if (data.error) {
     queuePending({
       id: crypto.randomUUID(),
@@ -175,7 +234,7 @@ export async function submitFormUpdate(
     return { queued: true };
   }
 
-  return { queued: false, version: data.version };
+  return { queued: false, timestamp: data.timestamp ?? new Date().toISOString() };
 }
 
 export async function flushPendingSubmissions(): Promise<number> {
@@ -228,16 +287,7 @@ export async function fetchModulesFromSheet(): Promise<ModuleRecord | null> {
     const response = await fetch(sheetUrl);
     if (!response.ok) return null;
 
-    const text = await response.text();
-    const jsonStart = text.indexOf('{');
-    const jsonEnd = text.lastIndexOf('}');
-    if (jsonStart === -1 || jsonEnd === -1) return null;
-
-    const parsed = JSON.parse(text.slice(jsonStart, jsonEnd + 1)) as {
-      table?: { rows?: Record<string, string>[] };
-    };
-
-    const rows = parsed.table?.rows;
+    const rows = parsePublishedSheetRows(await response.text());
     if (!rows?.length) return null;
 
     const record: ModuleRecord = {};
@@ -294,6 +344,65 @@ export async function fetchModulesFromSheet(): Promise<ModuleRecord | null> {
   }
 }
 
+function parseIntakeFieldRow(row: Record<string, string>): IntakeFieldConfig | null {
+  const fieldId = String(row.field_id ?? '').trim();
+  if (!fieldId) return null;
+
+  const typeRaw = String(row.type ?? 'text').trim().toLowerCase() as IntakeFieldType;
+  const type = FIELD_TYPES.includes(typeRaw) ? typeRaw : 'text';
+
+  const labels: IntakeFieldConfig['labels'] = {};
+  for (const lang of LANGS) {
+    const label = row[`label_${lang}`];
+    if (label) labels[lang] = label;
+  }
+
+  return {
+    fieldId,
+    enabled: row.enabled === undefined || row.enabled === '' ? true : parseTruthy(row.enabled),
+    step: Number(row.step || 1),
+    sortOrder: Number(row.sort_order || 0),
+    type,
+    required: parseTruthy(row.required),
+    showIfField: String(row.show_if_field ?? '').trim(),
+    showIfValue: String(row.show_if_value ?? '').trim(),
+    defaultValue: String(row.default_value ?? ''),
+    labels,
+    nurseSummary: parseTruthy(row.nurse_summary),
+    moduleHint: String(row.module_hint ?? '').trim(),
+  };
+}
+
+export async function fetchIntakeSchemaFromSheet(): Promise<IntakeSchema | null> {
+  const sheetUrl = getIntakeSheetUrl();
+  if (!sheetUrl || !navigator.onLine) return null;
+
+  try {
+    const response = await fetch(sheetUrl);
+    if (!response.ok) return null;
+
+    const rows = parsePublishedSheetRows(await response.text());
+    if (!rows?.length) return null;
+
+    const fields = rows
+      .map(parseIntakeFieldRow)
+      .filter((f): f is IntakeFieldConfig => f !== null);
+
+    if (fields.length === 0) return null;
+
+    return {
+      fields,
+      meta: intakeMetaFallback,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function getFallbackModules(): ModuleRecord {
   return modulesFallback;
+}
+
+export function getFallbackIntake(): IntakeSchema {
+  return getFallbackIntakeSchema();
 }

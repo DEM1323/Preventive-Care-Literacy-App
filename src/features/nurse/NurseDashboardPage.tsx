@@ -1,9 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Button } from '../../components/atoms/Button';
 import { Input } from '../../components/atoms/Input';
+import { useIntakeSchema } from '../../context/IntakeSchemaContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
-import type { IntakeFormData } from '../../types/intake';
+import type { IntakeFormData } from '../../types/intakeSchema';
 import type { EncryptedBundle, SubmissionRow } from '../../types/submission';
 import { decryptPayload } from '../../utils/crypto';
 import { fetchEncryptedSubmissions, flushPendingSubmissions } from '../../utils/sheets';
@@ -14,8 +15,14 @@ interface DecryptedRow {
   error: boolean;
 }
 
+function displayAnswer(value: string | boolean | undefined): string {
+  if (value === undefined || value === null || value === '') return '—';
+  return String(value);
+}
+
 export function NurseDashboardPage() {
   const { t } = useLanguage();
+  const { schema } = useIntakeSchema();
   const { showToast } = useToast();
   const [gatePasscode, setGatePasscode] = useState('');
   const [authenticated, setAuthenticated] = useState(
@@ -28,6 +35,14 @@ export function NurseDashboardPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const expectedGate = import.meta.env.VITE_NURSE_DASHBOARD_PASSCODE ?? 'nurse123';
+
+  const summaryFields = useMemo(
+    () =>
+      schema.fields
+        .filter((f) => f.enabled && f.nurseSummary)
+        .sort((a, b) => a.step - b.step || a.sortOrder - b.sortOrder),
+    [schema.fields]
+  );
 
   useEffect(() => {
     if (authenticated) {
@@ -124,28 +139,30 @@ export function NurseDashboardPage() {
       </div>
 
       {decrypted.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left">
               <tr>
-                <th className="p-3">Date</th>
-                <th className="p-3">Name</th>
-                <th className="p-3">Student ID</th>
-                <th className="p-3">Allergies</th>
-                <th className="p-3">Insurance</th>
-                <th className="p-3">Version</th>
+                <th className="p-3">Last Updated</th>
+                {summaryFields.map((f) => (
+                  <th key={f.fieldId} className="p-3">
+                    {f.labels.en ?? f.fieldId}
+                  </th>
+                ))}
                 <th className="p-3">Details</th>
               </tr>
             </thead>
             <tbody>
               {decrypted.map(({ row, data, error }) => (
                 <tr key={row.id} className="border-t border-slate-100">
-                  <td className="p-3">{new Date(row.timestamp).toLocaleDateString()}</td>
-                  <td className="p-3">{error ? '—' : data?.name}</td>
-                  <td className="p-3">{error ? '—' : data?.studentId}</td>
-                  <td className="p-3">{error ? '—' : data?.allergies}</td>
-                  <td className="p-3">{error ? '—' : data?.insuranceStatus}</td>
-                  <td className="p-3">v{row.version}</td>
+                  <td className="p-3 whitespace-nowrap">
+                    {new Date(row.timestamp).toLocaleString()}
+                  </td>
+                  {summaryFields.map((f) => (
+                    <td key={f.fieldId} className="p-3">
+                      {error ? '—' : displayAnswer(data?.[f.fieldId])}
+                    </td>
+                  ))}
                   <td className="p-3">
                     {!error && data && (
                       <button

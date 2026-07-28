@@ -17,7 +17,8 @@ interface User {
 interface IntakeState {
   completed: boolean;
   lastUpdatedAt: string | null;
-  version: number;
+  /** @deprecated Kept for localStorage backward compat; UI uses lastUpdatedAt */
+  version?: number;
 }
 
 interface AppStateContextValue {
@@ -28,8 +29,8 @@ interface AppStateContextValue {
   earnedBadges: string[];
   login: (name: string, email: string) => void;
   logout: () => void;
-  markIntakeSubmitted: (version?: number) => void;
-  syncIntakeOnLogin: (hasSubmission: boolean, version?: number) => void;
+  markIntakeSubmitted: (lastUpdatedAt?: string | null) => void;
+  syncIntakeOnLogin: (hasSubmission: boolean, lastUpdatedAt?: string | null) => void;
   toggleSkill: (moduleId: string, index: number, checked: boolean) => void;
   getModuleProgress: (moduleId: string, totalSkills: number) => number;
   awardBadge: (moduleId: string) => void;
@@ -43,7 +44,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [intake, setIntake] = useLocalStorage<IntakeState>('prevcare_intake', {
     completed: false,
     lastUpdatedAt: null,
-    version: 0,
   });
   const [modulesProgress, setModulesProgress] = useLocalStorage<Record<string, number[]>>(
     'prevcare_modulesProgress',
@@ -58,7 +58,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setIntake({
         completed: false,
         lastUpdatedAt: null,
-        version: 0,
       });
     }
   }, [isLoggedIn, intake.completed, setIntake]);
@@ -77,29 +76,26 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, [setIsLoggedIn]);
 
   const markIntakeSubmitted = useCallback(
-    (version?: number) => {
+    (lastUpdatedAt?: string | null) => {
       setIntake({
         completed: true,
-        lastUpdatedAt: new Date().toISOString(),
-        version: version ?? intake.version + 1,
+        lastUpdatedAt: lastUpdatedAt ?? new Date().toISOString(),
       });
     },
-    [setIntake, intake.version]
+    [setIntake]
   );
 
   const syncIntakeOnLogin = useCallback(
-    (hasSubmission: boolean, version?: number) => {
+    (hasSubmission: boolean, lastUpdatedAt?: string | null) => {
       if (hasSubmission) {
         setIntake({
           completed: true,
-          lastUpdatedAt: new Date().toISOString(),
-          version: version ?? 1,
+          lastUpdatedAt: lastUpdatedAt ?? null,
         });
       } else {
         setIntake({
           completed: false,
           lastUpdatedAt: null,
-          version: 0,
         });
       }
     },
