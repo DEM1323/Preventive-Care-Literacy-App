@@ -13,6 +13,7 @@ import { DashboardPage } from './features/dashboard/DashboardPage';
 import { ModulePage } from './features/dashboard/ModulePage';
 import { ProfilePage } from './features/profile/ProfilePage';
 import { NurseDashboardPage } from './features/nurse/NurseDashboardPage';
+import { SchoolConfigurationEditorPrototype } from './features/admin/SchoolConfigurationEditorPrototype';
 import { useEffect } from 'react';
 import { flushPendingSubmissions } from './utils/sheets';
 
@@ -36,6 +37,7 @@ export default function App() {
               <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || undefined}>
                 <OnlineSync />
                 <Routes>
+                  <Route path="/prototype/school-configuration" element={<SchoolConfigurationEditorPrototype />} />
                   <Route element={<Layout />}>
                     <Route path="/" element={<HeroPage />} />
                     <Route path="/sign-in" element={<SignInPage />} />
