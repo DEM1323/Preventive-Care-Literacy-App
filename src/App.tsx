@@ -12,7 +12,7 @@ import { IntakeWizardPage } from './features/intake/IntakeWizardPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { ModulePage } from './features/dashboard/ModulePage';
 import { ProfilePage } from './features/profile/ProfilePage';
-import { NurseDashboardPage } from './features/nurse/NurseDashboardPage';
+import { SecureNurseReviewPrototype } from './features/nurse/SecureNurseReviewPrototype';
 import { useEffect } from 'react';
 import { flushPendingSubmissions } from './utils/sheets';
 
@@ -77,7 +77,7 @@ export default function App() {
                         </RequireAuth>
                       }
                     />
-                    <Route path="/nurse" element={<NurseDashboardPage />} />
+                    <Route path="/nurse" element={<SecureNurseReviewPrototype />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
                 </Routes>
