@@ -13,6 +13,7 @@ import { DashboardPage } from './features/dashboard/DashboardPage';
 import { ModulePage } from './features/dashboard/ModulePage';
 import { ProfilePage } from './features/profile/ProfilePage';
 import { NurseDashboardPage } from './features/nurse/NurseDashboardPage';
+import { ClassInvitationManagementPrototype } from './features/admin/ClassInvitationManagementPrototype';
 import { useEffect } from 'react';
 import { flushPendingSubmissions } from './utils/sheets';
 
@@ -78,6 +79,7 @@ export default function App() {
                       }
                     />
                     <Route path="/nurse" element={<NurseDashboardPage />} />
+                    <Route path="/prototype/class-invitations" element={<ClassInvitationManagementPrototype />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
                 </Routes>
