@@ -77,7 +77,7 @@ jobs:
       - name: Run forward migrations from the artifact
         if: ${{ !inputs.bootstrap_only }}
         env:
-          DATABASE_URL: ${{ secrets.SUPABASE_MIGRATION_DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.SUPABASE_OWNER_DATABASE_URL }}
           RUNTIME_DATABASE_URL: ${{ secrets.SUPABASE_RUNTIME_DATABASE_URL }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
