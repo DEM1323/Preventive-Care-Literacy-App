@@ -57,6 +57,39 @@ describe.serial('staging HTTP security boundary', () => {
     ]);
   });
 
+  test('reports not ready when the restricted database is unavailable', async () => {
+    const app = await buildApp(
+      {
+        async createSchoolWorkspace(command) {
+          return {
+            operationId: command.operationId,
+            workspaceId: command.workspaceId,
+            outcome: 'created',
+          };
+        },
+      },
+      {
+        publicOrigin,
+        readiness: async () => {
+          throw new Error('private database detail');
+        },
+        operatorAuthenticator: {
+          authenticate: () => ({
+            type: 'technical_operator',
+            id: 'operator@example.test',
+          }),
+        },
+      },
+    );
+
+    const response = await app.inject({ method: 'GET', url: '/health/ready' });
+    await app.close();
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({ status: 'not-ready' });
+    expect(response.body).not.toContain('private database detail');
+  });
+
   test('rejects cross-origin and non-CSRF-protected commands', async () => {
     const app = await createApp();
     const body = {

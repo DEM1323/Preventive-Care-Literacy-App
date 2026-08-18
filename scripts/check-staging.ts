@@ -1,11 +1,6 @@
-import { providerNames } from '../packages/observability/src/index.ts';
 import { assertNoProhibitedData } from './staging-data-policy.ts';
 
 const webUrl = requiredEnvironment('STAGING_WEB_URL');
-const workerUrl = requiredEnvironment('STAGING_WORKER_URL');
-const workerIdentityToken = requiredEnvironment(
-  'STAGING_WORKER_IDENTITY_TOKEN',
-);
 
 function requiredEnvironment(name: string): string {
   const value = process.env[name];
@@ -110,44 +105,5 @@ async function checkWeb(): Promise<void> {
   );
 }
 
-async function checkWorker(): Promise<void> {
-  const response = await fetch(`${workerUrl}/internal/provider-health`, {
-    headers: { authorization: `Bearer ${workerIdentityToken}` },
-  });
-  const body = await response.text();
-  assertNoProhibitedData(body, 'Provider smoke response');
-  assertEqual(response.status, 200, 'provider smoke status');
-
-  const parsed: unknown = JSON.parse(body);
-  if (
-    typeof parsed !== 'object' ||
-    parsed === null ||
-    !('providers' in parsed) ||
-    !Array.isArray(parsed.providers)
-  ) {
-    throw new Error('Provider smoke response has an invalid shape');
-  }
-  const expected = [...providerNames].sort();
-  const actual = parsed.providers
-    .map((provider) => {
-      if (
-        typeof provider !== 'object' ||
-        provider === null ||
-        Object.keys(provider).sort().join(',') !== 'name,status' ||
-        !('name' in provider) ||
-        !('status' in provider) ||
-        provider.status !== 'ok'
-      ) {
-        throw new Error(
-          'Provider smoke result contains non-allowlisted output',
-        );
-      }
-      return provider.name;
-    })
-    .sort();
-  assertEqual(JSON.stringify(actual), JSON.stringify(expected), 'provider set');
-}
-
 await checkWeb();
-await checkWorker();
-console.log('Staging security and provider smoke checks passed.');
+console.log('Staging HTTP security checks passed.');

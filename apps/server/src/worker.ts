@@ -1,9 +1,11 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import {
   createTelemetry,
+  recordProviderChecks,
   type Telemetry,
 } from '../../../packages/observability/src/index.ts';
 import {
+  checkProviderProbes,
   createProviderProbes,
   providerConfigurationFromEnvironment,
   type ProviderProbe,
@@ -24,28 +26,15 @@ export async function buildWorker(options: {
 
   app.get('/health/live', async () => ({ status: 'ok' }));
   app.get('/internal/provider-health', async (_request, reply) => {
-    const providers = [];
-    for (const probe of options.probes) {
-      const startedAt = clock.now();
-      let status: 'error' | 'ok' = 'ok';
-      try {
-        await probe.check();
-      } catch {
-        status = 'error';
-      }
-      options.telemetry.record({
-        name: 'provider.smoke.completed',
-        provider: probe.name,
-        outcome: status,
-        durationMs: Math.max(0, Math.round(clock.now() - startedAt)),
-      });
-      providers.push({ name: probe.name, status });
-    }
+    const providers = await checkProviderProbes(options.probes, clock);
+    recordProviderChecks(options.telemetry, providers);
 
     const statusCode = providers.every(({ status }) => status === 'ok')
       ? 200
       : 503;
-    return reply.code(statusCode).send({ providers });
+    return reply.code(statusCode).send({
+      providers: providers.map(({ name, status }) => ({ name, status })),
+    });
   });
 
   await app.ready();
@@ -56,10 +45,11 @@ export async function startWorker(options: {
   probes: readonly ProviderProbe[];
   telemetry?: Telemetry;
 }): Promise<FastifyInstance> {
+  const telemetry =
+    options.telemetry ?? createTelemetry((line) => console.log(line));
   const app = await buildWorker({
     probes: options.probes,
-    telemetry:
-      options.telemetry ?? createTelemetry((line) => console.log(line)),
+    telemetry,
   });
   await app.listen({
     host: process.env.HOST ?? '0.0.0.0',

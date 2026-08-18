@@ -16,6 +16,12 @@ const browserCredentialMarkers = [
   'BEGIN PRIVATE KEY',
   '"private_key"',
 ];
+const serverOnlyMarkers = [
+  'SUPABASE_SECRET_KEY',
+  'SUPABASE_MIGRATION_DATABASE_URL',
+  'SUPABASE_RUNTIME_DATABASE_URL',
+  'PROVIDER_SMOKE_EMAIL',
+];
 
 function filesUnder(path, excludedDirectories = new Set()) {
   if (!existsSync(path)) return [];
@@ -31,6 +37,15 @@ function scanForMarkers(paths, label) {
   for (const path of paths.flatMap((scanPath) => filesUnder(scanPath))) {
     const content = readFileSync(path, 'utf8');
     if (browserCredentialMarkers.some((marker) => content.includes(marker))) {
+      failures.push(`${label}: ${relative(root, path)}`);
+    }
+  }
+}
+
+function scanForServerOnlyMarkers(paths, label) {
+  for (const path of paths.flatMap((scanPath) => filesUnder(scanPath))) {
+    const content = readFileSync(path, 'utf8');
+    if (serverOnlyMarkers.some((marker) => content.includes(marker))) {
       failures.push(`${label}: ${relative(root, path)}`);
     }
   }
@@ -68,9 +83,17 @@ scanForMarkers(
   [join(root, 'src'), join(root, '.env.example'), join(root, '.github/workflows')],
   'browser source contains retired credential marker'
 );
+scanForServerOnlyMarkers(
+  [join(root, 'src')],
+  'browser source contains server-only Supabase configuration',
+);
 
 if (existsSync(join(root, 'dist'))) {
   scanForMarkers([join(root, 'dist')], 'browser artifact contains retired credential marker');
+  scanForServerOnlyMarkers(
+    [join(root, 'dist')],
+    'browser artifact contains server-only Supabase configuration',
+  );
 }
 
 if (failures.length > 0) {

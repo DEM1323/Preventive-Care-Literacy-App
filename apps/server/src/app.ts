@@ -87,6 +87,9 @@ const ProblemResponse = {
 
 const LiveHealthResponse = Type.Object({ status: Type.Literal('ok') });
 const ReadyHealthResponse = Type.Object({ status: Type.Literal('ready') });
+const NotReadyHealthResponse = Type.Object({
+  status: Type.Literal('not-ready'),
+});
 
 type OperatorAuthenticator = {
   authenticate(
@@ -124,6 +127,7 @@ export async function buildApp(
   options: {
     operatorAuthenticator: OperatorAuthenticator;
     publicOrigin: string;
+    readiness?: () => Promise<void>;
     telemetry?: Telemetry;
     webRoot?: string;
     onClose?: () => Promise<void>;
@@ -259,8 +263,19 @@ export async function buildApp(
   );
   app.get(
     '/health/ready',
-    { schema: { response: { 200: ReadyHealthResponse } } },
-    async () => ({ status: 'ready' }),
+    {
+      schema: {
+        response: { 200: ReadyHealthResponse, 503: NotReadyHealthResponse },
+      },
+    },
+    async (_request, reply) => {
+      try {
+        await options.readiness?.();
+        return { status: 'ready' } as const;
+      } catch {
+        return reply.code(503).send({ status: 'not-ready' });
+      }
+    },
   );
   app.get(
     '/health/security',
@@ -364,6 +379,9 @@ export async function createServer(options: {
         options.operatorCredentials,
       ),
       publicOrigin: options.publicOrigin,
+      readiness: async () => {
+        await pool.query('select 1');
+      },
       telemetry:
         options.telemetry ?? createTelemetry((line) => console.log(line)),
       webRoot: options.webRoot,

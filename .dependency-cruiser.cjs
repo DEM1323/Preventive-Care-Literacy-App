@@ -15,7 +15,7 @@ module.exports = {
       severity: 'error',
       from: { path: '^modules/' },
       to: {
-        path: '^(apps/|packages/|fastify$|@fastify/|pg$|kysely$|firebase|@google-cloud/)',
+        path: '^(apps/|packages/|fastify$|@fastify/|pg$|kysely$|firebase|@google-cloud/|@supabase/)',
       },
     },
     ...owningModules.map((moduleName) => ({

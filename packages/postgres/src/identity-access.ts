@@ -9,30 +9,30 @@ import {
 } from '../../../modules/identity-access/index.ts';
 import type { Database } from './database.ts';
 
+export const restrictedDatabaseRoleSql = `select
+  exists (
+    select 1 from pg_roles inherited
+    where (inherited.rolsuper or inherited.rolbypassrls)
+      and pg_has_role(current_user, inherited.oid, 'member')
+  ) as bypasses_rls,
+  exists (
+    select 1
+    from pg_class relation
+    join pg_namespace namespace on namespace.oid = relation.relnamespace
+    where namespace.nspname in ('identity_access', 'audit', 'infrastructure')
+      and pg_has_role(current_user, relation.relowner, 'member')
+    union all
+    select 1
+    from pg_namespace namespace
+    where namespace.nspname in ('identity_access', 'audit', 'infrastructure')
+      and pg_has_role(current_user, namespace.nspowner, 'member')
+  ) as owns_protected_objects`;
+
 export async function assertRestrictedDatabaseRole(pool: Pool): Promise<void> {
   const role = await pool.query<{
     bypasses_rls: boolean;
     owns_protected_objects: boolean;
-  }>(
-    `select
-       exists (
-         select 1 from pg_roles inherited
-         where (inherited.rolsuper or inherited.rolbypassrls)
-           and pg_has_role(current_user, inherited.oid, 'member')
-       ) as bypasses_rls,
-       exists (
-         select 1
-         from pg_class relation
-         join pg_namespace namespace on namespace.oid = relation.relnamespace
-         where namespace.nspname in ('identity_access', 'audit', 'infrastructure')
-           and pg_has_role(current_user, relation.relowner, 'member')
-         union all
-         select 1
-         from pg_namespace namespace
-         where namespace.nspname in ('identity_access', 'audit', 'infrastructure')
-           and pg_has_role(current_user, namespace.nspowner, 'member')
-       ) as owns_protected_objects`,
-  );
+  }>(restrictedDatabaseRoleSql);
   if (role.rows[0]?.bypasses_rls || role.rows[0]?.owns_protected_objects) {
     throw new Error(
       'The application database role must not own protected objects or bypass row-level security',

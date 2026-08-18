@@ -86,6 +86,18 @@ export interface paths {
             };
           };
         };
+        /** @description Default Response */
+        503: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              /** @enum {string} */
+              status: 'not-ready';
+            };
+          };
+        };
       };
     };
     put?: never;

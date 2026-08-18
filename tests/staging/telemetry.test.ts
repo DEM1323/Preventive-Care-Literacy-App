@@ -21,6 +21,12 @@ test('telemetry emits only allowlisted operational fields', () => {
     requestBody: 'private body',
     generatedContent: 'private translation',
   } as TelemetryEvent);
+  telemetry.record({
+    name: 'provider.smoke.completed',
+    provider: 'attacker-controlled-provider',
+    outcome: 'ok',
+    durationMs: 1,
+  } as TelemetryEvent);
 
   expect(lines).toEqual([
     '{"name":"http.request.completed","method":"POST","route":"create-school-workspace","statusCode":201,"durationMs":12}',

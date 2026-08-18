@@ -1,11 +1,10 @@
 export const providerNames = [
-  'cloud-kms',
-  'cloud-scheduler',
-  'cloud-storage',
-  'cloud-tasks',
-  'cloud-translation',
-  'identity-platform',
-  'resend',
+  'auth',
+  'cron',
+  'email',
+  'postgres',
+  'queue',
+  'storage',
 ] as const;
 
 export type ProviderName = (typeof providerNames)[number];
@@ -28,6 +27,24 @@ export type TelemetryEvent =
 export type Telemetry = {
   record(event: TelemetryEvent): void;
 };
+
+export function recordProviderChecks(
+  telemetry: Telemetry,
+  checks: readonly {
+    name: ProviderName;
+    status: 'error' | 'ok';
+    durationMs: number;
+  }[],
+): void {
+  for (const check of checks) {
+    telemetry.record({
+      name: 'provider.smoke.completed',
+      provider: check.name,
+      outcome: check.status,
+      durationMs: check.durationMs,
+    });
+  }
+}
 
 const methods = new Set(['DELETE', 'GET', 'PATCH', 'POST', 'PUT']);
 const routes = new Set(['create-school-workspace', 'health', 'unknown']);
@@ -55,12 +72,11 @@ export function createTelemetry(write: (line: string) => void): Telemetry {
         return;
       }
 
+      if (!providers.has(event.provider)) return;
       write(
         JSON.stringify({
           name: event.name,
-          provider: providers.has(event.provider)
-            ? event.provider
-            : 'identity-platform',
+          provider: event.provider,
           outcome: event.outcome === 'ok' ? 'ok' : 'error',
           durationMs: safeNumber(event.durationMs),
         }),
