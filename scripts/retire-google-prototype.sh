@@ -201,42 +201,19 @@ say "For each project, open Deploy > Manage deployments."
 warn "Deleting a deployment is irreversible and immediately stops callers using its URL."
 confirm "Are you authorized to disable these deployments now?" || exit 1
 step "Archive or delete every deployment containing the old token or submission path."
-step "If deletion is prohibited, replace it with google-apps-script/Code.gs and appsscript.json, set DATA_POLICY=synthetic-only, and remove EXECUTION_TOKEN."
-confirm "Are all legacy deployments deleted, disabled, or replaced by the tombstone?" || exit 1
+step "Delete the EXECUTION_TOKEN Script Property, then move standalone Apps Script projects to trash."
+step "Open Google Drive Trash, select only those standalone Apps Script projects, and choose Delete forever."
+confirm "Are all legacy deployments archived or deleted and standalone projects permanently deleted?" || exit 1
 
 stage "Dispose of prototype Student data"
 say "Follow the school's approved records process; this wizard does not decide retention or deletion authority."
 confirm "Do you have a named school authority and approved disposition decision for these records?" || exit 1
 step "Locate Submissions, StudentRegistry, AccessCodes, NurseRoster, and any copied prototype sheets."
 warn "Do not delete records unless the named school authority has approved that disposition."
-confirm "Has an authorized operator completed or formally scheduled disposition of every real Student record?" || exit 1
+step "Move every approved prototype Sheet to trash, then select only those Sheets in Drive Trash and choose Delete forever."
+confirm "Are every approved prototype Sheet and its Sheet-bound Apps Script project permanently deleted?" || exit 1
 
 stage "Capture operator evidence"
-if confirm "Did any legacy deployment require a tombstone replacement instead of deletion?"; then
-  command -v curl >/dev/null 2>&1 || { warn "curl is required to verify the tombstone"; exit 1; }
-  while true; do
-    ask TOMBSTONE_URL "Paste one tombstone deployment URL (not a credential):"
-    step "Checking the exact health, blocked POST, and blocked non-health GET responses."
-    HEALTH_RESPONSE=$(curl --silent --show-error --fail "${TOMBSTONE_URL}?action=health")
-    POST_RESPONSE=$(curl --silent --show-error --fail \
-      --request POST \
-      --header 'Content-Type: text/plain;charset=utf-8' \
-      --data '{"action":"submitUpdate"}' \
-      "$TOMBSTONE_URL")
-    GET_RESPONSE=$(curl --silent --show-error --fail "${TOMBSTONE_URL}?action=studentSubmission")
-    [[ "$HEALTH_RESPONSE" == '{"status":"ok","dataPolicy":"synthetic-only"}' ]] || {
-      warn "health response did not match the synthetic-only tombstone"; exit 1;
-    }
-    [[ "$POST_RESPONSE" == '{"success":false,"error":"Prototype intake submissions are disabled"}' ]] || {
-      warn "POST response did not reject intake submission"; exit 1;
-    }
-    [[ "$GET_RESPONSE" == '{"error":"Unknown action"}' ]] || {
-      warn "non-health GET response was not rejected"; exit 1;
-    }
-    say "Tombstone boundary verified."
-    confirm "Verify another tombstone deployment?" || break
-  done
-fi
 ask OPERATOR_NAME "Operator name or approved identifier:"
 ask CHANGE_REFERENCE "Non-sensitive change/disposition record reference:"
 EVIDENCE_FILE="docs/security/prototype-retirement-evidence.md"
@@ -245,9 +222,9 @@ EVIDENCE_FILE="docs/security/prototype-retirement-evidence.md"
   printf -- '- Completed at: `%s`\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf -- '- Operator: `%s`\n' "$OPERATOR_NAME"
   printf -- '- Change/disposition reference: `%s`\n' "$CHANGE_REFERENCE"
-  printf -- '- Legacy Apps Script deployments: deleted, disabled, or replaced by the no-scope tombstone.\n'
-  printf -- '- Prototype Student records: disposition completed or formally scheduled under school authority.\n'
-  printf -- '- Tombstone verification: health-only behavior confirmed where replacement was used.\n'
+  printf -- '- Legacy Apps Script deployments: archived or deleted.\n'
+  printf -- '- Legacy Apps Script projects and Script Properties: deleted.\n'
+  printf -- '- Prototype Student records and Sheet-bound scripts: permanently deleted under school authority.\n'
   printf -- '- Sensitive values recorded in this evidence: none.\n'
 } > "$EVIDENCE_FILE"
 say "Wrote $EVIDENCE_FILE. Review it and commit it with the approved change record."

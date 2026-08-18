@@ -20,31 +20,25 @@ On 2026-08-18, the ignored local environment file and untracked Google service-a
 
 `bun run check:security` fails if a credential-like file appears anywhere in the repository tree, if one is tracked, or if retired credential markers occur in browser source or built artifacts. The history scan in `.github/workflows/security.yml` provides the general secret scan.
 
-## Environment guard
+## Environment exclusion
 
-Apps Script requests fail closed unless Script Property `DATA_POLICY` is exactly `synthetic-only`. Even in that mode:
-
-- The only allowed request is `GET ?action=health`.
-- Student authentication, Student reads, and intake submissions are disabled.
-- The Apps Script manifest grants no Google OAuth scopes.
+- All Google Apps Script source and manifest files are deleted from the repository.
+- The browser receives no Google Apps Script endpoint or credential configuration.
+- Student authentication, Student reads, and intake submissions are deleted.
 - On first load after retirement, the browser deletes legacy Student email, intake, pending submission, and session state.
-- The unauthenticated legacy submission shape and every other request are rejected.
 - Student-facing routes render a retirement notice; only the local-only school-configuration UI prototype remains available.
 
-The request-boundary behavior is covered by `tests/google-apps-script.test.ts`.
+`bun run check:security` enforces the repository and browser-artifact boundary.
 
 ## Operator cutover evidence
 
-GitHub Pages was unpublished and its remaining Apps Script URL secret was deleted on 2026-08-18. Before enabling any Apps Script deployment from this repository:
+GitHub Pages was unpublished and its remaining Apps Script URL secret was deleted on 2026-08-18. The replacement backend is Firebase; this retired prototype contains no replacement-backend implementation.
 
-Run `scripts/retire-google-prototype.sh` to walk the authorized Google operator through these steps and generate a non-sensitive evidence record.
+The authorized operator completed the Google retirement procedure on 2026-08-18. See [the operator evidence](./prototype-retirement-evidence.md). `scripts/retire-google-prototype.sh` preserves the repeatable procedure.
 
-1. Delete or disable every older web-app deployment that contains the legacy submission path.
-2. Replace `Code.gs`, create a new deployment version, and set `DATA_POLICY=synthetic-only`.
-3. Delete the obsolete `EXECUTION_TOKEN` Script Property.
-4. Delete all prototype sheets containing real Student data and record the deletion under the school's approved process.
-5. Confirm `GET ?action=health` returns `{"status":"ok","dataPolicy":"synthetic-only"}` without a token.
-6. Confirm every POST and every non-health GET is rejected.
-7. Run `bun test`, `bun run typecheck`, `bun run build`, and `bun run check:security`; attach the outputs to the cutover record.
+1. Archive or delete every older web-app deployment that contains the legacy submission path.
+2. Delete the obsolete Apps Script project and `EXECUTION_TOKEN` Script Property.
+3. Permanently delete all approved prototype Sheets containing real Student data and their bound scripts, then record the deletion under the school's approved process.
+4. Run `bun test`, `bun run typecheck`, `bun run build`, and `bun run check:security`; attach the outputs to the cutover record.
 
-Go is permitted only when every step above has named operator, timestamp, and evidence. Otherwise the prototype backend remains retired by its fail-closed default.
+Every step above has a named operator, timestamp, and non-sensitive evidence. The legacy Google backend and its Student records are retired.

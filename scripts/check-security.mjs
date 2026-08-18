@@ -5,7 +5,10 @@ import { basename, join, relative } from 'node:path';
 const root = process.cwd();
 const failures = [];
 const browserCredentialMarkers = [
+  'VITE_GAS_SUBMIT_URL',
   'VITE_GAS_EXECUTION_TOKEN',
+  'VITE_MODULES_SHEET_URL',
+  'VITE_INTAKE_SHEET_URL',
   'VITE_DISTRICT_ENCRYPTION_PASSCODE',
   'VITE_NURSE_DASHBOARD_PASSCODE',
   'district-default-key',
@@ -40,6 +43,12 @@ const credentialFilePattern = /(?:^|\/)(?:\.env(?:\.(?!example$).*)?|.*(?:creden
 
 for (const path of trackedFiles) {
   if (credentialFilePattern.test(path)) failures.push(`tracked credential-like file: ${path}`);
+  if (
+    existsSync(join(root, path)) &&
+    (path.startsWith('google-apps-script/') || path.endsWith('.gs') || basename(path) === 'appsscript.json')
+  ) {
+    failures.push(`tracked Google Apps Script file: ${path}`);
+  }
 }
 
 const ignoredLocalDirectories = new Set(['.git', 'node_modules', 'dist', '.vite']);
@@ -56,7 +65,7 @@ for (const path of filesUnder(root, ignoredLocalDirectories)) {
 }
 
 scanForMarkers(
-  [join(root, 'src'), join(root, '.env.example'), join(root, '.github/workflows/deploy.yml')],
+  [join(root, 'src'), join(root, '.env.example'), join(root, '.github/workflows')],
   'browser source contains retired credential marker'
 );
 
