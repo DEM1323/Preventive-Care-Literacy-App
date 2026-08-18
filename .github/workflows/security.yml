@@ -1,24 +1,19 @@
-name: Deploy to GitHub Pages
+name: Security controls
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+  pull_request:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -30,10 +25,11 @@ jobs:
       - name: Test
         run: bun test
 
-      - name: Build
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Build browser artifact
         run: bun run build
-        env:
-          VITE_BASE_PATH: /${{ github.event.repository.name }}/
 
       - name: Check credential custody and browser artifact
         run: bun run check:security
@@ -42,18 +38,3 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4

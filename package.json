@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "bun test",
+    "typecheck": "tsc -b --pretty false",
+    "check:security": "bun scripts/check-security.mjs"
   },
   "dependencies": {
     "react": "^19.1.0",

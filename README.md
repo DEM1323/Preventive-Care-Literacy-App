@@ -1,6 +1,8 @@
 # PrevCare — Preventive Care Literacy App
 
-Multilingual static SPA for K-12 English Learners: health assessment, micro-lessons (Knowledge → Skills → Application), and a nurse dashboard with client-side encrypted submissions.
+Multilingual static prototype for K-12 English Learners: health intake and micro-lessons (Knowledge → Skills → Application).
+
+> **Synthetic data only.** The prototype has no production authority. Never enter real Student information. See [the retirement and cutover record](docs/security/prototype-retirement.md).
 
 ## Stack
 
@@ -8,7 +10,7 @@ Multilingual static SPA for K-12 English Learners: health assessment, micro-less
 - **Tailwind CSS v4**
 - **Bun** (package manager)
 - **GitHub Pages** (static hosting)
-- **Google Sheets + Apps Script** (CMS + encrypted submission store)
+- **Google Apps Script tombstone** (retired Student-data boundary)
 
 ## Quick Start
 
@@ -17,27 +19,14 @@ bun install
 bun run dev
 ```
 
-Copy `.env.example` to `.env` for local Google Apps Script integration.
-
-## Nurse handoff
-
-School nurses maintain roster, modules, and intake form wording in Google Sheets. See **[docs/NURSE_GUIDE.md](docs/NURSE_GUIDE.md)**.
+Keep local configuration outside the repository. For example, place it at `~/.config/prevcare/credentials/local.env`, then load it into the shell before starting Vite.
 
 ## Routes
 
 | Route | Description |
 |-------|-------------|
-| `/` | Hero / landing |
-| `/sign-in` | Student sign-in (roster allowlist required) |
-| `/intake` | Schema-driven encrypted health history wizard |
-| `/dashboard` | Learning module grid |
-| `/module/:id` | K → S → A lesson view |
-| `/profile` | Progress & badges |
-| `/nurse` | Passcode-protected decrypt dashboard |
-
-## Languages
-
-English, Spanish, Portuguese, French, Haitian Creole
+| `/prototype/school-configuration` | Local-only school configuration UI exploration |
+| All other routes | Prototype retirement notice; no Student data entry |
 
 ## Deploy to GitHub Pages
 
@@ -66,36 +55,15 @@ Your live URL will be:
 
 `https://YOUR_USERNAME.github.io/Preventive-Care-Literacy-App/`
 
-### 3. Add GitHub Actions secrets (for production API keys)
-
-Go to **Settings → Secrets and variables → Actions** and add:
-
-| Secret | Purpose |
-|--------|---------|
-| `VITE_GAS_SUBMIT_URL` | Google Apps Script Web App URL |
-| `VITE_GAS_EXECUTION_TOKEN` | Apps Script execution token |
-| `VITE_DISTRICT_ENCRYPTION_PASSCODE` | Client-side encryption passcode |
-| `VITE_NURSE_DASHBOARD_PASSCODE` | Nurse dashboard gate passcode |
-| `VITE_MODULES_SHEET_URL` | Published Modules sheet JSON URL (required for nurse lesson edits) |
-| `VITE_INTAKE_SHEET_URL` | Published IntakeFields sheet JSON URL (required for nurse form edits) |
-
-These are baked into the static build at deploy time. Never commit `.env` to the repo.
-
-### Publishing a content sheet URL
-
-1. In Google Sheets: **File → Share → Publish to web**
-2. Choose the **Modules** or **IntakeFields** tab
-3. Format: **JSON** (or use a Google Visualization / gviz JSON endpoint for that tab)
-4. Copy the URL into the matching `VITE_*_SHEET_URL` secret and redeploy
-
-Column schemas are documented in [docs/NURSE_GUIDE.md](docs/NURSE_GUIDE.md).
-
 ## Google Backend
 
-See [`google-apps-script/README.md`](google-apps-script/README.md) for Apps Script deployment and Sheets setup.
+See [`google-apps-script/README.md`](google-apps-script/README.md) for the fail-closed tombstone that must replace or delete every legacy Apps Script deployment.
 
-Generate a token locally with:
+## Verification
 
 ```bash
-python scripts/generate-execution-token.py
+bun test
+bun run typecheck
+bun run build
+bun run check:security
 ```
