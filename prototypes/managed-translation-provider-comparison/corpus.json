@@ -1,0 +1,103 @@
+{
+  "sourceLocale": "en-US",
+  "targetLocales": [
+    {
+      "id": "es-US",
+      "label": "US Spanish",
+      "providerCodes": { "google": "es", "azure": "es", "deepl": "ES" },
+      "targetingNote": "All three providers use a general Spanish model; review for a clear US school register."
+    },
+    {
+      "id": "pt-BR",
+      "label": "Brazilian Portuguese",
+      "providerCodes": { "google": "pt", "azure": "pt", "deepl": "PT-BR" },
+      "targetingNote": "Azure documents Portuguese as Brazilian by default and DeepL targets PT-BR explicitly; Google uses its general Portuguese model."
+    },
+    {
+      "id": "fr-CA",
+      "label": "Canadian French",
+      "providerCodes": { "google": "fr", "azure": "fr-ca", "deepl": "FR" },
+      "targetingNote": "Azure targets fr-CA explicitly; Google and DeepL use general French, so Canadian fit is part of the review."
+    },
+    {
+      "id": "ht",
+      "label": "Haitian Creole",
+      "providerCodes": { "google": "ht", "azure": "ht", "deepl": "HT" },
+      "targetingNote": "Review Haitian Creole independently; performance in higher-resource languages is not a proxy."
+    }
+  ],
+  "segments": [
+    {
+      "id": "interface-back",
+      "contentKind": "interface_string",
+      "category": "Interface",
+      "source": "Back",
+      "context": "Button returning to the previous step of a student intake form, not the rear of the body.",
+      "safetySensitive": false,
+      "reviewFocus": "Correct navigation sense, familiar student-facing wording, brevity."
+    },
+    {
+      "id": "interface-step",
+      "contentKind": "interface_string",
+      "category": "Interface",
+      "source": "Step {current} of {total}",
+      "context": "Progress label in a multi-step intake form. Braced placeholders must remain byte-for-byte unchanged.",
+      "safetySensitive": false,
+      "reviewFocus": "Placeholder preservation, natural word order, concise interface register."
+    },
+    {
+      "id": "intake-medication",
+      "contentKind": "intake_question",
+      "category": "Intake Form",
+      "source": "Do you have any medical conditions that require medication?",
+      "context": "Required yes/no question for a student. It asks about conditions, not whether medication is physically present today.",
+      "safetySensitive": true,
+      "reviewFocus": "Preserve condition/medication relationship without broadening or narrowing the question."
+    },
+    {
+      "id": "intake-safety",
+      "contentKind": "intake_question",
+      "category": "Intake Form",
+      "source": "Do you feel safe at home and in your relationships?",
+      "context": "Trauma-sensitive required yes/no question shown privately to a student.",
+      "safetySensitive": true,
+      "reviewFocus": "Trauma-sensitive tone, both home and relationship scopes, no blame or legal overstatement."
+    },
+    {
+      "id": "submission-attestation",
+      "contentKind": "interface_string",
+      "category": "Safety-sensitive interface",
+      "source": "I confirm that I reviewed my answers and that they are accurate and complete to the best of my knowledge. I understand how the school will use this information.",
+      "context": "Submission Attestation for a student Intake Record. It is not legal consent or authorization.",
+      "safetySensitive": true,
+      "reviewFocus": "Do not turn confirmation into legal consent; preserve review, accuracy qualifier, completeness, and school-use understanding."
+    },
+    {
+      "id": "learning-primary-care",
+      "contentKind": "learning_module_field",
+      "category": "Learning Module",
+      "source": "Think about primary care like regular maintenance for a car. Routine checkups can find health problems early instead of waiting until you feel very sick.",
+      "context": "Knowledge-section explanation for adolescent students with varied health literacy.",
+      "safetySensitive": false,
+      "reviewFocus": "Accessible metaphor, plain language, primary-care terminology, no guarantee that checkups find every problem."
+    },
+    {
+      "id": "learning-emergency",
+      "contentKind": "learning_module_field",
+      "category": "Safety-sensitive Learning Module",
+      "source": "For a life-threatening emergency, such as heavy bleeding, chest pain, or trouble breathing, call 911 or go to an emergency room. Do not wait for an urgent care appointment.",
+      "context": "Application guidance for a Massachusetts student distinguishing emergency care from urgent care.",
+      "safetySensitive": true,
+      "reviewFocus": "No reversal or weakening of urgency; preserve symptoms, 911, emergency room, negation, and urgent-care distinction."
+    },
+    {
+      "id": "learning-immunization",
+      "contentKind": "learning_module_field",
+      "category": "Safety-sensitive Learning Module",
+      "source": "Massachusetts schools require documentation that required immunizations are up to date. Ask your School Nurse which records or exemptions apply to you.",
+      "context": "Knowledge and action guidance. It must not imply that every student has the same vaccine requirements or that exemptions never exist.",
+      "safetySensitive": true,
+      "reviewFocus": "Preserve documentation, required/up-to-date distinction, individualized nurse guidance, and possible exemptions."
+    }
+  ]
+}
