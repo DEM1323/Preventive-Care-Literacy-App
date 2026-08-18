@@ -49,6 +49,11 @@ Generate API artifacts after changing an HTTP contract with `bun run generate:co
 Apply forward migrations to an explicit database with
 `DATABASE_URL=postgres://... bun run migrate`.
 
+The immutable Google Cloud staging topology and its required controls are documented in
+[`docs/operations/staging.md`](docs/operations/staging.md). CI deploys one digest to the
+forward-migration job, same-origin web/API service, and private worker, then runs focused
+security and provider smoke checks.
+
 The API process must use a separate PostgreSQL login without `SUPERUSER` or `BYPASSRLS`;
 the migration login is never reused at runtime. Starting the API also requires an
 operator-only provisioning token of at least 32 characters and its audited identity:

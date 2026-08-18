@@ -1,7 +1,9 @@
 import swagger from '@fastify/swagger';
+import fastifyStatic from '@fastify/static';
 import { Type, type Static } from '@sinclair/typebox';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
+import { resolve } from 'node:path';
 import { Pool } from 'pg';
 import type {
   Clock,
@@ -10,9 +12,41 @@ import type {
 } from '../../../modules/identity-access/index.ts';
 import { SchoolWorkspaceAlreadyExistsError } from '../../../modules/identity-access/index.ts';
 import {
+  createTelemetry,
+  type Telemetry,
+  type TelemetryEvent,
+} from '../../../packages/observability/src/index.ts';
+import { expireSecureOpaqueCookie } from '../../../packages/http-security/src/index.ts';
+import {
   assertRestrictedDatabaseRole,
   createPostgresIdentityAndAccess,
 } from '../../../packages/postgres/src/identity-access.ts';
+
+const requestBodyLimit = 64 * 1024;
+const securityHeaders = {
+  'cache-control': 'no-store',
+  'content-security-policy': [
+    "default-src 'self'",
+    "base-uri 'none'",
+    "connect-src 'self'",
+    "font-src 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "img-src 'self' data:",
+    "object-src 'none'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+  ].join('; '),
+  'cross-origin-opener-policy': 'same-origin',
+  'permissions-policy':
+    'camera=(), geolocation=(), microphone=(), payment=(), usb=()',
+  'referrer-policy': 'no-referrer',
+  'strict-transport-security': 'max-age=31536000; includeSubDomains',
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'DENY',
+} as const;
+
+class UntrustedRequestOriginError extends Error {}
 
 const CreateSchoolWorkspaceBody = Type.Object(
   {
@@ -29,6 +63,7 @@ const CreateSchoolWorkspaceBody = Type.Object(
 
 const OperatorHeaders = Type.Object({
   authorization: Type.Optional(Type.String()),
+  'x-prevcare-csrf': Type.Literal('1'),
 });
 
 const CreateSchoolWorkspaceResponse = Type.Object({
@@ -49,6 +84,9 @@ const ProblemResponse = {
     'application/problem+json': { schema: ProblemDetails },
   },
 };
+
+const LiveHealthResponse = Type.Object({ status: Type.Literal('ok') });
+const ReadyHealthResponse = Type.Object({ status: Type.Literal('ready') });
 
 type OperatorAuthenticator = {
   authenticate(
@@ -85,12 +123,76 @@ export async function buildApp(
   identityAndAccess: IdentityAndAccess,
   options: {
     operatorAuthenticator: OperatorAuthenticator;
+    publicOrigin: string;
+    telemetry?: Telemetry;
+    webRoot?: string;
     onClose?: () => Promise<void>;
   },
 ): Promise<FastifyInstance> {
-  const app = Fastify({ logger: false });
+  const publicOrigin = new URL(options.publicOrigin).origin;
+  const telemetry = options.telemetry;
+  const requestStartedAt = new WeakMap<object, number>();
+  const app = Fastify({
+    ajv: { customOptions: { removeAdditional: false } },
+    bodyLimit: requestBodyLimit,
+    logger: false,
+  });
   if (options.onClose) app.addHook('onClose', options.onClose);
+  app.addHook('onRequest', async (request, reply) => {
+    requestStartedAt.set(request, performance.now());
+    for (const [name, value] of Object.entries(securityHeaders)) {
+      reply.header(name, value);
+    }
+
+    if (!['DELETE', 'PATCH', 'POST', 'PUT'].includes(request.method)) return;
+    if (
+      request.headers.origin !== publicOrigin ||
+      request.headers['x-prevcare-csrf'] !== '1' ||
+      (request.headers['sec-fetch-site'] !== undefined &&
+        request.headers['sec-fetch-site'] !== 'same-origin')
+    ) {
+      throw new UntrustedRequestOriginError();
+    }
+  });
+  if (telemetry) {
+    app.addHook('onResponse', async (request, reply) => {
+      const route = request.routeOptions.url ?? '';
+      const routeName: Extract<
+        TelemetryEvent,
+        { name: 'http.request.completed' }
+      >['route'] = route.startsWith('/health/')
+        ? 'health'
+        : route === '/api/v1/administration/school-workspaces'
+          ? 'create-school-workspace'
+          : 'unknown';
+      telemetry.record({
+        name: 'http.request.completed',
+        method: ['DELETE', 'GET', 'PATCH', 'POST', 'PUT'].includes(
+          request.method,
+        )
+          ? (request.method as Extract<
+              TelemetryEvent,
+              { name: 'http.request.completed' }
+            >['method'])
+          : 'GET',
+        route: routeName,
+        statusCode: reply.statusCode,
+        durationMs: Math.max(
+          0,
+          Math.round(performance.now() - (requestStartedAt.get(request) ?? 0)),
+        ),
+      });
+    });
+  }
   app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof UntrustedRequestOriginError) {
+      return reply.type('application/problem+json').code(403).send({
+        type: 'https://preventive-care-literacy.example/problems/request-origin',
+        title: 'Trusted request origin required',
+        status: 403,
+        code: 'TRUSTED_ORIGIN_REQUIRED',
+      });
+    }
     if (error instanceof SchoolWorkspaceAlreadyExistsError) {
       return reply.type('application/problem+json').code(409).send({
         type: 'https://preventive-care-literacy.example/problems/school-workspace-exists',
@@ -112,6 +214,19 @@ export async function buildApp(
         code: 'INVALID_REQUEST',
       });
     }
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'FST_ERR_CTP_BODY_TOO_LARGE'
+    ) {
+      return reply.type('application/problem+json').code(413).send({
+        type: 'https://preventive-care-literacy.example/problems/request-too-large',
+        title: 'Request body is too large',
+        status: 413,
+        code: 'REQUEST_TOO_LARGE',
+      });
+    }
     return reply.type('application/problem+json').code(500).send({
       type: 'https://preventive-care-literacy.example/problems/internal-error',
       title: 'Internal server error',
@@ -130,6 +245,35 @@ export async function buildApp(
     },
   });
 
+  if (options.webRoot) {
+    await app.register(fastifyStatic, {
+      root: resolve(options.webRoot),
+      wildcard: false,
+    });
+  }
+
+  app.get(
+    '/health/live',
+    { schema: { response: { 200: LiveHealthResponse } } },
+    async () => ({ status: 'ok' }),
+  );
+  app.get(
+    '/health/ready',
+    { schema: { response: { 200: ReadyHealthResponse } } },
+    async () => ({ status: 'ready' }),
+  );
+  app.get(
+    '/health/security',
+    { schema: { response: { 200: LiveHealthResponse } } },
+    async (_request, reply) => {
+      reply.header(
+        'set-cookie',
+        expireSecureOpaqueCookie('__Host-prevcare-security-check'),
+      );
+      return { status: 'ok' };
+    },
+  );
+
   app.post<{
     Body: Static<typeof CreateSchoolWorkspaceBody>;
     Headers: Static<typeof OperatorHeaders>;
@@ -144,6 +288,8 @@ export async function buildApp(
         response: {
           400: ProblemResponse,
           401: ProblemResponse,
+          403: ProblemResponse,
+          413: ProblemResponse,
           201: CreateSchoolWorkspaceResponse,
           409: ProblemResponse,
           500: ProblemResponse,
@@ -170,6 +316,23 @@ export async function buildApp(
     },
   );
 
+  app.setNotFoundHandler((request, reply) => {
+    if (
+      options.webRoot &&
+      request.method === 'GET' &&
+      !request.url.startsWith('/api/') &&
+      !request.url.startsWith('/internal/')
+    ) {
+      return reply.type('text/html; charset=utf-8').sendFile('index.html');
+    }
+    return reply.type('application/problem+json').code(404).send({
+      type: 'https://preventive-care-literacy.example/problems/not-found',
+      title: 'Resource not found',
+      status: 404,
+      code: 'NOT_FOUND',
+    });
+  });
+
   await app.ready();
   return app;
 }
@@ -177,6 +340,9 @@ export async function buildApp(
 export async function createServer(options: {
   databaseUrl: string;
   operatorCredentials: { token: string; actorId: string };
+  publicOrigin: string;
+  telemetry?: Telemetry;
+  webRoot?: string;
   clock?: Clock;
   ids?: IdGenerator;
 }): Promise<FastifyInstance> {
@@ -197,6 +363,10 @@ export async function createServer(options: {
       operatorAuthenticator: createOperatorAuthenticator(
         options.operatorCredentials,
       ),
+      publicOrigin: options.publicOrigin,
+      telemetry:
+        options.telemetry ?? createTelemetry((line) => console.log(line)),
+      webRoot: options.webRoot,
       onClose: () => pool.end(),
     },
   );

@@ -1,0 +1,150 @@
+name: Build and deploy staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.ARTIFACT_REPOSITORY }}/preventive-care-literacy
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify source, contracts, migrations, and security
+        run: bun run check
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Verify dedicated staging database controls
+        run: |
+          test "$(gcloud sql instances describe '${{ vars.CLOUD_SQL_INSTANCE }}' --format='value(settings.userLabels.environment)')" = staging
+          test "$(gcloud sql instances describe '${{ vars.CLOUD_SQL_INSTANCE }}' --format='value(settings.backupConfiguration.pointInTimeRecoveryEnabled)')" = True
+
+      - name: Configure Artifact Registry
+        run: gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push immutable artifact
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          provenance: mode=max
+          sbom: true
+
+      - name: Attest artifact provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Pin artifact digest
+        run: echo "IMAGE_REF=${IMAGE}@${{ steps.build.outputs.digest }}" >> "$GITHUB_ENV"
+
+      - name: Deploy and run forward migrations
+        run: |
+          gcloud run jobs deploy "${{ vars.STAGING_MIGRATION_JOB }}" \
+            --image="$IMAGE_REF" \
+            --region="${{ vars.GCP_REGION }}" \
+            --service-account="${{ vars.MIGRATION_SERVICE_ACCOUNT }}" \
+            --set-cloudsql-instances="${{ vars.CLOUD_SQL_CONNECTION_NAME }}" \
+            --set-secrets=DATABASE_URL=staging-migration-database-url:latest \
+            --command=bun \
+            --args=scripts/migrate.ts \
+            --quiet
+          gcloud run jobs execute "${{ vars.STAGING_MIGRATION_JOB }}" \
+            --region="${{ vars.GCP_REGION }}" \
+            --wait
+
+      - name: Deploy same-origin web and API
+        run: |
+          gcloud run deploy "${{ vars.STAGING_WEB_SERVICE }}" \
+            --image="$IMAGE_REF" \
+            --region="${{ vars.GCP_REGION }}" \
+            --service-account="${{ vars.WEB_SERVICE_ACCOUNT }}" \
+            --set-cloudsql-instances="${{ vars.CLOUD_SQL_CONNECTION_NAME }}" \
+            --set-env-vars=PUBLIC_ORIGIN="${{ vars.STAGING_PUBLIC_ORIGIN }}",WEB_ROOT=/app/dist \
+            --set-secrets=DATABASE_URL=staging-runtime-database-url:latest,OPERATOR_PROVISIONING_TOKEN=staging-operator-token:latest,OPERATOR_ID=staging-operator-id:latest \
+            --allow-unauthenticated \
+            --quiet
+
+      - name: Deploy private worker
+        run: |
+          gcloud run deploy "${{ vars.STAGING_WORKER_SERVICE }}" \
+            --image="$IMAGE_REF" \
+            --region="${{ vars.GCP_REGION }}" \
+            --service-account="${{ vars.WORKER_SERVICE_ACCOUNT }}" \
+            --command=bun \
+            --args=apps/server/src/worker.ts \
+            --set-env-vars=GOOGLE_CLOUD_PROJECT="${{ vars.GCP_PROJECT_ID }}",KMS_KEY_RESOURCE="${{ vars.KMS_KEY_RESOURCE }}",STORAGE_BUCKET="${{ vars.STORAGE_BUCKET }}",TASKS_QUEUE_RESOURCE="${{ vars.TASKS_QUEUE_RESOURCE }}",SCHEDULER_JOB_RESOURCE="${{ vars.SCHEDULER_JOB_RESOURCE }}" \
+            --set-secrets=RESEND_API_KEY=staging-resend-api-key:latest \
+            --no-allow-unauthenticated \
+            --quiet
+
+      - name: Verify deployed digest
+        run: |
+          test "$(gcloud run services describe '${{ vars.STAGING_WEB_SERVICE }}' --region='${{ vars.GCP_REGION }}' --format='value(spec.template.spec.containers[0].image)')" = "$IMAGE_REF"
+          test "$(gcloud run services describe '${{ vars.STAGING_WORKER_SERVICE }}' --region='${{ vars.GCP_REGION }}' --format='value(spec.template.spec.containers[0].image)')" = "$IMAGE_REF"
+          test "$(gcloud run jobs describe '${{ vars.STAGING_MIGRATION_JOB }}' --region='${{ vars.GCP_REGION }}' --format='value(spec.template.spec.template.spec.containers[0].image)')" = "$IMAGE_REF"
+
+      - name: Run focused staging checks
+        env:
+          STAGING_WEB_URL: ${{ vars.STAGING_PUBLIC_ORIGIN }}
+        run: |
+          STAGING_WORKER_URL="$(gcloud run services describe '${{ vars.STAGING_WORKER_SERVICE }}' --region='${{ vars.GCP_REGION }}' --format='value(status.url)')"
+          STAGING_WORKER_IDENTITY_TOKEN="$(gcloud auth print-identity-token --audiences="$STAGING_WORKER_URL")"
+          export STAGING_WORKER_URL STAGING_WORKER_IDENTITY_TOKEN
+          bun scripts/check-staging.ts
+
+      - name: Verify deployed telemetry allowlist
+        env:
+          STAGING_TELEMETRY_PATH: ${{ runner.temp }}/staging-telemetry.json
+        run: |
+          WEB_REVISION="$(gcloud run services describe '${{ vars.STAGING_WEB_SERVICE }}' --region='${{ vars.GCP_REGION }}' --format='value(status.latestReadyRevisionName)')"
+          WORKER_REVISION="$(gcloud run services describe '${{ vars.STAGING_WORKER_SERVICE }}' --region='${{ vars.GCP_REGION }}' --format='value(status.latestReadyRevisionName)')"
+          LOG_FILTER="resource.type=\"cloud_run_revision\" AND (resource.labels.revision_name=\"$WEB_REVISION\" OR resource.labels.revision_name=\"$WORKER_REVISION\") AND logName=\"projects/${{ vars.GCP_PROJECT_ID }}/logs/run.googleapis.com%2Fstdout\""
+          for attempt in 1 2 3 4 5 6; do
+            gcloud logging read \
+              "$LOG_FILTER" \
+              --freshness=10m \
+              --format=json > "$STAGING_TELEMETRY_PATH"
+            if bun scripts/check-staging-telemetry.ts; then
+              break
+            fi
+            if test "$attempt" = 6; then
+              exit 1
+            fi
+            sleep 10
+          done
+
+      - name: Record promoted digest
+        run: echo "Staging artifact $IMAGE_REF" >> "$GITHUB_STEP_SUMMARY"

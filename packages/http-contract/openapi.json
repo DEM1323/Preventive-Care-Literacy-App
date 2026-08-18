@@ -9,6 +9,14 @@
     "/api/v1/administration/school-workspaces": {
       "post": {
         "operationId": "createSchoolWorkspace",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-prevcare-csrf",
+            "required": true,
+            "schema": { "enum": ["1"], "type": "string" }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -82,7 +90,41 @@
             },
             "description": "Default Response"
           },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "code": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
           "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "code": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -118,6 +160,66 @@
           }
         },
         "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/health/live": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": { "enum": ["ok"], "type": "string" }
+                  },
+                  "required": ["status"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": { "enum": ["ready"], "type": "string" }
+                  },
+                  "required": ["status"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/health/security": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": { "enum": ["ok"], "type": "string" }
+                  },
+                  "required": ["status"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        }
       }
     }
   }

@@ -32,6 +32,7 @@ async function renderContracts() {
       },
     },
     {
+      publicOrigin: 'https://contract-generator.example',
       operatorAuthenticator: {
         authenticate: () => ({
           type: 'technical_operator',

@@ -29,6 +29,11 @@ const concurrentOutboxId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf1014';
 const occurredAt = new Date('2026-08-18T15:00:00.000Z');
 const operatorToken = 'test-operator-token-with-more-than-32-characters';
 const authorization = `Bearer ${operatorToken}`;
+const csrfHeaders = {
+  origin: 'http://127.0.0.1',
+  'x-prevcare-csrf': '1',
+} as const;
+const authorizedHeaders = { ...csrfHeaders, authorization };
 
 let postgres: EphemeralPostgres;
 let server: FastifyInstance;
@@ -53,6 +58,7 @@ beforeAll(async () => {
   );
   server = await createServer({
     databaseUrl: runtimeDatabaseUrl,
+    publicOrigin: 'http://127.0.0.1',
     operatorCredentials: {
       token: operatorToken,
       actorId: 'operator@example.test',
@@ -79,6 +85,7 @@ test('createSchoolWorkspace authorizes and atomically commits governed records',
   await expect(
     createServer({
       databaseUrl: postgres.connectionString,
+      publicOrigin: 'http://127.0.0.1',
       operatorCredentials: {
         token: operatorToken,
         actorId: 'operator@example.test',
@@ -96,6 +103,7 @@ test('createSchoolWorkspace authorizes and atomically commits governed records',
   await expect(
     createServer({
       databaseUrl: ownerMemberDatabaseUrl,
+      publicOrigin: 'http://127.0.0.1',
       operatorCredentials: {
         token: operatorToken,
         actorId: 'operator@example.test',
@@ -109,6 +117,7 @@ test('createSchoolWorkspace authorizes and atomically commits governed records',
     '/api/v1/administration/school-workspaces',
     {
       body: command,
+      headers: csrfHeaders,
     },
   );
   expect(unauthorized.response.status).toBe(401);
@@ -125,7 +134,7 @@ test('createSchoolWorkspace authorizes and atomically commits governed records',
     '/api/v1/administration/school-workspaces',
     {
       body: { ...command, displayName: '   ' },
-      headers: { authorization },
+      headers: authorizedHeaders,
     },
   );
   expect(invalid.response.status).toBe(400);
@@ -140,14 +149,14 @@ test('createSchoolWorkspace authorizes and atomically commits governed records',
     '/api/v1/administration/school-workspaces',
     {
       body: command,
-      headers: { authorization },
+      headers: authorizedHeaders,
     },
   );
   const replayed = await client.POST(
     '/api/v1/administration/school-workspaces',
     {
       body: command,
-      headers: { authorization },
+      headers: authorizedHeaders,
     },
   );
 
@@ -205,7 +214,7 @@ test('createSchoolWorkspace authorizes and atomically commits governed records',
     '/api/v1/administration/school-workspaces',
     {
       body: { ...command, operationId: conflictingOperationId },
-      headers: { authorization },
+      headers: authorizedHeaders,
     },
   );
   expect(conflict.response.status).toBe(409);
@@ -235,7 +244,7 @@ test('createSchoolWorkspace authorizes and atomically commits governed records',
         operationId: rollbackOperationId,
         workspaceId: rollbackWorkspaceId,
       },
-      headers: { authorization },
+      headers: authorizedHeaders,
     },
   );
   expect(rolledBack.response.status).toBe(500);
@@ -266,11 +275,11 @@ test('createSchoolWorkspace authorizes and atomically commits governed records',
   const concurrentResults = await Promise.all([
     client.POST('/api/v1/administration/school-workspaces', {
       body: concurrentCommand,
-      headers: { authorization },
+      headers: authorizedHeaders,
     }),
     client.POST('/api/v1/administration/school-workspaces', {
       body: concurrentCommand,
-      headers: { authorization },
+      headers: authorizedHeaders,
     }),
   ]);
   expect(concurrentResults.map(({ response }) => response.status)).toEqual([
