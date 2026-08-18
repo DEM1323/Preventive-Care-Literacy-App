@@ -1,4 +1,4 @@
-# PrevCare — Preventive Care Literacy App
+# PrevCare - Preventive Care Literacy App
 
 Multilingual static prototype for K-12 English Learners: health intake and micro-lessons (Knowledge → Skills → Application).
 
@@ -9,6 +9,8 @@ Multilingual static prototype for K-12 English Learners: health intake and micro
 - **Vite + React + TypeScript**
 - **Tailwind CSS v4**
 - **Bun** (package manager)
+- **Fastify + TypeBox/OpenAPI** (same-origin API)
+- **Kysely + PostgreSQL** (modular-monolith persistence)
 
 ## Quick Start
 
@@ -21,10 +23,10 @@ Keep local configuration outside the repository. For example, place it at `~/.co
 
 ## Routes
 
-| Route | Description |
-|-------|-------------|
-| `/prototype/school-configuration` | Local-only school configuration UI exploration |
-| All other routes | Prototype retirement notice; no Student data entry |
+| Route                             | Description                                        |
+| --------------------------------- | -------------------------------------------------- |
+| `/prototype/school-configuration` | Local-only school configuration UI exploration     |
+| All other routes                  | Prototype retirement notice; no Student data entry |
 
 ## Verification
 
@@ -33,4 +35,27 @@ bun test
 bun run typecheck
 bun run build
 bun run check:security
+```
+
+The audited backend spine has one reproducible verification command. It checks formatting,
+types, module boundaries, deterministic OpenAPI and generated-client artifacts, repeatable
+migrations against ephemeral PostgreSQL, and the focused transactional command test:
+
+```bash
+bun run verify:install
+```
+
+Generate API artifacts after changing an HTTP contract with `bun run generate:contracts`.
+Apply forward migrations to an explicit database with
+`DATABASE_URL=postgres://... bun run migrate`.
+
+The API process must use a separate PostgreSQL login without `SUPERUSER` or `BYPASSRLS`;
+the migration login is never reused at runtime. Starting the API also requires an
+operator-only provisioning token of at least 32 characters and its audited identity:
+
+```bash
+DATABASE_URL=postgres://restricted-runtime-role/... \
+OPERATOR_PROVISIONING_TOKEN=... \
+OPERATOR_ID=operator@example.test \
+bun apps/server/src/api.ts
 ```

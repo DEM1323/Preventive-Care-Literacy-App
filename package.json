@@ -8,22 +8,46 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "bun test",
+    "test:spine": "bun test tests/spine/create-school-workspace.test.ts",
+    "test:migrations": "bun test tests/spine/migrations.test.ts",
     "typecheck": "tsc -b --pretty false",
-    "check:security": "bun scripts/check-security.mjs"
+    "format": "prettier --write \"apps/**/*.ts\" \"modules/**/*.ts\" \"packages/**/*.{ts,json}\" \"scripts/{generate-contracts,migrate}.ts\" \"tests/spine/**/*.ts\" \".dependency-cruiser.cjs\" \".prettierrc.json\" \"package.json\" \"README.md\" \"tsconfig.server.json\"",
+    "format:check": "prettier --check \"apps/**/*.ts\" \"modules/**/*.ts\" \"packages/**/*.{ts,json}\" \"scripts/{generate-contracts,migrate}.ts\" \"tests/spine/**/*.ts\" \".dependency-cruiser.cjs\" \".prettierrc.json\" \"package.json\" \"README.md\" \"tsconfig.server.json\"",
+    "check:boundaries": "dependency-cruiser apps modules packages --config .dependency-cruiser.cjs",
+    "generate:contracts": "bun scripts/generate-contracts.ts",
+    "check:contracts": "bun scripts/generate-contracts.ts --check",
+    "migrate": "bun scripts/migrate.ts",
+    "check:security": "bun scripts/check-security.mjs",
+    "check": "bun run format:check && bun run typecheck && bun run check:boundaries && bun run check:contracts && bun run test:migrations && bun run test:spine && bun run check:security",
+    "verify:install": "bun install --frozen-lockfile && bun run check"
   },
   "dependencies": {
+    "@fastify/swagger": "^9.5.1",
+    "@sinclair/typebox": "^0.34.38",
+    "fastify": "^5.5.0",
+    "kysely": "^0.28.5",
+    "openapi-fetch": "^0.14.0",
+    "pg": "^8.16.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.8",
+    "@types/node": "^22.15.29",
+    "@types/pg": "^8.15.5",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.6",
-    "@types/node": "^22.15.29",
     "@vitejs/plugin-react": "^4.5.2",
+    "dependency-cruiser": "^16.10.4",
+    "embedded-postgres": "17.10.0-beta.17",
+    "openapi-typescript": "^7.9.1",
+    "prettier": "^3.6.2",
     "tailwindcss": "^4.1.8",
     "typescript": "~5.8.3",
     "vite": "^6.3.5"
-  }
+  },
+  "trustedDependencies": [
+    "@embedded-postgres/linux-x64"
+  ]
 }

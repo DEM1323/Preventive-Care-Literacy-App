@@ -1,6 +1,6 @@
 # Prototype Production Authority Retirement
 
-This record implements issue #21. The prototype cannot process Student data and is not a production system. The remaining school-configuration UI is local-only and uses synthetic display content.
+This record implements issue #21. The prototype cannot process Student data and is not a production system. The remaining school-configuration UI is local-only and uses synthetic display content. The replacement application spine introduced by issue #22 is also synthetic-only until its later environment and release gates are complete; it does not restore authority to the prototype.
 
 ## Browser credential inventory
 
@@ -32,7 +32,7 @@ On 2026-08-18, the ignored local environment file and untracked Google service-a
 
 ## Operator cutover evidence
 
-GitHub Pages was unpublished and its remaining Apps Script URL secret was deleted on 2026-08-18. The replacement backend is Firebase; this retired prototype contains no replacement-backend implementation.
+GitHub Pages was unpublished and its remaining Apps Script URL secret was deleted on 2026-08-18. At retirement, this repository contained no replacement-backend implementation. Issue #22 subsequently introduced a Firebase/Google Cloud-portable backend spine with no Student data routes and no production authority.
 
 The authorized operator completed the Google retirement procedure on 2026-08-18. See [the operator evidence](./prototype-retirement-evidence.md). `scripts/retire-google-prototype.sh` preserves the repeatable procedure.
 
