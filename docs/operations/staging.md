@@ -1,28 +1,28 @@
 # Staging deployment
 
-Supabase operates the managed PostgreSQL, Auth, private Storage, Queues, and Cron capabilities. Render runs one public same-origin web/API process and one private background worker from the same Docker image. School staff use purpose-built application screens; only the Technical Operator uses the Supabase and Render dashboards.
+Supabase operates the managed PostgreSQL, Auth, private Storage, Queues, and Cron capabilities. Railway builds this repository from source and runs one public same-origin web/API process. The background worker is not deployed during this synthetic alpha stage. School staff use purpose-built application screens; only the Technical Operator uses the Supabase and Railway dashboards.
 
 ## Required controls
 
 - A dedicated Supabase staging project in a US region with SSL enforcement and daily backups. The staging migration creates the dedicated `provider-smoke` Queue, minute-scheduled `provider-smoke` Cron job, restricted health function, and private `private-records` Storage bucket; do not create these manually under a different owner.
-- Separate the first-run owner connection, migration login, and restricted runtime login. CI uses the owner connection only to run forward migrations and apply owner-controlled staging grants/platform objects; neither Render process receives it. The migration login and restricted runtime login are provisioned as non-owning roles before the first CI run.
-- Render web and background-worker services created from `render.yaml`, with automatic deployments disabled. Both services use the same private GHCR credential and are updated only by the staging workflow.
-- Render secrets for the restricted `DATABASE_URL`, Supabase server key, Resend key, controlled provider-smoke mailbox, operator bootstrap token, and operator identity. No server key or database URL uses a `VITE_*` name.
-- A GitHub `staging` environment containing the secrets `SUPABASE_OWNER_DATABASE_URL`, `SUPABASE_RUNTIME_DATABASE_URL`, `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `PROVIDER_SMOKE_EMAIL`, `PROVIDER_SMOKE_EMAIL_FROM`, `RENDER_API_KEY`, `RENDER_OWNER_ID`, `RENDER_WEB_SERVICE_ID`, and `RENDER_WORKER_SERVICE_ID`.
-- GitHub environment variables `SUPABASE_PROJECT_REF`, `SUPABASE_URL`, `SUPABASE_STORAGE_BUCKET`, `SUPABASE_QUEUE_NAME`, `SUPABASE_CRON_JOB_NAME`, and `RENDER_STAGING_ORIGIN`.
+- The owner connection is used only from an operator-controlled migration command. Railway receives only the restricted runtime login, which is non-owning and cannot use `SUPERUSER` or `BYPASSRLS`.
+- One Railway service connected to the repository's `main` branch. Railway builds the checked-in Dockerfile and uses `railway.json` for the readiness check and restart policy.
+- Railway variables `DATABASE_URL`, `DATABASE_CA_CERT`, `PUBLIC_ORIGIN`, `OPERATOR_PROVISIONING_TOKEN`, and `OPERATOR_ID`. `DATABASE_CA_CERT` contains the Supabase server root certificate PEM. No database URL or server credential uses a `VITE_*` name.
+- A GitHub `staging` environment variable named `RAILWAY_STAGING_ORIGIN` for the manual deployed-security workflow.
 
-Render is IPv4-only. Use Supabase's IPv4 direct connection or its session pooler on port 5432 for the persistent Render processes. Do not use transaction-pooler port 6543 because the application relies on transaction-local workspace context and advisory locks. Keep the combined web and worker pool sizes within the Supabase plan's connection limit.
+Use Supabase's direct connection when Railway can reach the project's IPv6 endpoint; otherwise use the session pooler on port 5432. Do not use transaction-pooler port 6543 because the application relies on transaction-local workspace context and advisory locks. Keep the application pool within the Supabase plan's connection limit.
 
 ## First deployment
 
-Run the `Build and deploy staging` workflow once with `bootstrap_only` enabled. This publishes `ghcr.io/dem1323/preventive-care-literacy-app:staging-bootstrap` without requiring Render service IDs. Create the Render Blueprint from `render.yaml`, attach a GHCR credential if the package is private, enter the service secrets, and then record both Render service IDs in the GitHub `staging` environment. Subsequent workflow runs leave `bootstrap_only` disabled.
+1. Create a Railway project with **Deploy from GitHub repo** and select this repository.
+2. Add the five Railway variables listed above. Paste the Supabase server root certificate itself into `DATABASE_CA_CERT`; do not give Railway the owner database connection.
+3. In the Railway service settings, generate a public domain. Set `PUBLIC_ORIGIN` to that exact HTTPS origin and redeploy.
+4. Confirm `/health/ready` succeeds, then set `RAILWAY_STAGING_ORIGIN` in GitHub's `staging` environment and run the **Verify staging** workflow.
 
 ## Promotion and evidence
 
-CI verifies source and contracts, builds one `linux/amd64` image with SBOM and provenance, and pins its digest. It rejects owner or runtime URLs that do not match `SUPABASE_PROJECT_REF` and runs forward migrations and owner-controlled staging grants from that exact image with an ephemeral owner credential. The workflow deploys the same digest to Render web and worker, then runs a one-off provider job from the deployed worker artifact. That job verifies the runtime login cannot own protected objects or bypass RLS, calls Auth settings, confirms the Storage bucket is private, writes and removes a synthetic object, round-trips a synthetic Queue message through its fixed-name restricted function, requires a recent successful Cron run, and sends one neutral email to the controlled mailbox. Failed deployment, digest substitution, or provider verification rolls both services back before focused HTTP security and paginated Render-log telemetry checks run.
+Railway records the Git commit used for each source deployment and can redeploy a previous successful version. Run forward migrations before deploying code that depends on them; migrations remain expand/contract compatible so the previous application version can continue to run during rollback. The GitHub staging workflow re-runs repository verification and checks readiness, origin and CSRF enforcement, secure cookies, CSP, HSTS, framing, MIME, referrer, request-size, and schema protections against the deployed origin.
 
-Render cannot atomically switch two services. Migrations therefore remain expand/contract compatible. If worker promotion or provider verification fails after web promotion, CI redeploys both services' previous digests before failing the release.
-
-The provider and telemetry checks expose only fixed capability names, status, and duration. They discard provider bodies and errors and prohibit addresses, codes, session handles, answers, request bodies, and generated content.
+Provider checks remain manual while no worker is deployed. They expose only fixed capability names, status, and duration and must not expose addresses, codes, session handles, answers, request bodies, or generated content.
 
 Supabase-managed encryption is sufficient only for this empty synthetic staging slice. Supabase Vault is not a replacement for application envelope encryption. A concrete key-management decision remains a prerequisite before protected Intake answers are admitted under issue #28.

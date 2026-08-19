@@ -11,6 +11,7 @@ if (!publicOrigin) throw new Error('PUBLIC_ORIGIN is required');
 
 const server = await createServer({
   databaseUrl,
+  databaseCaCertificate: process.env.DATABASE_CA_CERT,
   operatorCredentials: { token: operatorToken, actorId: operatorId },
   publicOrigin,
   webRoot: process.env.WEB_ROOT ?? 'dist',
