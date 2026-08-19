@@ -1,6 +1,6 @@
 const prohibitedDataPatterns = [
   /[\w.+-]+@[\w.-]+\.[a-z]{2,}/i,
-  /"(?:address|answers|code|generatedContent|requestBody|sessionHandle)"/i,
+  /"(?:address|answers|generatedContent|invitationCode|requestBody|sessionHandle|signInCode)"/i,
 ];
 
 export function assertNoProhibitedData(value: string, source: string): void {
