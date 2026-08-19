@@ -1,25 +1,13 @@
-name: Build and deploy staging
+name: Verify staging
 
 on:
   workflow_dispatch:
-    inputs:
-      bootstrap_only:
-        description: Push the bootstrap image without deploying Render
-        type: boolean
-        default: false
 
 permissions:
   contents: read
-  packages: write
-  id-token: write
-  attestations: write
-
-concurrency:
-  group: staging
-  cancel-in-progress: false
 
 jobs:
-  deploy:
+  verify:
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -35,86 +23,7 @@ jobs:
       - name: Verify source, contracts, migrations, and security
         run: bun run check
 
-      - name: Select container image
-        id: image
-        run: |
-          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
-          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
-          echo "name=$IMAGE" >> "$GITHUB_OUTPUT"
-
-      - name: Authenticate to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Build and push immutable artifact
-        id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ${{ steps.image.outputs.name }}:${{ github.sha }}
-            ${{ steps.image.outputs.name }}:staging-bootstrap
-          provenance: mode=max
-          sbom: true
-
-      - name: Attest artifact provenance
-        uses: actions/attest-build-provenance@v2
-        with:
-          subject-name: ${{ steps.image.outputs.name }}
-          subject-digest: ${{ steps.build.outputs.digest }}
-          push-to-registry: true
-
-      - name: Pin artifact digest
-        run: echo "IMAGE_REF=${IMAGE}@${{ steps.build.outputs.digest }}" >> "$GITHUB_ENV"
-
-      - name: Run forward migrations from the artifact
-        if: ${{ !inputs.bootstrap_only }}
+      - name: Verify deployed HTTP security controls
         env:
-          DATABASE_URL: ${{ secrets.SUPABASE_OWNER_DATABASE_URL }}
-          RUNTIME_DATABASE_URL: ${{ secrets.SUPABASE_RUNTIME_DATABASE_URL }}
-          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
-          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-        run: |
-          docker run --rm \
-            --env DATABASE_URL \
-            --env RUNTIME_DATABASE_URL \
-            --env SUPABASE_PROJECT_REF \
-            --env SUPABASE_URL \
-            "$IMAGE_REF" bun scripts/migrate-staging.ts
-
-      - name: Deploy the same digest to Render web and worker
-        if: ${{ !inputs.bootstrap_only }}
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_WEB_SERVICE_ID: ${{ secrets.RENDER_WEB_SERVICE_ID }}
-          RENDER_WORKER_SERVICE_ID: ${{ secrets.RENDER_WORKER_SERVICE_ID }}
-          RENDER_RELEASE_PATH: ${{ runner.temp }}/render-release.json
-        run: |
-          echo "RELEASE_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
-          bun scripts/deploy-render.ts
-
-      - name: Run focused staging checks
-        if: ${{ !inputs.bootstrap_only }}
-        env:
-          STAGING_WEB_URL: ${{ vars.RENDER_STAGING_ORIGIN }}
+          STAGING_WEB_URL: ${{ vars.RAILWAY_STAGING_ORIGIN }}
         run: bun scripts/check-staging.ts
-
-      - name: Verify deployed telemetry allowlist
-        if: ${{ !inputs.bootstrap_only }}
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_OWNER_ID: ${{ secrets.RENDER_OWNER_ID }}
-          RENDER_WEB_SERVICE_ID: ${{ secrets.RENDER_WEB_SERVICE_ID }}
-          RENDER_WORKER_SERVICE_ID: ${{ secrets.RENDER_WORKER_SERVICE_ID }}
-          RENDER_RELEASE_PATH: ${{ runner.temp }}/render-release.json
-        run: bun scripts/check-render-telemetry.ts
-
-      - name: Record artifact digest
-        run: echo "Staging artifact $IMAGE_REF" >> "$GITHUB_STEP_SUMMARY"

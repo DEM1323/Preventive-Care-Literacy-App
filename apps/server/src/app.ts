@@ -354,6 +354,7 @@ export async function buildApp(
 
 export async function createServer(options: {
   databaseUrl: string;
+  databaseCaCertificate?: string;
   operatorCredentials: { token: string; actorId: string };
   publicOrigin: string;
   telemetry?: Telemetry;
@@ -361,7 +362,23 @@ export async function createServer(options: {
   clock?: Clock;
   ids?: IdGenerator;
 }): Promise<FastifyInstance> {
-  const pool = new Pool({ connectionString: options.databaseUrl });
+  const connectionUrl = new URL(options.databaseUrl);
+  if (options.databaseCaCertificate) {
+    // A local sslrootcert path cannot exist in Railway, so use its PEM variable.
+    connectionUrl.searchParams.delete('sslmode');
+    connectionUrl.searchParams.delete('sslrootcert');
+  }
+  const pool = new Pool({
+    connectionString: connectionUrl.toString(),
+    ...(options.databaseCaCertificate
+      ? {
+          ssl: {
+            ca: options.databaseCaCertificate,
+            rejectUnauthorized: true,
+          },
+        }
+      : {}),
+  });
   try {
     await assertRestrictedDatabaseRole(pool);
   } catch (error) {
