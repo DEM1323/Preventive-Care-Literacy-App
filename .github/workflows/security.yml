@@ -1,0 +1,40 @@
+name: Security controls
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Test retirement boundary
+        run: bun test
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Build browser artifact
+        run: bun run build
+
+      - name: Check credential custody and browser artifact
+        run: bun run check:security
+
+      - name: Scan repository history for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

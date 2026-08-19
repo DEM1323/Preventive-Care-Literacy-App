@@ -1,14 +1,16 @@
-# PrevCare — Preventive Care Literacy App
+# PrevCare - Preventive Care Literacy App
 
-Multilingual static SPA for K-12 English Learners: health assessment, micro-lessons (Knowledge → Skills → Application), and a nurse dashboard with client-side encrypted submissions.
+Multilingual static prototype for K-12 English Learners: health intake and micro-lessons (Knowledge → Skills → Application).
+
+> **Synthetic data only.** The prototype has no production authority. Never enter real Student information. See [the retirement and cutover record](docs/security/prototype-retirement.md).
 
 ## Stack
 
 - **Vite + React + TypeScript**
 - **Tailwind CSS v4**
 - **Bun** (package manager)
-- **GitHub Pages** (static hosting)
-- **Google Sheets + Apps Script** (CMS + encrypted submission store)
+- **Fastify + TypeBox/OpenAPI** (same-origin API)
+- **Kysely + PostgreSQL** (modular-monolith persistence)
 
 ## Quick Start
 
@@ -17,85 +19,48 @@ bun install
 bun run dev
 ```
 
-Copy `.env.example` to `.env` for local Google Apps Script integration.
-
-## Nurse handoff
-
-School nurses maintain roster, modules, and intake form wording in Google Sheets. See **[docs/NURSE_GUIDE.md](docs/NURSE_GUIDE.md)**.
+Keep local configuration outside the repository. For example, place it at `~/.config/prevcare/credentials/local.env`, then load it into the shell before starting Vite.
 
 ## Routes
 
-| Route | Description |
-|-------|-------------|
-| `/` | Hero / landing |
-| `/sign-in` | Student sign-in (roster allowlist required) |
-| `/intake` | Schema-driven encrypted health history wizard |
-| `/dashboard` | Learning module grid |
-| `/module/:id` | K → S → A lesson view |
-| `/profile` | Progress & badges |
-| `/nurse` | Passcode-protected decrypt dashboard |
+| Route                             | Description                                        |
+| --------------------------------- | -------------------------------------------------- |
+| `/prototype/school-configuration` | Local-only school configuration UI exploration     |
+| All other routes                  | Prototype retirement notice; no Student data entry |
 
-## Languages
-
-English, Spanish, Portuguese, French, Haitian Creole
-
-## Deploy to GitHub Pages
-
-### 1. Create the GitHub repository
-
-Create a new repo on GitHub (recommended name: `Preventive-Care-Literacy-App`).
-
-Then from this folder:
+## Verification
 
 ```bash
-git init
-git add .
-git commit -m "Initial commit: PrevCare literacy app"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/Preventive-Care-Literacy-App.git
-git push -u origin main
+bun test
+bun run typecheck
+bun run build
+bun run check:security
 ```
 
-### 2. Enable GitHub Pages
-
-1. Open your repo on GitHub → **Settings → Pages**
-2. Under **Build and deployment**, set **Source** to **GitHub Actions**
-3. Push to `main` — the deploy workflow runs automatically
-
-Your live URL will be:
-
-`https://YOUR_USERNAME.github.io/Preventive-Care-Literacy-App/`
-
-### 3. Add GitHub Actions secrets (for production API keys)
-
-Go to **Settings → Secrets and variables → Actions** and add:
-
-| Secret | Purpose |
-|--------|---------|
-| `VITE_GAS_SUBMIT_URL` | Google Apps Script Web App URL |
-| `VITE_GAS_EXECUTION_TOKEN` | Apps Script execution token |
-| `VITE_DISTRICT_ENCRYPTION_PASSCODE` | Client-side encryption passcode |
-| `VITE_NURSE_DASHBOARD_PASSCODE` | Nurse dashboard gate passcode |
-| `VITE_MODULES_SHEET_URL` | Published Modules sheet JSON URL (required for nurse lesson edits) |
-| `VITE_INTAKE_SHEET_URL` | Published IntakeFields sheet JSON URL (required for nurse form edits) |
-
-These are baked into the static build at deploy time. Never commit `.env` to the repo.
-
-### Publishing a content sheet URL
-
-1. In Google Sheets: **File → Share → Publish to web**
-2. Choose the **Modules** or **IntakeFields** tab
-3. Format: **JSON** (or use a Google Visualization / gviz JSON endpoint for that tab)
-4. Copy the URL into the matching `VITE_*_SHEET_URL` secret and redeploy
-
-Column schemas are documented in [docs/NURSE_GUIDE.md](docs/NURSE_GUIDE.md).
-
-## Google Backend
-
-See [`google-apps-script/README.md`](google-apps-script/README.md) for Apps Script deployment and Sheets setup.
-
-Generate a token locally with:
+The audited backend spine has one reproducible verification command. It checks formatting,
+types, module boundaries, deterministic OpenAPI and generated-client artifacts, repeatable
+migrations against ephemeral PostgreSQL, and the focused transactional command test:
 
 ```bash
-python scripts/generate-execution-token.py
+bun run verify:install
+```
+
+Generate API artifacts after changing an HTTP contract with `bun run generate:contracts`.
+Apply forward migrations to an explicit database with
+`DATABASE_URL=postgres://... bun run migrate`.
+
+The immutable Supabase and Render staging topology and its required controls are documented in
+[`docs/operations/staging.md`](docs/operations/staging.md). CI deploys one digest to the
+same-origin web/API service and private worker after running forward migrations from that
+artifact, then runs focused security and provider smoke checks.
+
+The API process must use a separate PostgreSQL login without `SUPERUSER` or `BYPASSRLS`;
+the migration login is never reused at runtime. Starting the API also requires an
+operator-only provisioning token of at least 32 characters and its audited identity:
+
+```bash
+DATABASE_URL=postgres://restricted-runtime-role/... \
+OPERATOR_PROVISIONING_TOKEN=... \
+OPERATOR_ID=operator@example.test \
+bun apps/server/src/api.ts
 ```

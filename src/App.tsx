@@ -1,91 +1,35 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { AppStateProvider } from './context/AppStateContext';
-import { IntakeSchemaProvider } from './context/IntakeSchemaContext';
-import { LanguageProvider } from './context/LanguageContext';
-import { ModulesProvider } from './context/ModulesContext';
-import { ToastProvider } from './context/ToastContext';
-import { Layout } from './components/organisms/Layout';
-import { RequireAuth, RequireIntake } from './components/organisms/RequireAuth';
-import { HeroPage } from './features/auth/HeroPage';
-import { SignInPage } from './features/auth/SignInPage';
-import { IntakeWizardPage } from './features/intake/IntakeWizardPage';
-import { DashboardPage } from './features/dashboard/DashboardPage';
-import { ModulePage } from './features/dashboard/ModulePage';
-import { ProfilePage } from './features/profile/ProfilePage';
-import { NurseDashboardPage } from './features/nurse/NurseDashboardPage';
-import { useEffect } from 'react';
-import { flushPendingSubmissions } from './utils/sheets';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { SchoolConfigurationEditorPrototype } from './features/admin/SchoolConfigurationEditorPrototype';
 
-function OnlineSync() {
-  useEffect(() => {
-    const sync = () => void flushPendingSubmissions();
-    window.addEventListener('online', sync);
-    sync();
-    return () => window.removeEventListener('online', sync);
-  }, []);
-  return null;
+function RetiredPrototypePage() {
+  return (
+    <main className="min-h-full bg-slate-950 px-6 py-20 text-slate-100">
+      <section className="mx-auto max-w-2xl border-l-4 border-amber-400 bg-slate-900 p-8 shadow-2xl">
+        <p className="text-sm font-black uppercase tracking-[0.24em] text-amber-300">
+          Prototype retired
+        </p>
+        <h1 className="mt-4 text-4xl font-black tracking-tight">
+          Student data entry is disabled.
+        </h1>
+        <p className="mt-5 text-lg leading-8 text-slate-300">
+          This prototype has no production authority and accepts no Student information. Only
+          synthetic, local-only interface exploration is permitted.
+        </p>
+      </section>
+    </main>
+  );
 }
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <AppStateProvider>
-        <ModulesProvider>
-          <IntakeSchemaProvider>
-            <ToastProvider>
-              <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || undefined}>
-                <OnlineSync />
-                <Routes>
-                  <Route element={<Layout />}>
-                    <Route path="/" element={<HeroPage />} />
-                    <Route path="/sign-in" element={<SignInPage />} />
-                    <Route
-                      path="/intake"
-                      element={
-                        <RequireAuth>
-                          <IntakeWizardPage />
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/dashboard"
-                      element={
-                        <RequireAuth>
-                          <RequireIntake>
-                            <DashboardPage />
-                          </RequireIntake>
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/module/:id"
-                      element={
-                        <RequireAuth>
-                          <RequireIntake>
-                            <ModulePage />
-                          </RequireIntake>
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/profile"
-                      element={
-                        <RequireAuth>
-                          <RequireIntake>
-                            <ProfilePage />
-                          </RequireIntake>
-                        </RequireAuth>
-                      }
-                    />
-                    <Route path="/nurse" element={<NurseDashboardPage />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Route>
-                </Routes>
-              </BrowserRouter>
-            </ToastProvider>
-          </IntakeSchemaProvider>
-        </ModulesProvider>
-      </AppStateProvider>
-    </LanguageProvider>
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || undefined}>
+      <Routes>
+        <Route
+          path="/prototype/school-configuration"
+          element={<SchoolConfigurationEditorPrototype />}
+        />
+        <Route path="*" element={<RetiredPrototypePage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

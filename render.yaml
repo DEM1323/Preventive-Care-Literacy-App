@@ -1,0 +1,53 @@
+services:
+  - type: web
+    name: prevcare-staging-web
+    runtime: image
+    image:
+      url: ghcr.io/dem1323/preventive-care-literacy-app:staging-bootstrap
+    autoDeploy: false
+    plan: starter
+    region: ohio
+    dockerCommand: bun apps/server/src/api.ts
+    healthCheckPath: /health/ready
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: PUBLIC_ORIGIN
+        sync: false
+      - key: OPERATOR_PROVISIONING_TOKEN
+        sync: false
+      - key: OPERATOR_ID
+        sync: false
+      - key: WEB_ROOT
+        value: /app/dist
+
+  - type: worker
+    name: prevcare-staging-worker
+    runtime: image
+    image:
+      url: ghcr.io/dem1323/preventive-care-literacy-app:staging-bootstrap
+    autoDeploy: false
+    plan: starter
+    region: ohio
+    dockerCommand: bun apps/server/src/worker.ts
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PROJECT_REF
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: private-records
+      - key: SUPABASE_QUEUE_NAME
+        value: provider-smoke
+      - key: SUPABASE_CRON_JOB_NAME
+        value: provider-smoke
+      - key: RESEND_API_KEY
+        sync: false
+      - key: PROVIDER_SMOKE_EMAIL
+        sync: false
+      - key: PROVIDER_SMOKE_EMAIL_FROM
+        sync: false
