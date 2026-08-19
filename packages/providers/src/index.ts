@@ -15,6 +15,7 @@ export type ProviderCheck = {
 
 export type ProviderConfiguration = {
   databaseUrl: string;
+  databaseCaCertificate?: string;
   projectRef: string;
   supabaseUrl: string;
   supabaseSecretKey: string;
@@ -51,6 +52,7 @@ function requiredEnvironment(name: string): string {
 export function providerConfigurationFromEnvironment(): ProviderConfiguration {
   return {
     databaseUrl: requiredEnvironment('DATABASE_URL'),
+    databaseCaCertificate: process.env.DATABASE_CA_CERT || undefined,
     projectRef: requiredEnvironment('SUPABASE_PROJECT_REF'),
     supabaseUrl: requiredEnvironment('SUPABASE_URL'),
     supabaseSecretKey: requiredEnvironment('SUPABASE_SECRET_KEY'),
@@ -85,12 +87,29 @@ export function assertSupabaseDatabaseTarget(options: {
   }
 }
 
-function createQuery(databaseUrl: string): Query {
+function createQuery(
+  databaseUrl: string,
+  databaseCaCertificate?: string,
+): Query {
+  const connectionUrl = new URL(databaseUrl);
+  if (databaseCaCertificate) {
+    // CI supplies the Supabase CA as a secret instead of a local file path.
+    connectionUrl.searchParams.delete('sslmode');
+    connectionUrl.searchParams.delete('sslrootcert');
+  }
   return async (sql, parameters = []) => {
     const client = new Client({
-      connectionString: databaseUrl,
+      connectionString: connectionUrl.toString(),
       connectionTimeoutMillis: 5_000,
       statement_timeout: 5_000,
+      ...(databaseCaCertificate
+        ? {
+            ssl: {
+              ca: databaseCaCertificate,
+              rejectUnauthorized: true,
+            },
+          }
+        : {}),
     });
     await client.connect();
     try {
@@ -122,7 +141,9 @@ export function createProviderProbes(
   dependencies: Partial<ProviderDependencies> = {},
 ): readonly ProviderProbe[] {
   const request = dependencies.request ?? fetch;
-  const query = dependencies.query ?? createQuery(configuration.databaseUrl);
+  const query =
+    dependencies.query ??
+    createQuery(configuration.databaseUrl, configuration.databaseCaCertificate);
   const sleep =
     dependencies.sleep ??
     ((milliseconds) =>
