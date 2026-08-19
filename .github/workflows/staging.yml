@@ -27,3 +27,18 @@ jobs:
         env:
           STAGING_WEB_URL: ${{ vars.RAILWAY_STAGING_ORIGIN }}
         run: bun scripts/check-staging.ts
+
+      - name: Verify real provider capabilities
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_RUNTIME_DATABASE_URL }}
+          DATABASE_CA_CERT: ${{ secrets.DATABASE_CA_CERT }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SUPABASE_STORAGE_BUCKET: ${{ vars.SUPABASE_STORAGE_BUCKET }}
+          SUPABASE_QUEUE_NAME: ${{ vars.SUPABASE_QUEUE_NAME }}
+          SUPABASE_CRON_JOB_NAME: ${{ vars.SUPABASE_CRON_JOB_NAME }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          PROVIDER_SMOKE_EMAIL: ${{ secrets.PROVIDER_SMOKE_EMAIL }}
+          PROVIDER_SMOKE_EMAIL_FROM: ${{ secrets.PROVIDER_SMOKE_EMAIL_FROM }}
+        run: bun scripts/check-providers.ts
