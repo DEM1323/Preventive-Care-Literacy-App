@@ -41,4 +41,7 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           PROVIDER_SMOKE_EMAIL: ${{ secrets.PROVIDER_SMOKE_EMAIL }}
           PROVIDER_SMOKE_EMAIL_FROM: ${{ secrets.PROVIDER_SMOKE_EMAIL_FROM }}
+          PROVIDER_SMOKE_AUTH_EMAIL: ${{ secrets.PROVIDER_SMOKE_AUTH_EMAIL }}
+          PROVIDER_SMOKE_AUTH_PASSWORD: ${{ secrets.PROVIDER_SMOKE_AUTH_PASSWORD }}
+          PROVIDER_SMOKE_AUTH_TOTP_SECRET: ${{ secrets.PROVIDER_SMOKE_AUTH_TOTP_SECRET }}
         run: bun scripts/check-providers.ts

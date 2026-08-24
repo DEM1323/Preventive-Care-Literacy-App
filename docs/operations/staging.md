@@ -10,7 +10,7 @@ Supabase operates the managed PostgreSQL, Auth, private Storage, Queues, and Cro
 - Railway variables `DATABASE_URL`, `DATABASE_CA_CERT`, `PUBLIC_ORIGIN`, `OPERATOR_PROVISIONING_TOKEN`, and `OPERATOR_ID`. `DATABASE_CA_CERT` contains the Supabase server root certificate PEM. No database URL or server credential uses a `VITE_*` name.
 - Railway variables `SUPABASE_URL` and `SUPABASE_SECRET_KEY` for the staff authentication seam. The server mediates password verification, TOTP enrollment, and assurance-level checks through Supabase Auth; browsers never receive Supabase credentials or tokens, and school staff never need Supabase dashboard access.
 - A GitHub `staging` environment variable named `RAILWAY_STAGING_ORIGIN` plus the Supabase project, URL, Storage, Queue, and Cron names.
-- GitHub `staging` secrets for the restricted runtime `DATABASE_URL` compatibility value `SUPABASE_RUNTIME_DATABASE_URL`, Supabase server key, Supabase root certificate, Resend key, and controlled provider-smoke sender and destination. Railway receives only the application variables.
+- GitHub `staging` secrets for the restricted runtime `DATABASE_URL` compatibility value `SUPABASE_RUNTIME_DATABASE_URL`, Supabase server key, Supabase root certificate, Resend key, controlled provider-smoke sender and destination, and the dedicated synthetic Auth smoke identity's email, password, and TOTP secret. Railway receives only the application variables.
 
 Use Supabase's direct connection when Railway can reach the project's IPv6 endpoint; otherwise use the session pooler on port 5432. Do not use transaction-pooler port 6543 because the application relies on transaction-local workspace context and advisory locks. Keep the application pool within the Supabase plan's connection limit.
 
@@ -22,11 +22,17 @@ Use Supabase's direct connection when Railway can reach the project's IPv6 endpo
 4. Confirm `/health/ready` succeeds, then set `RAILWAY_STAGING_ORIGIN` in GitHub's `staging` environment.
 5. Add the GitHub provider-check secrets and run the **Verify staging** workflow. It verifies repository controls, deployed HTTP security, and real PostgreSQL, Auth, private Storage, Queue, Cron, and email capabilities.
 
+## Auth smoke identity setup
+
+The Technical Operator creates one dedicated synthetic user directly in Supabase Auth, outside the application provisioning flow. From an operator-controlled environment, generate a unique synthetic email and strong password, use the Supabase Auth password and MFA APIs to enroll and verify one TOTP factor, and retain the Base32 TOTP secret in the approved secret manager. Do not create a corresponding row in `identity_access.staff_identities`.
+
+Store the email, password, and Base32 secret as the GitHub `staging` environment secrets `PROVIDER_SMOKE_AUTH_EMAIL`, `PROVIDER_SMOKE_AUTH_PASSWORD`, and `PROVIDER_SMOKE_AUTH_TOTP_SECRET`; do not give them to Railway. Before running MFA, the provider check uses the restricted PostgreSQL role and the sign-in RLS scope to prove the Supabase user ID has no application-owned Staff Identity link. Rotate all three values together if the synthetic identity is replaced.
+
 ## Promotion and evidence
 
 Railway records the Git commit used for each source deployment and can redeploy a previous successful version. Run forward migrations before deploying code that depends on them; migrations remain expand/contract compatible so the previous application version can continue to run during rollback. The GitHub staging workflow re-runs repository verification and checks readiness, origin and CSRF enforcement, secure cookies, CSP, HSTS, framing, MIME, referrer, request-size, and schema protections against the deployed origin.
 
-The provider checks expose only fixed capability names, status, and duration. They discard provider bodies and errors and must not expose addresses, codes, session handles, answers, request bodies, or generated content.
+The provider checks expose only fixed capability names, status, and duration. They parse only the provider fields needed to prove each capability, discard bodies and errors after the check, and must not emit addresses, codes, session handles, answers, request bodies, or generated content. The Auth check uses a dedicated synthetic Supabase Auth identity with a pre-enrolled TOTP factor to prove password, challenge, verification, and `aal2` behavior. It is not linked to an application-owned Staff Identity, cannot obtain a Staff Session, and is maintained only by the Technical Operator.
 
 ## Staff identity provisioning
 
