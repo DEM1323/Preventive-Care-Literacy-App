@@ -13,6 +13,7 @@ const databaseUrl = requiredEnvironment('DATABASE_URL');
 const runtimeDatabaseUrl = requiredEnvironment('RUNTIME_DATABASE_URL');
 const projectRef = requiredEnvironment('SUPABASE_PROJECT_REF');
 const supabaseUrl = requiredEnvironment('SUPABASE_URL');
+const databaseCaCertificate = requiredEnvironment('DATABASE_CA_CERT');
 assertSupabaseDatabaseTarget({
   databaseUrl,
   projectRef,
@@ -23,10 +24,16 @@ assertSupabaseDatabaseTarget({
   projectRef,
   supabaseUrl,
 });
-const client = new Client({ connectionString: databaseUrl });
+const connectionUrl = new URL(databaseUrl);
+connectionUrl.searchParams.delete('sslmode');
+connectionUrl.searchParams.delete('sslrootcert');
+const client = new Client({
+  connectionString: connectionUrl.toString(),
+  ssl: { ca: databaseCaCertificate, rejectUnauthorized: true },
+});
 await client.connect();
 try {
-  await migrate(databaseUrl);
+  await migrate(databaseUrl, databaseCaCertificate);
 
   const runtimeConnection = new URL(runtimeDatabaseUrl);
   const poolerSuffix = `.${projectRef}`;
