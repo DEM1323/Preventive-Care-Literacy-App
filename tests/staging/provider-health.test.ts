@@ -14,6 +14,9 @@ const configuration = {
   resendApiKey: 'resend-secret',
   smokeEmailSender: 'Staging <sender@example.test>',
   smokeEmailRecipient: 'controlled-mailbox@example.test',
+  smokeAuthEmail: 'auth-smoke@example.test',
+  smokeAuthPassword: 'auth-smoke-password',
+  smokeAuthTotpSecret: 'JBSWY3DPEHPK3PXP',
 };
 
 test('private provider smoke checks expose only allowlisted status', async () => {
@@ -69,7 +72,7 @@ test('private provider smoke checks expose only allowlisted status', async () =>
   );
 });
 
-test('provider probes exercise fixed Supabase seams without reading content', async () => {
+test('provider probes exercise fixed Supabase seams without exposing content', async () => {
   const requests: Array<{
     url: string;
     method: string;
@@ -77,6 +80,7 @@ test('provider probes exercise fixed Supabase seams without reading content', as
     authorization?: string;
   }> = [];
   const queries: Array<{ sql: string; parameters: readonly unknown[] }> = [];
+  let authRequestsHaveTimeout = true;
   const probes = createProviderProbes(configuration, {
     sleep: async () => undefined,
     query: async (sql, parameters = []) => {
@@ -87,19 +91,46 @@ test('provider probes exercise fixed Supabase seams without reading content', as
           rows: [{ bypasses_rls: false, owns_protected_objects: false }],
         };
       }
+      if (sql.includes("set_config('app.supabase_user_id'")) {
+        return { rows: [{ linked: false }] };
+      }
       return { rows: [{ available: true }] };
     },
     request: async (input, init) => {
+      const url = input.toString();
+      if (url.includes('/auth/v1/')) {
+        authRequestsHaveTimeout &&= Boolean(init?.signal);
+      }
       const headers = new Headers(init?.headers);
       const apikey = headers.get('apikey');
       const authorization = headers.get('authorization');
       requests.push({
-        url: input.toString(),
+        url,
         method: init?.method ?? 'GET',
         ...(apikey ? { apikey } : {}),
         ...(authorization ? { authorization } : {}),
       });
-      if (input.toString().endsWith('/storage/v1/bucket/private-records')) {
+      if (url.endsWith('/auth/v1/token?grant_type=password')) {
+        return Response.json({
+          access_token: 'provider-smoke-access-token',
+          user: { id: '018f1f5e-7b76-7f70-8f4d-9dc17ecf2999' },
+        });
+      }
+      if (url.endsWith('/auth/v1/factors') && !init?.method) {
+        return Response.json({
+          totp: [{ id: 'provider-smoke-factor', status: 'verified' }],
+        });
+      }
+      if (url.endsWith('/auth/v1/factors/provider-smoke-factor/challenge')) {
+        return Response.json({ id: 'provider-smoke-challenge' });
+      }
+      if (url.endsWith('/auth/v1/factors/provider-smoke-factor/verify')) {
+        const claims = Buffer.from(JSON.stringify({ aal: 'aal2' })).toString(
+          'base64url',
+        );
+        return Response.json({ access_token: `header.${claims}.signature` });
+      }
+      if (url.endsWith('/storage/v1/bucket/private-records')) {
         return {
           ok: true,
           json: async () => ({ public: false }),
@@ -118,6 +149,7 @@ test('provider probes exercise fixed Supabase seams without reading content', as
   });
 
   for (const probe of probes) await probe.check();
+  expect(authRequestsHaveTimeout).toBe(true);
 
   expect(probes.map(({ name }) => name)).toEqual([
     'postgres',
@@ -129,9 +161,28 @@ test('provider probes exercise fixed Supabase seams without reading content', as
   ]);
   expect(requests).toEqual([
     {
-      url: 'https://project-ref.supabase.co/auth/v1/settings',
+      url: 'https://project-ref.supabase.co/auth/v1/token?grant_type=password',
+      method: 'POST',
+      apikey: 'supabase-secret',
+      authorization: 'Bearer supabase-secret',
+    },
+    {
+      url: 'https://project-ref.supabase.co/auth/v1/factors',
       method: 'GET',
       apikey: 'supabase-secret',
+      authorization: 'Bearer provider-smoke-access-token',
+    },
+    {
+      url: 'https://project-ref.supabase.co/auth/v1/factors/provider-smoke-factor/challenge',
+      method: 'POST',
+      apikey: 'supabase-secret',
+      authorization: 'Bearer provider-smoke-access-token',
+    },
+    {
+      url: 'https://project-ref.supabase.co/auth/v1/factors/provider-smoke-factor/verify',
+      method: 'POST',
+      apikey: 'supabase-secret',
+      authorization: 'Bearer provider-smoke-access-token',
     },
     {
       url: 'https://project-ref.supabase.co/storage/v1/bucket/private-records',
@@ -160,14 +211,20 @@ test('provider probes exercise fixed Supabase seams without reading content', as
         ? 'queue'
         : sql.includes('provider_cron_healthy')
           ? 'cron'
-          : sql.includes('bypasses_rls')
-            ? 'role'
-            : 'connect',
+          : sql.includes("set_config('app.supabase_user_id'")
+            ? 'auth-link'
+            : sql.includes('bypasses_rls')
+              ? 'role'
+              : 'connect',
       parameters,
     })),
   ).toEqual([
     { operation: 'connect', parameters: [] },
     { operation: 'role', parameters: [] },
+    {
+      operation: 'auth-link',
+      parameters: ['018f1f5e-7b76-7f70-8f4d-9dc17ecf2999'],
+    },
     { operation: 'queue', parameters: ['provider-smoke'] },
     { operation: 'cron', parameters: ['provider-smoke'] },
   ]);
@@ -183,6 +240,33 @@ test('provider probes reject unavailable capabilities without exposing details',
   for (const probe of probes) {
     await expect(probe.check()).rejects.toThrow('Provider smoke check failed');
   }
+});
+
+test('auth probe rejects a Supabase user linked to a Staff Identity before MFA', async () => {
+  const requests: string[] = [];
+  const probes = createProviderProbes(configuration, {
+    query: async (sql) => ({
+      rows: sql.includes("set_config('app.supabase_user_id'")
+        ? [{ linked: true }]
+        : [{ available: true }],
+    }),
+    request: async (input) => {
+      const url = input.toString();
+      requests.push(url);
+      return Response.json({
+        access_token: 'provider-smoke-access-token',
+        user: { id: '018f1f5e-7b76-7f70-8f4d-9dc17ecf2999' },
+      });
+    },
+  });
+  const authProbe = probes.find(({ name }) => name === 'auth')!;
+
+  await expect(authProbe.check()).rejects.toThrow(
+    'Provider smoke check failed',
+  );
+  expect(requests).toEqual([
+    'https://project-ref.supabase.co/auth/v1/token?grant_type=password',
+  ]);
 });
 
 test('provider probes reject a database outside the staging project', () => {

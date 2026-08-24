@@ -1,5 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { SchoolConfigurationEditorPrototype } from './features/admin/SchoolConfigurationEditorPrototype';
+import { StaffHomePage } from './features/staff/StaffHomePage';
+import { StaffSignInPage } from './features/staff/StaffSignInPage';
 
 function RetiredPrototypePage() {
   return (
@@ -24,6 +26,8 @@ export default function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || undefined}>
       <Routes>
+        <Route path="/staff/sign-in" element={<StaffSignInPage />} />
+        <Route path="/staff" element={<StaffHomePage />} />
         <Route
           path="/prototype/school-configuration"
           element={<SchoolConfigurationEditorPrototype />}

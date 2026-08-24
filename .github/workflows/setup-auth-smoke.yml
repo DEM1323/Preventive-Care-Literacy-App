@@ -1,0 +1,71 @@
+name: Set up Auth smoke identity
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-auth-smoke-setup
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Create and verify synthetic Auth identity
+        id: auth
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          PREVIOUS_SMOKE_USER_ID: ${{ secrets.PROVIDER_SMOKE_AUTH_USER_ID }}
+        run: bun scripts/setup-auth-smoke.ts
+
+      - name: Store smoke credentials
+        env:
+          GH_TOKEN: ${{ secrets.AUTH_SMOKE_SETUP_TOKEN }}
+          SMOKE_USER_ID: ${{ steps.auth.outputs.user_id }}
+          SMOKE_EMAIL: ${{ steps.auth.outputs.email }}
+          SMOKE_PASSWORD: ${{ steps.auth.outputs.password }}
+          SMOKE_TOTP_SECRET: ${{ steps.auth.outputs.totp_secret }}
+        run: |
+          printf '%s' "$SMOKE_USER_ID" | gh secret set PROVIDER_SMOKE_AUTH_USER_ID --env staging
+          printf '%s' "$SMOKE_EMAIL" | gh secret set PROVIDER_SMOKE_AUTH_EMAIL --env staging
+          printf '%s' "$SMOKE_PASSWORD" | gh secret set PROVIDER_SMOKE_AUTH_PASSWORD --env staging
+          printf '%s' "$SMOKE_TOTP_SECRET" | gh secret set PROVIDER_SMOKE_AUTH_TOTP_SECRET --env staging
+
+      - name: Compensate failed credential publication
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.AUTH_SMOKE_SETUP_TOKEN }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          DELETE_SMOKE_USER_ID: ${{ steps.auth.outputs.user_id }}
+        run: |
+          if [ -n "$DELETE_SMOKE_USER_ID" ]; then bun scripts/setup-auth-smoke.ts || true; fi
+          gh secret delete PROVIDER_SMOKE_AUTH_USER_ID --env staging || true
+          gh secret delete PROVIDER_SMOKE_AUTH_EMAIL --env staging || true
+          gh secret delete PROVIDER_SMOKE_AUTH_PASSWORD --env staging || true
+          gh secret delete PROVIDER_SMOKE_AUTH_TOTP_SECRET --env staging || true
+
+      - name: Remove bootstrap token
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.AUTH_SMOKE_SETUP_TOKEN }}
+        run: |
+          for attempt in 1 2 3; do
+            if gh secret delete AUTH_SMOKE_SETUP_TOKEN --env staging; then exit 0; fi
+            sleep 2
+          done
+          exit 1

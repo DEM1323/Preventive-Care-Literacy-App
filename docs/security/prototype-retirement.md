@@ -26,7 +26,7 @@ On 2026-08-18, the ignored local environment file and untracked Google service-a
 - The browser receives no Google Apps Script endpoint or credential configuration.
 - Student authentication, Student reads, and intake submissions are deleted.
 - On first load after retirement, the browser deletes legacy Student email, intake, pending submission, and session state.
-- Student-facing routes render a retirement notice; only the local-only school-configuration UI prototype remains available.
+- Student-facing routes render a retirement notice. The replacement application's authenticated staff routes and the local-only school-configuration UI contain no Student data entry or access.
 
 `bun run check:security` enforces the repository and browser-artifact boundary.
 

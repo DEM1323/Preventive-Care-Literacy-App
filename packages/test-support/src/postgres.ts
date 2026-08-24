@@ -72,7 +72,15 @@ export async function createRuntimeDatabaseUser(
     );
     await client.query(
       `grant select, insert on identity_access.school_workspaces,
+         identity_access.staff_identities, identity_access.staff_permission_grants,
          infrastructure.operation_receipts, audit.evidence to ${role}`,
+    );
+    await client.query(
+      `grant select, insert, update on identity_access.staff_sessions,
+         identity_access.staff_auth_flows to ${role}`,
+    );
+    await client.query(
+      `grant execute on function identity_access.current_staff_has_permission(text) to ${role}`,
     );
     await client.query(
       'grant select, insert, update on infrastructure.outbox to ' + role,

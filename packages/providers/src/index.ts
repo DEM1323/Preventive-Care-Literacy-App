@@ -1,6 +1,10 @@
 import { Client } from 'pg';
 import type { ProviderName } from '../../observability/src/index.ts';
 import { restrictedDatabaseRoleSql } from '../../postgres/src/identity-access.ts';
+import {
+  createSupabaseStaffAuth,
+  totpCode,
+} from '../../supabase-auth/src/index.ts';
 
 export type ProviderProbe = {
   name: ProviderName;
@@ -25,6 +29,9 @@ export type ProviderConfiguration = {
   resendApiKey: string;
   smokeEmailSender: string;
   smokeEmailRecipient: string;
+  smokeAuthEmail: string;
+  smokeAuthPassword: string;
+  smokeAuthTotpSecret: string;
 };
 
 type FetchRequest = (
@@ -62,6 +69,9 @@ export function providerConfigurationFromEnvironment(): ProviderConfiguration {
     resendApiKey: requiredEnvironment('RESEND_API_KEY'),
     smokeEmailSender: requiredEnvironment('PROVIDER_SMOKE_EMAIL_FROM'),
     smokeEmailRecipient: requiredEnvironment('PROVIDER_SMOKE_EMAIL'),
+    smokeAuthEmail: requiredEnvironment('PROVIDER_SMOKE_AUTH_EMAIL'),
+    smokeAuthPassword: requiredEnvironment('PROVIDER_SMOKE_AUTH_PASSWORD'),
+    smokeAuthTotpSecret: requiredEnvironment('PROVIDER_SMOKE_AUTH_TOTP_SECRET'),
   };
 }
 
@@ -166,11 +176,42 @@ export function createProviderProbes(
       );
     }),
     probe('auth', async () => {
-      const response = await request(
-        `${supabaseOrigin}/auth/v1/settings`,
-        requestOptions({ apikey: configuration.supabaseSecretKey }),
+      const authRequest: FetchRequest = (input, init) =>
+        request(input, {
+          ...init,
+          signal: AbortSignal.timeout(5_000),
+        });
+      const auth = createSupabaseStaffAuth({
+        supabaseUrl: supabaseOrigin,
+        secretKey: configuration.supabaseSecretKey,
+        fetch: authRequest,
+      });
+      const verified = await auth.verifyPassword({
+        email: configuration.smokeAuthEmail,
+        password: configuration.smokeAuthPassword,
+      });
+      if (verified === 'invalid') return false;
+      const link = await query(
+        `with scope as materialized (
+           select set_config('app.supabase_user_id', $1, true)
+         )
+         select exists (
+           select 1 from identity_access.staff_identities
+            where supabase_user_id = $1::uuid
+         ) as linked
+         from scope`,
+        [verified.supabaseUserId],
       );
-      return response.ok;
+      if (link.rows[0]?.linked !== false) return false;
+      const challenge = await auth.prepareTotpChallenge(verified.accessToken);
+      if (challenge.stage !== 'totp') return false;
+      const completed = await auth.verifyTotp({
+        accessToken: verified.accessToken,
+        factorId: challenge.factorId,
+        challengeId: challenge.challengeId,
+        code: totpCode(configuration.smokeAuthTotpSecret),
+      });
+      return completed !== 'invalid' && completed.assurance === 'aal2';
     }),
     probe('storage', async () => {
       const bucket = await request(

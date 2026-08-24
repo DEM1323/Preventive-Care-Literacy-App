@@ -6,8 +6,11 @@ import {
   type CreateSchoolWorkspaceResult,
   type IdGenerator,
   SchoolWorkspaceAlreadyExistsError,
+  type StaffAuthProvider,
+  type StaffSessionHandles,
 } from '../../../modules/identity-access/index.ts';
 import type { Database } from './database.ts';
+import { createPostgresStaffAccessStore } from './staff-access.ts';
 
 export const restrictedDatabaseRoleSql = `select
   exists (
@@ -42,6 +45,8 @@ export async function assertRestrictedDatabaseRole(pool: Pool): Promise<void> {
 
 export function createPostgresIdentityAndAccess(options: {
   pool: Pool;
+  staffAuth: StaffAuthProvider;
+  handles: StaffSessionHandles;
   clock: Clock;
   ids: IdGenerator;
 }) {
@@ -52,6 +57,9 @@ export function createPostgresIdentityAndAccess(options: {
   return createIdentityAndAccess({
     clock: options.clock,
     ids: options.ids,
+    staffAuth: options.staffAuth,
+    handles: options.handles,
+    staffStore: createPostgresStaffAccessStore({ pool: options.pool }),
     committer: {
       commit(request) {
         return database
