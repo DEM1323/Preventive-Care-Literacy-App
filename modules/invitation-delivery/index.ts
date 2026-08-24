@@ -93,7 +93,7 @@ export async function runInvitationDeliveryCycle(
       code: secret.code,
       idempotencyKey: delivery.providerIdempotencyKey,
       subject: 'Your Invitation Code',
-      text: `Your Invitation Code is ${secret.code}. It expires in 24 hours.`,
+      text: `Your Invitation Code is ${secret.code}. It expires in 10 minutes.`,
     });
     await dependencies.deliveries.complete({
       outboxId: delivery.outboxId,

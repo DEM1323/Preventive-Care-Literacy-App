@@ -53,6 +53,10 @@ async function renderContracts() {
       listClasses: async () => {
         throw new Error('Contract generation does not execute queries');
       },
+      redeemInvitation: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      resolveStudentSession: async () => undefined,
     },
     {
       publicOrigin: 'https://contract-generator.example',

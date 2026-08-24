@@ -23,12 +23,14 @@ Keep local configuration outside the repository. For example, place it at `~/.co
 
 ## Routes
 
-| Route                             | Description                                        |
-| --------------------------------- | -------------------------------------------------- |
-| `/staff/sign-in`                  | Staff password and mandatory TOTP authentication   |
-| `/staff`                          | Permission-filtered staff workspace                |
-| `/prototype/school-configuration` | Local-only school configuration UI exploration     |
-| All other routes                  | Prototype retirement notice; no Student data entry |
+| Route                             | Description                                      |
+| --------------------------------- | ------------------------------------------------ |
+| `/staff/sign-in`                  | Staff password and mandatory TOTP authentication |
+| `/staff`                          | Permission-filtered staff workspace              |
+| `/student/invitation`             | Delivered Invitation Code redemption             |
+| `/student`                        | Server-authoritative Student access restoration  |
+| `/prototype/school-configuration` | Local-only school configuration UI exploration   |
+| All other routes                  | Prototype retirement notice                      |
 
 ## Verification
 

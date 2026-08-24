@@ -79,7 +79,10 @@ try {
   );
   await client.query(
     `grant select, insert, update on identity_access.staff_sessions,
-         identity_access.staff_auth_flows to ${runtimeRoleIdentifier}`,
+          identity_access.staff_auth_flows, identity_access.invitations,
+          identity_access.invitation_challenges,
+          identity_access.class_memberships, identity_access.student_sessions
+          to ${runtimeRoleIdentifier}`,
   );
   await client.query(
     `grant execute on function identity_access.current_staff_has_permission(text)

@@ -85,7 +85,7 @@ beforeAll(async () => {
       hmacKey: Buffer.alloc(32, 7),
       encryptionKeys: { test: Buffer.alloc(32, 9) },
       activeEncryptionKeyId: 'test',
-      createCode: () => 'M7K9-P2Q4',
+      createCode: () => '729104',
     },
   });
   baseUrl = await server.listen({ host: '127.0.0.1', port: 0 });
@@ -121,7 +121,7 @@ test('Administrator creates one Class and one protected purpose-bound Invitation
     invitationId,
     outcome: 'created',
   });
-  expect(JSON.stringify(created.data)).not.toContain('M7K9-P2Q4');
+  expect(JSON.stringify(created.data)).not.toContain('729104');
   expect(JSON.stringify(created.data)).not.toContain('example.test');
 
   const replay = await client.POST('/api/v1/administration/classes', {
@@ -148,7 +148,7 @@ test('Administrator creates one Class and one protected purpose-bound Invitation
             generation: 1,
             status: 'pending_delivery',
             expiresAt: new Date(
-              now.getTime() + 24 * 60 * 60 * 1000,
+              now.getTime() + 7 * 24 * 60 * 60 * 1000,
             ).toISOString(),
           },
         ],
@@ -195,9 +195,9 @@ test('Administrator creates one Class and one protected purpose-bound Invitation
     });
     expect(records.rows[0]?.payload).toEqual({ invitationId, generation: 1 });
     expect(records.rows[0]?.recipient_digest).not.toContain('example.test');
-    expect(records.rows[0]?.code_digest).not.toContain('M7K9-P2Q4');
+    expect(records.rows[0]?.code_digest).not.toContain('729104');
     expect(records.rows[0]?.ciphertext).not.toContain('example.test');
-    expect(records.rows[0]?.ciphertext).not.toContain('M7K9-P2Q4');
+    expect(records.rows[0]?.ciphertext).not.toContain('729104');
 
     await inspection.query(
       `insert into identity_access.invitation_challenges

@@ -34,7 +34,9 @@ type ClassDirectoryEntry = {
       | 'delivered'
       | 'delivery_failed'
       | 'expired'
-      | 'completed';
+      | 'completed'
+      | 'revoked'
+      | 'superseded';
     expiresAt: string;
   }[];
 };

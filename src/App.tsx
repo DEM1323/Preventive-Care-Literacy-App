@@ -2,6 +2,10 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { SchoolConfigurationEditorPrototype } from './features/admin/SchoolConfigurationEditorPrototype';
 import { StaffHomePage } from './features/staff/StaffHomePage';
 import { StaffSignInPage } from './features/staff/StaffSignInPage';
+import {
+  InvitationRedemptionPage,
+  StudentHomePage,
+} from './features/student-access/StudentAccessPages';
 
 function RetiredPrototypePage() {
   return (
@@ -14,8 +18,9 @@ function RetiredPrototypePage() {
           Student data entry is disabled.
         </h1>
         <p className="mt-5 text-lg leading-8 text-slate-300">
-          This prototype has no production authority and accepts no Student information. Only
-          synthetic, local-only interface exploration is permitted.
+          This prototype has no production authority and accepts no Student
+          information. Only synthetic, local-only interface exploration is
+          permitted.
         </p>
       </section>
     </main>
@@ -24,10 +29,17 @@ function RetiredPrototypePage() {
 
 export default function App() {
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || undefined}>
+    <BrowserRouter
+      basename={import.meta.env.BASE_URL.replace(/\/$/, '') || undefined}
+    >
       <Routes>
         <Route path="/staff/sign-in" element={<StaffSignInPage />} />
         <Route path="/staff" element={<StaffHomePage />} />
+        <Route
+          path="/student/invitation"
+          element={<InvitationRedemptionPage />}
+        />
+        <Route path="/student" element={<StudentHomePage />} />
         <Route
           path="/prototype/school-configuration"
           element={<SchoolConfigurationEditorPrototype />}
