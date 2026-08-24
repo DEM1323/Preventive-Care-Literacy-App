@@ -22,5 +22,10 @@ test('browser exposes no Student data routes', () => {
   const appSource = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
   const routes = [...appSource.matchAll(/path="([^"]+)"/g)].map((match) => match[1]);
 
-  expect(routes).toEqual(['/prototype/school-configuration', '*']);
+  expect(routes).toEqual([
+    '/staff/sign-in',
+    '/staff',
+    '/prototype/school-configuration',
+    '*',
+  ]);
 });

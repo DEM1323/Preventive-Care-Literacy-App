@@ -13,7 +13,16 @@ export type TelemetryEvent =
   | {
       name: 'http.request.completed';
       method: 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT';
-      route: 'create-school-workspace' | 'health' | 'unknown';
+      route:
+        | 'create-school-workspace'
+        | 'health'
+        | 'staff-identities'
+        | 'staff-sign-in'
+        | 'staff-sign-in-totp'
+        | 'staff-sign-out'
+        | 'staff-session'
+        | 'clinical-directory'
+        | 'unknown';
       statusCode: number;
       durationMs: number;
     }
@@ -47,7 +56,17 @@ export function recordProviderChecks(
 }
 
 const methods = new Set(['DELETE', 'GET', 'PATCH', 'POST', 'PUT']);
-const routes = new Set(['create-school-workspace', 'health', 'unknown']);
+const routes = new Set([
+  'create-school-workspace',
+  'health',
+  'staff-identities',
+  'staff-sign-in',
+  'staff-sign-in-totp',
+  'staff-sign-out',
+  'staff-session',
+  'clinical-directory',
+  'unknown',
+]);
 const providers = new Set<string>(providerNames);
 
 function safeNumber(value: unknown): number {

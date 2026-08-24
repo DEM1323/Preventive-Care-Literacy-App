@@ -30,6 +30,23 @@ async function renderContracts() {
       createSchoolWorkspace: async () => {
         throw new Error('Contract generation does not execute commands');
       },
+      provisionStaffIdentity: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      startStaffSignIn: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      completeStaffSignIn: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      resolveStaffSession: async () => undefined,
+      endStaffSession: async () => ({ outcome: 'ended' }),
+      listStaffIdentities: async () => {
+        throw new Error('Contract generation does not execute queries');
+      },
+      openClinicalDirectory: async () => {
+        throw new Error('Contract generation does not execute queries');
+      },
     },
     {
       publicOrigin: 'https://contract-generator.example',

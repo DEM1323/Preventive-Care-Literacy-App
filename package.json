@@ -9,7 +9,7 @@
     "start": "bun apps/server/src/api.ts",
     "preview": "vite preview",
     "test": "bun test",
-    "test:spine": "bun test tests/spine/create-school-workspace.test.ts",
+    "test:spine": "bun test tests/spine/create-school-workspace.test.ts tests/spine/staff-auth.test.ts",
     "test:migrations": "bun test tests/spine/migrations.test.ts",
     "test:staging": "bun test tests/staging/*.test.ts",
     "typecheck": "tsc -b --pretty false",

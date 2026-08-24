@@ -11,6 +11,7 @@ import {
   startEphemeralPostgres,
   type EphemeralPostgres,
 } from '../../packages/test-support/src/postgres.ts';
+import { createFakeStaffAuth } from '../../packages/test-support/src/staff-auth.ts';
 
 const workspaceId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf1001';
 const operationId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf1002';
@@ -63,6 +64,7 @@ beforeAll(async () => {
       token: operatorToken,
       actorId: 'operator@example.test',
     },
+    staffAuth: createFakeStaffAuth().provider,
     clock: { now: () => occurredAt },
     ids: { create: () => generatedIds.shift() ?? crypto.randomUUID() },
   });
@@ -90,6 +92,7 @@ test('createSchoolWorkspace authorizes and atomically commits governed records',
         token: operatorToken,
         actorId: 'operator@example.test',
       },
+      staffAuth: createFakeStaffAuth().provider,
     }),
   ).rejects.toThrow(
     'The application database role must not own protected objects or bypass row-level security',
@@ -108,6 +111,7 @@ test('createSchoolWorkspace authorizes and atomically commits governed records',
         token: operatorToken,
         actorId: 'operator@example.test',
       },
+      staffAuth: createFakeStaffAuth().provider,
     }),
   ).rejects.toThrow(
     'The application database role must not own protected objects or bypass row-level security',

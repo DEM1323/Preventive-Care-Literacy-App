@@ -15,7 +15,10 @@ test('migrations apply in order and are repeatable', async () => {
       const applied = await client.query<{ name: string }>(
         'select name from public.schema_migrations order by name',
       );
-      expect(applied.rows).toEqual([{ name: '001_audited_spine.sql' }]);
+      expect(applied.rows).toEqual([
+        { name: '001_audited_spine.sql' },
+        { name: '002_staff_authentication.sql' },
+      ]);
     } finally {
       await client.end();
     }

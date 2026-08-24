@@ -2,25 +2,43 @@ import swagger from '@fastify/swagger';
 import fastifyStatic from '@fastify/static';
 import { Type, type Static } from '@sinclair/typebox';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { randomUUID, timingSafeEqual } from 'node:crypto';
+import {
+  createHash,
+  randomBytes,
+  randomUUID,
+  timingSafeEqual,
+} from 'node:crypto';
 import { resolve } from 'node:path';
 import { Pool } from 'pg';
 import type {
   Clock,
   IdGenerator,
   IdentityAndAccess,
+  StaffAuthProvider,
 } from '../../../modules/identity-access/index.ts';
-import { SchoolWorkspaceAlreadyExistsError } from '../../../modules/identity-access/index.ts';
+import {
+  SchoolWorkspaceAlreadyExistsError,
+  StaffAuthenticationFailedError,
+  StaffAuthenticationStaleError,
+  StaffIdentityAlreadyExistsError,
+  StaffPermissionRequiredError,
+} from '../../../modules/identity-access/index.ts';
 import {
   createTelemetry,
   type Telemetry,
   type TelemetryEvent,
 } from '../../../packages/observability/src/index.ts';
-import { expireSecureOpaqueCookie } from '../../../packages/http-security/src/index.ts';
+import {
+  expireSecureOpaqueCookie,
+  readSecureOpaqueCookie,
+  setSecureOpaqueCookie,
+} from '../../../packages/http-security/src/index.ts';
 import {
   assertRestrictedDatabaseRole,
   createPostgresIdentityAndAccess,
 } from '../../../packages/postgres/src/identity-access.ts';
+
+const staffSessionCookie = '__Host-prevcare-staff-session' as const;
 
 const requestBodyLimit = 64 * 1024;
 const securityHeaders = {
@@ -70,6 +88,95 @@ const CreateSchoolWorkspaceResponse = Type.Object({
   operationId: Type.String({ format: 'uuid' }),
   workspaceId: Type.String({ format: 'uuid' }),
   outcome: Type.Literal('created'),
+});
+
+const StaffPermissionSchema = Type.Union([
+  Type.Literal('administrative'),
+  Type.Literal('clinical'),
+]);
+
+const ProvisionStaffIdentityBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    workspaceId: Type.String({ format: 'uuid' }),
+    staffIdentityId: Type.String({ format: 'uuid' }),
+    displayName: Type.String({
+      minLength: 1,
+      maxLength: 200,
+      pattern: '.*\\S.*',
+    }),
+    email: Type.String({ format: 'email', maxLength: 320 }),
+    permissions: Type.Array(StaffPermissionSchema, {
+      minItems: 1,
+      uniqueItems: true,
+    }),
+    schoolApprover: Type.String({ minLength: 1, maxLength: 200 }),
+    reason: Type.String({ minLength: 1, maxLength: 2000 }),
+    initialPassword: Type.String({ minLength: 12, maxLength: 200 }),
+  },
+  { additionalProperties: false },
+);
+
+const ProvisionStaffIdentityResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  staffIdentityId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('provisioned'),
+});
+
+const StaffSignInBody = Type.Object(
+  {
+    email: Type.String({ format: 'email', maxLength: 320 }),
+    password: Type.String({ minLength: 1, maxLength: 200 }),
+  },
+  { additionalProperties: false },
+);
+
+const StaffSignInChallengeResponse = Type.Object({
+  flowHandle: Type.String(),
+  flowExpiresAt: Type.String({ format: 'date-time' }),
+  stage: Type.Union([Type.Literal('enroll'), Type.Literal('totp')]),
+  otpauthUri: Type.Optional(Type.String()),
+});
+
+const StaffTotpBody = Type.Object(
+  {
+    flowHandle: Type.String({ minLength: 1, maxLength: 200 }),
+    code: Type.String({ pattern: '^[0-9]{6}$' }),
+  },
+  { additionalProperties: false },
+);
+
+const StaffSessionCreatedResponse = Type.Object({
+  outcome: Type.Literal('authenticated'),
+});
+
+const StaffSessionEndedResponse = Type.Object({
+  outcome: Type.Literal('ended'),
+});
+
+const StaffSessionResponse = Type.Object({
+  staffIdentityId: Type.String({ format: 'uuid' }),
+  workspaceId: Type.String({ format: 'uuid' }),
+  displayName: Type.String(),
+  permissions: Type.Array(StaffPermissionSchema),
+  authenticatedAt: Type.String({ format: 'date-time' }),
+});
+
+const StaffDirectoryEntryResponse = Type.Object({
+  staffIdentityId: Type.String({ format: 'uuid' }),
+  displayName: Type.String(),
+  email: Type.String(),
+  permissions: Type.Array(StaffPermissionSchema),
+  status: Type.Union([Type.Literal('active'), Type.Literal('disabled')]),
+  createdAt: Type.String({ format: 'date-time' }),
+});
+
+const StaffDirectoryResponse = Type.Object({
+  staffIdentities: Type.Array(StaffDirectoryEntryResponse),
+});
+
+const ClinicalDirectoryResponse = Type.Object({
+  students: Type.Array(Type.Unknown(), { maxItems: 0 }),
 });
 
 const ProblemDetails = Type.Object({
@@ -168,7 +275,19 @@ export async function buildApp(
         ? 'health'
         : route === '/api/v1/administration/school-workspaces'
           ? 'create-school-workspace'
-          : 'unknown';
+          : route === '/api/v1/administration/staff-identities'
+            ? 'staff-identities'
+            : route === '/api/v1/auth/staff/sign-in'
+              ? 'staff-sign-in'
+              : route === '/api/v1/auth/staff/totp'
+                ? 'staff-sign-in-totp'
+                : route === '/api/v1/auth/staff/sign-out'
+                  ? 'staff-sign-out'
+                  : route === '/api/v1/staff/session'
+                    ? 'staff-session'
+                    : route === '/api/v1/clinical/review-directory'
+                      ? 'clinical-directory'
+                      : 'unknown';
       telemetry.record({
         name: 'http.request.completed',
         method: ['DELETE', 'GET', 'PATCH', 'POST', 'PUT'].includes(
@@ -202,6 +321,38 @@ export async function buildApp(
         type: 'https://preventive-care-literacy.example/problems/school-workspace-exists',
         title: error.message,
         status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof StaffIdentityAlreadyExistsError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/staff-identity-exists',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof StaffAuthenticationFailedError) {
+      return reply.type('application/problem+json').code(401).send({
+        type: 'https://preventive-care-literacy.example/problems/staff-authentication',
+        title: error.message,
+        status: 401,
+        code: error.code,
+      });
+    }
+    if (error instanceof StaffPermissionRequiredError) {
+      return reply.type('application/problem+json').code(403).send({
+        type: 'https://preventive-care-literacy.example/problems/staff-permission',
+        title: error.message,
+        status: 403,
+        code: error.code,
+      });
+    }
+    if (error instanceof StaffAuthenticationStaleError) {
+      return reply.type('application/problem+json').code(403).send({
+        type: 'https://preventive-care-literacy.example/problems/staff-authentication-stale',
+        title: error.message,
+        status: 403,
         code: error.code,
       });
     }
@@ -244,6 +395,11 @@ export async function buildApp(
       components: {
         securitySchemes: {
           bearerAuth: { type: 'http', scheme: 'bearer' },
+          staffSession: {
+            type: 'apiKey',
+            in: 'cookie',
+            name: '__Host-prevcare-staff-session',
+          },
         },
       },
     },
@@ -331,6 +487,227 @@ export async function buildApp(
     },
   );
 
+  app.post<{
+    Body: Static<typeof ProvisionStaffIdentityBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/administration/staff-identities',
+    {
+      schema: {
+        operationId: 'provisionStaffIdentity',
+        security: [{ bearerAuth: [] }],
+        headers: OperatorHeaders,
+        body: ProvisionStaffIdentityBody,
+        response: {
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          413: ProblemResponse,
+          201: ProvisionStaffIdentityResponse,
+          409: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = options.operatorAuthenticator.authenticate(
+        request.headers.authorization,
+      );
+      if (!actor) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/operator-authentication',
+          title: 'Operator authentication required',
+          status: 401,
+          code: 'OPERATOR_AUTHENTICATION_REQUIRED',
+        });
+      }
+      const result = await identityAndAccess.provisionStaffIdentity({
+        ...request.body,
+        actor,
+      });
+      return reply.code(201).send(result);
+    },
+  );
+
+  app.post<{ Body: Static<typeof StaffSignInBody> }>(
+    '/api/v1/auth/staff/sign-in',
+    {
+      schema: {
+        operationId: 'startStaffSignIn',
+        body: StaffSignInBody,
+        response: {
+          200: StaffSignInChallengeResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request) => identityAndAccess.startStaffSignIn(request.body),
+  );
+
+  app.post<{ Body: Static<typeof StaffTotpBody> }>(
+    '/api/v1/auth/staff/totp',
+    {
+      schema: {
+        operationId: 'completeStaffSignIn',
+        body: StaffTotpBody,
+        response: {
+          200: StaffSessionCreatedResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const grant = await identityAndAccess.completeStaffSignIn(request.body);
+      reply.header(
+        'set-cookie',
+        setSecureOpaqueCookie(staffSessionCookie, grant.sessionHandle),
+      );
+      return { outcome: 'authenticated' as const };
+    },
+  );
+
+  app.post(
+    '/api/v1/auth/staff/sign-out',
+    {
+      schema: {
+        operationId: 'endStaffSession',
+        security: [{ staffSession: [] }],
+        response: {
+          200: StaffSessionEndedResponse,
+          400: ProblemResponse,
+          403: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        staffSessionCookie,
+      );
+      if (sessionHandle) {
+        await identityAndAccess.endStaffSession({ sessionHandle });
+      }
+      reply.header('set-cookie', expireSecureOpaqueCookie(staffSessionCookie));
+      return { outcome: 'ended' as const };
+    },
+  );
+
+  app.get(
+    '/api/v1/staff/session',
+    {
+      schema: {
+        operationId: 'readStaffSession',
+        security: [{ staffSession: [] }],
+        response: {
+          200: StaffSessionResponse,
+          401: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        staffSessionCookie,
+      );
+      const session =
+        sessionHandle &&
+        (await identityAndAccess.resolveStaffSession({ sessionHandle }));
+      if (!session) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      return session;
+    },
+  );
+
+  app.get(
+    '/api/v1/administration/staff-identities',
+    {
+      schema: {
+        operationId: 'listStaffIdentities',
+        security: [{ staffSession: [] }],
+        response: {
+          200: StaffDirectoryResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        staffSessionCookie,
+      );
+      const session =
+        sessionHandle &&
+        (await identityAndAccess.resolveStaffSession({ sessionHandle }));
+      if (!session) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      const staffIdentities = await identityAndAccess.listStaffIdentities({
+        sessionHandle: sessionHandle as string,
+      });
+      return { staffIdentities };
+    },
+  );
+
+  app.get(
+    '/api/v1/clinical/review-directory',
+    {
+      schema: {
+        operationId: 'openClinicalDirectory',
+        security: [{ staffSession: [] }],
+        response: {
+          200: ClinicalDirectoryResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        staffSessionCookie,
+      );
+      const session =
+        sessionHandle &&
+        (await identityAndAccess.resolveStaffSession({ sessionHandle }));
+      if (!session) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      return identityAndAccess.openClinicalDirectory({
+        sessionHandle: sessionHandle as string,
+      });
+    },
+  );
+
   app.setNotFoundHandler((request, reply) => {
     if (
       options.webRoot &&
@@ -356,6 +733,7 @@ export async function createServer(options: {
   databaseUrl: string;
   databaseCaCertificate?: string;
   operatorCredentials: { token: string; actorId: string };
+  staffAuth: StaffAuthProvider;
   publicOrigin: string;
   telemetry?: Telemetry;
   webRoot?: string;
@@ -388,8 +766,13 @@ export async function createServer(options: {
   return buildApp(
     createPostgresIdentityAndAccess({
       pool,
+      staffAuth: options.staffAuth,
       clock: options.clock ?? { now: () => new Date() },
       ids: options.ids ?? { create: randomUUID },
+      handles: {
+        create: () => randomBytes(32).toString('base64url'),
+        hash: (handle) => createHash('sha256').update(handle).digest('hex'),
+      },
     }),
     {
       operatorAuthenticator: createOperatorAuthenticator(

@@ -51,7 +51,15 @@ try {
   );
   await client.query(
     `grant select, insert on all tables in schema identity_access
-       to ${runtimeRoleIdentifier}`,
+         to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant select, insert, update on identity_access.staff_sessions,
+         identity_access.staff_auth_flows to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function identity_access.current_staff_has_permission(text)
+         to ${runtimeRoleIdentifier}`,
   );
   await client.query(
     `grant select, insert on all tables in schema infrastructure

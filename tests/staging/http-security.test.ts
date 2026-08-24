@@ -1,5 +1,39 @@
 import { describe, expect, test } from 'bun:test';
 import { buildApp } from '../../apps/server/src/app.ts';
+import type { IdentityAndAccess } from '../../modules/identity-access/index.ts';
+
+function createStubIdentityAndAccess(): IdentityAndAccess {
+  return {
+    async createSchoolWorkspace(command) {
+      return {
+        operationId: command.operationId,
+        workspaceId: command.workspaceId,
+        outcome: 'created',
+      };
+    },
+    async provisionStaffIdentity() {
+      throw new Error('Not configured in this test');
+    },
+    async startStaffSignIn() {
+      throw new Error('Not configured in this test');
+    },
+    async completeStaffSignIn() {
+      throw new Error('Not configured in this test');
+    },
+    async resolveStaffSession() {
+      return undefined;
+    },
+    async endStaffSession() {
+      return { outcome: 'ended' };
+    },
+    async listStaffIdentities() {
+      throw new Error('Not configured in this test');
+    },
+    async openClinicalDirectory() {
+      throw new Error('Not configured in this test');
+    },
+  };
+}
 
 const publicOrigin = 'https://staging.preventive-care-literacy.example';
 const requestHeaders = {
@@ -9,26 +43,15 @@ const requestHeaders = {
 };
 
 async function createApp() {
-  return buildApp(
-    {
-      async createSchoolWorkspace(command) {
-        return {
-          operationId: command.operationId,
-          workspaceId: command.workspaceId,
-          outcome: 'created',
-        };
-      },
+  return buildApp(createStubIdentityAndAccess(), {
+    publicOrigin,
+    operatorAuthenticator: {
+      authenticate: () => ({
+        type: 'technical_operator',
+        id: 'operator@example.test',
+      }),
     },
-    {
-      publicOrigin,
-      operatorAuthenticator: {
-        authenticate: () => ({
-          type: 'technical_operator',
-          id: 'operator@example.test',
-        }),
-      },
-    },
-  );
+  });
 }
 
 describe.serial('staging HTTP security boundary', () => {
@@ -58,29 +81,18 @@ describe.serial('staging HTTP security boundary', () => {
   });
 
   test('reports not ready when the restricted database is unavailable', async () => {
-    const app = await buildApp(
-      {
-        async createSchoolWorkspace(command) {
-          return {
-            operationId: command.operationId,
-            workspaceId: command.workspaceId,
-            outcome: 'created',
-          };
-        },
+    const app = await buildApp(createStubIdentityAndAccess(), {
+      publicOrigin,
+      readiness: async () => {
+        throw new Error('private database detail');
       },
-      {
-        publicOrigin,
-        readiness: async () => {
-          throw new Error('private database detail');
-        },
-        operatorAuthenticator: {
-          authenticate: () => ({
-            type: 'technical_operator',
-            id: 'operator@example.test',
-          }),
-        },
+      operatorAuthenticator: {
+        authenticate: () => ({
+          type: 'technical_operator',
+          id: 'operator@example.test',
+        }),
       },
-    );
+    });
 
     const response = await app.inject({ method: 'GET', url: '/health/ready' });
     await app.close();
