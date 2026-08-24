@@ -75,7 +75,8 @@ describe.serial('staging HTTP security boundary', () => {
     expect(response.headers['x-content-type-options']).toBe('nosniff');
     expect(response.headers['referrer-policy']).toBe('no-referrer');
     expect(response.headers['cache-control']).toBe('no-store');
-    expect(cookiePolicy.headers['set-cookie']).toEqual([
+    const setCookie = cookiePolicy.headers['set-cookie'];
+    expect(Array.isArray(setCookie) ? setCookie : [setCookie]).toEqual([
       '__Host-prevcare-security-check=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict',
     ]);
   });
