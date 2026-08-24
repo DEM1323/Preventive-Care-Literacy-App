@@ -4,8 +4,26 @@ import { Client } from 'pg';
 
 const migrationsDirectory = new URL('../migrations/', import.meta.url);
 
-export async function migrate(databaseUrl: string): Promise<void> {
-  const client = new Client({ connectionString: databaseUrl });
+export async function migrate(
+  databaseUrl: string,
+  databaseCaCertificate?: string,
+): Promise<void> {
+  const connectionUrl = new URL(databaseUrl);
+  if (databaseCaCertificate) {
+    connectionUrl.searchParams.delete('sslmode');
+    connectionUrl.searchParams.delete('sslrootcert');
+  }
+  const client = new Client({
+    connectionString: connectionUrl.toString(),
+    ...(databaseCaCertificate
+      ? {
+          ssl: {
+            ca: databaseCaCertificate,
+            rejectUnauthorized: true,
+          },
+        }
+      : {}),
+  });
   await client.connect();
   try {
     await client.query(`
