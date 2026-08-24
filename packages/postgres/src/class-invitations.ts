@@ -66,6 +66,7 @@ export function createPostgresClassInvitationStore(options: {
             current_generation: records.invitation.currentGeneration,
             status: records.invitation.status,
             created_at: records.invitation.createdAt,
+            authorization_expires_at: records.invitation.authorizationExpiresAt,
             record_owner: 'school',
             record_classification: 'school_administrative',
             disposal_class: 'invitation',
@@ -78,8 +79,10 @@ export function createPostgresClassInvitationStore(options: {
             generation: records.challenge.generation,
             purpose: records.challenge.purpose,
             code_digest: records.challenge.codeDigest,
+            lookup_digest: records.challenge.lookupDigest,
             expires_at: records.challenge.expiresAt,
             completed_at: null,
+            failed_attempts: records.challenge.failedAttempts,
           })
           .execute();
         await transaction
@@ -178,7 +181,7 @@ export function createPostgresClassInvitationStore(options: {
             'invitation.purpose',
             'invitation.current_generation',
             'invitation.status',
-            'challenge.expires_at',
+            'invitation.authorization_expires_at',
           ])
           .orderBy('class.created_at')
           .execute();
@@ -196,7 +199,7 @@ export function createPostgresClassInvitationStore(options: {
             generation: row.current_generation,
             status:
               row.status as ClassDirectoryEntry['invitations'][number]['status'],
-            expiresAt: row.expires_at,
+            expiresAt: row.authorization_expires_at,
           });
           classes.set(row.class_id, entry);
         }

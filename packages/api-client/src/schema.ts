@@ -100,6 +100,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/auth/student/invitations/redeem': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['redeemInvitation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/clinical/review-directory': {
     parameters: {
       query?: never;
@@ -124,6 +140,22 @@ export interface paths {
       cookie?: never;
     };
     get: operations['readStaffSession'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/student/session': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['readStudentSession'];
     put?: never;
     post?: never;
     delete?: never;
@@ -304,7 +336,9 @@ export interface operations {
                   | 'delivered'
                   | 'delivery_failed'
                   | 'expired'
-                  | 'completed';
+                  | 'completed'
+                  | 'revoked'
+                  | 'superseded';
               }[];
               name: string;
             }[];
@@ -1077,6 +1111,106 @@ export interface operations {
       };
     };
   };
+  redeemInvitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          code: string;
+          recipient: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            outcome: 'authenticated';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            code: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            code: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            code: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            code: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            code: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
   openClinicalDirectory: {
     parameters: {
       query?: never;
@@ -1163,6 +1297,64 @@ export interface operations {
             permissions: ('administrative' | 'clinical')[];
             /** Format: uuid */
             staffIdentityId: string;
+            /** Format: uuid */
+            workspaceId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            code: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            code: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  readStudentSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            activeClassMemberships: {
+              /** Format: uuid */
+              classId: string;
+              name: string;
+            }[];
+            /** Format: uuid */
+            studentId: string;
             /** Format: uuid */
             workspaceId: string;
           };

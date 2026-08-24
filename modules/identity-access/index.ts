@@ -53,6 +53,32 @@ export type IdentityAndAccess = {
     command: CreateClassInvitationCommand,
   ): Promise<CreateClassInvitationResult>;
   listClasses(command: StaffSessionCommand): Promise<ClassDirectoryEntry[]>;
+  redeemInvitation(
+    command: RedeemInvitationCommand,
+  ): Promise<StudentSessionGrant>;
+  resolveStudentSession(
+    command: ResolveStudentSessionCommand,
+  ): Promise<StudentSessionContext | undefined>;
+};
+
+export type RedeemInvitationCommand = {
+  recipient: string;
+  code: string;
+};
+
+export type StudentSessionGrant = {
+  sessionHandle: string;
+  absoluteExpiresAt: Date;
+};
+
+export type ResolveStudentSessionCommand = {
+  sessionHandle: string;
+};
+
+export type StudentSessionContext = {
+  studentId: string;
+  workspaceId: string;
+  activeClassMemberships: { classId: string; name: string }[];
 };
 
 export type CreateClassInvitationCommand = {
@@ -84,13 +110,35 @@ export type ClassDirectoryEntry = {
       | 'delivered'
       | 'delivery_failed'
       | 'expired'
-      | 'completed';
+      | 'completed'
+      | 'revoked'
+      | 'superseded';
     expiresAt: Date;
   }[];
 };
 
 export type InvitationSecretProtector = {
   createCode(): string;
+  digestRecipient(recipient: string): string;
+  digestInvitationLookup(input: { recipient: string; code: string }): string;
+  digestCode(input: {
+    invitationId: string;
+    purpose: 'join_class';
+    generation: number;
+    code: string;
+  }): string;
+  codeMatches(input: {
+    invitationId: string;
+    purpose: 'join_class';
+    generation: number;
+    code: string;
+    expectedDigest: string;
+  }): boolean;
+  protectRecipient(input: {
+    workspaceId: string;
+    studentId: string;
+    recipient: string;
+  }): { keyId: string; ciphertext: string };
   protect(input: {
     invitationId: string;
     purpose: 'join_class';
@@ -100,6 +148,7 @@ export type InvitationSecretProtector = {
   }): {
     recipientDigest: string;
     codeDigest: string;
+    lookupDigest: string;
     keyId: string;
     ciphertext: string;
   };
@@ -160,6 +209,15 @@ export class StaffAuthenticationStaleError extends Error {
   constructor() {
     super('Fresh staff authentication is required');
     this.name = 'StaffAuthenticationStaleError';
+  }
+}
+
+export class StudentAuthenticationFailedError extends Error {
+  readonly code = 'STUDENT_AUTHENTICATION_FAILED';
+
+  constructor() {
+    super('Student authentication failed');
+    this.name = 'StudentAuthenticationFailedError';
   }
 }
 
@@ -399,6 +457,45 @@ export type ClassInvitationStore = {
   }): Promise<ClassDirectoryEntry[]>;
 };
 
+export type InvitationRedemptionCandidate = {
+  invitationId: string;
+  workspaceId: string;
+  classId: string;
+  generation: number;
+  purpose: 'join_class';
+  codeDigest: string;
+};
+
+export type StudentAccessStore = {
+  claimInvitationAttempt(request: {
+    recipientDigest: string;
+    lookupDigest: string;
+    attemptedAt: Date;
+  }): Promise<InvitationRedemptionCandidate | undefined>;
+  redeemInvitation(request: {
+    recipientDigest: string;
+    candidate: InvitationRedemptionCandidate;
+    codeDigest: string;
+    attemptedAt: Date;
+    proposedStudentId: string;
+    verifiedEmailAddressId: string;
+    protectedRecipient: { keyId: string; ciphertext: string };
+    classMembershipId: string;
+    session: {
+      sessionId: string;
+      sessionHandleHash: string;
+      idleExpiresAt: Date;
+      absoluteExpiresAt: Date;
+    };
+    audit: { auditId: string; operationId: string };
+  }): Promise<StudentSessionContext | 'unavailable'>;
+  resolveStudentSession(request: {
+    sessionHandleHash: string;
+    resolvedAt: Date;
+    idleExpiresAt: Date;
+  }): Promise<StudentSessionContext | undefined>;
+};
+
 export type ClassInvitationCommit = {
   classRecord: {
     classId: string;
@@ -415,13 +512,16 @@ export type ClassInvitationCommit = {
     currentGeneration: 1;
     status: 'pending_delivery';
     createdAt: Date;
+    authorizationExpiresAt: Date;
   };
   challenge: {
     invitationId: string;
     generation: 1;
     purpose: 'join_class';
     codeDigest: string;
+    lookupDigest: string;
     expiresAt: Date;
+    failedAttempts: 0;
   };
   delivery: {
     invitationId: string;
@@ -510,6 +610,7 @@ export function createIdentityAndAccess(dependencies: {
   ids: IdGenerator;
   classInvitations?: ClassInvitationStore;
   invitationSecrets?: InvitationSecretProtector;
+  studentAccess?: StudentAccessStore;
 }): IdentityAndAccess {
   function requireStaffSeams(): {
     staffStore: StaffAccessStore;
@@ -563,6 +664,18 @@ export function createIdentityAndAccess(dependencies: {
     return {
       store: dependencies.classInvitations,
       secrets: dependencies.invitationSecrets,
+    };
+  }
+
+  function requireStudentAccessSeams() {
+    const { handles } = requireStaffSeams();
+    if (!dependencies.studentAccess || !dependencies.invitationSecrets) {
+      throw new Error('Student access seams are not configured');
+    }
+    return {
+      store: dependencies.studentAccess,
+      secrets: dependencies.invitationSecrets,
+      handles,
     };
   }
 
@@ -995,13 +1108,18 @@ export function createIdentityAndAccess(dependencies: {
               currentGeneration: 1,
               status: 'pending_delivery',
               createdAt,
+              authorizationExpiresAt: new Date(
+                createdAt.getTime() + 7 * 24 * 60 * 60 * 1000,
+              ),
             },
             challenge: {
               invitationId: command.invitationId,
               generation: 1,
               purpose: 'join_class',
               codeDigest: protectedSecrets.codeDigest,
-              expiresAt: new Date(createdAt.getTime() + 24 * 60 * 60 * 1000),
+              lookupDigest: protectedSecrets.lookupDigest,
+              expiresAt: new Date(createdAt.getTime() + 10 * 60 * 1000),
+              failedAttempts: 0,
             },
             delivery: {
               invitationId: command.invitationId,
@@ -1026,6 +1144,78 @@ export function createIdentityAndAccess(dependencies: {
       return store.list({
         workspaceId: session.workspaceId,
         staffIdentityId: session.staffIdentityId,
+      });
+    },
+
+    async redeemInvitation(command) {
+      const { store, secrets, handles } = requireStudentAccessSeams();
+      const attemptedAt = dependencies.clock.now();
+      const recipientDigest = secrets.digestRecipient(command.recipient);
+      const candidate = await store.claimInvitationAttempt({
+        recipientDigest,
+        lookupDigest: secrets.digestInvitationLookup(command),
+        attemptedAt,
+      });
+      if (
+        !candidate ||
+        !secrets.codeMatches({
+          invitationId: candidate.invitationId,
+          purpose: candidate.purpose,
+          generation: candidate.generation,
+          code: command.code,
+          expectedDigest: candidate.codeDigest,
+        })
+      ) {
+        throw new StudentAuthenticationFailedError();
+      }
+
+      const proposedStudentId = dependencies.ids.create();
+      const sessionHandle = handles.create();
+      const absoluteExpiresAt = new Date(
+        attemptedAt.getTime() + 8 * 60 * 60 * 1000,
+      );
+      const result = await store.redeemInvitation({
+        recipientDigest,
+        candidate,
+        codeDigest: secrets.digestCode({
+          invitationId: candidate.invitationId,
+          purpose: candidate.purpose,
+          generation: candidate.generation,
+          code: command.code,
+        }),
+        attemptedAt,
+        proposedStudentId,
+        verifiedEmailAddressId: dependencies.ids.create(),
+        protectedRecipient: secrets.protectRecipient({
+          workspaceId: candidate.workspaceId,
+          studentId: proposedStudentId,
+          recipient: command.recipient,
+        }),
+        classMembershipId: dependencies.ids.create(),
+        session: {
+          sessionId: dependencies.ids.create(),
+          sessionHandleHash: handles.hash(sessionHandle),
+          idleExpiresAt: new Date(attemptedAt.getTime() + 30 * 60 * 1000),
+          absoluteExpiresAt,
+        },
+        audit: {
+          auditId: dependencies.ids.create(),
+          operationId: dependencies.ids.create(),
+        },
+      });
+      if (result === 'unavailable') {
+        throw new StudentAuthenticationFailedError();
+      }
+      return { sessionHandle, absoluteExpiresAt };
+    },
+
+    async resolveStudentSession(command) {
+      const { store, handles } = requireStudentAccessSeams();
+      const resolvedAt = dependencies.clock.now();
+      return store.resolveStudentSession({
+        sessionHandleHash: handles.hash(command.sessionHandle),
+        resolvedAt,
+        idleExpiresAt: new Date(resolvedAt.getTime() + 30 * 60 * 1000),
       });
     },
   };

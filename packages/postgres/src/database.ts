@@ -21,6 +21,7 @@ export type Database = {
     current_generation: number;
     status: string;
     created_at: Timestamp;
+    authorization_expires_at: Timestamp;
     record_owner: string;
     record_classification: string;
     disposal_class: string;
@@ -30,8 +31,10 @@ export type Database = {
     generation: number;
     purpose: string;
     code_digest: string;
+    lookup_digest: ColumnType<string | null, string | null, string | null>;
     expires_at: Timestamp;
     completed_at: ColumnType<Date | null, Date | null, Date | null>;
+    failed_attempts: number;
   };
   'identity_access.invitation_deliveries': {
     invitation_id: string;

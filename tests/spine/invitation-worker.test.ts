@@ -52,7 +52,7 @@ test('worker relays IDs only and retries delivery with a stable provider idempot
       },
       async suppress() {},
     },
-    decrypt: () => ({ recipient: 'student@example.test', code: 'M7K9-P2Q4' }),
+    decrypt: () => ({ recipient: 'student@example.test', code: '729104' }),
     mail: {
       async sendInvitation(message: {
         recipient: string;
@@ -79,10 +79,10 @@ test('worker relays IDs only and retries delivery with a stable provider idempot
   expect(sent[1]?.idempotencyKey).toBe('invitation-1:1');
   expect(sent[1]?.subject).toBe('Your Invitation Code');
   expect(sent[1]?.text).toBe(
-    'Your Invitation Code is M7K9-P2Q4. It expires in 24 hours.',
+    'Your Invitation Code is 729104. It expires in 10 minutes.',
   );
   expect(JSON.stringify(jobs)).not.toContain('example.test');
-  expect(JSON.stringify(jobs)).not.toContain('M7K9-P2Q4');
+  expect(JSON.stringify(jobs)).not.toContain('729104');
 });
 
 test('worker acknowledges stale or otherwise non-current delivery without decrypting or mailing', async () => {
@@ -154,7 +154,7 @@ test('worker suppresses a permanently rejected delivery instead of poisoning the
         suppressed = true;
       },
     },
-    decrypt: () => ({ recipient: 'outside@example.test', code: 'M7K9-P2Q4' }),
+    decrypt: () => ({ recipient: 'outside@example.test', code: '729104' }),
     mail: {
       sendInvitation: async () => {
         throw new PermanentInvitationDeliveryError();

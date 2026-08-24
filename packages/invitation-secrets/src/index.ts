@@ -3,6 +3,8 @@ import {
   createDecipheriv,
   createHmac,
   randomBytes,
+  randomInt,
+  timingSafeEqual,
 } from 'node:crypto';
 import type { InvitationSecretProtector } from '../../../modules/identity-access/index.ts';
 
@@ -21,6 +23,10 @@ function context(input: {
   return `${input.purpose}:${input.invitationId}:${input.generation}`;
 }
 
+function recipientContext(input: { workspaceId: string; studentId: string }) {
+  return `verified-email:${input.workspaceId}:${input.studentId}`;
+}
+
 export function createInvitationSecretProtector(
   keys: InvitationSecretKeys,
 ): InvitationSecretProtector {
@@ -35,14 +41,56 @@ export function createInvitationSecretProtector(
   return {
     createCode:
       keys.createCode ??
-      (() => randomBytes(6).toString('base64url').toUpperCase()),
+      (() => randomInt(0, 1_000_000).toString().padStart(6, '0')),
+    digestRecipient(recipient) {
+      return createHmac('sha256', keys.hmacKey)
+        .update(`recipient:${recipient.trim().toLowerCase()}`)
+        .digest('hex');
+    },
+    digestInvitationLookup(input) {
+      return createHmac('sha256', keys.hmacKey)
+        .update(
+          `invitation-lookup:${input.recipient.trim().toLowerCase()}:${input.code}`,
+        )
+        .digest('hex');
+    },
+    digestCode(input) {
+      return createHmac('sha256', keys.hmacKey)
+        .update(`code:${context(input)}:${input.code}`)
+        .digest('hex');
+    },
+    codeMatches(input) {
+      const actual = Buffer.from(
+        createHmac('sha256', keys.hmacKey)
+          .update(`code:${context(input)}:${input.code}`)
+          .digest('hex'),
+      );
+      const expected = Buffer.from(input.expectedDigest);
+      return (
+        actual.length === expected.length && timingSafeEqual(actual, expected)
+      );
+    },
+    protectRecipient(input) {
+      const binding = recipientContext(input);
+      const nonce = randomBytes(12);
+      const cipher = createCipheriv('aes-256-gcm', encryptionKey, nonce);
+      cipher.setAAD(Buffer.from(binding));
+      const encrypted = Buffer.concat([
+        cipher.update(input.recipient.trim().toLowerCase()),
+        cipher.final(),
+      ]);
+      return {
+        keyId: keys.activeEncryptionKeyId,
+        ciphertext: Buffer.concat([
+          nonce,
+          cipher.getAuthTag(),
+          encrypted,
+        ]).toString('base64url'),
+      };
+    },
     protect(input) {
       const normalizedRecipient = input.recipient.trim().toLowerCase();
       const binding = context(input);
-      const digest = (kind: string, value: string) =>
-        createHmac('sha256', keys.hmacKey)
-          .update(`${kind}:${binding}:${value}`)
-          .digest('hex');
       const nonce = randomBytes(12);
       const cipher = createCipheriv('aes-256-gcm', encryptionKey, nonce);
       cipher.setAAD(Buffer.from(binding));
@@ -53,8 +101,15 @@ export function createInvitationSecretProtector(
         cipher.final(),
       ]);
       return {
-        recipientDigest: digest('recipient', normalizedRecipient),
-        codeDigest: digest('code', input.code),
+        recipientDigest: createHmac('sha256', keys.hmacKey)
+          .update(`recipient:${normalizedRecipient}`)
+          .digest('hex'),
+        codeDigest: createHmac('sha256', keys.hmacKey)
+          .update(`code:${binding}:${input.code}`)
+          .digest('hex'),
+        lookupDigest: createHmac('sha256', keys.hmacKey)
+          .update(`invitation-lookup:${normalizedRecipient}:${input.code}`)
+          .digest('hex'),
         keyId: keys.activeEncryptionKeyId,
         ciphertext: Buffer.concat([
           nonce,

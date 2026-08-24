@@ -12,6 +12,7 @@ import {
 import type { Database } from './database.ts';
 import { createPostgresStaffAccessStore } from './staff-access.ts';
 import { createPostgresClassInvitationStore } from './class-invitations.ts';
+import { createPostgresStudentAccessStore } from './student-access.ts';
 import type { InvitationSecretProtector } from '../../../modules/identity-access/index.ts';
 
 export const restrictedDatabaseRoleSql = `select
@@ -66,6 +67,7 @@ export function createPostgresIdentityAndAccess(options: {
     classInvitations: createPostgresClassInvitationStore({
       pool: options.pool,
     }),
+    studentAccess: createPostgresStudentAccessStore({ pool: options.pool }),
     ...(options.invitationSecrets
       ? { invitationSecrets: options.invitationSecrets }
       : {}),

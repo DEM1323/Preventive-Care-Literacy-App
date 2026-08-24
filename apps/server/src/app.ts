@@ -22,6 +22,7 @@ import {
   StaffAuthenticationStaleError,
   StaffIdentityAlreadyExistsError,
   StaffPermissionRequiredError,
+  StudentAuthenticationFailedError,
 } from '../../../modules/identity-access/index.ts';
 import {
   createTelemetry,
@@ -43,6 +44,7 @@ import {
 } from '../../../packages/invitation-secrets/src/index.ts';
 
 const staffSessionCookie = '__Host-prevcare-staff-session' as const;
+const studentSessionCookie = '__Host-prevcare-student-session' as const;
 
 const requestBodyLimit = 64 * 1024;
 const securityHeaders = {
@@ -219,10 +221,36 @@ const ClassDirectoryResponse = Type.Object({
             Type.Literal('delivery_failed'),
             Type.Literal('expired'),
             Type.Literal('completed'),
+            Type.Literal('revoked'),
+            Type.Literal('superseded'),
           ]),
           expiresAt: Type.String({ format: 'date-time' }),
         }),
       ),
+    }),
+  ),
+});
+
+const RedeemInvitationBody = Type.Object(
+  {
+    recipient: Type.String({
+      maxLength: 322,
+      pattern: '^\\s*[^\\s@]+@[^\\s@]+\\s*$',
+    }),
+    code: Type.String({ pattern: '^[0-9]{6}$' }),
+  },
+  { additionalProperties: false },
+);
+const StudentSessionCreatedResponse = Type.Object({
+  outcome: Type.Literal('authenticated'),
+});
+const StudentSessionResponse = Type.Object({
+  studentId: Type.String({ format: 'uuid' }),
+  workspaceId: Type.String({ format: 'uuid' }),
+  activeClassMemberships: Type.Array(
+    Type.Object({
+      classId: Type.String({ format: 'uuid' }),
+      name: Type.String(),
     }),
   ),
 });
@@ -406,6 +434,14 @@ export async function buildApp(
         code: error.code,
       });
     }
+    if (error instanceof StudentAuthenticationFailedError) {
+      return reply.type('application/problem+json').code(401).send({
+        type: 'https://preventive-care-literacy.example/problems/student-authentication',
+        title: error.message,
+        status: 401,
+        code: error.code,
+      });
+    }
     if (
       typeof error === 'object' &&
       error !== null &&
@@ -449,6 +485,11 @@ export async function buildApp(
             type: 'apiKey',
             in: 'cookie',
             name: '__Host-prevcare-staff-session',
+          },
+          studentSession: {
+            type: 'apiKey',
+            in: 'cookie',
+            name: studentSessionCookie,
           },
         },
       },
@@ -826,6 +867,65 @@ export async function buildApp(
       return {
         classes: await identityAndAccess.listClasses({ sessionHandle }),
       };
+    },
+  );
+
+  app.post<{ Body: Static<typeof RedeemInvitationBody> }>(
+    '/api/v1/auth/student/invitations/redeem',
+    {
+      schema: {
+        operationId: 'redeemInvitation',
+        body: RedeemInvitationBody,
+        response: {
+          200: StudentSessionCreatedResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const grant = await identityAndAccess.redeemInvitation(request.body);
+      reply.header(
+        'set-cookie',
+        setSecureOpaqueCookie(studentSessionCookie, grant.sessionHandle),
+      );
+      return { outcome: 'authenticated' as const };
+    },
+  );
+
+  app.get(
+    '/api/v1/student/session',
+    {
+      schema: {
+        operationId: 'readStudentSession',
+        security: [{ studentSession: [] }],
+        response: {
+          200: StudentSessionResponse,
+          401: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        studentSessionCookie,
+      );
+      const session =
+        sessionHandle &&
+        (await identityAndAccess.resolveStudentSession({ sessionHandle }));
+      if (!session) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/student-session',
+          title: 'Student session required',
+          status: 401,
+          code: 'STUDENT_SESSION_REQUIRED',
+        });
+      }
+      return session;
     },
   );
 
