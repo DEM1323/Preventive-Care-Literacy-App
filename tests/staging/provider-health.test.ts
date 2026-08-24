@@ -116,9 +116,15 @@ test('provider probes exercise fixed Supabase seams without exposing content', a
           user: { id: '018f1f5e-7b76-7f70-8f4d-9dc17ecf2999' },
         });
       }
-      if (url.endsWith('/auth/v1/factors') && !init?.method) {
+      if (url.endsWith('/auth/v1/user') && !init?.method) {
         return Response.json({
-          totp: [{ id: 'provider-smoke-factor', status: 'verified' }],
+          factors: [
+            {
+              id: 'provider-smoke-factor',
+              status: 'verified',
+              factor_type: 'totp',
+            },
+          ],
         });
       }
       if (url.endsWith('/auth/v1/factors/provider-smoke-factor/challenge')) {
@@ -167,7 +173,7 @@ test('provider probes exercise fixed Supabase seams without exposing content', a
       authorization: 'Bearer supabase-secret',
     },
     {
-      url: 'https://project-ref.supabase.co/auth/v1/factors',
+      url: 'https://project-ref.supabase.co/auth/v1/user',
       method: 'GET',
       apikey: 'supabase-secret',
       authorization: 'Bearer provider-smoke-access-token',
