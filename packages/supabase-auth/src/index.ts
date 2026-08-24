@@ -82,16 +82,18 @@ export function createSupabaseStaffAuth(options: {
   async function listTotpFactors(
     accessToken: string,
   ): Promise<{ id: string; status: string }[]> {
-    const response = await http(`${baseUrl}/factors`, {
+    const response = await http(`${baseUrl}/user`, {
       headers: userHeaders(accessToken),
     });
     if (!response.ok) {
       throw new Error(`Supabase factor listing failed: ${response.status}`);
     }
     const body = (await response.json()) as {
-      totp?: { id: string; status: string }[];
+      factors?: { id: string; status: string; factor_type: string }[];
     };
-    return body.totp ?? [];
+    return (body.factors ?? []).filter(
+      (factor) => factor.factor_type === 'totp',
+    );
   }
 
   async function enrollTotp(accessToken: string): Promise<{
