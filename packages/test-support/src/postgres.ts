@@ -73,6 +73,8 @@ export async function createRuntimeDatabaseUser(
     await client.query(
       `grant select, insert on identity_access.school_workspaces,
          identity_access.staff_identities, identity_access.staff_permission_grants,
+         identity_access.classes, identity_access.invitations,
+         identity_access.invitation_challenges, identity_access.invitation_deliveries,
          infrastructure.operation_receipts, audit.evidence to ${role}`,
     );
     await client.query(

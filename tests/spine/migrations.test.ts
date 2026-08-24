@@ -18,6 +18,7 @@ test('migrations apply in order and are repeatable', async () => {
       expect(applied.rows).toEqual([
         { name: '001_audited_spine.sql' },
         { name: '002_staff_authentication.sql' },
+        { name: '003_class_invitation.sql' },
       ]);
     } finally {
       await client.end();

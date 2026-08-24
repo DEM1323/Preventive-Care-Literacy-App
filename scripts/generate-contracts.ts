@@ -47,6 +47,12 @@ async function renderContracts() {
       openClinicalDirectory: async () => {
         throw new Error('Contract generation does not execute queries');
       },
+      createClassInvitation: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      listClasses: async () => {
+        throw new Error('Contract generation does not execute queries');
+      },
     },
     {
       publicOrigin: 'https://contract-generator.example',

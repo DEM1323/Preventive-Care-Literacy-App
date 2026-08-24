@@ -22,6 +22,7 @@ export type TelemetryEvent =
         | 'staff-sign-out'
         | 'staff-session'
         | 'clinical-directory'
+        | 'classes'
         | 'unknown';
       statusCode: number;
       durationMs: number;
@@ -65,6 +66,7 @@ const routes = new Set([
   'staff-sign-out',
   'staff-session',
   'clinical-directory',
+  'classes',
   'unknown',
 ]);
 const providers = new Set<string>(providerNames);

@@ -11,11 +11,17 @@ function requiredEnvironment(name: string): string {
 
 const databaseUrl = requiredEnvironment('DATABASE_URL');
 const runtimeDatabaseUrl = requiredEnvironment('RUNTIME_DATABASE_URL');
+const workerDatabaseUrl = requiredEnvironment('WORKER_DATABASE_URL');
 const projectRef = requiredEnvironment('SUPABASE_PROJECT_REF');
 const supabaseUrl = requiredEnvironment('SUPABASE_URL');
 const databaseCaCertificate = requiredEnvironment('DATABASE_CA_CERT');
 assertSupabaseDatabaseTarget({
   databaseUrl,
+  projectRef,
+  supabaseUrl,
+});
+assertSupabaseDatabaseTarget({
+  databaseUrl: workerDatabaseUrl,
   projectRef,
   supabaseUrl,
 });
@@ -45,12 +51,23 @@ try {
     throw new Error('Runtime database role has an invalid name');
   }
   const runtimeRoleIdentifier = `"${runtimeRole}"`;
+  const workerConnection = new URL(workerDatabaseUrl);
+  const decodedWorkerUsername = decodeURIComponent(workerConnection.username);
+  const workerRole = decodedWorkerUsername.endsWith(poolerSuffix)
+    ? decodedWorkerUsername.slice(0, -poolerSuffix.length)
+    : decodedWorkerUsername;
+  if (!/^[a-z_][a-z0-9_]*$/.test(workerRole)) {
+    throw new Error('Worker database role has an invalid name');
+  }
+  const workerRoleIdentifier = `"${workerRole}"`;
   const platformSql = (
     await readFile(
       new URL('../packages/postgres/supabase/staging.sql', import.meta.url),
       'utf8',
     )
-  ).replaceAll('__RUNTIME_ROLE__', runtimeRoleIdentifier);
+  )
+    .replaceAll('__RUNTIME_ROLE__', runtimeRoleIdentifier)
+    .replaceAll('__WORKER_ROLE__', workerRoleIdentifier);
   await client.query(platformSql);
   await client.query(
     `grant usage on schema identity_access, infrastructure, audit

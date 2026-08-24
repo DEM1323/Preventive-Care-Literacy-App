@@ -49,6 +49,60 @@ export type IdentityAndAccess = {
   openClinicalDirectory(
     command: StaffSessionCommand,
   ): Promise<ClinicalDirectory>;
+  createClassInvitation(
+    command: CreateClassInvitationCommand,
+  ): Promise<CreateClassInvitationResult>;
+  listClasses(command: StaffSessionCommand): Promise<ClassDirectoryEntry[]>;
+};
+
+export type CreateClassInvitationCommand = {
+  operationId: string;
+  classId: string;
+  invitationId: string;
+  name: string;
+  recipient: string;
+  sessionHandle: string;
+};
+
+export type CreateClassInvitationResult = {
+  operationId: string;
+  classId: string;
+  invitationId: string;
+  outcome: 'created';
+};
+
+export type ClassDirectoryEntry = {
+  classId: string;
+  name: string;
+  createdAt: Date;
+  invitations: {
+    invitationId: string;
+    purpose: 'join_class';
+    generation: number;
+    status:
+      | 'pending_delivery'
+      | 'delivered'
+      | 'delivery_failed'
+      | 'expired'
+      | 'completed';
+    expiresAt: Date;
+  }[];
+};
+
+export type InvitationSecretProtector = {
+  createCode(): string;
+  protect(input: {
+    invitationId: string;
+    purpose: 'join_class';
+    generation: number;
+    recipient: string;
+    code: string;
+  }): {
+    recipientDigest: string;
+    codeDigest: string;
+    keyId: string;
+    ciphertext: string;
+  };
 };
 
 export class SchoolWorkspaceAlreadyExistsError extends Error {
@@ -332,6 +386,60 @@ export type StaffAccessStore = {
   }): Promise<StaffDirectoryEntry[]>;
 };
 
+export type ClassInvitationStore = {
+  commit(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    createRecords(): ClassInvitationCommit;
+  }): Promise<CreateClassInvitationResult>;
+  list(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+  }): Promise<ClassDirectoryEntry[]>;
+};
+
+export type ClassInvitationCommit = {
+  classRecord: {
+    classId: string;
+    workspaceId: string;
+    name: string;
+    createdAt: Date;
+  };
+  invitation: {
+    invitationId: string;
+    workspaceId: string;
+    classId: string;
+    purpose: 'join_class';
+    recipientDigest: string;
+    currentGeneration: 1;
+    status: 'pending_delivery';
+    createdAt: Date;
+  };
+  challenge: {
+    invitationId: string;
+    generation: 1;
+    purpose: 'join_class';
+    codeDigest: string;
+    expiresAt: Date;
+  };
+  delivery: {
+    invitationId: string;
+    generation: 1;
+    keyId: string;
+    ciphertext: string;
+    status: 'pending';
+    providerIdempotencyKey: string;
+  };
+  receipt: {
+    result: CreateClassInvitationResult;
+    recordedAt: Date;
+  };
+  auditId: string;
+  outboxId: string;
+  actorId: string;
+};
+
 type StaffProvisioningCommit = {
   staffIdentity: {
     staffIdentityId: string;
@@ -400,6 +508,8 @@ export function createIdentityAndAccess(dependencies: {
   handles?: StaffSessionHandles;
   clock: Clock;
   ids: IdGenerator;
+  classInvitations?: ClassInvitationStore;
+  invitationSecrets?: InvitationSecretProtector;
 }): IdentityAndAccess {
   function requireStaffSeams(): {
     staffStore: StaffAccessStore;
@@ -444,6 +554,30 @@ export function createIdentityAndAccess(dependencies: {
       permissions: resolved.permissions,
       authenticatedAt: resolved.authenticatedAt,
     };
+  }
+
+  function requireClassInvitationSeams() {
+    if (!dependencies.classInvitations || !dependencies.invitationSecrets) {
+      throw new Error('Class Invitation seams are not configured');
+    }
+    return {
+      store: dependencies.classInvitations,
+      secrets: dependencies.invitationSecrets,
+    };
+  }
+
+  async function requireAdministrator(sessionHandle: string) {
+    const { staffStore } = requireStaffSeams();
+    const session = await requireSession(sessionHandle);
+    const current = await staffStore.staffHasPermission({
+      staffIdentityId: session.staffIdentityId,
+      workspaceId: session.workspaceId,
+      permission: 'administrative',
+    });
+    if (!session.permissions.includes('administrative') || !current) {
+      throw new StaffPermissionRequiredError('administrative');
+    }
+    return session;
   }
 
   return {
@@ -820,6 +954,79 @@ export function createIdentityAndAccess(dependencies: {
       // attach the real directory to. Clinical Permission and freshness are
       // already enforced here.
       return { students: [] };
+    },
+
+    async createClassInvitation(command) {
+      const session = await requireAdministrator(command.sessionHandle);
+      const { store, secrets } = requireClassInvitationSeams();
+      return store.commit({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        createRecords() {
+          const createdAt = dependencies.clock.now();
+          const code = secrets.createCode();
+          const protectedSecrets = secrets.protect({
+            invitationId: command.invitationId,
+            purpose: 'join_class',
+            generation: 1,
+            recipient: command.recipient,
+            code,
+          });
+          const result: CreateClassInvitationResult = {
+            operationId: command.operationId,
+            classId: command.classId,
+            invitationId: command.invitationId,
+            outcome: 'created',
+          };
+          return {
+            classRecord: {
+              classId: command.classId,
+              workspaceId: session.workspaceId,
+              name: command.name,
+              createdAt,
+            },
+            invitation: {
+              invitationId: command.invitationId,
+              workspaceId: session.workspaceId,
+              classId: command.classId,
+              purpose: 'join_class',
+              recipientDigest: protectedSecrets.recipientDigest,
+              currentGeneration: 1,
+              status: 'pending_delivery',
+              createdAt,
+            },
+            challenge: {
+              invitationId: command.invitationId,
+              generation: 1,
+              purpose: 'join_class',
+              codeDigest: protectedSecrets.codeDigest,
+              expiresAt: new Date(createdAt.getTime() + 24 * 60 * 60 * 1000),
+            },
+            delivery: {
+              invitationId: command.invitationId,
+              generation: 1,
+              keyId: protectedSecrets.keyId,
+              ciphertext: protectedSecrets.ciphertext,
+              status: 'pending',
+              providerIdempotencyKey: `${command.invitationId}:1`,
+            },
+            receipt: { result, recordedAt: createdAt },
+            auditId: dependencies.ids.create(),
+            outboxId: dependencies.ids.create(),
+            actorId: session.staffIdentityId,
+          };
+        },
+      });
+    },
+
+    async listClasses(command) {
+      const session = await requireAdministrator(command.sessionHandle);
+      const { store } = requireClassInvitationSeams();
+      return store.list({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+      });
     },
   };
 }

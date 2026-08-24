@@ -28,6 +28,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_MIGRATION_DATABASE_URL }}
           RUNTIME_DATABASE_URL: ${{ secrets.SUPABASE_RUNTIME_DATABASE_URL }}
+          WORKER_DATABASE_URL: ${{ secrets.SUPABASE_WORKER_DATABASE_URL }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           DATABASE_CA_CERT: ${{ secrets.DATABASE_CA_CERT }}
@@ -44,13 +45,42 @@ jobs:
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          INVITATION_HMAC_KEY: ${{ secrets.INVITATION_HMAC_KEY }}
+          INVITATION_DELIVERY_KEY_ID: ${{ vars.INVITATION_DELIVERY_KEY_ID }}
+          INVITATION_DELIVERY_KEY: ${{ secrets.INVITATION_DELIVERY_KEY }}
         run: |
           bunx @railway/cli@5.43.2 variables set --skip-deploys \
             --project 20cf68d2-d1df-4291-9aea-61cfebfd758d \
             --environment production \
             --service b70c4ec1-378c-4193-9823-af3ea9df4770 \
             "SUPABASE_URL=$SUPABASE_URL" \
-            "SUPABASE_SECRET_KEY=$SUPABASE_SECRET_KEY"
+            "SUPABASE_SECRET_KEY=$SUPABASE_SECRET_KEY" \
+            "INVITATION_HMAC_KEY=$INVITATION_HMAC_KEY" \
+            "INVITATION_DELIVERY_KEY_ID=$INVITATION_DELIVERY_KEY_ID" \
+            "INVITATION_DELIVERY_KEY=$INVITATION_DELIVERY_KEY"
+
+      - name: Synchronize private worker variables
+        env:
+          RAILWAY_WORKER_SERVICE_ID: ${{ vars.RAILWAY_WORKER_SERVICE_ID }}
+          WORKER_DATABASE_URL: ${{ secrets.SUPABASE_WORKER_DATABASE_URL }}
+          DATABASE_CA_CERT: ${{ secrets.DATABASE_CA_CERT }}
+          INVITATION_DELIVERY_KEY_ID: ${{ vars.INVITATION_DELIVERY_KEY_ID }}
+          INVITATION_DELIVERY_KEY: ${{ secrets.INVITATION_DELIVERY_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          INVITATION_EMAIL_FROM: ${{ secrets.INVITATION_EMAIL_FROM }}
+          INVITATION_CONTROLLED_MAILBOX: ${{ secrets.INVITATION_CONTROLLED_MAILBOX }}
+        run: |
+          bunx @railway/cli@5.43.2 variables set --skip-deploys \
+            --project 20cf68d2-d1df-4291-9aea-61cfebfd758d \
+            --environment production \
+            --service "$RAILWAY_WORKER_SERVICE_ID" \
+            "WORKER_DATABASE_URL=$WORKER_DATABASE_URL" \
+            "DATABASE_CA_CERT=$DATABASE_CA_CERT" \
+            "INVITATION_DELIVERY_KEY_ID=$INVITATION_DELIVERY_KEY_ID" \
+            "INVITATION_DELIVERY_KEY=$INVITATION_DELIVERY_KEY" \
+            "RESEND_API_KEY=$RESEND_API_KEY" \
+            "INVITATION_EMAIL_FROM=$INVITATION_EMAIL_FROM" \
+            "INVITATION_CONTROLLED_MAILBOX=$INVITATION_CONTROLLED_MAILBOX"
 
       - name: Deploy merged source to Railway
         run: |
@@ -59,6 +89,16 @@ jobs:
             --environment production \
             --service b70c4ec1-378c-4193-9823-af3ea9df4770 \
             --message "Deploy $GITHUB_SHA"
+
+      - name: Deploy private worker to Railway
+        env:
+          RAILWAY_WORKER_SERVICE_ID: ${{ vars.RAILWAY_WORKER_SERVICE_ID }}
+        run: |
+          bunx @railway/cli@5.43.2 up --ci \
+            --project 20cf68d2-d1df-4291-9aea-61cfebfd758d \
+            --environment production \
+            --service "$RAILWAY_WORKER_SERVICE_ID" \
+            --message "Deploy Invitation worker $GITHUB_SHA"
 
       - name: Remove temporary deployment credentials
         if: always()
