@@ -13,6 +13,14 @@ const supabaseUrl = process.env.SUPABASE_URL;
 if (!supabaseUrl) throw new Error('SUPABASE_URL is required');
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
 if (!supabaseSecretKey) throw new Error('SUPABASE_SECRET_KEY is required');
+const invitationHmacKey = process.env.INVITATION_HMAC_KEY;
+if (!invitationHmacKey) throw new Error('INVITATION_HMAC_KEY is required');
+const invitationDeliveryKey = process.env.INVITATION_DELIVERY_KEY;
+if (!invitationDeliveryKey)
+  throw new Error('INVITATION_DELIVERY_KEY is required');
+const invitationDeliveryKeyId = process.env.INVITATION_DELIVERY_KEY_ID;
+if (!invitationDeliveryKeyId)
+  throw new Error('INVITATION_DELIVERY_KEY_ID is required');
 
 const server = await createServer({
   databaseUrl,
@@ -23,6 +31,13 @@ const server = await createServer({
     secretKey: supabaseSecretKey,
   }),
   publicOrigin,
+  invitationSecrets: {
+    hmacKey: Buffer.from(invitationHmacKey, 'base64'),
+    encryptionKeys: {
+      [invitationDeliveryKeyId]: Buffer.from(invitationDeliveryKey, 'base64'),
+    },
+    activeEncryptionKeyId: invitationDeliveryKeyId,
+  },
   webRoot: process.env.WEB_ROOT ?? 'dist',
 });
 await server.listen({

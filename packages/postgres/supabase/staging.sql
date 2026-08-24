@@ -14,6 +14,16 @@ $$;
 do $$
 begin
   if not exists (
+    select 1 from pgmq.list_queues() where queue_name = 'invitation-delivery'
+  ) then
+    perform pgmq.create('invitation-delivery');
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
     select 1 from cron.job where jobname = 'provider-smoke'
   ) then
     perform cron.schedule('provider-smoke', '* * * * *', 'select 1');
@@ -71,3 +81,52 @@ revoke all on function infrastructure.provider_cron_healthy(text) from public;
 revoke all on function infrastructure.provider_queue_healthy(text) from public;
 grant execute on function infrastructure.provider_cron_healthy(text) to __RUNTIME_ROLE__;
 grant execute on function infrastructure.provider_queue_healthy(text) to __RUNTIME_ROLE__;
+
+create or replace function infrastructure.enqueue_invitation_delivery(requested_outbox_id uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  update infrastructure.outbox set status = 'enqueued'
+   where outbox_id = requested_outbox_id
+     and topic = 'invitation.delivery_requested' and status = 'pending';
+  if found then
+    perform pgmq.send('invitation-delivery', jsonb_build_object('outboxId', requested_outbox_id));
+  end if;
+end
+$$;
+
+create or replace function infrastructure.read_invitation_delivery()
+returns table (message_id bigint, outbox_id uuid, attempt integer)
+language sql security definer set search_path = '' as $$
+  select message.msg_id, (message.message->>'outboxId')::uuid, message.read_ct
+    from pgmq.read('invitation-delivery', 60, 1) message
+$$;
+
+create or replace function infrastructure.complete_invitation_delivery_message(requested_message_id bigint)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  perform pgmq.delete('invitation-delivery', requested_message_id);
+end
+$$;
+
+create or replace function infrastructure.retry_invitation_delivery_message(
+  requested_message_id bigint, requested_delay_seconds integer
+)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  perform pgmq.set_vt('invitation-delivery', requested_message_id, requested_delay_seconds);
+end
+$$;
+
+revoke all on function infrastructure.enqueue_invitation_delivery(uuid) from public;
+revoke all on function infrastructure.read_invitation_delivery() from public;
+revoke all on function infrastructure.complete_invitation_delivery_message(bigint) from public;
+revoke all on function infrastructure.retry_invitation_delivery_message(bigint, integer) from public;
+grant usage on schema infrastructure to __WORKER_ROLE__;
+grant execute on function infrastructure.pending_invitation_outbox() to __WORKER_ROLE__;
+grant execute on function infrastructure.claim_invitation_delivery(uuid, timestamptz) to __WORKER_ROLE__;
+grant execute on function infrastructure.complete_invitation_delivery(uuid, uuid, integer, text, timestamptz) to __WORKER_ROLE__;
+grant execute on function infrastructure.suppress_invitation_delivery(uuid, uuid, integer) to __WORKER_ROLE__;
+grant execute on function infrastructure.enqueue_invitation_delivery(uuid) to __WORKER_ROLE__;
+grant execute on function infrastructure.read_invitation_delivery() to __WORKER_ROLE__;
+grant execute on function infrastructure.complete_invitation_delivery_message(bigint) to __WORKER_ROLE__;
+grant execute on function infrastructure.retry_invitation_delivery_message(bigint, integer) to __WORKER_ROLE__;

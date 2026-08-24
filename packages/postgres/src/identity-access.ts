@@ -11,6 +11,8 @@ import {
 } from '../../../modules/identity-access/index.ts';
 import type { Database } from './database.ts';
 import { createPostgresStaffAccessStore } from './staff-access.ts';
+import { createPostgresClassInvitationStore } from './class-invitations.ts';
+import type { InvitationSecretProtector } from '../../../modules/identity-access/index.ts';
 
 export const restrictedDatabaseRoleSql = `select
   exists (
@@ -49,6 +51,7 @@ export function createPostgresIdentityAndAccess(options: {
   handles: StaffSessionHandles;
   clock: Clock;
   ids: IdGenerator;
+  invitationSecrets?: InvitationSecretProtector;
 }) {
   const database = new Kysely<Database>({
     dialect: new PostgresDialect({ pool: options.pool }),
@@ -60,6 +63,12 @@ export function createPostgresIdentityAndAccess(options: {
     staffAuth: options.staffAuth,
     handles: options.handles,
     staffStore: createPostgresStaffAccessStore({ pool: options.pool }),
+    classInvitations: createPostgresClassInvitationStore({
+      pool: options.pool,
+    }),
+    ...(options.invitationSecrets
+      ? { invitationSecrets: options.invitationSecrets }
+      : {}),
     committer: {
       commit(request) {
         return database

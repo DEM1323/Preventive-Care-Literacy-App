@@ -37,6 +37,10 @@ import {
   assertRestrictedDatabaseRole,
   createPostgresIdentityAndAccess,
 } from '../../../packages/postgres/src/identity-access.ts';
+import {
+  createInvitationSecretProtector,
+  type InvitationSecretKeys,
+} from '../../../packages/invitation-secrets/src/index.ts';
 
 const staffSessionCookie = '__Host-prevcare-staff-session' as const;
 
@@ -179,6 +183,50 @@ const ClinicalDirectoryResponse = Type.Object({
   students: Type.Array(Type.Unknown(), { maxItems: 0 }),
 });
 
+const CreateClassInvitationBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    classId: Type.String({ format: 'uuid' }),
+    invitationId: Type.String({ format: 'uuid' }),
+    name: Type.String({ minLength: 1, maxLength: 200, pattern: '.*\\S.*' }),
+    recipient: Type.String({
+      maxLength: 322,
+      pattern: '^\\s*[^\\s@]+@[^\\s@]+\\s*$',
+    }),
+  },
+  { additionalProperties: false },
+);
+const CreateClassInvitationResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  classId: Type.String({ format: 'uuid' }),
+  invitationId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('created'),
+});
+const ClassDirectoryResponse = Type.Object({
+  classes: Type.Array(
+    Type.Object({
+      classId: Type.String({ format: 'uuid' }),
+      name: Type.String(),
+      createdAt: Type.String({ format: 'date-time' }),
+      invitations: Type.Array(
+        Type.Object({
+          invitationId: Type.String({ format: 'uuid' }),
+          purpose: Type.Literal('join_class'),
+          generation: Type.Integer({ minimum: 1 }),
+          status: Type.Union([
+            Type.Literal('pending_delivery'),
+            Type.Literal('delivered'),
+            Type.Literal('delivery_failed'),
+            Type.Literal('expired'),
+            Type.Literal('completed'),
+          ]),
+          expiresAt: Type.String({ format: 'date-time' }),
+        }),
+      ),
+    }),
+  ),
+});
+
 const ProblemDetails = Type.Object({
   type: Type.String(),
   title: Type.String(),
@@ -287,7 +335,9 @@ export async function buildApp(
                     ? 'staff-session'
                     : route === '/api/v1/clinical/review-directory'
                       ? 'clinical-directory'
-                      : 'unknown';
+                      : route === '/api/v1/administration/classes'
+                        ? 'classes'
+                        : 'unknown';
       telemetry.record({
         name: 'http.request.completed',
         method: ['DELETE', 'GET', 'PATCH', 'POST', 'PUT'].includes(
@@ -708,6 +758,77 @@ export async function buildApp(
     },
   );
 
+  app.post<{ Body: Static<typeof CreateClassInvitationBody> }>(
+    '/api/v1/administration/classes',
+    {
+      schema: {
+        operationId: 'createClassInvitation',
+        security: [{ staffSession: [] }],
+        body: CreateClassInvitationBody,
+        response: {
+          201: CreateClassInvitationResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        staffSessionCookie,
+      );
+      if (!sessionHandle) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      const result = await identityAndAccess.createClassInvitation({
+        ...request.body,
+        sessionHandle,
+      });
+      return reply.code(201).send(result);
+    },
+  );
+
+  app.get(
+    '/api/v1/administration/classes',
+    {
+      schema: {
+        operationId: 'listClasses',
+        security: [{ staffSession: [] }],
+        response: {
+          200: ClassDirectoryResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        staffSessionCookie,
+      );
+      if (!sessionHandle) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      return {
+        classes: await identityAndAccess.listClasses({ sessionHandle }),
+      };
+    },
+  );
+
   app.setNotFoundHandler((request, reply) => {
     if (
       options.webRoot &&
@@ -739,6 +860,7 @@ export async function createServer(options: {
   webRoot?: string;
   clock?: Clock;
   ids?: IdGenerator;
+  invitationSecrets?: InvitationSecretKeys;
 }): Promise<FastifyInstance> {
   const connectionUrl = new URL(options.databaseUrl);
   if (options.databaseCaCertificate) {
@@ -773,6 +895,13 @@ export async function createServer(options: {
         create: () => randomBytes(32).toString('base64url'),
         hash: (handle) => createHash('sha256').update(handle).digest('hex'),
       },
+      invitationSecrets: createInvitationSecretProtector(
+        options.invitationSecrets ?? {
+          hmacKey: randomBytes(32),
+          encryptionKeys: { ephemeral: randomBytes(32) },
+          activeEncryptionKeyId: 'ephemeral',
+        },
+      ),
     }),
     {
       operatorAuthenticator: createOperatorAuthenticator(

@@ -1,26 +1,29 @@
 # Staging deployment
 
-Supabase operates the managed PostgreSQL, Auth, private Storage, Queues, and Cron capabilities. Railway builds this repository from source and runs one public same-origin web/API process. The background worker is not deployed during this synthetic alpha stage. School staff use purpose-built application screens; only the Technical Operator uses the Supabase and Railway dashboards.
+Supabase operates the managed PostgreSQL, Auth, private Storage, Queues, and Cron capabilities. Railway builds this repository from source and runs one public same-origin web/API service plus one private Invitation delivery worker. School staff use purpose-built application screens; only the Technical Operator uses the Supabase and Railway dashboards.
 
 ## Required controls
 
 - A dedicated Supabase staging project in a US region with SSL enforcement and daily backups. The staging migration creates the dedicated `provider-smoke` Queue, minute-scheduled `provider-smoke` Cron job, restricted health function, and private `private-records` Storage bucket; do not create these manually under a different owner.
 - The owner connection is used only from an operator-controlled migration command. Railway receives only the restricted runtime login, which is non-owning and cannot use `SUPERUSER` or `BYPASSRLS`.
-- One Railway service connected to the repository's `main` branch. Railway builds the checked-in Dockerfile and uses `railway.json` for the readiness check and restart policy.
-- Railway variables `DATABASE_URL`, `DATABASE_CA_CERT`, `PUBLIC_ORIGIN`, `OPERATOR_PROVISIONING_TOKEN`, and `OPERATOR_ID`. `DATABASE_CA_CERT` contains the Supabase server root certificate PEM. No database URL or server credential uses a `VITE_*` name.
+- Two Railway services connected to the repository's `main` branch. The public service uses `railway.json`. The private worker uses `railway.worker.json`, has no generated domain or public networking, and runs `bun apps/server/src/invitation-worker.ts` from the same image. Do not configure a Render service.
+- Public Railway variables `DATABASE_URL`, `DATABASE_CA_CERT`, `PUBLIC_ORIGIN`, `OPERATOR_PROVISIONING_TOKEN`, `OPERATOR_ID`, `INVITATION_HMAC_KEY`, `INVITATION_DELIVERY_KEY_ID`, and `INVITATION_DELIVERY_KEY`. `DATABASE_CA_CERT` contains the Supabase server root certificate PEM. No database URL or server credential uses a `VITE_*` name.
+- Private worker variables `WORKER_DATABASE_URL`, `DATABASE_CA_CERT`, `INVITATION_DELIVERY_KEY_ID`, `INVITATION_DELIVERY_KEY`, `RESEND_API_KEY`, `INVITATION_EMAIL_FROM`, and `INVITATION_CONTROLLED_MAILBOX`. The worker role receives only execute grants on narrow outbox, delivery, and PGMQ functions. The controlled mailbox must equal the normalized recipient used for the staging Invitation; the adapter rejects every other destination.
 - Railway variables `SUPABASE_URL` and `SUPABASE_SECRET_KEY` for the staff authentication seam. The server mediates password verification, TOTP enrollment, and assurance-level checks through Supabase Auth; browsers never receive Supabase credentials or tokens, and school staff never need Supabase dashboard access.
 - A GitHub `staging` environment restricted to the `main` branch, with a variable named `RAILWAY_STAGING_ORIGIN` plus the Supabase project, URL, Storage, Queue, and Cron names.
-- GitHub `staging` secrets for the owner-only `SUPABASE_MIGRATION_DATABASE_URL`, the restricted runtime `DATABASE_URL` compatibility value `SUPABASE_RUNTIME_DATABASE_URL`, Supabase server key, Supabase root certificate, Resend key, controlled provider-smoke sender and destination, and the dedicated synthetic Auth smoke identity's email, password, and TOTP secret. Railway receives only the application variables.
+- GitHub `staging` secrets for the owner-only `SUPABASE_MIGRATION_DATABASE_URL`, restricted `SUPABASE_RUNTIME_DATABASE_URL` and `SUPABASE_WORKER_DATABASE_URL`, Supabase server key, Supabase root certificate, `INVITATION_HMAC_KEY`, `INVITATION_DELIVERY_KEY`, Resend key, `INVITATION_EMAIL_FROM`, `INVITATION_CONTROLLED_MAILBOX`, controlled provider-smoke sender and destination, and the dedicated synthetic Auth smoke identity's email, password, and TOTP secret. Add environment variables `RAILWAY_WORKER_SERVICE_ID` and `INVITATION_DELIVERY_KEY_ID`. Railway receives only each service's listed application variables.
 
 Use Supabase's direct connection when Railway can reach the project's IPv6 endpoint; otherwise use the session pooler on port 5432. Do not use transaction-pooler port 6543 because the application relies on transaction-local workspace context and advisory locks. Keep the application pool within the Supabase plan's connection limit.
 
 ## First deployment
 
 1. Create a Railway project with **Deploy from GitHub repo** and select this repository.
-2. Add the five Railway variables listed above. Paste the Supabase server root certificate itself into `DATABASE_CA_CERT`; do not give Railway the owner database connection.
+2. Add the public Railway variables listed above. Paste the Supabase server root certificate itself into `DATABASE_CA_CERT`; do not give Railway the owner database connection.
 3. In the Railway service settings, generate a public domain. Set `PUBLIC_ORIGIN` to that exact HTTPS origin and redeploy.
-4. Confirm `/health/ready` succeeds, then set `RAILWAY_STAGING_ORIGIN` in GitHub's `staging` environment.
-5. Add the GitHub provider-check secrets and run the **Verify staging** workflow. It verifies repository controls, deployed HTTP security, and real PostgreSQL, Auth, private Storage, Queue, Cron, and email capabilities.
+4. Create a second Railway service from the same repository, set its config file path to `/railway.worker.json`, disable public networking, and add only the private worker variables. Use a dedicated non-owning Supabase worker role and run `scripts/migrate-staging.ts` with `WORKER_DATABASE_URL` so the narrow function grants are applied.
+5. Confirm the public `/health/ready` succeeds, then set `RAILWAY_STAGING_ORIGIN` in GitHub's `staging` environment.
+6. Create one Class and Invitation addressed exactly to `INVITATION_CONTROLLED_MAILBOX`, then confirm the neutral `Your Invitation Code` message in that mailbox. Do not put the address or code in issue comments, workflow output, URLs, or screenshots.
+7. Add the GitHub provider-check secrets and run the **Verify staging** workflow. It verifies repository controls, deployed HTTP security, and real PostgreSQL, Auth, private Storage, Queue, Cron, and email capabilities.
 
 ## Auth smoke identity setup
 
@@ -34,7 +37,7 @@ Railway records the Git commit used for each source deployment and can redeploy 
 
 The **Deploy staging** workflow applies owner migrations over certificate-verified TLS, reapplies restricted runtime grants, synchronizes the required Railway variables without triggering an intermediate release, and uploads the exact checked-out `main` source with a pinned Railway CLI. Before dispatching it, temporarily set `DEPLOY_SETUP_GH_TOKEN` to a fine-grained repository token with `Environments: write` and `RAILWAY_CONFIG_B64` to a base64 encoding of an authenticated Technical Operator Railway CLI configuration. The workflow removes the temporary stored copies after deployment.
 
-The provider checks expose only fixed capability names, status, and duration. They parse only the provider fields needed to prove each capability, discard bodies and errors after the check, and must not emit addresses, codes, session handles, answers, request bodies, or generated content. The Auth check uses a dedicated synthetic Supabase Auth identity with a pre-enrolled TOTP factor to prove password, challenge, verification, and `aal2` behavior. It is not linked to an application-owned Staff Identity, cannot obtain a Staff Session, and is maintained only by the Technical Operator.
+The provider checks expose only fixed capability names, status, and duration. They parse only the provider fields needed to prove each capability, discard bodies and errors after the check, and must not emit addresses, codes, session handles, answers, request bodies, or generated content. The Invitation queue contains only an outbox ID; its outbox payload contains only the Invitation ID. Recipient and code delivery material is authenticated-encrypted under `INVITATION_DELIVERY_KEY_ID` and decrypted only in worker memory. Resend receives a stable generation-bound idempotency key. The Auth check uses a dedicated synthetic Supabase Auth identity with a pre-enrolled TOTP factor to prove password, challenge, verification, and `aal2` behavior. It is not linked to an application-owned Staff Identity, cannot obtain a Staff Session, and is maintained only by the Technical Operator.
 
 ## Staff identity provisioning
 

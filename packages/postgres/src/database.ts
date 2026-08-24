@@ -3,6 +3,50 @@ import type { ColumnType, Generated } from 'kysely';
 type Timestamp = ColumnType<Date, Date, never>;
 
 export type Database = {
+  'identity_access.classes': {
+    class_id: string;
+    workspace_id: string;
+    name: string;
+    created_at: Timestamp;
+    record_owner: string;
+    record_classification: string;
+    disposal_class: string;
+  };
+  'identity_access.invitations': {
+    invitation_id: string;
+    workspace_id: string;
+    class_id: string;
+    purpose: string;
+    recipient_digest: string;
+    current_generation: number;
+    status: string;
+    created_at: Timestamp;
+    record_owner: string;
+    record_classification: string;
+    disposal_class: string;
+  };
+  'identity_access.invitation_challenges': {
+    invitation_id: string;
+    generation: number;
+    purpose: string;
+    code_digest: string;
+    expires_at: Timestamp;
+    completed_at: ColumnType<Date | null, Date | null, Date | null>;
+  };
+  'identity_access.invitation_deliveries': {
+    invitation_id: string;
+    generation: number;
+    key_id: string;
+    ciphertext: string;
+    status: string;
+    provider_idempotency_key: string;
+    provider_message_id: ColumnType<
+      string | null,
+      string | null,
+      string | null
+    >;
+    delivered_at: ColumnType<Date | null, Date | null, Date | null>;
+  };
   'identity_access.school_workspaces': {
     workspace_id: string;
     display_name: string;
