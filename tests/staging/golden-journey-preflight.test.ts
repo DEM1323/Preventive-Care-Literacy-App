@@ -1,6 +1,10 @@
 import { expect, test } from 'bun:test';
 import {
+  DeployStagingPreflightError,
+  deployStagingRequiredSecretNames,
+  goldenJourneyRequiredConfigurationNames,
   GoldenJourneyPreflightError,
+  reportDeployStagingPreflight,
   reportGoldenJourneyPreflight,
 } from '../../packages/golden-journey/src/index.ts';
 
@@ -79,6 +83,47 @@ test('preflight accepts a complete configuration by name without returning secre
   expect(JSON.stringify(result)).not.toContain('re-secret');
   expect(JSON.stringify(result)).not.toContain('auth-smoke-password');
   expect(JSON.stringify(result)).not.toContain('JBSWY3DPEHPK3PXP');
+});
+
+test('deploy and golden journey share the operator token name and fail closed without logging its value', () => {
+  const tokenValue = 'operator-token-with-more-than-32-chars';
+
+  expect(deployStagingRequiredSecretNames).toEqual([
+    'OPERATOR_PROVISIONING_TOKEN',
+  ]);
+  expect(goldenJourneyRequiredConfigurationNames).toContain(
+    'OPERATOR_PROVISIONING_TOKEN',
+  );
+
+  const missing = reportDeployStagingPreflight({
+    OPERATOR_PROVISIONING_TOKEN: '   ',
+  });
+  expect(missing.ok).toBe(false);
+  if (missing.ok) throw new Error('expected failure');
+  expect(missing.missingNames).toEqual(['OPERATOR_PROVISIONING_TOKEN']);
+  expect(JSON.stringify(missing)).not.toContain(tokenValue);
+
+  try {
+    reportDeployStagingPreflight({}, { failClosed: true });
+  } catch (error) {
+    expect(error).toBeInstanceOf(DeployStagingPreflightError);
+    const message = String(error);
+    expect(message).toContain('OPERATOR_PROVISIONING_TOKEN');
+    expect(message).toContain('Deploy staging');
+    expect(message).not.toContain(tokenValue);
+    expect(message).not.toContain('secret');
+
+    const present = reportDeployStagingPreflight(
+      { OPERATOR_PROVISIONING_TOKEN: tokenValue },
+      { failClosed: true },
+    );
+    expect(present.ok).toBe(true);
+    if (!present.ok) throw new Error('expected success');
+    expect(present.missingNames).toEqual([]);
+    expect(JSON.stringify(present)).not.toContain(tokenValue);
+    return;
+  }
+  throw new Error('expected fail-closed deploy preflight to throw');
 });
 
 test('preflight rejects a non-main ref or a non-https Railway origin before mutation', () => {
