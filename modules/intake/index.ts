@@ -4,6 +4,13 @@ import type {
   StudentSessionContext,
 } from '../identity-access/index.ts';
 import {
+  StaffAuthenticationFailedError,
+  StaffAuthenticationStaleError,
+  StaffPermissionRequiredError,
+  StaffSessionExpiredError,
+  StaffSessionRevokedError,
+} from '../identity-access/index.ts';
+import {
   canonicalJson,
   supportedLocales,
 } from '../school-configuration/index.ts';
@@ -177,6 +184,51 @@ export class IntakeOperationReusedError extends Error {
   }
 }
 
+export class IntakeRecordNotFoundError extends Error {
+  readonly code = 'INTAKE_RECORD_NOT_FOUND';
+  constructor() {
+    super('No current Intake Record Version is available');
+    this.name = 'IntakeRecordNotFoundError';
+  }
+}
+
+export type RevealCurrentIntakeRecordCommand = {
+  sessionHandle: string;
+  studentId: string;
+};
+
+export type RevealedCurrentIntakeRecord = {
+  studentId: string;
+  intakeRecordVersionId: string;
+  acceptedAt: string;
+  schoolConfigurationReleaseId: string;
+  locale: IntakeLocale;
+  intakeForm: StudentIntakeForm['intakeForm'];
+  answers: IntakeAnswerMap;
+  freshUntil: string;
+};
+
+export type ClinicalRevealDenialReason =
+  'revoked' | 'expired' | 'disabled' | 'permission' | 'stale';
+
+export type ClinicalRevealAttempt =
+  | { outcome: 'missing_session' }
+  | { outcome: 'denied'; reason: ClinicalRevealDenialReason }
+  | { outcome: 'not_found' }
+  | {
+      outcome: 'revealed';
+      workspaceId: string;
+      staffIdentityId: string;
+      staffSessionId: string;
+      sealed: SealedRecord;
+      intakeRecordVersionId: string;
+      acceptedAt: Date;
+      locale: IntakeLocale;
+      schoolConfigurationReleaseId: string;
+      formRelease: ActiveIntakeRelease;
+      freshUntil: Date;
+    };
+
 export type ActiveIntakeRelease = {
   schoolConfigurationReleaseId: string;
   intakeForm: {
@@ -242,6 +294,22 @@ export type IntakeStore = {
     | { outcome: 'accepted'; intakeRecordVersionId: string; acceptedAt: Date }
     | { outcome: 'replayed'; result: SubmitIntakeRecordVersionResult }
   >;
+  revealCurrent(input: {
+    sessionHandleHash: string;
+    studentId: string;
+    now: Date;
+    auditId: string;
+    operationId: string;
+  }): Promise<ClinicalRevealAttempt>;
+  recordRevealAudit(input: {
+    workspaceId: string;
+    staffIdentityId: string;
+    auditId: string;
+    operationId: string;
+    occurredAt: Date;
+    eventType: 'intake_record.revealed' | 'intake_record.reveal_denied';
+    details: Record<string, string>;
+  }): Promise<void>;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -460,6 +528,7 @@ export function createIntake(dependencies: {
   keys: ApplicationKeyManagement;
   clock: Clock;
   ids: IdGenerator;
+  hashSessionHandle: (sessionHandle: string) => string;
 }) {
   async function requireStudent(sessionHandle: string) {
     return dependencies.resolveStudentSession({ sessionHandle });
@@ -613,6 +682,92 @@ export function createIntake(dependencies: {
         learningUnlocked: true as const,
         replayed: false,
       };
+    },
+
+    async revealCurrent(command: RevealCurrentIntakeRecordCommand) {
+      const auditId = dependencies.ids.create();
+      const operationId = dependencies.ids.create();
+      const attempted = await dependencies.store.revealCurrent({
+        sessionHandleHash: dependencies.hashSessionHandle(
+          command.sessionHandle,
+        ),
+        studentId: command.studentId,
+        now: dependencies.clock.now(),
+        auditId,
+        operationId,
+      });
+      if (attempted.outcome === 'missing_session') {
+        throw new StaffAuthenticationFailedError();
+      }
+      if (attempted.outcome === 'denied') {
+        if (attempted.reason === 'revoked')
+          throw new StaffSessionRevokedError();
+        if (attempted.reason === 'expired')
+          throw new StaffSessionExpiredError();
+        if (attempted.reason === 'permission') {
+          throw new StaffPermissionRequiredError('clinical');
+        }
+        if (attempted.reason === 'stale') {
+          throw new StaffAuthenticationStaleError();
+        }
+        throw new StaffAuthenticationFailedError();
+      }
+      if (attempted.outcome === 'not_found') {
+        throw new IntakeRecordNotFoundError();
+      }
+      const form = projectStudentIntakeForm(
+        attempted.formRelease,
+        attempted.locale,
+      );
+      let answers: IntakeAnswerMap;
+      try {
+        answers = decodeAnswers(
+          dependencies.keys.open(attempted.sealed, {
+            purpose: 'intake-record-version',
+            workspaceId: attempted.workspaceId,
+            studentId: command.studentId,
+          }),
+        );
+      } catch {
+        await dependencies.store.recordRevealAudit({
+          workspaceId: attempted.workspaceId,
+          staffIdentityId: attempted.staffIdentityId,
+          auditId,
+          operationId,
+          occurredAt: dependencies.clock.now(),
+          eventType: 'intake_record.reveal_denied',
+          details: {
+            studentId: command.studentId,
+            outcome: 'failed',
+            staffSessionId: attempted.staffSessionId,
+          },
+        });
+        throw new Error('Unable to open the current Intake Record Version');
+      }
+      await dependencies.store.recordRevealAudit({
+        workspaceId: attempted.workspaceId,
+        staffIdentityId: attempted.staffIdentityId,
+        auditId,
+        operationId,
+        occurredAt: dependencies.clock.now(),
+        eventType: 'intake_record.revealed',
+        details: {
+          studentId: command.studentId,
+          outcome: 'revealed',
+          staffSessionId: attempted.staffSessionId,
+          intakeRecordVersionId: attempted.intakeRecordVersionId,
+        },
+      });
+      return {
+        studentId: command.studentId,
+        intakeRecordVersionId: attempted.intakeRecordVersionId,
+        acceptedAt: new Date(attempted.acceptedAt).toISOString(),
+        schoolConfigurationReleaseId: attempted.schoolConfigurationReleaseId,
+        locale: attempted.locale,
+        intakeForm: form.intakeForm,
+        answers,
+        freshUntil: new Date(attempted.freshUntil).toISOString(),
+      } satisfies RevealedCurrentIntakeRecord;
     },
   };
 }

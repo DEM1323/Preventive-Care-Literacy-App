@@ -32,6 +32,9 @@ function createStubIdentityAndAccess(): IdentityAndAccess {
     async openClinicalDirectory() {
       throw new Error('Not configured in this test');
     },
+    async requireFreshClinicalSession() {
+      throw new Error('Not configured in this test');
+    },
   };
 }
 

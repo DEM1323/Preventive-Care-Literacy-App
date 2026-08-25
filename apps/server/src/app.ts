@@ -2,12 +2,7 @@ import swagger from '@fastify/swagger';
 import fastifyStatic from '@fastify/static';
 import { Type, type Static } from '@sinclair/typebox';
 import Fastify, { type FastifyInstance } from 'fastify';
-import {
-  createHash,
-  randomBytes,
-  randomUUID,
-  timingSafeEqual,
-} from 'node:crypto';
+import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { resolve } from 'node:path';
 import { Pool } from 'pg';
 import type {
@@ -34,6 +29,7 @@ import {
   IntakeAlreadyAcceptedError,
   IntakeIncompleteError,
   IntakeOperationReusedError,
+  IntakeRecordNotFoundError,
   IntakeRevisionConflictError,
   IntakeUnavailableError,
 } from '../../../modules/intake/index.ts';
@@ -222,10 +218,6 @@ const StaffDirectoryEntryResponse = Type.Object({
 
 const StaffDirectoryResponse = Type.Object({
   staffIdentities: Type.Array(StaffDirectoryEntryResponse),
-});
-
-const ClinicalDirectoryResponse = Type.Object({
-  students: Type.Array(Type.Unknown(), { maxItems: 0 }),
 });
 
 const CreateClassInvitationBody = Type.Object(
@@ -426,6 +418,39 @@ const SubmitIntakeRecordVersionResponse = Type.Object({
   acceptedAt: Type.String({ format: 'date-time' }),
   learningUnlocked: Type.Literal(true),
   replayed: Type.Boolean(),
+});
+const ClinicalDirectoryResponse = Type.Object({
+  students: Type.Array(
+    Type.Object({
+      studentId: Type.String({ format: 'uuid' }),
+      createdAt: Type.String({ format: 'date-time' }),
+      currentIntakeRecordVersion: Type.Union([
+        Type.Null(),
+        Type.Object({
+          intakeRecordVersionId: Type.String({ format: 'uuid' }),
+          acceptedAt: Type.String({ format: 'date-time' }),
+          locale: IntakeLocaleSchema,
+        }),
+      ]),
+    }),
+  ),
+  freshUntil: Type.String({ format: 'date-time' }),
+});
+const RevealCurrentIntakeRecordBody = Type.Object(
+  {
+    studentId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+const RevealedCurrentIntakeRecordResponse = Type.Object({
+  studentId: Type.String({ format: 'uuid' }),
+  intakeRecordVersionId: Type.String({ format: 'uuid' }),
+  acceptedAt: Type.String({ format: 'date-time' }),
+  schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+  locale: IntakeLocaleSchema,
+  intakeForm: StudentIntakeFormResponse.properties.intakeForm,
+  answers: IntakeAnswersSchema,
+  freshUntil: Type.String({ format: 'date-time' }),
 });
 const StudentLearningQuery = Type.Object({
   locale: Type.Optional(IntakeLocaleSchema),
@@ -662,20 +687,22 @@ export async function buildApp(
                     ? 'staff-session'
                     : route === '/api/v1/clinical/review-directory'
                       ? 'clinical-directory'
-                      : route === '/api/v1/administration/classes'
-                        ? 'classes'
-                        : route === '/api/v1/student/intake'
-                          ? 'student-intake'
-                          : route === '/api/v1/student/intake/draft'
-                            ? 'student-intake-draft'
-                            : route === '/api/v1/student/intake/submissions'
-                              ? 'student-intake-submission'
-                              : route === '/api/v1/student/learning'
-                                ? 'student-learning'
-                                : route ===
-                                    '/api/v1/student/learning/acknowledgements'
-                                  ? 'student-learning-acknowledgement'
-                                  : 'unknown';
+                      : route === '/api/v1/clinical/intake-records/current'
+                        ? 'clinical-intake-reveal'
+                        : route === '/api/v1/administration/classes'
+                          ? 'classes'
+                          : route === '/api/v1/student/intake'
+                            ? 'student-intake'
+                            : route === '/api/v1/student/intake/draft'
+                              ? 'student-intake-draft'
+                              : route === '/api/v1/student/intake/submissions'
+                                ? 'student-intake-submission'
+                                : route === '/api/v1/student/learning'
+                                  ? 'student-learning'
+                                  : route ===
+                                      '/api/v1/student/learning/acknowledgements'
+                                    ? 'student-learning-acknowledgement'
+                                    : 'unknown';
       telemetry.record({
         name: 'http.request.completed',
         method: ['DELETE', 'GET', 'PATCH', 'POST', 'PUT'].includes(
@@ -860,6 +887,14 @@ export async function buildApp(
         type: 'https://preventive-care-literacy.example/problems/intake-incomplete',
         title: error.message,
         status: 422,
+        code: error.code,
+      });
+    }
+    if (error instanceof IntakeRecordNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/intake-record',
+        title: error.message,
+        status: 404,
         code: error.code,
       });
     }
@@ -1241,8 +1276,69 @@ export async function buildApp(
           code: 'STAFF_SESSION_REQUIRED',
         });
       }
-      return identityAndAccess.openClinicalDirectory({
+      const directory = await identityAndAccess.openClinicalDirectory({
         sessionHandle: sessionHandle as string,
+      });
+      return {
+        freshUntil: directory.freshUntil.toISOString(),
+        students: directory.students.map((student) => ({
+          studentId: student.studentId,
+          createdAt: student.createdAt.toISOString(),
+          currentIntakeRecordVersion: student.currentIntakeRecordVersion && {
+            intakeRecordVersionId:
+              student.currentIntakeRecordVersion.intakeRecordVersionId,
+            acceptedAt:
+              student.currentIntakeRecordVersion.acceptedAt.toISOString(),
+            locale: student.currentIntakeRecordVersion.locale,
+          },
+        })),
+      };
+    },
+  );
+
+  app.post<{ Body: Static<typeof RevealCurrentIntakeRecordBody> }>(
+    '/api/v1/clinical/intake-records/current',
+    {
+      schema: {
+        operationId: 'revealCurrentIntakeRecord',
+        security: [{ staffSession: [] }],
+        body: RevealCurrentIntakeRecordBody,
+        response: {
+          200: RevealedCurrentIntakeRecordResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        staffSessionCookie,
+      );
+      if (!sessionHandle) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      if (!options.intake) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      reply.header('cache-control', 'no-store');
+      return options.intake.revealCurrent({
+        sessionHandle,
+        studentId: request.body.studentId,
       });
     },
   );
@@ -1775,7 +1871,7 @@ export async function createServer(options: {
     ids,
     handles: {
       create: () => randomBytes(32).toString('base64url'),
-      hash: (handle) => createHash('sha256').update(handle).digest('hex'),
+      hash: sha256SessionHandle,
     },
     invitationSecrets: createInvitationSecretProtector(
       options.invitationSecrets ?? {
@@ -1808,6 +1904,7 @@ export async function createServer(options: {
     ),
     clock,
     ids,
+    hashSessionHandle: sha256SessionHandle,
   });
   const learningProgress = createLearningProgress({
     resolveStudentSession: (command) =>

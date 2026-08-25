@@ -4,6 +4,7 @@ import {
   IntakeOperationReusedError,
   IntakeRevisionConflictError,
   IntakeUnavailableError,
+  type ClinicalRevealDenialReason,
   type ExactResourceRevision,
   type IntakeStore,
   type SealedRecord,
@@ -11,6 +12,7 @@ import {
   type StoredIntakeRecordVersion,
   type SubmitIntakeRecordVersionResult,
 } from '../../../modules/intake/index.ts';
+import { staffAuthenticationFreshnessMs } from '../../../modules/identity-access/index.ts';
 import { schoolConfigurationWorkspaceLockKey } from './workspace-locks.ts';
 
 async function setStudentScope(
@@ -156,6 +158,65 @@ function requireExpectedRelease(
     throw new IntakeRevisionConflictError();
   }
   return release;
+}
+
+function denialOutcome(
+  reason: ClinicalRevealDenialReason,
+):
+  | 'denied_permission'
+  | 'denied_stale'
+  | 'denied_session_revoked'
+  | 'denied_session_expired'
+  | 'denied_disabled' {
+  if (reason === 'permission') return 'denied_permission';
+  if (reason === 'stale') return 'denied_stale';
+  if (reason === 'revoked') return 'denied_session_revoked';
+  if (reason === 'expired') return 'denied_session_expired';
+  return 'denied_disabled';
+}
+
+async function insertRevealAudit(
+  client: PoolClient,
+  input: {
+    auditId: string;
+    operationId: string;
+    workspaceId: string;
+    actorId: string;
+    occurredAt: Date;
+    eventType: 'intake_record.revealed' | 'intake_record.reveal_denied';
+    details: Record<string, string>;
+  },
+): Promise<void> {
+  await client.query(
+    `insert into audit.evidence
+       (audit_id, workspace_id, operation_id, event_type, actor_type,
+        actor_id, occurred_at, details, record_owner,
+        record_classification, disposal_class)
+     values ($1, $2, $3, $4, 'staff', $5, $6, $7,
+             'school', 'audit_evidence', 'workspace_audit_evidence')`,
+    [
+      input.auditId,
+      input.workspaceId,
+      input.operationId,
+      input.eventType,
+      input.actorId,
+      input.occurredAt,
+      input.details,
+    ],
+  );
+}
+
+async function readFrozenRevision(
+  client: PoolClient,
+  input: { workspaceId: string; resourceId: string; revisionNumber: number },
+): Promise<Record<string, unknown> | undefined> {
+  const revision = await client.query<{ payload: Record<string, unknown> }>(
+    `select payload from school_configuration.authored_revisions
+      where workspace_id = $1 and resource_id = $2 and revision_number = $3
+        and lifecycle = 'frozen'`,
+    [input.workspaceId, input.resourceId, input.revisionNumber],
+  );
+  return revision.rows[0]?.payload;
 }
 
 export function createPostgresIntakeStore(options: {
@@ -427,6 +488,216 @@ export function createPostgresIntakeStore(options: {
           intakeRecordVersionId: input.proposedVersionId,
           acceptedAt: input.acceptedAt,
         };
+      });
+    },
+
+    async revealCurrent(input) {
+      return transaction(options.pool, async (client) => {
+        await client.query(
+          "select set_config('app.session_handle_hash', $1, true)",
+          [input.sessionHandleHash],
+        );
+        const session = await client.query<{
+          session_id: string;
+          workspace_id: string;
+          staff_identity_id: string;
+          authenticated_at: Date;
+          expires_at: Date;
+          revoked_at: Date | null;
+        }>(
+          `select session.session_id, session.workspace_id, session.staff_identity_id,
+                  session.authenticated_at, session.expires_at, session.revoked_at
+             from identity_access.staff_sessions session
+            where session.session_handle_hash = $1
+            for share of session`,
+          [input.sessionHandleHash],
+        );
+        const currentSession = session.rows[0];
+        if (!currentSession) return { outcome: 'missing_session' as const };
+
+        await client.query("select set_config('app.workspace_id', $1, true)", [
+          currentSession.workspace_id,
+        ]);
+        await client.query(
+          "select set_config('app.staff_identity_id', $1, true)",
+          [currentSession.staff_identity_id],
+        );
+        const identity = await client.query<{
+          status: 'active' | 'disabled';
+          authentication_fresh_at: Date;
+        }>(
+          `select identity.status,
+                  coalesce(freshness.refreshed_at, $2::timestamptz)
+                    as authentication_fresh_at
+             from identity_access.staff_identities identity
+             left join identity_access.staff_session_freshness freshness
+               on freshness.session_id = $1
+            where identity.staff_identity_id = $3`,
+          [
+            currentSession.session_id,
+            currentSession.authenticated_at,
+            currentSession.staff_identity_id,
+          ],
+        );
+        const currentIdentity = identity.rows[0];
+        if (!currentIdentity) return { outcome: 'missing_session' as const };
+        const current = {
+          ...currentSession,
+          status: currentIdentity.status,
+          authentication_fresh_at: currentIdentity.authentication_fresh_at,
+        };
+
+        const deny = async (reason: ClinicalRevealDenialReason) => {
+          await insertRevealAudit(client, {
+            auditId: input.auditId,
+            operationId: input.operationId,
+            workspaceId: current.workspace_id,
+            actorId: current.staff_identity_id,
+            occurredAt: input.now,
+            eventType: 'intake_record.reveal_denied',
+            details: {
+              studentId: input.studentId,
+              outcome: denialOutcome(reason),
+              staffSessionId: current.session_id,
+            },
+          });
+          return { outcome: 'denied' as const, reason };
+        };
+
+        if (current.revoked_at) return deny('revoked');
+        if (new Date(current.expires_at) <= input.now) return deny('expired');
+        if (current.status !== 'active') return deny('disabled');
+        const permission = await client.query<{ allowed: boolean }>(
+          `select identity_access.current_staff_has_permission('clinical') as allowed`,
+        );
+        if (!permission.rows[0]?.allowed) return deny('permission');
+        if (
+          input.now.getTime() -
+            new Date(current.authentication_fresh_at).getTime() >
+          staffAuthenticationFreshnessMs
+        ) {
+          return deny('stale');
+        }
+
+        const version = await client.query<{
+          intake_record_version_id: string;
+          accepted_at: Date;
+          school_configuration_release_id: string;
+          intake_form_resource_id: string;
+          intake_form_revision_number: number;
+          submission_attestation_resource_id: string;
+          submission_attestation_revision_number: number;
+          locale: StoredIntakeRecordVersion['locale'];
+          wrapping_key_id: string;
+          wrapped_data_key: string;
+          ciphertext: string;
+        }>(
+          `select intake_record_version_id, accepted_at, school_configuration_release_id,
+                  intake_form_resource_id, intake_form_revision_number,
+                  submission_attestation_resource_id,
+                  submission_attestation_revision_number, locale,
+                  wrapping_key_id, wrapped_data_key, ciphertext
+             from intake.intake_record_versions
+            where student_id = $1 and workspace_id = $2 and superseded_at is null`,
+          [input.studentId, current.workspace_id],
+        );
+        const currentVersion = version.rows[0];
+        if (!currentVersion) {
+          await insertRevealAudit(client, {
+            auditId: input.auditId,
+            operationId: input.operationId,
+            workspaceId: current.workspace_id,
+            actorId: current.staff_identity_id,
+            occurredAt: input.now,
+            eventType: 'intake_record.reveal_denied',
+            details: {
+              studentId: input.studentId,
+              outcome: 'not_found',
+              staffSessionId: current.session_id,
+            },
+          });
+          return { outcome: 'not_found' as const };
+        }
+
+        const formPayload = await readFrozenRevision(client, {
+          workspaceId: current.workspace_id,
+          resourceId: currentVersion.intake_form_resource_id,
+          revisionNumber: currentVersion.intake_form_revision_number,
+        });
+        const attestationPayload = await readFrozenRevision(client, {
+          workspaceId: current.workspace_id,
+          resourceId: currentVersion.submission_attestation_resource_id,
+          revisionNumber: currentVersion.submission_attestation_revision_number,
+        });
+        if (!formPayload || !attestationPayload) {
+          await insertRevealAudit(client, {
+            auditId: input.auditId,
+            operationId: input.operationId,
+            workspaceId: current.workspace_id,
+            actorId: current.staff_identity_id,
+            occurredAt: input.now,
+            eventType: 'intake_record.reveal_denied',
+            details: {
+              studentId: input.studentId,
+              outcome: 'not_found',
+              staffSessionId: current.session_id,
+            },
+          });
+          return { outcome: 'not_found' as const };
+        }
+
+        return {
+          outcome: 'revealed' as const,
+          workspaceId: current.workspace_id,
+          staffIdentityId: current.staff_identity_id,
+          staffSessionId: current.session_id,
+          sealed: sealedFrom(currentVersion),
+          intakeRecordVersionId: currentVersion.intake_record_version_id,
+          acceptedAt: new Date(currentVersion.accepted_at),
+          locale: currentVersion.locale,
+          schoolConfigurationReleaseId:
+            currentVersion.school_configuration_release_id,
+          formRelease: {
+            schoolConfigurationReleaseId:
+              currentVersion.school_configuration_release_id,
+            intakeForm: {
+              resourceId: currentVersion.intake_form_resource_id,
+              revisionNumber: currentVersion.intake_form_revision_number,
+              payload: formPayload,
+            },
+            submissionAttestation: {
+              resourceId: currentVersion.submission_attestation_resource_id,
+              revisionNumber:
+                currentVersion.submission_attestation_revision_number,
+              payload: attestationPayload,
+            },
+          },
+          freshUntil: new Date(
+            new Date(current.authentication_fresh_at).getTime() +
+              staffAuthenticationFreshnessMs,
+          ),
+        };
+      });
+    },
+
+    async recordRevealAudit(input) {
+      await transaction(options.pool, async (client) => {
+        await client.query("select set_config('app.workspace_id', $1, true)", [
+          input.workspaceId,
+        ]);
+        await client.query(
+          "select set_config('app.staff_identity_id', $1, true)",
+          [input.staffIdentityId],
+        );
+        await insertRevealAudit(client, {
+          auditId: input.auditId,
+          operationId: input.operationId,
+          workspaceId: input.workspaceId,
+          actorId: input.staffIdentityId,
+          occurredAt: input.occurredAt,
+          eventType: input.eventType,
+          details: input.details,
+        });
       });
     },
   };

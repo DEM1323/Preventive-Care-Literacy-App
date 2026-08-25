@@ -542,5 +542,44 @@ export function createPostgresStaffAccessStore(options: {
         }));
       });
     },
+
+    async listClinicalDirectory(request) {
+      return database.transaction().execute(async (transaction) => {
+        await setWorkspaceScope(transaction, request.workspaceId);
+        await sql`select set_config('app.staff_identity_id', ${request.staffIdentityId}, true)`.execute(
+          transaction,
+        );
+        const rows = await sql<{
+          student_id: string;
+          created_at: Date;
+          intake_record_version_id: string | null;
+          accepted_at: Date | null;
+          locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT' | null;
+        }>`select student.student_id, student.created_at,
+                  version.intake_record_version_id, version.accepted_at,
+                  version.locale
+             from identity_access.students student
+             left join intake.intake_record_versions version
+               on version.student_id = student.student_id
+              and version.workspace_id = student.workspace_id
+              and version.superseded_at is null
+            where student.workspace_id = ${request.workspaceId}
+            order by student.created_at, student.student_id`.execute(
+          transaction,
+        );
+        return rows.rows.map((row) => ({
+          studentId: row.student_id,
+          createdAt: new Date(row.created_at),
+          currentIntakeRecordVersion:
+            row.intake_record_version_id && row.accepted_at && row.locale
+              ? {
+                  intakeRecordVersionId: row.intake_record_version_id,
+                  acceptedAt: new Date(row.accepted_at),
+                  locale: row.locale,
+                }
+              : null,
+        }));
+      });
+    },
   };
 }

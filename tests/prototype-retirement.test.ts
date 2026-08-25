@@ -65,3 +65,33 @@ test('browser exposes only the server-authoritative Student access routes', () =
     '*',
   ]);
 });
+
+test('clinical Intake Record reveal stays memory-only and suppresses application print', () => {
+  const clinicalSource = readFileSync(
+    new URL(
+      '../src/features/staff/ClinicalReviewSection.tsx',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  const staffHomeSource = readFileSync(
+    new URL('../src/features/staff/StaffHomePage.tsx', import.meta.url),
+    'utf8',
+  );
+  const css = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
+
+  expect(clinicalSource).not.toContain('localStorage');
+  expect(clinicalSource).not.toContain('sessionStorage');
+  expect(clinicalSource).not.toContain('searchParams');
+  expect(clinicalSource).not.toContain('navigate(`/');
+  expect(clinicalSource).toContain("'/api/v1/clinical/intake-records/current'");
+  expect(clinicalSource).toContain('clinical-sensitive');
+  expect(clinicalSource).toContain('visibilitychange');
+  expect(clinicalSource).toContain('setInterval');
+  expect(staffHomeSource).toContain('ClinicalReviewSection');
+  expect(staffHomeSource.indexOf('setSession(undefined)')).toBeLessThan(
+    staffHomeSource.indexOf("'/api/v1/auth/staff/sign-out'"),
+  );
+  expect(css).toContain('@media print');
+  expect(css).toContain('.clinical-sensitive');
+});

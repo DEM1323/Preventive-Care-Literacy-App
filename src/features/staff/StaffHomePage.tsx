@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createBrowserApiClient } from '../../../packages/api-client/src/index.ts';
+import { ClinicalReviewSection } from './ClinicalReviewSection';
 
 const client = createBrowserApiClient();
 
@@ -97,6 +98,9 @@ export function StaffHomePage() {
   }, [navigate]);
 
   async function signOut() {
+    setDirectory(undefined);
+    setClasses(undefined);
+    setSession(undefined);
     await client.POST('/api/v1/auth/staff/sign-out');
     navigate('/staff/sign-in');
   }
@@ -160,6 +164,16 @@ export function StaffHomePage() {
         >
           Sign out
         </button>
+
+        {session.permissions.includes('clinical') ? (
+          <ClinicalReviewSection
+            onSessionLost={() => {
+              setDirectory(undefined);
+              setClasses(undefined);
+              setSession(undefined);
+            }}
+          />
+        ) : null}
 
         {directory ? (
           <div className="mt-10">

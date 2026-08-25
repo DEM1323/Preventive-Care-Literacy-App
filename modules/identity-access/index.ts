@@ -52,6 +52,9 @@ export type IdentityAndAccess = {
   listStaffIdentities(
     command: StaffSessionCommand,
   ): Promise<StaffDirectoryEntry[]>;
+  requireFreshClinicalSession(
+    command: StaffSessionCommand,
+  ): Promise<ClinicalSessionContext>;
   openClinicalDirectory(
     command: StaffSessionCommand,
   ): Promise<ClinicalDirectory>;
@@ -360,8 +363,23 @@ export type StaffDirectoryEntry = {
   createdAt: Date;
 };
 
+export type ClinicalDirectoryStudent = {
+  studentId: string;
+  createdAt: Date;
+  currentIntakeRecordVersion: {
+    intakeRecordVersionId: string;
+    acceptedAt: Date;
+    locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+  } | null;
+};
+
 export type ClinicalDirectory = {
-  students: [];
+  students: ClinicalDirectoryStudent[];
+  freshUntil: Date;
+};
+
+export type ClinicalSessionContext = StaffSessionContext & {
+  authenticationFreshAt: Date;
 };
 
 /**
@@ -532,6 +550,10 @@ export type StaffAccessStore = {
     staffIdentityId: string;
     workspaceId: string;
   }): Promise<StaffDirectoryEntry[]>;
+  listClinicalDirectory(request: {
+    staffIdentityId: string;
+    workspaceId: string;
+  }): Promise<ClinicalDirectoryStudent[]>;
 };
 
 export type ClassInvitationStore = {
@@ -786,6 +808,43 @@ export function createIdentityAndAccess(dependencies: {
     if (!resolved) throw new StaffAuthenticationFailedError();
     return {
       ...session,
+      authenticationFreshAt: resolved.authenticationFreshAt,
+    };
+  }
+
+  async function requireFreshClinicalSession(
+    sessionHandle: string,
+  ): Promise<ClinicalSessionContext> {
+    const { staffStore, handles } = requireStaffSeams();
+    const resolved = await staffStore.resolveStaffSession({
+      sessionHandleHash: handles.hash(sessionHandle),
+    });
+    const now = dependencies.clock.now();
+    if (!resolved) throw new StaffAuthenticationFailedError();
+    if (resolved.revokedAt !== undefined) throw new StaffSessionRevokedError();
+    if (resolved.expiresAt <= now) throw new StaffSessionExpiredError();
+    if (resolved.status !== 'active') {
+      throw new StaffAuthenticationFailedError();
+    }
+    const current = await staffStore.staffHasPermission({
+      staffIdentityId: resolved.staffIdentityId,
+      workspaceId: resolved.workspaceId,
+      permission: 'clinical',
+    });
+    if (!current) throw new StaffPermissionRequiredError('clinical');
+    if (
+      now.getTime() - resolved.authenticationFreshAt.getTime() >
+      staffAuthenticationFreshnessMs
+    ) {
+      throw new StaffAuthenticationStaleError();
+    }
+    return {
+      sessionId: resolved.sessionId,
+      staffIdentityId: resolved.staffIdentityId,
+      workspaceId: resolved.workspaceId,
+      displayName: resolved.displayName,
+      permissions: resolved.permissions,
+      authenticatedAt: resolved.authenticatedAt,
       authenticationFreshAt: resolved.authenticationFreshAt,
     };
   }
@@ -1151,6 +1210,10 @@ export function createIdentityAndAccess(dependencies: {
       return requireAdministrativeContext(command.sessionHandle);
     },
 
+    async requireFreshClinicalSession(command) {
+      return requireFreshClinicalSession(command.sessionHandle);
+    },
+
     async stepUpStaffSession(command) {
       const { staffStore, staffAuth, handles } = requireStaffSeams();
       const sessionHandleHash = handles.hash(command.sessionHandle);
@@ -1281,24 +1344,17 @@ export function createIdentityAndAccess(dependencies: {
 
     async openClinicalDirectory(command) {
       const { staffStore } = requireStaffSeams();
-      const session = await requireSession(command.sessionHandle);
-      const hasClinicalPermission = await staffStore.staffHasPermission({
-        staffIdentityId: session.staffIdentityId,
-        workspaceId: session.workspaceId,
-        permission: 'clinical',
-      });
-      if (!session.permissions.includes('clinical') || !hasClinicalPermission) {
-        throw new StaffPermissionRequiredError('clinical');
-      }
-      const staleSince =
-        dependencies.clock.now().getTime() - session.authenticatedAt.getTime();
-      if (staleSince > staffAuthenticationFreshnessMs) {
-        throw new StaffAuthenticationStaleError();
-      }
-      // No Intake Records exist yet; this is the clinical seam later tickets
-      // attach the real directory to. Clinical Permission and freshness are
-      // already enforced here.
-      return { students: [] };
+      const session = await requireFreshClinicalSession(command.sessionHandle);
+      return {
+        students: await staffStore.listClinicalDirectory({
+          staffIdentityId: session.staffIdentityId,
+          workspaceId: session.workspaceId,
+        }),
+        freshUntil: new Date(
+          session.authenticationFreshAt.getTime() +
+            staffAuthenticationFreshnessMs,
+        ),
+      };
     },
 
     async createClassInvitation(command) {

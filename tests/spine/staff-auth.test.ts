@@ -665,7 +665,12 @@ describe.serial('independent permission enforcement', () => {
       headers: { cookie: nurseCookie },
     });
     expect(directory.response.status).toBe(200);
-    expect(directory.data).toEqual({ students: [] });
+    expect(directory.data).toEqual({
+      students: [],
+      freshUntil: new Date(
+        currentTime.getTime() + 15 * 60 * 1000,
+      ).toISOString(),
+    });
 
     const administratorCookie = await signIn(
       client,

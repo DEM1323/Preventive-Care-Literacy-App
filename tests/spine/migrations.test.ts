@@ -24,6 +24,7 @@ test('migrations apply in order and are repeatable', async () => {
         { name: '006_intake_record_version.sql' },
         { name: '007_intake_operation_receipts.sql' },
         { name: '008_item_completion.sql' },
+        { name: '009_clinical_intake_reveal.sql' },
       ]);
     } finally {
       await client.end();
