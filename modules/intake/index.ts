@@ -45,7 +45,10 @@ export type IdempotencyBindingContext = {
 export type ApplicationKeyManagement = {
   readonly name: typeof intakeKeyManagementName;
   seal(plaintext: Uint8Array, context: KeyWrappingContext): SealedRecord;
-  open(sealed: SealedRecord, context: KeyWrappingContext): Uint8Array;
+  open(
+    sealed: SealedRecord,
+    context: KeyWrappingContext,
+  ): Uint8Array | Promise<Uint8Array>;
   bind(plaintext: Uint8Array, context: IdempotencyBindingContext): string;
 };
 
@@ -215,17 +218,15 @@ export type ClinicalRevealAttempt =
   | { outcome: 'missing_session' }
   | { outcome: 'denied'; reason: ClinicalRevealDenialReason }
   | { outcome: 'not_found' }
+  | { outcome: 'failed'; cause: 'read' | 'projection' | 'decrypt' }
   | {
       outcome: 'revealed';
-      workspaceId: string;
-      staffIdentityId: string;
-      staffSessionId: string;
-      sealed: SealedRecord;
       intakeRecordVersionId: string;
       acceptedAt: Date;
-      locale: IntakeLocale;
       schoolConfigurationReleaseId: string;
-      formRelease: ActiveIntakeRelease;
+      locale: IntakeLocale;
+      intakeForm: StudentIntakeForm['intakeForm'];
+      answers: IntakeAnswerMap;
       freshUntil: Date;
     };
 
@@ -300,15 +301,21 @@ export type IntakeStore = {
     now: Date;
     auditId: string;
     operationId: string;
+    projectForm: (
+      release: ActiveIntakeRelease,
+      locale: IntakeLocale,
+    ) => StudentIntakeForm;
+    openAnswers: (
+      sealed: SealedRecord,
+      context: { workspaceId: string; studentId: string },
+    ) => Promise<IntakeAnswerMap>;
   }): Promise<ClinicalRevealAttempt>;
-  recordRevealAudit(input: {
-    workspaceId: string;
-    staffIdentityId: string;
+  recordUnattributedRevealAttempt(input: {
     auditId: string;
     operationId: string;
     occurredAt: Date;
-    eventType: 'intake_record.revealed' | 'intake_record.reveal_denied';
-    details: Record<string, string>;
+    outcome: 'denied_unauthenticated' | 'denied_session_unknown';
+    studentId: string;
   }): Promise<void>;
 };
 
@@ -562,7 +569,7 @@ export function createIntake(dependencies: {
               locale: state.draft.locale,
               updatedAt: state.draft.updatedAt.toISOString(),
               answers: decodeAnswers(
-                dependencies.keys.open(state.draft.sealed, {
+                await dependencies.keys.open(state.draft.sealed, {
                   purpose: 'intake-draft',
                   workspaceId: session.workspaceId,
                   studentId: session.studentId,
@@ -684,6 +691,16 @@ export function createIntake(dependencies: {
       };
     },
 
+    async reportUnauthenticatedReveal(command: { studentId: string }) {
+      await dependencies.store.recordUnattributedRevealAttempt({
+        auditId: dependencies.ids.create(),
+        operationId: dependencies.ids.create(),
+        occurredAt: dependencies.clock.now(),
+        outcome: 'denied_unauthenticated',
+        studentId: command.studentId,
+      });
+    },
+
     async revealCurrent(command: RevealCurrentIntakeRecordCommand) {
       const auditId = dependencies.ids.create();
       const operationId = dependencies.ids.create();
@@ -695,6 +712,15 @@ export function createIntake(dependencies: {
         now: dependencies.clock.now(),
         auditId,
         operationId,
+        projectForm: projectStudentIntakeForm,
+        openAnswers: async (sealed, context) =>
+          decodeAnswers(
+            await dependencies.keys.open(sealed, {
+              purpose: 'intake-record-version',
+              workspaceId: context.workspaceId,
+              studentId: context.studentId,
+            }),
+          ),
       });
       if (attempted.outcome === 'missing_session') {
         throw new StaffAuthenticationFailedError();
@@ -715,57 +741,20 @@ export function createIntake(dependencies: {
       if (attempted.outcome === 'not_found') {
         throw new IntakeRecordNotFoundError();
       }
-      const form = projectStudentIntakeForm(
-        attempted.formRelease,
-        attempted.locale,
-      );
-      let answers: IntakeAnswerMap;
-      try {
-        answers = decodeAnswers(
-          dependencies.keys.open(attempted.sealed, {
-            purpose: 'intake-record-version',
-            workspaceId: attempted.workspaceId,
-            studentId: command.studentId,
-          }),
-        );
-      } catch {
-        await dependencies.store.recordRevealAudit({
-          workspaceId: attempted.workspaceId,
-          staffIdentityId: attempted.staffIdentityId,
-          auditId,
-          operationId,
-          occurredAt: dependencies.clock.now(),
-          eventType: 'intake_record.reveal_denied',
-          details: {
-            studentId: command.studentId,
-            outcome: 'failed',
-            staffSessionId: attempted.staffSessionId,
-          },
-        });
-        throw new Error('Unable to open the current Intake Record Version');
+      if (attempted.outcome === 'failed') {
+        if (attempted.cause === 'decrypt') {
+          throw new Error('Unable to open the current Intake Record Version');
+        }
+        throw new IntakeUnavailableError();
       }
-      await dependencies.store.recordRevealAudit({
-        workspaceId: attempted.workspaceId,
-        staffIdentityId: attempted.staffIdentityId,
-        auditId,
-        operationId,
-        occurredAt: dependencies.clock.now(),
-        eventType: 'intake_record.revealed',
-        details: {
-          studentId: command.studentId,
-          outcome: 'revealed',
-          staffSessionId: attempted.staffSessionId,
-          intakeRecordVersionId: attempted.intakeRecordVersionId,
-        },
-      });
       return {
         studentId: command.studentId,
         intakeRecordVersionId: attempted.intakeRecordVersionId,
         acceptedAt: new Date(attempted.acceptedAt).toISOString(),
         schoolConfigurationReleaseId: attempted.schoolConfigurationReleaseId,
         locale: attempted.locale,
-        intakeForm: form.intakeForm,
-        answers,
+        intakeForm: attempted.intakeForm,
+        answers: attempted.answers,
         freshUntil: new Date(attempted.freshUntil).toISOString(),
       } satisfies RevealedCurrentIntakeRecord;
     },

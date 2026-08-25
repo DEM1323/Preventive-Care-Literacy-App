@@ -34,6 +34,7 @@ import {
   IntakeUnavailableError,
 } from '../../../modules/intake/index.ts';
 import { createIntake } from '../../../modules/intake/index.ts';
+import type { ApplicationKeyManagement } from '../../../modules/intake/index.ts';
 import type { LearningProgress } from '../../../modules/learning-progress/index.ts';
 import {
   LearningLockedError,
@@ -1320,6 +1321,17 @@ export async function buildApp(
         staffSessionCookie,
       );
       if (!sessionHandle) {
+        if (!options.intake) {
+          return reply.type('application/problem+json').code(401).send({
+            type: 'https://preventive-care-literacy.example/problems/staff-session',
+            title: 'Staff session required',
+            status: 401,
+            code: 'STAFF_SESSION_REQUIRED',
+          });
+        }
+        await options.intake.reportUnauthenticatedReveal({
+          studentId: request.body.studentId,
+        });
         return reply.type('application/problem+json').code(401).send({
           type: 'https://preventive-care-literacy.example/problems/staff-session',
           title: 'Staff session required',
@@ -1837,6 +1849,7 @@ export async function createServer(options: {
   ids?: IdGenerator;
   invitationSecrets?: InvitationSecretKeys;
   wrappingKeys?: EnvelopeKeyMaterial;
+  applicationKeys?: ApplicationKeyManagement;
   releasePackages?: ReleasePackageStorage;
 }): Promise<FastifyInstance> {
   const connectionUrl = new URL(options.databaseUrl);
@@ -1895,13 +1908,15 @@ export async function createServer(options: {
     resolveStudentSession: (command) =>
       identityAndAccess.resolveStudentSession(command),
     store: createPostgresIntakeStore({ pool }),
-    keys: createEnvelopeKeyManagement(
-      options.wrappingKeys ?? {
-        wrappingKeys: { ephemeral: randomBytes(32) },
-        activeWrappingKeyId: 'ephemeral',
-        idempotencyKey: randomBytes(32),
-      },
-    ),
+    keys:
+      options.applicationKeys ??
+      createEnvelopeKeyManagement(
+        options.wrappingKeys ?? {
+          wrappingKeys: { ephemeral: randomBytes(32) },
+          activeWrappingKeyId: 'ephemeral',
+          idempotencyKey: randomBytes(32),
+        },
+      ),
     clock,
     ids,
     hashSessionHandle: sha256SessionHandle,

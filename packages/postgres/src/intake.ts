@@ -6,10 +6,12 @@ import {
   IntakeUnavailableError,
   type ClinicalRevealDenialReason,
   type ExactResourceRevision,
+  type IntakeAnswerMap,
   type IntakeStore,
   type SealedRecord,
   type StoredIntakeDraft,
   type StoredIntakeRecordVersion,
+  type StudentIntakeForm,
   type SubmitIntakeRecordVersionResult,
 } from '../../../modules/intake/index.ts';
 import { staffAuthenticationFreshnessMs } from '../../../modules/identity-access/index.ts';
@@ -202,6 +204,28 @@ async function insertRevealAudit(
       input.actorId,
       input.occurredAt,
       input.details,
+    ],
+  );
+}
+
+async function insertUnattributedRevealAttempt(
+  client: PoolClient,
+  input: {
+    auditId: string;
+    operationId: string;
+    occurredAt: Date;
+    outcome: 'denied_unauthenticated' | 'denied_session_unknown';
+    studentId: string;
+  },
+): Promise<void> {
+  await client.query(
+    `select audit.record_unattributed_reveal_attempt($1, $2, $3, $4, $5)`,
+    [
+      input.auditId,
+      input.operationId,
+      input.occurredAt,
+      input.outcome,
+      { outcome: input.outcome, studentId: input.studentId },
     ],
   );
 }
@@ -513,7 +537,16 @@ export function createPostgresIntakeStore(options: {
           [input.sessionHandleHash],
         );
         const currentSession = session.rows[0];
-        if (!currentSession) return { outcome: 'missing_session' as const };
+        if (!currentSession) {
+          await insertUnattributedRevealAttempt(client, {
+            auditId: input.auditId,
+            operationId: input.operationId,
+            occurredAt: input.now,
+            outcome: 'denied_session_unknown',
+            studentId: input.studentId,
+          });
+          return { outcome: 'missing_session' as const };
+        }
 
         await client.query("select set_config('app.workspace_id', $1, true)", [
           currentSession.workspace_id,
@@ -540,7 +573,22 @@ export function createPostgresIntakeStore(options: {
           ],
         );
         const currentIdentity = identity.rows[0];
-        if (!currentIdentity) return { outcome: 'missing_session' as const };
+        if (!currentIdentity) {
+          await insertRevealAudit(client, {
+            auditId: input.auditId,
+            operationId: input.operationId,
+            workspaceId: currentSession.workspace_id,
+            actorId: currentSession.staff_identity_id,
+            occurredAt: input.now,
+            eventType: 'intake_record.reveal_denied',
+            details: {
+              studentId: input.studentId,
+              outcome: 'denied_disabled',
+              staffSessionId: currentSession.session_id,
+            },
+          });
+          return { outcome: 'denied' as const, reason: 'disabled' };
+        }
         const current = {
           ...currentSession,
           status: currentIdentity.status,
@@ -639,39 +687,94 @@ export function createPostgresIntakeStore(options: {
             eventType: 'intake_record.reveal_denied',
             details: {
               studentId: input.studentId,
-              outcome: 'not_found',
+              outcome: 'failed_read',
               staffSessionId: current.session_id,
             },
           });
-          return { outcome: 'not_found' as const };
+          return { outcome: 'failed' as const, cause: 'read' };
         }
 
+        const formRelease = {
+          schoolConfigurationReleaseId:
+            currentVersion.school_configuration_release_id,
+          intakeForm: {
+            resourceId: currentVersion.intake_form_resource_id,
+            revisionNumber: currentVersion.intake_form_revision_number,
+            payload: formPayload,
+          },
+          submissionAttestation: {
+            resourceId: currentVersion.submission_attestation_resource_id,
+            revisionNumber:
+              currentVersion.submission_attestation_revision_number,
+            payload: attestationPayload,
+          },
+        };
+        let form: StudentIntakeForm;
+        try {
+          form = input.projectForm(formRelease, currentVersion.locale);
+        } catch {
+          await insertRevealAudit(client, {
+            auditId: input.auditId,
+            operationId: input.operationId,
+            workspaceId: current.workspace_id,
+            actorId: current.staff_identity_id,
+            occurredAt: input.now,
+            eventType: 'intake_record.reveal_denied',
+            details: {
+              studentId: input.studentId,
+              outcome: 'failed_projection',
+              staffSessionId: current.session_id,
+            },
+          });
+          return { outcome: 'failed' as const, cause: 'projection' };
+        }
+
+        let answers: IntakeAnswerMap;
+        try {
+          answers = await input.openAnswers(sealedFrom(currentVersion), {
+            workspaceId: current.workspace_id,
+            studentId: input.studentId,
+          });
+        } catch {
+          await insertRevealAudit(client, {
+            auditId: input.auditId,
+            operationId: input.operationId,
+            workspaceId: current.workspace_id,
+            actorId: current.staff_identity_id,
+            occurredAt: input.now,
+            eventType: 'intake_record.reveal_denied',
+            details: {
+              studentId: input.studentId,
+              outcome: 'failed_decrypt',
+              staffSessionId: current.session_id,
+            },
+          });
+          return { outcome: 'failed' as const, cause: 'decrypt' };
+        }
+
+        await insertRevealAudit(client, {
+          auditId: input.auditId,
+          operationId: input.operationId,
+          workspaceId: current.workspace_id,
+          actorId: current.staff_identity_id,
+          occurredAt: input.now,
+          eventType: 'intake_record.revealed',
+          details: {
+            studentId: input.studentId,
+            outcome: 'revealed',
+            staffSessionId: current.session_id,
+            intakeRecordVersionId: currentVersion.intake_record_version_id,
+          },
+        });
         return {
           outcome: 'revealed' as const,
-          workspaceId: current.workspace_id,
-          staffIdentityId: current.staff_identity_id,
-          staffSessionId: current.session_id,
-          sealed: sealedFrom(currentVersion),
           intakeRecordVersionId: currentVersion.intake_record_version_id,
           acceptedAt: new Date(currentVersion.accepted_at),
           locale: currentVersion.locale,
           schoolConfigurationReleaseId:
             currentVersion.school_configuration_release_id,
-          formRelease: {
-            schoolConfigurationReleaseId:
-              currentVersion.school_configuration_release_id,
-            intakeForm: {
-              resourceId: currentVersion.intake_form_resource_id,
-              revisionNumber: currentVersion.intake_form_revision_number,
-              payload: formPayload,
-            },
-            submissionAttestation: {
-              resourceId: currentVersion.submission_attestation_resource_id,
-              revisionNumber:
-                currentVersion.submission_attestation_revision_number,
-              payload: attestationPayload,
-            },
-          },
+          intakeForm: form.intakeForm,
+          answers,
           freshUntil: new Date(
             new Date(current.authentication_fresh_at).getTime() +
               staffAuthenticationFreshnessMs,
@@ -680,24 +783,9 @@ export function createPostgresIntakeStore(options: {
       });
     },
 
-    async recordRevealAudit(input) {
+    async recordUnattributedRevealAttempt(input) {
       await transaction(options.pool, async (client) => {
-        await client.query("select set_config('app.workspace_id', $1, true)", [
-          input.workspaceId,
-        ]);
-        await client.query(
-          "select set_config('app.staff_identity_id', $1, true)",
-          [input.staffIdentityId],
-        );
-        await insertRevealAudit(client, {
-          auditId: input.auditId,
-          operationId: input.operationId,
-          workspaceId: input.workspaceId,
-          actorId: input.staffIdentityId,
-          occurredAt: input.occurredAt,
-          eventType: input.eventType,
-          details: input.details,
-        });
+        await insertUnattributedRevealAttempt(client, input);
       });
     },
   };

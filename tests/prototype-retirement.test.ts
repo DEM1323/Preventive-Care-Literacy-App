@@ -79,6 +79,11 @@ test('clinical Intake Record reveal stays memory-only and suppresses application
     'utf8',
   );
   const css = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
+  const retirement = readFileSync(
+    new URL('../docs/security/prototype-retirement.md', import.meta.url),
+    'utf8',
+  );
+  const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
 
   expect(clinicalSource).not.toContain('localStorage');
   expect(clinicalSource).not.toContain('sessionStorage');
@@ -88,10 +93,32 @@ test('clinical Intake Record reveal stays memory-only and suppresses application
   expect(clinicalSource).toContain('clinical-sensitive');
   expect(clinicalSource).toContain('visibilitychange');
   expect(clinicalSource).toContain('setInterval');
+  expect(clinicalSource).toContain('AbortController');
+  expect(clinicalSource).toContain('generationRef');
+  expect(clinicalSource).not.toContain("mode === 'silent' && busyRef");
+  const visibleCheck = clinicalSource.indexOf(
+    "document.visibilityState === 'visible'",
+  );
+  const clearBeforeRecheck = clinicalSource.indexOf(
+    'clearSensitiveClinicalState',
+    visibleCheck,
+  );
+  const revalidate = clinicalSource.indexOf(
+    "refreshDirectoryRef.current('revalidate')",
+    visibleCheck,
+  );
+  expect(visibleCheck).toBeGreaterThan(-1);
+  expect(clearBeforeRecheck).toBeGreaterThan(visibleCheck);
+  expect(revalidate).toBeGreaterThan(clearBeforeRecheck);
   expect(staffHomeSource).toContain('ClinicalReviewSection');
   expect(staffHomeSource.indexOf('setSession(undefined)')).toBeLessThan(
     staffHomeSource.indexOf("'/api/v1/auth/staff/sign-out'"),
   );
   expect(css).toContain('@media print');
   expect(css).toContain('.clinical-sensitive');
+  expect(retirement).toContain('/api/v1/clinical/intake-records/current');
+  expect(retirement).not.toContain(
+    'Authenticated staff routes still contain no Student answer entry',
+  );
+  expect(readme).toContain('clinical Intake Record reveal');
 });

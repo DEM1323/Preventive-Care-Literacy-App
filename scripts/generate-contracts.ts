@@ -100,6 +100,9 @@ async function renderContracts() {
         revealCurrent: async () => {
           throw new Error('Contract generation does not execute queries');
         },
+        reportUnauthenticatedReveal: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
       },
       learningProgress: {
         read: async () => {

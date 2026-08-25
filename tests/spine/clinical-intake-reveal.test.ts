@@ -7,6 +7,7 @@ import type {
   IntakeFormField,
   StudentIntakeSnapshot,
 } from '../../modules/intake/index.ts';
+import { createEnvelopeKeyManagement } from '../../packages/application-keys/src/index.ts';
 import { createApiClient } from '../../packages/api-client/src/index.ts';
 import { migrate } from '../../packages/postgres/src/migrate.ts';
 import {
@@ -58,6 +59,13 @@ const invitationSecrets = {
   activeEncryptionKeyId: 'test',
   createCode: () => invitationCode,
 };
+const wrappingKeys = {
+  wrappingKeys: { test: Buffer.alloc(32, 13) },
+  activeWrappingKeyId: 'test',
+  idempotencyKey: Buffer.alloc(32, 17),
+};
+const envelopeKeys = createEnvelopeKeyManagement(wrappingKeys);
+let duringDecrypt: (() => Promise<void>) | undefined;
 
 function completeAnswers(fields: IntakeFormField[]) {
   const answers: Record<string, string> = {};
@@ -168,10 +176,15 @@ beforeAll(async () => {
     staffAuth: fakeAuth.provider,
     clock: { now: () => now },
     invitationSecrets,
-    wrappingKeys: {
-      wrappingKeys: { test: Buffer.alloc(32, 13) },
-      activeWrappingKeyId: 'test',
-      idempotencyKey: Buffer.alloc(32, 17),
+    wrappingKeys,
+    applicationKeys: {
+      name: envelopeKeys.name,
+      seal: (plaintext, context) => envelopeKeys.seal(plaintext, context),
+      bind: (plaintext, context) => envelopeKeys.bind(plaintext, context),
+      async open(sealed, context) {
+        if (duringDecrypt) await duringDecrypt();
+        return envelopeKeys.open(sealed, context);
+      },
     },
     telemetry: {
       record(event) {
@@ -432,6 +445,21 @@ describe.serial('clinical directory and current Intake Record reveal', () => {
     );
     expect(missingCookie.response.status).toBe(401);
 
+    const unknownSession = await client.POST(
+      '/api/v1/clinical/intake-records/current',
+      {
+        headers: {
+          ...mutationHeaders,
+          cookie: '__Host-prevcare-staff-session=unknown-clinical-reveal',
+        },
+        body: { studentId },
+      },
+    );
+    expect(unknownSession.response.status).toBe(401);
+    expect(JSON.stringify(unknownSession.error)).not.toContain(
+      distinctiveAnswer,
+    );
+
     const administratorReveal = await client.POST(
       '/api/v1/clinical/intake-records/current',
       {
@@ -495,6 +523,43 @@ describe.serial('clinical directory and current Intake Record reveal', () => {
       ]);
       expect(JSON.stringify(denials.rows)).not.toContain(distinctiveAnswer);
 
+      const unattributed = await inspection.query<{
+        event_type: string;
+        details: Record<string, unknown>;
+        actor_type: string | null;
+        actor_id: string | null;
+      }>(
+        `select event_type, details, null::text as actor_type, null::text as actor_id
+           from audit.security_events
+          order by sequence`,
+      );
+      expect(unattributed.rows).toEqual([
+        {
+          event_type: 'intake_record.reveal_denied',
+          actor_type: null,
+          actor_id: null,
+          details: expect.objectContaining({
+            outcome: 'denied_unauthenticated',
+            studentId,
+          }),
+        },
+        {
+          event_type: 'intake_record.reveal_denied',
+          actor_type: null,
+          actor_id: null,
+          details: expect.objectContaining({
+            outcome: 'denied_session_unknown',
+            studentId,
+          }),
+        },
+      ]);
+      expect(JSON.stringify(unattributed.rows)).not.toContain(
+        distinctiveAnswer,
+      );
+      expect(JSON.stringify(unattributed.rows)).not.toContain(
+        'unknown-clinical-reveal',
+      );
+
       const runtime = new Client({ connectionString: runtimeDatabaseUrl });
       await runtime.connect();
       try {
@@ -535,6 +600,171 @@ describe.serial('clinical directory and current Intake Record reveal', () => {
       }
     } finally {
       await inspection.end();
+    }
+  });
+
+  test('projection and decrypt failures append safe denial evidence without answers', async () => {
+    const client = createApiClient(baseUrl);
+    const owner = new Client({ connectionString: postgres.connectionString });
+    await owner.connect();
+    try {
+      const current = await owner.query<{
+        intake_form_resource_id: string;
+        intake_form_revision_number: number;
+        ciphertext: string;
+      }>(
+        `select intake_form_resource_id, intake_form_revision_number, ciphertext
+           from intake.intake_record_versions
+          where student_id = $1 and superseded_at is null`,
+        [studentId],
+      );
+      const version = current.rows[0];
+      expect(version).toBeDefined();
+      const originalForm = await owner.query<{ payload: unknown }>(
+        `select payload from school_configuration.authored_revisions
+          where workspace_id = $1 and resource_id = $2 and revision_number = $3`,
+        [
+          workspaceId,
+          version?.intake_form_resource_id,
+          version?.intake_form_revision_number,
+        ],
+      );
+
+      await owner.query(
+        'alter table school_configuration.authored_revisions disable trigger frozen_revisions_are_immutable',
+      );
+      await owner.query(
+        `update school_configuration.authored_revisions
+            set payload = payload - 'title'
+          where workspace_id = $1
+            and resource_id = $2
+            and revision_number = $3`,
+        [
+          workspaceId,
+          version?.intake_form_resource_id,
+          version?.intake_form_revision_number,
+        ],
+      );
+      const projectionFailed = await client.POST(
+        '/api/v1/clinical/intake-records/current',
+        {
+          headers: { ...mutationHeaders, cookie: clinicianCookie },
+          body: { studentId },
+        },
+      );
+      expect(projectionFailed.response.status).toBe(404);
+      expect(JSON.stringify(projectionFailed.error)).not.toContain(
+        distinctiveAnswer,
+      );
+      await owner.query(
+        `update school_configuration.authored_revisions
+            set payload = $4
+          where workspace_id = $1
+            and resource_id = $2
+            and revision_number = $3`,
+        [
+          workspaceId,
+          version?.intake_form_resource_id,
+          version?.intake_form_revision_number,
+          originalForm.rows[0]?.payload,
+        ],
+      );
+      await owner.query(
+        'alter table school_configuration.authored_revisions enable trigger frozen_revisions_are_immutable',
+      );
+
+      await owner.query(
+        'alter table intake.intake_record_versions disable trigger intake_record_versions_are_immutable',
+      );
+      await owner.query(
+        `update intake.intake_record_versions
+            set ciphertext = 'corrupted-clinical-ciphertext'
+          where student_id = $1 and superseded_at is null`,
+        [studentId],
+      );
+      const decryptFailed = await client.POST(
+        '/api/v1/clinical/intake-records/current',
+        {
+          headers: { ...mutationHeaders, cookie: clinicianCookie },
+          body: { studentId },
+        },
+      );
+      expect(decryptFailed.response.status).toBe(500);
+      expect(JSON.stringify(decryptFailed.error)).not.toContain(
+        distinctiveAnswer,
+      );
+      await owner.query(
+        `update intake.intake_record_versions
+            set ciphertext = $2
+          where student_id = $1 and superseded_at is null`,
+        [studentId, version?.ciphertext],
+      );
+      await owner.query(
+        'alter table intake.intake_record_versions enable trigger intake_record_versions_are_immutable',
+      );
+
+      const failures = await owner.query<{ outcome: string }>(
+        `select details->>'outcome' as outcome from audit.evidence
+          where actor_id = $1
+            and event_type = 'intake_record.reveal_denied'
+            and details->>'outcome' in ('failed_projection', 'failed_decrypt')
+          order by sequence`,
+        [clinicianId],
+      );
+      expect(failures.rows.map((row) => row.outcome)).toEqual([
+        'failed_projection',
+        'failed_decrypt',
+      ]);
+      expect(JSON.stringify(failures.rows)).not.toContain(distinctiveAnswer);
+    } finally {
+      await owner
+        .query(
+          'alter table school_configuration.authored_revisions enable trigger frozen_revisions_are_immutable',
+        )
+        .catch(() => undefined);
+      await owner
+        .query(
+          'alter table intake.intake_record_versions enable trigger intake_record_versions_are_immutable',
+        )
+        .catch(() => undefined);
+      await owner.end();
+    }
+  });
+
+  test('revocation cannot interleave decrypt and still expose answers', async () => {
+    const client = createApiClient(baseUrl);
+    duringDecrypt = async () => {
+      const revoker = new Client({
+        connectionString: postgres.connectionString,
+      });
+      await revoker.connect();
+      try {
+        await revoker.query("set lock_timeout = '500ms'");
+        await expect(
+          revoker.query(
+            `update identity_access.staff_sessions
+                set revoked_at = $1
+              where staff_identity_id = $2 and revoked_at is null`,
+            [now, clinicianId],
+          ),
+        ).rejects.toThrow(/lock timeout/);
+      } finally {
+        await revoker.end();
+      }
+    };
+    try {
+      const revealed = await client.POST(
+        '/api/v1/clinical/intake-records/current',
+        {
+          headers: { ...mutationHeaders, cookie: clinicianCookie },
+          body: { studentId },
+        },
+      );
+      expect(revealed.response.status).toBe(200);
+      expect(revealed.data?.answers).toBeDefined();
+      expect(JSON.stringify(revealed.data)).toContain(distinctiveAnswer);
+    } finally {
+      duringDecrypt = undefined;
     }
   });
 
@@ -660,6 +890,9 @@ describe.serial('clinical directory and current Intake Record reveal', () => {
       expect(outcomes.rows.map((row) => row.outcome)).toEqual([
         'revealed',
         'not_found',
+        'failed_projection',
+        'failed_decrypt',
+        'revealed',
         'denied_stale',
         'denied_permission',
         'denied_session_revoked',

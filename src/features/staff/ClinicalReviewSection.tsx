@@ -22,6 +22,10 @@ function emptyClinicalView() {
   };
 }
 
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === 'AbortError';
+}
+
 export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
   const navigate = useNavigate();
   const [view, setView] = useState(emptyClinicalView);
@@ -32,8 +36,10 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
   const freshUntilMs = useRef<number | undefined>(undefined);
   const clearedRef = useRef(false);
   const busyRef = useRef<'directory' | 'reveal' | undefined>('directory');
+  const generationRef = useRef(0);
+  const abortRef = useRef(new AbortController());
   const refreshDirectoryRef = useRef<
-    (mode: 'initial' | 'silent') => Promise<void>
+    (mode: 'initial' | 'silent' | 'revalidate') => Promise<void>
   >(async () => {});
 
   function rememberFreshUntil(value: string) {
@@ -41,15 +47,24 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
     setFreshnessEpoch((current) => current + 1);
   }
 
-  function clearClinicalView(error?: string) {
-    clearedRef.current = true;
+  function clearSensitiveClinicalState(error?: string) {
+    generationRef.current += 1;
+    abortRef.current.abort();
+    abortRef.current = new AbortController();
     freshUntilMs.current = undefined;
+    busyRef.current = undefined;
+    setBusy(undefined);
     setView({ ...emptyClinicalView(), error });
+  }
+
+  function lockOutClinical(error?: string) {
+    clearedRef.current = true;
+    clearSensitiveClinicalState(error);
   }
 
   function handleClinicalFailure(status: number, problem: Problem | undefined) {
     if (status === 401) {
-      clearClinicalView();
+      lockOutClinical();
       props.onSessionLost();
       navigate('/staff/sign-in');
       return;
@@ -60,7 +75,7 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
       problem?.code === 'STAFF_SESSION_EXPIRED' ||
       problem?.code === 'STAFF_SESSION_REVOKED'
     ) {
-      clearClinicalView(
+      lockOutClinical(
         problem.code === 'STAFF_AUTHENTICATION_STALE'
           ? 'Authentication freshness expired. Sensitive values were cleared.'
           : 'Clinical access is no longer available. Sensitive values were cleared.',
@@ -74,16 +89,21 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
     }));
   }
 
-  async function refreshDirectory(mode: 'initial' | 'silent') {
+  async function refreshDirectory(
+    mode: 'initial' | 'silent' | 'revalidate',
+  ) {
     if (clearedRef.current) return;
-    if (mode === 'silent' && busyRef.current === 'reveal') return;
+    const generation = generationRef.current;
+    const signal = abortRef.current.signal;
     if (mode === 'initial') {
       busyRef.current = 'directory';
       setBusy('directory');
     }
     try {
-      const listing = await client.GET('/api/v1/clinical/review-directory');
-      if (clearedRef.current) return;
+      const listing = await client.GET('/api/v1/clinical/review-directory', {
+        signal,
+      });
+      if (generation !== generationRef.current || clearedRef.current) return;
       if (listing.response.status !== 200 || !listing.data) {
         handleClinicalFailure(
           listing.response.status,
@@ -108,15 +128,13 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
           error: undefined,
         };
       });
-    } catch {
-      if (mode === 'initial') {
-        setView((current) => ({
-          ...current,
-          error: 'The directory could not be loaded.',
-        }));
-      }
+    } catch (error) {
+      if (generation !== generationRef.current || isAbortError(error)) return;
+      lockOutClinical(
+        'Clinical access could not be confirmed. Sensitive values were cleared.',
+      );
     } finally {
-      if (mode === 'initial') {
+      if (mode === 'initial' && generation === generationRef.current) {
         busyRef.current = undefined;
         setBusy(undefined);
       }
@@ -135,7 +153,10 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
     }, 5000);
     function onVisibility() {
       if (document.visibilityState === 'visible') {
-        void refreshDirectoryRef.current('silent');
+        clearSensitiveClinicalState(
+          'Clinical access is being rechecked. Sensitive values were cleared.',
+        );
+        void refreshDirectoryRef.current('revalidate');
       }
     }
     document.addEventListener('visibilitychange', onVisibility);
@@ -150,7 +171,7 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
     if (!deadline) return;
     const delay = Math.max(0, deadline - Date.now());
     const timer = window.setTimeout(() => {
-      clearClinicalView(
+      lockOutClinical(
         'Authentication freshness expired. Sensitive values were cleared.',
       );
     }, delay);
@@ -167,6 +188,7 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
   }, [view.directory, view.filter]);
 
   async function reveal(student: ClinicalStudent) {
+    const generation = generationRef.current;
     busyRef.current = 'reveal';
     setBusy('reveal');
     setView((current) => ({
@@ -178,8 +200,12 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
     try {
       const result = await client.POST(
         '/api/v1/clinical/intake-records/current',
-        { body: { studentId: student.studentId } },
+        {
+          body: { studentId: student.studentId },
+          signal: abortRef.current.signal,
+        },
       );
+      if (generation !== generationRef.current || clearedRef.current) return;
       if (result.response.status !== 200 || !result.data) {
         handleClinicalFailure(
           result.response.status,
@@ -193,15 +219,16 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
         revealed: result.data,
         error: undefined,
       }));
-    } catch {
-      setView((current) => ({
-        ...current,
-        revealed: undefined,
-        error: 'The Intake Record could not be revealed.',
-      }));
+    } catch (error) {
+      if (generation !== generationRef.current || isAbortError(error)) return;
+      lockOutClinical(
+        'Clinical access could not be confirmed. Sensitive values were cleared.',
+      );
     } finally {
-      busyRef.current = undefined;
-      setBusy(undefined);
+      if (generation === generationRef.current) {
+        busyRef.current = undefined;
+        setBusy(undefined);
+      }
     }
   }
 
