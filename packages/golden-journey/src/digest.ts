@@ -39,6 +39,30 @@ export type ExpectedSourceIdentity = {
   artifactDigest: string;
 };
 
+export function expectedSourceIdentityFromProductionAttestation(
+  attestation: ExpectedSourceIdentity,
+  labels: { commit: string; tree: string },
+): ExpectedSourceIdentity {
+  if (
+    attestation.commit !== labels.commit ||
+    attestation.tree !== labels.tree
+  ) {
+    throw new GoldenJourneyDigestMismatchError(
+      `Production attestation labels differ from the expected main commit ${labels.commit}`,
+    );
+  }
+  return {
+    commit: attestation.commit,
+    tree: attestation.tree,
+    sourceDigest: attestation.sourceDigest,
+    browserDigest: attestation.browserDigest,
+    lockDigest: attestation.lockDigest,
+    dependencyDigest: attestation.dependencyDigest,
+    bunVersion: attestation.bunVersion,
+    artifactDigest: attestation.artifactDigest,
+  };
+}
+
 export function assertDeployedSourceIdentity(
   deployed: DeployedSourceIdentity,
   expected: ExpectedSourceIdentity,

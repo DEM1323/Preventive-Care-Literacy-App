@@ -1,6 +1,13 @@
 import { createHash } from 'node:crypto';
-import { readdir, readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import {
+  lstat,
+  readdir,
+  readFile,
+  readlink,
+  realpath,
+  writeFile,
+} from 'node:fs/promises';
+import { basename, join } from 'node:path';
 import { APPLICATION_LAYER_ENVELOPE_V1 } from '../../application-keys/src/index.ts';
 
 export const BUILD_ATTESTATION_FILENAME = 'build-attestation.json';
@@ -13,7 +20,7 @@ const skippedDirectoryNames = new Set([
   '.vite',
 ]);
 
-const skippedDependencyDirectoryNames = new Set(['.bin', '.cache']);
+const skippedDependencyDirectoryNames = new Set(['.bin', '.cache', '.tmp']);
 
 const sourceRoots = ['apps', 'modules', 'packages', 'scripts'] as const;
 
@@ -162,13 +169,6 @@ function productionPackageNames(lock: BunLockfile): string[] {
   return [...needed].sort();
 }
 
-/**
- * Hashes installed files for bun.lock production-graph packages only.
- * Limits: extra/dev packages are excluded so a CI full install can match a
- * production image; optional platform-specific files inside a production
- * package are hashed and can diverge across OS/libc; extra packages that are
- * not in the production graph are not detected by this digest.
- */
 function parseBunLockfile(text: string): unknown {
   const stripped = text.replace(/,\s*([}\]])/g, '$1');
   try {
@@ -178,6 +178,127 @@ function parseBunLockfile(text: string): unknown {
   }
 }
 
+type InstalledLayoutEntry =
+  | { path: string; kind: 'file'; digest: string }
+  | { path: string; kind: 'symlink'; target: string };
+
+function digestInstalledLayout(entries: InstalledLayoutEntry[]): string {
+  const hash = createHash('sha256');
+  for (const entry of [...entries].sort((left, right) =>
+    left.path.localeCompare(right.path),
+  )) {
+    if (entry.kind === 'file') {
+      hash.update(`${entry.path}\0file\0${entry.digest}\n`);
+      continue;
+    }
+    hash.update(`${entry.path}\0symlink\0${entry.target}\n`);
+  }
+  return hash.digest('hex');
+}
+
+function packageNameFromPath(relativePath: string): string | undefined {
+  const parts = relativePath.split('/');
+  const marker = parts.lastIndexOf('node_modules');
+  if (marker === -1 || marker === parts.length - 1) return undefined;
+  const first = parts[marker + 1];
+  if (!first || first.startsWith('.')) return undefined;
+  if (first.startsWith('@')) {
+    const scoped = parts[marker + 2];
+    if (!scoped) return undefined;
+    return `${first}/${scoped}`;
+  }
+  return first;
+}
+
+function recordInstalledPackageName(
+  relativePath: string,
+  foundNames: Set<string>,
+  fileContents?: string,
+): void {
+  const fromPath = packageNameFromPath(relativePath);
+  if (fromPath) foundNames.add(fromPath);
+  if (basename(relativePath) !== 'package.json' || fileContents === undefined) {
+    return;
+  }
+  try {
+    const parsed: unknown = JSON.parse(fileContents);
+    if (isRecord(parsed) && typeof parsed.name === 'string' && parsed.name) {
+      foundNames.add(parsed.name);
+    }
+  } catch {
+    return;
+  }
+}
+
+async function collectInstalledLayout(
+  root: string,
+  relativeDirectory: string,
+  seenRealDirectories: Set<string>,
+  entries: InstalledLayoutEntry[],
+  foundNames: Set<string>,
+): Promise<void> {
+  const directory = join(root, relativeDirectory);
+  let dirEntries;
+  try {
+    dirEntries = await readdir(directory, { withFileTypes: true });
+  } catch {
+    throw new BuildAttestationError('production dependency tree is missing');
+  }
+
+  const ordered = [...dirEntries].sort((left, right) =>
+    left.name.localeCompare(right.name),
+  );
+  for (const entry of ordered) {
+    if (skippedDependencyDirectoryNames.has(entry.name)) continue;
+    const relativePath = relativeDirectory
+      ? `${relativeDirectory}/${entry.name}`
+      : entry.name;
+    const fullPath = join(root, relativePath);
+
+    if (entry.isSymbolicLink()) {
+      const target = await readlink(fullPath);
+      entries.push({ path: relativePath, kind: 'symlink', target });
+      recordInstalledPackageName(relativePath, foundNames);
+      continue;
+    }
+    if (entry.isDirectory()) {
+      let realDirectory: string;
+      try {
+        realDirectory = await realpath(fullPath);
+      } catch {
+        continue;
+      }
+      if (seenRealDirectories.has(realDirectory)) continue;
+      seenRealDirectories.add(realDirectory);
+      await collectInstalledLayout(
+        root,
+        relativePath,
+        seenRealDirectories,
+        entries,
+        foundNames,
+      );
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    const content = await readFile(fullPath);
+    const digest = createHash('sha256').update(content).digest('hex');
+    entries.push({ path: relativePath, kind: 'file', digest });
+    recordInstalledPackageName(
+      relativePath,
+      foundNames,
+      basename(relativePath) === 'package.json'
+        ? content.toString('utf8')
+        : undefined,
+    );
+  }
+}
+
+/**
+ * Hashes the installed production tree as it exists on disk, including nested
+ * and isolated Bun layouts. Lockfile names are a completeness check, not a
+ * substitute for installed files. Extra packages present in the tree are
+ * hashed; known non-runtime noise (.bin, .cache, .tmp) is excluded.
+ */
 export async function hashProductionDependencies(
   root: string,
 ): Promise<string> {
@@ -195,19 +316,34 @@ export async function hashProductionDependencies(
   if (names.length === 0) {
     throw new BuildAttestationError('production dependency graph is missing');
   }
-  const files: string[] = [];
+
+  const nodeModules = join(root, 'node_modules');
+  let nodeModulesReal: string;
+  try {
+    await lstat(nodeModules);
+    nodeModulesReal = await realpath(nodeModules);
+  } catch {
+    throw new BuildAttestationError('production dependency tree is missing');
+  }
+
+  const entries: InstalledLayoutEntry[] = [];
+  const foundNames = new Set<string>();
+  await collectInstalledLayout(
+    root,
+    'node_modules',
+    new Set([nodeModulesReal]),
+    entries,
+    foundNames,
+  );
+  if (entries.length === 0) {
+    throw new BuildAttestationError('production dependency tree is missing');
+  }
   for (const name of names) {
-    const packageFiles = await collectFiles(
-      root,
-      `node_modules/${name}`,
-      skippedDependencyDirectoryNames,
-    );
-    if (packageFiles.length === 0) {
+    if (!foundNames.has(name)) {
       throw new BuildAttestationError('production dependency tree is missing');
     }
-    files.push(...packageFiles);
   }
-  return digestFiles(root, files);
+  return digestInstalledLayout(entries);
 }
 
 export function artifactDigestFromParts(input: {

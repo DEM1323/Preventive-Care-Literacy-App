@@ -41,8 +41,12 @@ jobs:
           echo "commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
           echo "tree=$TREE" >> "$GITHUB_OUTPUT"
 
-      - name: Build browser artifacts for attestation comparison
-        run: bun run build
+      - name: Bake production attestation
+        env:
+          SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
+          SOURCE_TREE: ${{ steps.source.outputs.tree }}
+          PRODUCTION_ATTESTATION_PATH: artifacts/production-attestation.json
+        run: bun scripts/bake-production-attestation.ts
 
       - name: Verify deployed HTTP security controls
         env:
@@ -91,6 +95,7 @@ jobs:
           GOLDEN_JOURNEY_EVIDENCE_PATH: artifacts/golden-journey-evidence.json
           GOLDEN_JOURNEY_REF: ${{ github.ref }}
           RAILWAY_STAGING_ORIGIN: ${{ vars.RAILWAY_STAGING_ORIGIN }}
+          PRODUCTION_ATTESTATION_PATH: artifacts/production-attestation.json
         run: bun scripts/run-golden-journey.ts
 
       - name: Upload redacted golden journey evidence

@@ -18,10 +18,27 @@ test('attest stage hashes production dependencies with SOURCE_COMMIT and runtime
     new URL('../../Dockerfile', import.meta.url),
     'utf8',
   );
+  const dependencies = stageBody(dockerfile, 'dependencies');
+  const productionDependencies = stageBody(
+    dockerfile,
+    'production-dependencies',
+  );
   const build = stageBody(dockerfile, 'build');
   const attest = stageBody(dockerfile, 'attest');
   const runtime = stageBody(dockerfile, 'runtime');
 
+  expect(dockerfile).toMatch(
+    /^FROM oven\/bun:1\.3\.14-alpine AS dependencies/m,
+  );
+  expect(dockerfile).toContain(
+    'FROM oven/bun:1.3.14-alpine AS production-dependencies',
+  );
+  expect(dockerfile).toContain('FROM oven/bun:1.3.14-alpine AS runtime');
+  expect(dockerfile).not.toMatch(/FROM oven\/bun:(?!1\.3\.14-alpine)/);
+  expect(dependencies).toContain('bun install --frozen-lockfile');
+  expect(productionDependencies).toContain(
+    'bun install --frozen-lockfile --production',
+  );
   expect(build).toContain('ARG SOURCE_COMMIT');
   expect(build).toContain('ARG SOURCE_TREE');
   expect(build).toContain(
@@ -38,6 +55,9 @@ test('attest stage hashes production dependencies with SOURCE_COMMIT and runtime
   );
   expect(runtime).toContain(
     'COPY --from=production-dependencies --chown=bun:bun /app/bun.lock',
+  );
+  expect(runtime).toContain(
+    'COPY --from=production-dependencies --chown=bun:bun /app/node_modules',
   );
 });
 

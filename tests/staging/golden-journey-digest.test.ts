@@ -3,6 +3,7 @@ import {
   GoldenJourneyDigestMismatchError,
   assertDeployedSourceIdentity,
   assertWorkerArtifactDigest,
+  expectedSourceIdentityFromProductionAttestation,
 } from '../../packages/golden-journey/src/index.ts';
 
 const commit = 'beda69fca3f7954a0200a3209cb44aac7ade4a72';
@@ -37,6 +38,22 @@ const deployed = {
 
 test('digest gate accepts an exact baked commit, tree, and content digests', () => {
   expect(() => assertDeployedSourceIdentity(deployed, expected)).not.toThrow();
+});
+
+test('expected identity is the baked production attestation and commit/tree are comparison labels', () => {
+  expect(
+    expectedSourceIdentityFromProductionAttestation(expected, {
+      commit,
+      tree,
+    }),
+  ).toEqual(expected);
+
+  expect(() =>
+    expectedSourceIdentityFromProductionAttestation(expected, {
+      commit: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      tree,
+    }),
+  ).toThrow(GoldenJourneyDigestMismatchError);
 });
 
 test('digest gate fails closed when any baked content digest differs from the checkout', () => {
