@@ -538,7 +538,19 @@ function journeyInput(overrides: Record<string, unknown> = {}) {
 }
 
 test('synthetic journey covers the HTTP golden path and redacts clinical content', async () => {
-  const evidence = await runGoldenJourney(journeyInput());
+  const order: string[] = [];
+  const evidence = await runGoldenJourney(
+    journeyInput({
+      cleanupAuthUsers: async () => {
+        order.push('cleanup');
+        return 'completed' as const;
+      },
+    }),
+  );
+  order.push('completed-evidence');
+  expect(order).toEqual(['cleanup', 'completed-evidence']);
+  expect(evidence.outcome).toBe('completed');
+  expect(evidence.cleanupBoundary.authCleanup).toBe('completed');
 
   expect(evidence.coverage).toMatchObject({
     staffAuth: 'pass',
@@ -625,12 +637,11 @@ test('journey does not emit completed evidence when ephemeral Auth cleanup fails
     );
   } catch (error) {
     expect(error).toBeInstanceOf(GoldenJourneyRunError);
-    expect((error as InstanceType<typeof GoldenJourneyRunError>).code).toBe(
-      'CLEANUP_FAILED',
-    );
-    expect(
-      (error as InstanceType<typeof GoldenJourneyRunError>).authCleanup,
-    ).toBe('failed');
+    const failure = error as InstanceType<typeof GoldenJourneyRunError>;
+    expect(failure.code).toBe('CLEANUP_FAILED');
+    expect(failure.authCleanup).toBe('failed');
+    expect(failure.lastCompletedStep).toBe('browser_checked');
+    expect(failure.lastCompletedStep).not.toBe('completed');
     return;
   }
   throw new Error('expected cleanup failure to fail the journey');

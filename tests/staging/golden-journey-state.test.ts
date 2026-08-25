@@ -46,3 +46,24 @@ test('failed is a terminal state from any in-progress step', () => {
   expect(() => state.advance('gated')).toThrow(GoldenJourneyStateError);
   expect(() => state.fail()).toThrow(GoldenJourneyStateError);
 });
+
+test('browser_checked can fail without passing through completed', () => {
+  const state = createGoldenJourneyState();
+  state.advance('preflighted');
+  state.advance('gated');
+  state.advance('staff_authenticated');
+  state.advance('release_published');
+  state.advance('invitation_created');
+  state.advance('invitation_delivered');
+  state.advance('invitation_redeemed');
+  state.advance('intake_drafted');
+  state.advance('intake_submitted');
+  state.advance('learning_acknowledged');
+  state.advance('clinical_revealed');
+  state.advance('student_restored');
+  state.advance('browser_checked');
+  expect(state.step()).toBe('browser_checked');
+  state.fail();
+  expect(state.step()).toBe('failed');
+  expect(state.step()).not.toBe('completed');
+});

@@ -1225,18 +1225,19 @@ export async function runGoldenJourney(
       );
     }
     state.advance('browser_checked');
-    state.advance('completed');
     authCleanup = await cleanupAuth({
       supabaseUrl: input.environment.SUPABASE_URL ?? '',
       secretKey: input.environment.SUPABASE_SECRET_KEY ?? '',
       identities: ephemeralIdentities,
     });
     if (authCleanup !== 'completed') {
-      throw new NonRetryableGoldenJourneyError(
-        'Ephemeral Auth cleanup failed',
+      throw new GoldenJourneyRunError(
         'CLEANUP_FAILED',
+        state.step(),
+        authCleanup,
       );
     }
+    state.advance('completed');
 
     return createGoldenJourneyEvidence({
       environment: 'staging',
