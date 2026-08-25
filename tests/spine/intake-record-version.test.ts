@@ -1,12 +1,15 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test';
 import type { FastifyInstance } from 'fastify';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { Client } from 'pg';
 import { createServer } from '../../apps/server/src/app.ts';
 import type {
   IntakeFormField,
   StudentIntakeSnapshot,
+  SubmitIntakeRecordVersionResult,
 } from '../../modules/intake/index.ts';
+import { canonicalJson } from '../../modules/school-configuration/index.ts';
 import { createApiClient } from '../../packages/api-client/src/index.ts';
 import { migrate } from '../../packages/postgres/src/migrate.ts';
 import {
@@ -83,18 +86,81 @@ function completeAnswers(fields: IntakeFormField[]) {
   return answers;
 }
 
-async function markInvitationDelivered() {
+async function markInvitationDelivered(deliveredInvitationId = invitationId) {
   const owner = new Client({ connectionString: postgres.connectionString });
   await owner.connect();
   try {
     await owner.query(
       `update identity_access.invitations set status = 'delivered'
         where invitation_id = $1`,
-      [invitationId],
+      [deliveredInvitationId],
     );
   } finally {
     await owner.end();
   }
+}
+
+async function inviteAndRedeemStudent(input: {
+  classId: string;
+  invitationId: string;
+  recipient: string;
+  name: string;
+}) {
+  const client = createApiClient(baseUrl);
+  const invited = await client.POST('/api/v1/administration/classes', {
+    headers: { ...operatorHeaders, cookie: administratorCookie },
+    body: {
+      operationId: crypto.randomUUID(),
+      classId: input.classId,
+      invitationId: input.invitationId,
+      name: input.name,
+      recipient: input.recipient,
+    },
+  });
+  expect(invited.response.status).toBe(201);
+  await markInvitationDelivered(input.invitationId);
+  const redeemed = await fetch(
+    `${baseUrl}/api/v1/auth/student/invitations/redeem`,
+    {
+      method: 'POST',
+      headers: mutationHeaders,
+      body: JSON.stringify({
+        recipient: input.recipient,
+        code: invitationCode,
+      }),
+    },
+  );
+  expect(redeemed.status).toBe(200);
+  return redeemed.headers.get('set-cookie')?.split(';', 1)[0] as string;
+}
+
+function submissionBody(
+  snapshot: StudentIntakeSnapshot,
+  answers: Record<string, string>,
+  operationId: string,
+) {
+  return {
+    operationId,
+    expectedSchoolConfigurationReleaseId:
+      snapshot.form.schoolConfigurationReleaseId,
+    expectedIntakeForm: {
+      resourceId: snapshot.form.intakeForm.resourceId,
+      revisionNumber: snapshot.form.intakeForm.revisionNumber,
+    },
+    expectedSubmissionAttestation: {
+      resourceId: snapshot.form.submissionAttestation.resourceId,
+      revisionNumber: snapshot.form.submissionAttestation.revisionNumber,
+    },
+    locale: 'en-US' as const,
+    answers,
+    attestation: {
+      locale: 'en-US' as const,
+      notice: {
+        resourceId: snapshot.form.submissionAttestation.resourceId,
+        revisionNumber: snapshot.form.submissionAttestation.revisionNumber,
+      },
+    },
+  };
 }
 
 beforeAll(async () => {
@@ -408,6 +474,30 @@ test('Student completes an encrypted Intake Draft and receives one immutable Int
     ]);
     expect(records.rows[0]?.wrapped_data_key).not.toContain(distinctiveAnswer);
     expect(records.rows[0]?.ciphertext).not.toContain(distinctiveAnswer);
+    const receipts = await inspection.query<{
+      request_binding: string;
+      student_id: string;
+      result: SubmitIntakeRecordVersionResult;
+    }>(
+      `select request_binding, student_id, result
+         from intake.intake_operation_receipts
+        where operation_id = $1`,
+      [operationId],
+    );
+    expect(receipts.rows).toHaveLength(1);
+    const storedBinding = receipts.rows[0]?.request_binding ?? '';
+    const guessableFingerprint = createHash('sha256')
+      .update(canonicalJson(command))
+      .digest('hex');
+    expect(storedBinding).not.toBe(guessableFingerprint);
+    expect(storedBinding).not.toBe(
+      createHash('sha256').update(canonicalJson(answers)).digest('hex'),
+    );
+    expect(storedBinding).not.toContain(distinctiveAnswer);
+    expect(JSON.stringify(receipts.rows[0]?.result)).not.toContain(
+      distinctiveAnswer,
+    );
+    expect(receipts.rows[0]?.student_id).toBeTruthy();
     await expect(
       inspection.query(
         `update intake.intake_record_versions
@@ -418,6 +508,21 @@ test('Student completes an encrypted Intake Draft and receives one immutable Int
   } finally {
     await inspection.end();
   }
+
+  const nameFieldId =
+    snapshot.form.intakeForm.fields.find((field) => field.key === 'name')?.id ??
+    Object.keys(answers)[0] ??
+    '';
+  const reused = await client.POST('/api/v1/student/intake/submissions', {
+    headers: { ...mutationHeaders, cookie: studentCookie },
+    body: {
+      ...command,
+      answers: { ...answers, [nameFieldId]: 'Synthetic Student Retry' },
+    },
+  });
+  expect(reused.response.status).toBe(409);
+  expect(reused.error).toMatchObject({ code: 'OPERATION_ID_REUSED' });
+  expect(JSON.stringify(reused.error)).not.toContain(distinctiveAnswer);
 
   expect(telemetryLines.join('\n')).not.toContain(distinctiveAnswer);
   expect(telemetryLines.join('\n')).not.toContain(recipient);
@@ -509,4 +614,146 @@ test('retries, staff projections, and failures cannot expose or duplicate protec
   );
   expect(configuration.response.status).toBe(200);
   expect(JSON.stringify(configuration.data)).not.toContain(distinctiveAnswer);
+});
+
+test('one Student cannot replay another Student intake operation', async () => {
+  const client = createApiClient(baseUrl);
+  const peerCookie = await inviteAndRedeemStudent({
+    classId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf5201',
+    invitationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf5202',
+    recipient: 'student.two@example.test',
+    name: 'Health Literacy 7B',
+  });
+  const opened = await client.GET('/api/v1/student/intake', {
+    headers: { cookie: peerCookie },
+    params: { query: { locale: 'en-US' } },
+  });
+  expect(opened.response.status).toBe(200);
+  const snapshot = opened.data as StudentIntakeSnapshot;
+  const firstStudentOperationId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf51aa';
+  const replay = await client.POST('/api/v1/student/intake/submissions', {
+    headers: { ...mutationHeaders, cookie: peerCookie },
+    body: submissionBody(
+      snapshot,
+      completeAnswers(snapshot.form.intakeForm.fields),
+      firstStudentOperationId,
+    ),
+  });
+  expect(replay.response.status).toBe(201);
+  expect(replay.data?.replayed).toBe(false);
+  expect(replay.data?.intakeRecordVersionId).not.toBeUndefined();
+  const firstStudent = await client.GET('/api/v1/student/intake', {
+    headers: { cookie: studentCookie },
+    params: { query: { locale: 'en-US' } },
+  });
+  expect(replay.data?.intakeRecordVersionId).not.toBe(
+    firstStudent.data?.currentIntakeRecordVersion?.intakeRecordVersionId,
+  );
+  expect(JSON.stringify(replay.data)).not.toEqual(
+    JSON.stringify({
+      ...firstStudent.data?.currentIntakeRecordVersion,
+      learningUnlocked: true,
+      replayed: true,
+      operationId: firstStudentOperationId,
+    }),
+  );
+
+  const confirmed = await client.GET('/api/v1/student/intake', {
+    headers: { cookie: peerCookie },
+    params: { query: { locale: 'en-US' } },
+  });
+  expect(
+    confirmed.data?.currentIntakeRecordVersion?.intakeRecordVersionId,
+  ).toBe(replay.data?.intakeRecordVersionId);
+  expect(
+    confirmed.data?.currentIntakeRecordVersion?.intakeRecordVersionId,
+  ).not.toBe(
+    firstStudent.data?.currentIntakeRecordVersion?.intakeRecordVersionId,
+  );
+});
+
+test('a later School Configuration Release rejects a stale Student submission', async () => {
+  const client = createApiClient(baseUrl);
+  const peerCookie = await inviteAndRedeemStudent({
+    classId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf5203',
+    invitationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf5204',
+    recipient: 'student.three@example.test',
+    name: 'Health Literacy 7C',
+  });
+  const opened = await client.GET('/api/v1/student/intake', {
+    headers: { cookie: peerCookie },
+    params: { query: { locale: 'en-US' } },
+  });
+  expect(opened.response.status).toBe(200);
+  const snapshot = opened.data as StudentIntakeSnapshot;
+  const staleReleaseId = snapshot.form.schoolConfigurationReleaseId;
+
+  const imported = await client.POST(
+    '/api/v1/administration/school-configuration/draft-imports',
+    {
+      headers: { ...operatorHeaders, cookie: administratorCookie },
+      body: {
+        operationId: crypto.randomUUID(),
+        expectedDraftVersion: 2,
+        candidate,
+      },
+    },
+  );
+  expect(imported.response.status).toBe(201);
+  const steppedUp = await client.POST('/api/v1/auth/staff/step-up', {
+    headers: { ...operatorHeaders, cookie: administratorCookie },
+    body: {
+      password,
+      totp: totpCode(fakeAuth.totpSecretFor(administratorEmail)),
+    },
+  });
+  expect(steppedUp.response.status).toBe(200);
+  const published = await client.POST(
+    '/api/v1/administration/school-configuration/releases',
+    {
+      headers: { ...operatorHeaders, cookie: administratorCookie },
+      body: {
+        operationId: crypto.randomUUID(),
+        expectedActiveReleaseId: staleReleaseId,
+        expectedDraftVersion: imported.data?.draftVersion ?? 0,
+        candidateFingerprint: imported.data?.candidateFingerprint ?? '',
+        changeDescription: 'Publish a successor synthetic release.',
+      },
+    },
+  );
+  expect(published.response.status).toBe(201);
+  expect(published.data?.activeReleaseId).not.toBe(staleReleaseId);
+
+  const stale = await client.POST('/api/v1/student/intake/submissions', {
+    headers: { ...mutationHeaders, cookie: peerCookie },
+    body: submissionBody(
+      snapshot,
+      completeAnswers(snapshot.form.intakeForm.fields),
+      crypto.randomUUID(),
+    ),
+  });
+  expect(stale.response.status).toBe(409);
+  expect(stale.error).toMatchObject({ code: 'INTAKE_REVISION_CONFLICT' });
+  expect(JSON.stringify(stale.error)).not.toContain(distinctiveAnswer);
+
+  const rejected = await client.GET('/api/v1/student/intake', {
+    headers: { cookie: peerCookie },
+    params: { query: { locale: 'en-US' } },
+  });
+  expect(rejected.data?.currentIntakeRecordVersion).toBeNull();
+  expect(rejected.data?.learningUnlocked).toBe(false);
+  expect(rejected.data?.form.schoolConfigurationReleaseId).toBe(
+    published.data?.activeReleaseId,
+  );
+
+  const accepted = await client.POST('/api/v1/student/intake/submissions', {
+    headers: { ...mutationHeaders, cookie: peerCookie },
+    body: submissionBody(
+      rejected.data as StudentIntakeSnapshot,
+      completeAnswers(rejected.data?.form.intakeForm.fields ?? []),
+      crypto.randomUUID(),
+    ),
+  });
+  expect(accepted.response.status).toBe(201);
+  expect(accepted.data?.replayed).toBe(false);
 });

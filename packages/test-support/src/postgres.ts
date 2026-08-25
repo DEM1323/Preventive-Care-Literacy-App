@@ -100,6 +100,9 @@ export async function createRuntimeDatabaseUser(
       `grant select, insert on intake.intake_record_versions to ${role}`,
     );
     await client.query(
+      `grant select, insert on intake.intake_operation_receipts to ${role}`,
+    );
+    await client.query(
       `grant select, insert, update, delete on all tables in schema school_configuration to ${role}`,
     );
     await client.query(

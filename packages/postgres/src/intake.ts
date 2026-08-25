@@ -2,12 +2,16 @@ import type { Pool, PoolClient } from 'pg';
 import {
   IntakeAlreadyAcceptedError,
   IntakeOperationReusedError,
+  IntakeRevisionConflictError,
+  IntakeUnavailableError,
+  type ExactResourceRevision,
   type IntakeStore,
   type SealedRecord,
   type StoredIntakeDraft,
   type StoredIntakeRecordVersion,
   type SubmitIntakeRecordVersionResult,
 } from '../../../modules/intake/index.ts';
+import { schoolConfigurationWorkspaceLockKey } from './workspace-locks.ts';
 
 async function setStudentScope(
   client: PoolClient,
@@ -51,6 +55,109 @@ function sealedFrom(row: {
   };
 }
 
+async function lockSchoolConfigurationWorkspace(
+  client: PoolClient,
+  workspaceId: string,
+): Promise<void> {
+  await client.query('select pg_advisory_xact_lock(hashtextextended($1, 0))', [
+    schoolConfigurationWorkspaceLockKey(workspaceId),
+  ]);
+}
+
+async function readActiveIntakeRelease(
+  client: PoolClient,
+  workspaceId: string,
+) {
+  const release = await client.query<{
+    release_id: string;
+    form_resource_id: string;
+    form_revision_number: number;
+    form_payload: Record<string, unknown>;
+    attestation_resource_id: string;
+    attestation_revision_number: number;
+    attestation_payload: Record<string, unknown>;
+  }>(
+    `select state.active_release_id as release_id,
+            form_component.resource_id as form_resource_id,
+            form_component.revision_number as form_revision_number,
+            form_revision.payload as form_payload,
+            attestation_component.resource_id as attestation_resource_id,
+            attestation_component.revision_number as attestation_revision_number,
+            attestation_revision.payload as attestation_payload
+       from school_configuration.configuration_states state
+       join school_configuration.release_components form_component
+         on form_component.release_id = state.active_release_id
+        and form_component.workspace_id = state.workspace_id
+        and form_component.slot = 'candidate.release.intakeForm'
+       join school_configuration.authored_revisions form_revision
+         on form_revision.workspace_id = form_component.workspace_id
+        and form_revision.resource_id = form_component.resource_id
+        and form_revision.revision_number = form_component.revision_number
+       join school_configuration.release_components attestation_component
+         on attestation_component.release_id = state.active_release_id
+        and attestation_component.workspace_id = state.workspace_id
+        and attestation_component.slot = 'candidate.release.submissionAttestation'
+       join school_configuration.authored_revisions attestation_revision
+         on attestation_revision.workspace_id = attestation_component.workspace_id
+        and attestation_revision.resource_id = attestation_component.resource_id
+        and attestation_revision.revision_number = attestation_component.revision_number
+      where state.workspace_id = $1 and state.active_release_id is not null`,
+    [workspaceId],
+  );
+  const active = release.rows[0];
+  if (!active) return undefined;
+  return {
+    schoolConfigurationReleaseId: active.release_id,
+    intakeForm: {
+      resourceId: active.form_resource_id,
+      revisionNumber: active.form_revision_number,
+      payload: active.form_payload,
+    },
+    submissionAttestation: {
+      resourceId: active.attestation_resource_id,
+      revisionNumber: active.attestation_revision_number,
+      payload: active.attestation_payload,
+    },
+  };
+}
+
+function sameRevision(
+  expected: ExactResourceRevision,
+  actual: ExactResourceRevision,
+): boolean {
+  return (
+    expected.resourceId === actual.resourceId &&
+    expected.revisionNumber === actual.revisionNumber
+  );
+}
+
+function requireExpectedRelease(
+  release: Awaited<ReturnType<typeof readActiveIntakeRelease>> | undefined,
+  expected: {
+    schoolConfigurationReleaseId: string;
+    intakeForm: ExactResourceRevision;
+    submissionAttestation?: ExactResourceRevision;
+  },
+) {
+  if (!release) throw new IntakeUnavailableError();
+  if (
+    release.schoolConfigurationReleaseId !==
+      expected.schoolConfigurationReleaseId ||
+    !sameRevision(expected.intakeForm, {
+      resourceId: release.intakeForm.resourceId,
+      revisionNumber: release.intakeForm.revisionNumber,
+    }) ||
+    (expected.submissionAttestation &&
+      !sameRevision(expected.submissionAttestation, {
+        resourceId: release.submissionAttestation.resourceId,
+        revisionNumber: release.submissionAttestation.revisionNumber,
+      }))
+  ) {
+    throw new IntakeRevisionConflictError();
+  }
+  return release;
+}
+
 export function createPostgresIntakeStore(options: {
   pool: Pool;
 }): IntakeStore {
@@ -58,41 +165,9 @@ export function createPostgresIntakeStore(options: {
     async readWorkspaceIntake(input) {
       return transaction(options.pool, async (client) => {
         await setStudentScope(client, input);
-        const release = await client.query<{
-          release_id: string;
-          form_resource_id: string;
-          form_revision_number: number;
-          form_payload: Record<string, unknown>;
-          attestation_resource_id: string;
-          attestation_revision_number: number;
-          attestation_payload: Record<string, unknown>;
-        }>(
-          `select state.active_release_id as release_id,
-                  form_component.resource_id as form_resource_id,
-                  form_component.revision_number as form_revision_number,
-                  form_revision.payload as form_payload,
-                  attestation_component.resource_id as attestation_resource_id,
-                  attestation_component.revision_number as attestation_revision_number,
-                  attestation_revision.payload as attestation_payload
-             from school_configuration.configuration_states state
-             join school_configuration.release_components form_component
-               on form_component.release_id = state.active_release_id
-              and form_component.workspace_id = state.workspace_id
-              and form_component.slot = 'candidate.release.intakeForm'
-             join school_configuration.authored_revisions form_revision
-               on form_revision.workspace_id = form_component.workspace_id
-              and form_revision.resource_id = form_component.resource_id
-              and form_revision.revision_number = form_component.revision_number
-             join school_configuration.release_components attestation_component
-               on attestation_component.release_id = state.active_release_id
-              and attestation_component.workspace_id = state.workspace_id
-              and attestation_component.slot = 'candidate.release.submissionAttestation'
-             join school_configuration.authored_revisions attestation_revision
-               on attestation_revision.workspace_id = attestation_component.workspace_id
-              and attestation_revision.resource_id = attestation_component.resource_id
-              and attestation_revision.revision_number = attestation_component.revision_number
-            where state.workspace_id = $1 and state.active_release_id is not null`,
-          [input.workspaceId],
+        const release = await readActiveIntakeRelease(
+          client,
+          input.workspaceId,
         );
         const draft = await client.query<{
           locale: StoredIntakeDraft['locale'];
@@ -124,25 +199,10 @@ export function createPostgresIntakeStore(options: {
             where student_id = $1 and workspace_id = $2 and superseded_at is null`,
           [input.studentId, input.workspaceId],
         );
-        const active = release.rows[0];
         const draftRow = draft.rows[0];
         const currentRow = current.rows[0];
         return {
-          release: active
-            ? {
-                schoolConfigurationReleaseId: active.release_id,
-                intakeForm: {
-                  resourceId: active.form_resource_id,
-                  revisionNumber: active.form_revision_number,
-                  payload: active.form_payload,
-                },
-                submissionAttestation: {
-                  resourceId: active.attestation_resource_id,
-                  revisionNumber: active.attestation_revision_number,
-                  payload: active.attestation_payload,
-                },
-              }
-            : undefined,
+          release,
           draft: draftRow
             ? {
                 locale: draftRow.locale,
@@ -179,6 +239,15 @@ export function createPostgresIntakeStore(options: {
           'select pg_advisory_xact_lock(hashtextextended($1, 0))',
           [`intake:${input.studentId}`],
         );
+        await lockSchoolConfigurationWorkspace(client, input.workspaceId);
+        const release = requireExpectedRelease(
+          await readActiveIntakeRelease(client, input.workspaceId),
+          {
+            schoolConfigurationReleaseId:
+              input.expectedSchoolConfigurationReleaseId,
+            intakeForm: input.expectedIntakeForm,
+          },
+        );
         const accepted = await client.query(
           `select 1 from intake.intake_record_versions
             where student_id = $1 and workspace_id = $2 and superseded_at is null`,
@@ -205,9 +274,9 @@ export function createPostgresIntakeStore(options: {
           [
             input.studentId,
             input.workspaceId,
-            input.schoolConfigurationReleaseId,
-            input.intakeForm.resourceId,
-            input.intakeForm.revisionNumber,
+            release.schoolConfigurationReleaseId,
+            release.intakeForm.resourceId,
+            release.intakeForm.revisionNumber,
             input.locale,
             input.sealed.wrappingKeyId,
             input.sealed.wrappedDataKey,
@@ -226,18 +295,16 @@ export function createPostgresIntakeStore(options: {
           [`intake:${input.studentId}`],
         );
         const receipt = await client.query<{
-          request_fingerprint: string | null;
+          request_binding: string;
           result: SubmitIntakeRecordVersionResult;
         }>(
-          `select request_fingerprint, result
-             from infrastructure.operation_receipts
-            where workspace_id = $1 and operation_id = $2`,
-          [input.workspaceId, input.operationId],
+          `select request_binding, result
+             from intake.intake_operation_receipts
+            where workspace_id = $1 and student_id = $2 and operation_id = $3`,
+          [input.workspaceId, input.studentId, input.operationId],
         );
         if (receipt.rows[0]) {
-          if (
-            receipt.rows[0].request_fingerprint !== input.requestFingerprint
-          ) {
+          if (receipt.rows[0].request_binding !== input.requestBinding) {
             throw new IntakeOperationReusedError();
           }
           return {
@@ -245,6 +312,16 @@ export function createPostgresIntakeStore(options: {
             result: receipt.rows[0].result,
           };
         }
+        await lockSchoolConfigurationWorkspace(client, input.workspaceId);
+        const release = requireExpectedRelease(
+          await readActiveIntakeRelease(client, input.workspaceId),
+          {
+            schoolConfigurationReleaseId:
+              input.expectedSchoolConfigurationReleaseId,
+            intakeForm: input.expectedIntakeForm,
+            submissionAttestation: input.expectedSubmissionAttestation,
+          },
+        );
         const current = await client.query(
           `select 1 from intake.intake_record_versions
             where student_id = $1 and workspace_id = $2 and superseded_at is null`,
@@ -273,11 +350,11 @@ export function createPostgresIntakeStore(options: {
             input.proposedVersionId,
             input.studentId,
             input.workspaceId,
-            input.schoolConfigurationReleaseId,
-            input.intakeForm.resourceId,
-            input.intakeForm.revisionNumber,
-            input.submissionAttestation.resourceId,
-            input.submissionAttestation.revisionNumber,
+            release.schoolConfigurationReleaseId,
+            release.intakeForm.resourceId,
+            release.intakeForm.revisionNumber,
+            release.submissionAttestation.resourceId,
+            release.submissionAttestation.revisionNumber,
             input.locale,
             input.sealed.wrappingKeyId,
             input.sealed.wrappedDataKey,
@@ -291,17 +368,18 @@ export function createPostgresIntakeStore(options: {
           [input.studentId, input.workspaceId],
         );
         await client.query(
-          `insert into infrastructure.operation_receipts
-             (workspace_id, operation_id, command_name, result,
-              request_fingerprint, recorded_at, record_owner,
+          `insert into intake.intake_operation_receipts
+             (workspace_id, student_id, operation_id, command_name, result,
+              request_binding, recorded_at, record_owner,
               record_classification, disposal_class)
-           values ($1, $2, 'submitIntakeRecordVersion', $3, $4, $5,
+           values ($1, $2, $3, 'submitIntakeRecordVersion', $4, $5, $6,
                    'school', 'operational_evidence', 'operation_receipt')`,
           [
             input.workspaceId,
+            input.studentId,
             input.operationId,
             { ...result, replayed: true },
-            input.requestFingerprint,
+            input.requestBinding,
             input.acceptedAt,
           ],
         );
@@ -320,7 +398,8 @@ export function createPostgresIntakeStore(options: {
             input.acceptedAt,
             {
               intakeRecordVersionId: input.proposedVersionId,
-              schoolConfigurationReleaseId: input.schoolConfigurationReleaseId,
+              schoolConfigurationReleaseId:
+                release.schoolConfigurationReleaseId,
             },
           ],
         );
@@ -337,7 +416,8 @@ export function createPostgresIntakeStore(options: {
             {
               studentId: input.studentId,
               intakeRecordVersionId: input.proposedVersionId,
-              schoolConfigurationReleaseId: input.schoolConfigurationReleaseId,
+              schoolConfigurationReleaseId:
+                release.schoolConfigurationReleaseId,
             },
             input.acceptedAt,
           ],

@@ -1,4 +1,6 @@
 import { expect, test } from 'bun:test';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { createEnvelopeKeyManagement } from '../../packages/application-keys/src/index.ts';
 
 const context = {
@@ -33,4 +35,76 @@ test('application-layer envelope wrapping is selected and is not equivalent to a
   expect(() =>
     keys.open(sealed, { ...context, studentId: crypto.randomUUID() }),
   ).toThrow();
+});
+
+test('idempotency bindings are keyed to the Student and are not unkeyed answer hashes', () => {
+  const keys = createEnvelopeKeyManagement({
+    wrappingKeys: { alpha: Buffer.alloc(32, 11) },
+    activeWrappingKeyId: 'alpha',
+  });
+  const plaintext = Buffer.from('no', 'utf8');
+  const binding = keys.bind(plaintext, {
+    workspaceId: context.workspaceId,
+    studentId: context.studentId,
+  });
+
+  expect(binding).not.toBe(
+    createHash('sha256').update(plaintext).digest('hex'),
+  );
+  expect(binding).not.toContain('no');
+  expect(
+    keys.bind(plaintext, {
+      workspaceId: context.workspaceId,
+      studentId: context.studentId,
+    }),
+  ).toBe(binding);
+  expect(
+    keys.bind(plaintext, {
+      workspaceId: context.workspaceId,
+      studentId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf5003',
+    }),
+  ).not.toBe(binding);
+});
+
+test('prior wrapping keys still open records after rotation and lost keys cannot recover them', () => {
+  const secret = 'synthetic-health-answer-never-store-plain';
+  const original = createEnvelopeKeyManagement({
+    wrappingKeys: { alpha: Buffer.alloc(32, 11) },
+    activeWrappingKeyId: 'alpha',
+  });
+  const sealed = original.seal(Buffer.from(secret, 'utf8'), context);
+  const rotated = createEnvelopeKeyManagement({
+    wrappingKeys: {
+      alpha: Buffer.alloc(32, 11),
+      beta: Buffer.alloc(32, 19),
+    },
+    activeWrappingKeyId: 'beta',
+  });
+
+  expect(rotated.open(sealed, context).toString('utf8')).toBe(secret);
+  expect(rotated.seal(Buffer.from(secret, 'utf8'), context).wrappingKeyId).toBe(
+    'beta',
+  );
+  expect(() =>
+    createEnvelopeKeyManagement({
+      wrappingKeys: { beta: Buffer.alloc(32, 19) },
+      activeWrappingKeyId: 'beta',
+    }).open(sealed, context),
+  ).toThrow();
+});
+
+test('tracked envelope threat model names the selected adapter and its limits', () => {
+  const doc = readFileSync(
+    new URL(
+      '../../docs/security/application-layer-envelope.md',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  expect(doc).toContain('application-layer-envelope/v1');
+  expect(doc).toContain('APPLICATION_WRAPPING_KEY');
+  expect(doc).toContain('Supabase Vault');
+  expect(doc.toLowerCase()).toContain('rotation');
+  expect(doc).toContain('unrecoverable');
+  expect(doc).toContain('process secret');
 });

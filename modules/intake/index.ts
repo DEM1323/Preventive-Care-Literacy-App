@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type {
   Clock,
   IdGenerator,
@@ -26,6 +25,11 @@ export type SealedRecord = {
   ciphertext: string;
 };
 
+export type IdempotencyBindingContext = {
+  workspaceId: string;
+  studentId: string;
+};
+
 /**
  * Provider-neutral application-layer envelope encryption. Managed disk
  * encryption and Supabase Vault are not substitutes: answers must be sealed
@@ -35,6 +39,7 @@ export type ApplicationKeyManagement = {
   readonly name: typeof intakeKeyManagementName;
   seal(plaintext: Uint8Array, context: KeyWrappingContext): SealedRecord;
   open(sealed: SealedRecord, context: KeyWrappingContext): Uint8Array;
+  bind(plaintext: Uint8Array, context: IdempotencyBindingContext): string;
 };
 
 export type ExactResourceRevision = {
@@ -214,8 +219,8 @@ export type IntakeStore = {
     studentId: string;
     workspaceId: string;
     locale: IntakeLocale;
-    schoolConfigurationReleaseId: string;
-    intakeForm: ExactResourceRevision;
+    expectedSchoolConfigurationReleaseId: string;
+    expectedIntakeForm: ExactResourceRevision;
     sealed: SealedRecord;
     updatedAt: Date;
   }): Promise<void>;
@@ -223,12 +228,12 @@ export type IntakeStore = {
     studentId: string;
     workspaceId: string;
     operationId: string;
-    requestFingerprint: string;
+    requestBinding: string;
     proposedVersionId: string;
     locale: IntakeLocale;
-    schoolConfigurationReleaseId: string;
-    intakeForm: ExactResourceRevision;
-    submissionAttestation: ExactResourceRevision;
+    expectedSchoolConfigurationReleaseId: string;
+    expectedIntakeForm: ExactResourceRevision;
+    expectedSubmissionAttestation: ExactResourceRevision;
     sealed: SealedRecord;
     acceptedAt: Date;
     auditId: string;
@@ -408,10 +413,6 @@ function sameRevision(
   );
 }
 
-function fingerprintRequest(value: unknown): string {
-  return createHash('sha256').update(canonicalJson(value)).digest('hex');
-}
-
 function encodeAnswers(answers: IntakeAnswerMap): Uint8Array {
   return Buffer.from(canonicalJson(answers), 'utf8');
 }
@@ -526,12 +527,9 @@ export function createIntake(dependencies: {
         studentId: session.studentId,
         workspaceId: session.workspaceId,
         locale: command.locale,
-        schoolConfigurationReleaseId:
-          state.release.schoolConfigurationReleaseId,
-        intakeForm: {
-          resourceId: state.release.intakeForm.resourceId,
-          revisionNumber: state.release.intakeForm.revisionNumber,
-        },
+        expectedSchoolConfigurationReleaseId:
+          command.expectedSchoolConfigurationReleaseId,
+        expectedIntakeForm: command.expectedIntakeForm,
         sealed: dependencies.keys.seal(encodeAnswers(command.answers), {
           purpose: 'intake-draft',
           workspaceId: session.workspaceId,
@@ -568,32 +566,36 @@ export function createIntake(dependencies: {
         throw new IntakeIncompleteError();
       }
       const acceptedAt = dependencies.clock.now();
-      const requestFingerprint = fingerprintRequest({
-        expectedSchoolConfigurationReleaseId:
-          command.expectedSchoolConfigurationReleaseId,
-        expectedIntakeForm: command.expectedIntakeForm,
-        expectedSubmissionAttestation: command.expectedSubmissionAttestation,
-        locale: command.locale,
-        answers: command.answers,
-        attestation: command.attestation,
-      });
+      const requestBinding = dependencies.keys.bind(
+        Buffer.from(
+          canonicalJson({
+            expectedSchoolConfigurationReleaseId:
+              command.expectedSchoolConfigurationReleaseId,
+            expectedIntakeForm: command.expectedIntakeForm,
+            expectedSubmissionAttestation:
+              command.expectedSubmissionAttestation,
+            locale: command.locale,
+            answers: command.answers,
+            attestation: command.attestation,
+          }),
+          'utf8',
+        ),
+        {
+          workspaceId: session.workspaceId,
+          studentId: session.studentId,
+        },
+      );
       const submitted = await dependencies.store.submit({
         studentId: session.studentId,
         workspaceId: session.workspaceId,
         operationId: command.operationId,
-        requestFingerprint,
+        requestBinding,
         proposedVersionId: dependencies.ids.create(),
         locale: command.locale,
-        schoolConfigurationReleaseId:
-          state.release.schoolConfigurationReleaseId,
-        intakeForm: {
-          resourceId: state.release.intakeForm.resourceId,
-          revisionNumber: state.release.intakeForm.revisionNumber,
-        },
-        submissionAttestation: {
-          resourceId: state.release.submissionAttestation.resourceId,
-          revisionNumber: state.release.submissionAttestation.revisionNumber,
-        },
+        expectedSchoolConfigurationReleaseId:
+          command.expectedSchoolConfigurationReleaseId,
+        expectedIntakeForm: command.expectedIntakeForm,
+        expectedSubmissionAttestation: command.expectedSubmissionAttestation,
         sealed: dependencies.keys.seal(encodeAnswers(command.answers), {
           purpose: 'intake-record-version',
           workspaceId: session.workspaceId,

@@ -1,4 +1,9 @@
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHmac,
+  randomBytes,
+} from 'node:crypto';
 import type {
   ApplicationKeyManagement,
   KeyWrappingContext,
@@ -102,6 +107,17 @@ export function createEnvelopeKeyManagement(
         packed: sealed.ciphertext,
         aad,
       });
+    },
+    bind(plaintext, context) {
+      return `v1:${material.activeWrappingKeyId}:${createHmac(
+        'sha256',
+        Buffer.from(activeKey),
+      )
+        .update(
+          `intake-idempotency:${context.workspaceId}:${context.studentId}:`,
+        )
+        .update(plaintext)
+        .digest('hex')}`;
     },
   };
 }

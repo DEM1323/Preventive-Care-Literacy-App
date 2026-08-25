@@ -1,6 +1,6 @@
 # Prototype Production Authority Retirement
 
-This record implements issue #21. The prototype cannot process Student data and is not a production system. The remaining school-configuration UI is local-only and uses synthetic display content. The replacement application spine introduced by issue #22 is also synthetic-only until its later environment and release gates are complete; it does not restore authority to the prototype.
+This record implements issue #21. The prototype cannot process Student data and is not a production system. The remaining school-configuration UI is local-only and uses synthetic display content. The replacement application spine introduced by issue #22 is also synthetic-only until its later environment and release gates are complete; it does not restore authority to the prototype. Issue #28 added a server-authoritative synthetic Student Intake route on that replacement spine. There is no runtime name or email content guard: School Workspace records do not carry a reliable synthetic-only flag, and a naming convention would be brittle. Staging operator process, controlled invitation delivery, and the synthetic fixture keep the environment synthetic.
 
 ## Browser credential inventory
 
@@ -24,9 +24,10 @@ On 2026-08-18, the ignored local environment file and untracked Google service-a
 
 - All Google Apps Script source and manifest files are deleted from the repository.
 - The browser receives no Google Apps Script endpoint or credential configuration.
-- Student authentication, Student reads, and intake submissions are deleted.
+- Prototype Google Student authentication, Student reads, and intake submissions remain deleted.
+- The replacement spine exposes server-authoritative synthetic Student invitation redemption, session restoration, and Intake Draft / Intake Record Version routes. They do not restore the retired prototype or production authority.
 - On first load after retirement, the browser deletes legacy Student email, intake, pending submission, and session state.
-- Student-facing routes render a retirement notice. The replacement application's authenticated staff routes and the local-only school-configuration UI contain no Student data entry or access.
+- Prototype-only Student-facing routes render a retirement notice. Replacement routes `/student/invitation`, `/student`, and `/student/intake` serve synthetic Students. Authenticated staff routes still contain no Student answer entry.
 
 `bun run check:security` enforces the repository and browser-artifact boundary.
 

@@ -29,6 +29,7 @@ Keep local configuration outside the repository. For example, place it at `~/.co
 | `/staff`                          | Permission-filtered staff workspace              |
 | `/student/invitation`             | Delivered Invitation Code redemption             |
 | `/student`                        | Server-authoritative Student access restoration  |
+| `/student/intake`                 | Synthetic Student Intake Draft and submission    |
 | `/prototype/school-configuration` | Local-only school configuration UI exploration   |
 | All other routes                  | Prototype retirement notice                      |
 

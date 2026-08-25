@@ -105,6 +105,10 @@ try {
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
+    `grant select, insert on intake.intake_operation_receipts
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
     `grant select, insert on all tables in schema infrastructure
        to ${runtimeRoleIdentifier}`,
   );

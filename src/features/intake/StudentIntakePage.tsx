@@ -1,47 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createBrowserApiClient } from '../../../packages/api-client/src/index.ts';
+import type { paths } from '../../../packages/api-client/src/schema.ts';
 
 const client = createBrowserApiClient();
 
-type IntakeField = {
-  id: string;
-  key: string;
-  sectionId: string;
-  order: number;
-  type: 'text' | 'date' | 'tel' | 'yes-no' | 'textarea';
-  required: boolean;
-  requiredWhenVisible: boolean;
-  visibility: { fieldId: string; equalsOptionCode: string } | null;
-  options: { code: string; label: string }[];
-  label: string;
-};
+type IntakeSnapshot =
+  paths['/api/v1/student/intake']['get']['responses']['200']['content']['application/json'];
+type IntakeField = IntakeSnapshot['form']['intakeForm']['fields'][number];
 
-type IntakeSnapshot = {
-  learningUnlocked: boolean;
-  currentIntakeRecordVersion: {
-    intakeRecordVersionId: string;
-    acceptedAt: string;
-  } | null;
-  draft: { answers: Record<string, string> } | null;
-  form: {
-    schoolConfigurationReleaseId: string;
-    locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
-    intakeForm: {
-      resourceId: string;
-      revisionNumber: number;
-      title: string;
-      sections: { id: string; order: number; title: string }[];
-      fields: IntakeField[];
-    };
-    submissionAttestation: {
-      resourceId: string;
-      revisionNumber: number;
-      text: string;
-    };
-  };
-};
-
+// Visibility stays local: importing modules/intake would pull Node crypto into the browser.
 function fieldIsVisible(
   field: IntakeField,
   answers: Record<string, string>,
