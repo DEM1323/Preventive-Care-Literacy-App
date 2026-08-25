@@ -4,7 +4,7 @@ import {
   type InvitationDeliveryDependencies,
 } from '../../../modules/invitation-delivery/index.ts';
 import { APPLICATION_LAYER_ENVELOPE_V1 } from '../../../packages/application-keys/src/index.ts';
-import { readAndVerifyBuildAttestation } from '../../../packages/build-attestation/src/index.ts';
+import { verifyBuildAttestationAtStartup } from '../../../packages/build-attestation/src/index.ts';
 import { createResendInvitationMail } from '../../../packages/invitation-mail/src/index.ts';
 import { decryptInvitationDelivery } from '../../../packages/invitation-secrets/src/index.ts';
 import {
@@ -30,7 +30,7 @@ const pool = new Pool({
   ssl: { ca: databaseCaCertificate, rejectUnauthorized: true },
 });
 await assertRestrictedDatabaseRole(pool);
-const attestation = await readAndVerifyBuildAttestation(process.cwd());
+const attestation = await verifyBuildAttestationAtStartup(process.cwd());
 const keyId = required('INVITATION_DELIVERY_KEY_ID');
 const keys = {
   encryptionKeys: {

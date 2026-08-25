@@ -11,6 +11,11 @@ const sourceDigest =
   'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const browserDigest =
   'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const lockDigest =
+  'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+const dependencyDigest =
+  'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+const bunVersion = '1.3.14';
 const artifactDigest =
   '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
@@ -19,6 +24,9 @@ const expected = {
   tree,
   sourceDigest,
   browserDigest,
+  lockDigest,
+  dependencyDigest,
+  bunVersion,
   artifactDigest,
 };
 
@@ -56,6 +64,27 @@ test('digest gate fails closed when any baked content digest differs from the ch
   expect(() =>
     assertDeployedSourceIdentity(
       { ...deployed, tree: 'c'.repeat(40) },
+      expected,
+    ),
+  ).toThrow(GoldenJourneyDigestMismatchError);
+
+  expect(() =>
+    assertDeployedSourceIdentity(
+      { ...deployed, lockDigest: 'e'.repeat(64) },
+      expected,
+    ),
+  ).toThrow(GoldenJourneyDigestMismatchError);
+
+  expect(() =>
+    assertDeployedSourceIdentity(
+      { ...deployed, dependencyDigest: 'e'.repeat(64) },
+      expected,
+    ),
+  ).toThrow(GoldenJourneyDigestMismatchError);
+
+  expect(() =>
+    assertDeployedSourceIdentity(
+      { ...deployed, bunVersion: '1.2.0' },
       expected,
     ),
   ).toThrow(GoldenJourneyDigestMismatchError);

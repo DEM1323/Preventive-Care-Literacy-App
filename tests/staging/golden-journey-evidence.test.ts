@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 import {
   GOLDEN_JOURNEY_EVIDENCE_SCHEMA_VERSION,
+  artifactDigestForFailureEvidence,
   assertSafeGoldenJourneyEvidence,
   createFailedGoldenJourneyEvidence,
   createGoldenJourneyEvidence,
@@ -204,4 +205,37 @@ test('failed evidence records a fixed error code and last step without exception
   expect(JSON.stringify(failed)).not.toContain('Error');
   expect(JSON.stringify(failed)).not.toContain('stack');
   expect(() => assertSafeGoldenJourneyEvidence(failed)).not.toThrow();
+});
+
+test('failed evidence includes a previously computed artifact digest and omits it before attestation', () => {
+  const digest = validInput().artifactDigest;
+  expect(artifactDigestForFailureEvidence(digest)).toBe(digest);
+  expect(artifactDigestForFailureEvidence(undefined)).toBeUndefined();
+  expect(artifactDigestForFailureEvidence('not-a-digest')).toBeUndefined();
+
+  const withDigest = createFailedGoldenJourneyEvidence({
+    environmentHost: 'staging.up.railway.app',
+    commit: validInput().commit,
+    artifactDigest: artifactDigestForFailureEvidence(digest),
+    runId: validInput().runId,
+    startedAt: validInput().startedAt,
+    completedAt: validInput().completedAt,
+    lastCompletedStep: 'browser_checked',
+    errorCode: 'BROWSER_ASSERTION_FAILED',
+    authCleanup: 'completed',
+  });
+  expect(withDigest.artifactDigest).toBe(digest);
+
+  const beforeAttestation = createFailedGoldenJourneyEvidence({
+    environmentHost: 'staging.up.railway.app',
+    artifactDigest: artifactDigestForFailureEvidence(undefined),
+    runId: validInput().runId,
+    startedAt: validInput().startedAt,
+    completedAt: validInput().completedAt,
+    lastCompletedStep: 'idle',
+    errorCode: 'PREFLIGHT_MISSING',
+    authCleanup: 'not-attempted',
+  });
+  expect(beforeAttestation.artifactDigest).toBeUndefined();
+  expect(JSON.stringify(beforeAttestation)).not.toContain(digest);
 });

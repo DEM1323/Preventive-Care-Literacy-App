@@ -93,7 +93,8 @@ import { createPostgresIntakeStore } from '../../../packages/postgres/src/intake
 import { createPostgresLearningProgressStore } from '../../../packages/postgres/src/learning-progress.ts';
 import { queryGoldenJourneyOperatorEvidence } from '../../../packages/postgres/src/golden-journey-evidence.ts';
 import {
-  readAndVerifyBuildAttestation,
+  BUILD_ATTESTATION_SCHEMA_VERSION,
+  verifyBuildAttestationForHealth,
   type BuildAttestation,
 } from '../../../packages/build-attestation/src/index.ts';
 
@@ -616,6 +617,9 @@ const BuildHealthResponse = Type.Object({
   tree: Type.String({ pattern: '^[0-9a-f]{40}$' }),
   sourceDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
   browserDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  lockDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  dependencyDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  bunVersion: Type.String({ minLength: 1 }),
   artifactDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
   envelopeAdapter: Type.Literal('application-layer-envelope/v1'),
 });
@@ -664,9 +668,11 @@ const GoldenJourneyOperatorEvidenceResponse = Type.Object(
     invitationReceiptCount: GoldenJourneyCount,
     invitationOccurredAt: Type.Union([Type.String(), Type.Null()]),
     intakeReceiptCount: GoldenJourneyCount,
+    intakeOutboxCount: GoldenJourneyCount,
     intakeEntityId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
     intakeOccurredAt: Type.Union([Type.String(), Type.Null()]),
     learningReceiptCount: GoldenJourneyCount,
+    learningOutboxCount: GoldenJourneyCount,
     learningEntityId: Type.Union([
       Type.String({ format: 'uuid' }),
       Type.Null(),
@@ -1218,11 +1224,15 @@ export async function buildApp(
         : options.buildIdentity;
       if (
         !identity ||
-        identity.schemaVersion !== 1 ||
+        identity.schemaVersion !== BUILD_ATTESTATION_SCHEMA_VERSION ||
         !/^[0-9a-f]{40}$/.test(identity.commit) ||
         !/^[0-9a-f]{40}$/.test(identity.tree) ||
         !/^[0-9a-f]{64}$/.test(identity.sourceDigest) ||
         !/^[0-9a-f]{64}$/.test(identity.browserDigest) ||
+        !/^[0-9a-f]{64}$/.test(identity.lockDigest) ||
+        !/^[0-9a-f]{64}$/.test(identity.dependencyDigest) ||
+        typeof identity.bunVersion !== 'string' ||
+        identity.bunVersion.length === 0 ||
         !/^[0-9a-f]{64}$/.test(identity.artifactDigest) ||
         identity.envelopeAdapter !== 'application-layer-envelope/v1'
       ) {
@@ -1233,6 +1243,9 @@ export async function buildApp(
         tree: identity.tree,
         sourceDigest: identity.sourceDigest,
         browserDigest: identity.browserDigest,
+        lockDigest: identity.lockDigest,
+        dependencyDigest: identity.dependencyDigest,
+        bunVersion: identity.bunVersion,
         artifactDigest: identity.artifactDigest,
         envelopeAdapter: identity.envelopeAdapter,
       };
@@ -2208,7 +2221,7 @@ export async function createServer(options: {
     learningProgress,
     verifyBuildAttestation: async () => {
       try {
-        return await readAndVerifyBuildAttestation(process.cwd());
+        return await verifyBuildAttestationForHealth(process.cwd());
       } catch {
         return undefined;
       }

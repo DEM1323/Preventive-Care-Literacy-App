@@ -328,6 +328,15 @@ export function createGoldenJourneyEvidence(
   return evidence;
 }
 
+export function artifactDigestForFailureEvidence(
+  computed: string | undefined,
+): string | undefined {
+  if (typeof computed === 'string' && digestPattern.test(computed)) {
+    return computed;
+  }
+  return undefined;
+}
+
 export function createFailedGoldenJourneyEvidence(input: {
   environmentHost?: string;
   commit?: string;

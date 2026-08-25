@@ -1,6 +1,9 @@
 import { expect, test } from 'bun:test';
+import { goldenJourneyBrowserContextOptions } from '../../packages/golden-journey/src/browser-context.ts';
 import { sessionCookiesForOrigin } from '../../packages/golden-journey/src/browser-cookies.ts';
 import { assertExactSubmittedAnswers } from '../../packages/golden-journey/src/clinical-answers.ts';
+import { buildApp } from '../../apps/server/src/app.ts';
+import type { IdentityAndAccess } from '../../modules/identity-access/index.ts';
 import {
   assertBrowserAccessibility,
   contrastRatio,
@@ -250,6 +253,58 @@ test('session cookie injection uses url only and never pairs it with domain or p
     expect('path' in cookie).toBe(false);
     expect('domain' in cookie).toBe(false);
   }
+});
+
+test('Playwright contexts bypass CSP only for axe instrumentation and leave server CSP unchanged', async () => {
+  expect(goldenJourneyBrowserContextOptions.bypassCSP).toBe(true);
+  expect(goldenJourneyBrowserContextOptions.ignoreHTTPSErrors).toBe(false);
+
+  const identity = {
+    async createSchoolWorkspace() {
+      throw new Error('unused');
+    },
+    async provisionStaffIdentity() {
+      throw new Error('unused');
+    },
+    async startStaffSignIn() {
+      throw new Error('unused');
+    },
+    async completeStaffSignIn() {
+      throw new Error('unused');
+    },
+    async resolveStaffSession() {
+      return undefined;
+    },
+    async endStaffSession() {
+      return { outcome: 'ended' as const };
+    },
+    async listStaffIdentities() {
+      throw new Error('unused');
+    },
+    async openClinicalDirectory() {
+      throw new Error('unused');
+    },
+    async requireFreshClinicalSession() {
+      throw new Error('unused');
+    },
+  } as IdentityAndAccess;
+  const app = await buildApp(identity, {
+    publicOrigin: 'https://staging.preventive-care-literacy.example',
+    operatorAuthenticator: {
+      authenticate: () => ({
+        type: 'technical_operator',
+        id: 'operator@example.test',
+      }),
+    },
+  });
+  const response = await app.inject({ method: 'GET', url: '/health/live' });
+  await app.close();
+  expect(response.headers['content-security-policy']).toContain(
+    "script-src 'self'",
+  );
+  expect(response.headers['content-security-policy']).not.toContain(
+    'unsafe-eval',
+  );
 });
 
 test('clinical reveal compares submitted answers exactly then discards them from the record', () => {

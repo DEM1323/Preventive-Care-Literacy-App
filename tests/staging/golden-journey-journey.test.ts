@@ -10,6 +10,11 @@ const sourceDigest =
   'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const browserDigest =
   'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const lockDigest =
+  'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+const dependencyDigest =
+  'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+const bunVersion = '1.3.14';
 const artifactDigest =
   '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 const origin = 'https://staging.up.railway.app';
@@ -133,6 +138,9 @@ function createFetch() {
         tree,
         sourceDigest,
         browserDigest,
+        lockDigest,
+        dependencyDigest,
+        bunVersion,
         artifactDigest,
         envelopeAdapter: 'application-layer-envelope/v1',
       });
@@ -205,7 +213,16 @@ function createFetch() {
       publishCalls += 1;
       return jsonResponse(201, {
         releaseId,
-        package: { format: 'json', digest: 'd'.repeat(64), byteLength: 12 },
+        releaseNumber: 1,
+        candidateFingerprint: fingerprint,
+        operationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8304',
+        activeReleaseId: releaseId,
+        draftVersion: 1,
+        package: {
+          format: 'school-configuration-package/v1',
+          digest: 'd'.repeat(64),
+          byteLength: 12,
+        },
         replayed: publishCalls > 1,
       });
     }
@@ -285,9 +302,10 @@ function createFetch() {
     if (path === '/api/v1/student/intake/submissions') {
       intakeCalls += 1;
       return jsonResponse(201, {
-        operationId: 'op',
+        operationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8307',
         intakeRecordVersionId,
         acceptedAt: '2026-08-25T16:05:00.000Z',
+        learningUnlocked: true,
         replayed: intakeCalls > 1,
       });
     }
@@ -321,7 +339,7 @@ function createFetch() {
     if (path === '/api/v1/student/learning/acknowledgements') {
       learningCalls += 1;
       return jsonResponse(201, {
-        operationId: 'op',
+        operationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8308',
         itemCompletionId,
         itemId,
         revisionNumber: 1,
@@ -388,9 +406,11 @@ function createFetch() {
         invitationReceiptCount: 1,
         invitationOccurredAt: '2026-08-25T16:00:00.000Z',
         intakeReceiptCount: 1,
+        intakeOutboxCount: 1,
         intakeEntityId: intakeRecordVersionId,
         intakeOccurredAt: '2026-08-25T16:00:00.000Z',
         learningReceiptCount: 1,
+        learningOutboxCount: 1,
         learningEntityId: itemCompletionId,
         learningOccurredAt: '2026-08-25T16:00:00.000Z',
         clinicalRevealAuditCount: 1,
@@ -438,6 +458,9 @@ function journeyInput(overrides: Record<string, unknown> = {}) {
       tree,
       sourceDigest,
       browserDigest,
+      lockDigest,
+      dependencyDigest,
+      bunVersion,
       artifactDigest,
     },
     fixtureCandidate,
@@ -451,14 +474,17 @@ function journeyInput(overrides: Record<string, unknown> = {}) {
         durationMs: 1,
       })),
     mailbox: {
-      list: async () => [],
+      list: async () => ({ messages: [] }),
       read: async () => ({
         id: 'unused',
         text: 'Your Invitation Code is 000000. It expires in 10 minutes.',
         to: [mailbox],
       }),
     },
-    waitForInvitationCode: async () => {
+    captureInvitationMailboxBaseline: async () =>
+      invitationReads === 0 ? ['msg-previous-run'] : ['msg-first'],
+    waitForInvitationCode: async (_mailbox, options) => {
+      expect(options.excludeMessageIds?.length).toBeGreaterThan(0);
       invitationReads += 1;
       return invitationReads === 1
         ? {
@@ -575,6 +601,9 @@ test('journey fails closed when the deployed digest differs', async () => {
               tree,
               sourceDigest,
               browserDigest,
+              lockDigest,
+              dependencyDigest,
+              bunVersion,
               artifactDigest,
               envelopeAdapter: 'application-layer-envelope/v1',
             });
@@ -585,4 +614,24 @@ test('journey fails closed when the deployed digest differs', async () => {
       }),
     ),
   ).rejects.toThrow(GoldenJourneyRunError);
+});
+
+test('journey does not emit completed evidence when ephemeral Auth cleanup fails', async () => {
+  try {
+    await runGoldenJourney(
+      journeyInput({
+        cleanupAuthUsers: async () => 'failed' as const,
+      }),
+    );
+  } catch (error) {
+    expect(error).toBeInstanceOf(GoldenJourneyRunError);
+    expect((error as InstanceType<typeof GoldenJourneyRunError>).code).toBe(
+      'CLEANUP_FAILED',
+    );
+    expect(
+      (error as InstanceType<typeof GoldenJourneyRunError>).authCleanup,
+    ).toBe('failed');
+    return;
+  }
+  throw new Error('expected cleanup failure to fail the journey');
 });

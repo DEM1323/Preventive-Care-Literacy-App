@@ -365,9 +365,12 @@ export interface paths {
             'application/json': {
               artifactDigest: string;
               browserDigest: string;
+              bunVersion: string;
               commit: string;
+              dependencyDigest: string;
               /** @enum {string} */
               envelopeAdapter: 'application-layer-envelope/v1';
+              lockDigest: string;
               sourceDigest: string;
               tree: string;
             };
@@ -2497,6 +2500,7 @@ export interface operations {
             clinicalRevealOccurredAt: string | null;
             intakeEntityId: string | null;
             intakeOccurredAt: string | null;
+            intakeOutboxCount: number;
             intakeReceiptCount: number;
             invitationAuditCount: number;
             invitationOccurredAt: string | null;
@@ -2505,6 +2509,7 @@ export interface operations {
             invitationStatus: string | null;
             learningEntityId: string | null;
             learningOccurredAt: string | null;
+            learningOutboxCount: number;
             learningReceiptCount: number;
             publishAuditCount: number;
             publishOccurredAt: string | null;

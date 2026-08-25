@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { APPLICATION_LAYER_ENVELOPE_V1 } from '../../application-keys/src/index.ts';
 
 export const BUILD_ATTESTATION_FILENAME = 'build-attestation.json';
-export const BUILD_ATTESTATION_SCHEMA_VERSION = 1 as const;
+export const BUILD_ATTESTATION_SCHEMA_VERSION = 2 as const;
 
 const skippedDirectoryNames = new Set([
   'node_modules',
@@ -12,6 +12,8 @@ const skippedDirectoryNames = new Set([
   'artifacts',
   '.vite',
 ]);
+
+const skippedDependencyDirectoryNames = new Set(['.bin', '.cache']);
 
 const sourceRoots = ['apps', 'modules', 'packages', 'scripts'] as const;
 
@@ -35,12 +37,16 @@ export type BuildAttestation = {
   tree: string;
   sourceDigest: string;
   browserDigest: string;
+  lockDigest: string;
+  dependencyDigest: string;
+  bunVersion: string;
   artifactDigest: string;
   envelopeAdapter: typeof APPLICATION_LAYER_ENVELOPE_V1;
 };
 
 const commitPattern = /^[0-9a-f]{40}$/;
 const digestPattern = /^[0-9a-f]{64}$/;
+const bunVersionPattern = /^\d+\.\d+\.\d+(?:[-+].+)?$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -49,6 +55,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 async function collectFiles(
   root: string,
   relativeDirectory: string,
+  skipDirectories: ReadonlySet<string> = skippedDirectoryNames,
 ): Promise<string[]> {
   const directory = join(root, relativeDirectory);
   let entries;
@@ -62,16 +69,16 @@ async function collectFiles(
     left.name.localeCompare(right.name),
   );
   for (const entry of ordered) {
-    if (skippedDirectoryNames.has(entry.name)) continue;
+    if (skipDirectories.has(entry.name)) continue;
     if (entry.name === BUILD_ATTESTATION_FILENAME) continue;
     const relativePath = relativeDirectory
       ? `${relativeDirectory}/${entry.name}`
       : entry.name;
     if (entry.isDirectory()) {
-      files.push(...(await collectFiles(root, relativePath)));
+      files.push(...(await collectFiles(root, relativePath, skipDirectories)));
       continue;
     }
-    if (entry.isFile()) files.push(relativePath);
+    if (entry.isFile() || entry.isSymbolicLink()) files.push(relativePath);
   }
   return files;
 }
@@ -84,6 +91,15 @@ async function digestFiles(root: string, files: string[]): Promise<string> {
     hash.update(`${file}\0${fileDigest}\n`);
   }
   return hash.digest('hex');
+}
+
+export function runtimeBunVersion(): string {
+  const versions = process.versions as Record<string, string | undefined>;
+  const version = versions.bun;
+  if (typeof version === 'string' && bunVersionPattern.test(version)) {
+    return version;
+  }
+  throw new BuildAttestationError('Bun runtime version is unavailable');
 }
 
 export async function hashSourceArtifacts(root: string): Promise<string> {
@@ -111,20 +127,109 @@ export async function hashBrowserArtifacts(root: string): Promise<string> {
   return digestFiles(root, files);
 }
 
+export async function hashLockfile(root: string): Promise<string> {
+  try {
+    await readFile(join(root, 'bun.lock'));
+  } catch {
+    throw new BuildAttestationError('lockfile is missing');
+  }
+  return digestFiles(root, ['bun.lock']);
+}
+
+type BunLockfile = {
+  workspaces?: Record<string, { dependencies?: Record<string, string> }>;
+  packages?: Record<string, unknown>;
+};
+
+function productionPackageNames(lock: BunLockfile): string[] {
+  const roots = Object.keys(lock.workspaces?.['']?.dependencies ?? {});
+  const packages = lock.packages ?? {};
+  const needed = new Set<string>();
+  const queue = [...roots];
+  while (queue.length > 0) {
+    const name = queue.pop();
+    if (!name || needed.has(name)) continue;
+    needed.add(name);
+    const entry = packages[name];
+    const meta =
+      Array.isArray(entry) && entry.length > 2 && isRecord(entry[2])
+        ? entry[2]
+        : undefined;
+    const dependencies =
+      meta && isRecord(meta.dependencies) ? meta.dependencies : undefined;
+    if (dependencies) queue.push(...Object.keys(dependencies));
+  }
+  return [...needed].sort();
+}
+
+/**
+ * Hashes installed files for bun.lock production-graph packages only.
+ * Limits: extra/dev packages are excluded so a CI full install can match a
+ * production image; optional platform-specific files inside a production
+ * package are hashed and can diverge across OS/libc; extra packages that are
+ * not in the production graph are not detected by this digest.
+ */
+function parseBunLockfile(text: string): unknown {
+  const stripped = text.replace(/,\s*([}\]])/g, '$1');
+  try {
+    return JSON.parse(stripped);
+  } catch {
+    throw new BuildAttestationError('lockfile is malformed');
+  }
+}
+
+export async function hashProductionDependencies(
+  root: string,
+): Promise<string> {
+  let text: string;
+  try {
+    text = await readFile(join(root, 'bun.lock'), 'utf8');
+  } catch {
+    throw new BuildAttestationError('lockfile is missing');
+  }
+  const parsed = parseBunLockfile(text);
+  if (!isRecord(parsed)) {
+    throw new BuildAttestationError('lockfile is malformed');
+  }
+  const names = productionPackageNames(parsed as BunLockfile);
+  if (names.length === 0) {
+    throw new BuildAttestationError('production dependency graph is missing');
+  }
+  const files: string[] = [];
+  for (const name of names) {
+    const packageFiles = await collectFiles(
+      root,
+      `node_modules/${name}`,
+      skippedDependencyDirectoryNames,
+    );
+    if (packageFiles.length === 0) {
+      throw new BuildAttestationError('production dependency tree is missing');
+    }
+    files.push(...packageFiles);
+  }
+  return digestFiles(root, files);
+}
+
 export function artifactDigestFromParts(input: {
   sourceDigest: string;
   browserDigest: string;
+  lockDigest: string;
+  dependencyDigest: string;
+  bunVersion: string;
   envelopeAdapter: string;
 }): string {
   if (
     !digestPattern.test(input.sourceDigest) ||
-    !digestPattern.test(input.browserDigest)
+    !digestPattern.test(input.browserDigest) ||
+    !digestPattern.test(input.lockDigest) ||
+    !digestPattern.test(input.dependencyDigest) ||
+    !bunVersionPattern.test(input.bunVersion)
   ) {
     throw new BuildAttestationError('artifact digest parts are malformed');
   }
   return createHash('sha256')
     .update(
-      `v1\n${input.sourceDigest}\n${input.browserDigest}\n${input.envelopeAdapter}\n`,
+      `v2\n${input.sourceDigest}\n${input.browserDigest}\n${input.lockDigest}\n${input.dependencyDigest}\n${input.bunVersion}\n${input.envelopeAdapter}\n`,
     )
     .digest('hex');
 }
@@ -141,6 +246,9 @@ export async function createBuildAttestation(
   }
   const sourceDigest = await hashSourceArtifacts(root);
   const browserDigest = await hashBrowserArtifacts(root);
+  const lockDigest = await hashLockfile(root);
+  const dependencyDigest = await hashProductionDependencies(root);
+  const bunVersion = runtimeBunVersion();
   const envelopeAdapter = APPLICATION_LAYER_ENVELOPE_V1;
   return {
     schemaVersion: BUILD_ATTESTATION_SCHEMA_VERSION,
@@ -148,9 +256,15 @@ export async function createBuildAttestation(
     tree: input.tree,
     sourceDigest,
     browserDigest,
+    lockDigest,
+    dependencyDigest,
+    bunVersion,
     artifactDigest: artifactDigestFromParts({
       sourceDigest,
       browserDigest,
+      lockDigest,
+      dependencyDigest,
+      bunVersion,
       envelopeAdapter,
     }),
     envelopeAdapter,
@@ -181,12 +295,18 @@ export function parseBuildAttestation(value: unknown): BuildAttestation {
     typeof value.tree !== 'string' ||
     typeof value.sourceDigest !== 'string' ||
     typeof value.browserDigest !== 'string' ||
+    typeof value.lockDigest !== 'string' ||
+    typeof value.dependencyDigest !== 'string' ||
+    typeof value.bunVersion !== 'string' ||
     typeof value.artifactDigest !== 'string' ||
     value.envelopeAdapter !== APPLICATION_LAYER_ENVELOPE_V1 ||
     !commitPattern.test(value.commit) ||
     !commitPattern.test(value.tree) ||
     !digestPattern.test(value.sourceDigest) ||
     !digestPattern.test(value.browserDigest) ||
+    !digestPattern.test(value.lockDigest) ||
+    !digestPattern.test(value.dependencyDigest) ||
+    !bunVersionPattern.test(value.bunVersion) ||
     !digestPattern.test(value.artifactDigest)
   ) {
     throw new BuildAttestationTamperError();
@@ -194,6 +314,9 @@ export function parseBuildAttestation(value: unknown): BuildAttestation {
   const expectedDigest = artifactDigestFromParts({
     sourceDigest: value.sourceDigest,
     browserDigest: value.browserDigest,
+    lockDigest: value.lockDigest,
+    dependencyDigest: value.dependencyDigest,
+    bunVersion: value.bunVersion,
     envelopeAdapter: APPLICATION_LAYER_ENVELOPE_V1,
   });
   if (expectedDigest !== value.artifactDigest) {
@@ -205,6 +328,9 @@ export function parseBuildAttestation(value: unknown): BuildAttestation {
     tree: value.tree,
     sourceDigest: value.sourceDigest,
     browserDigest: value.browserDigest,
+    lockDigest: value.lockDigest,
+    dependencyDigest: value.dependencyDigest,
+    bunVersion: value.bunVersion,
     artifactDigest: value.artifactDigest,
     envelopeAdapter: APPLICATION_LAYER_ENVELOPE_V1,
   };
@@ -228,10 +354,45 @@ export async function readAndVerifyBuildAttestation(
   const attestation = parseBuildAttestation(parsed);
   const sourceDigest = await hashSourceArtifacts(root);
   const browserDigest = await hashBrowserArtifacts(root);
+  const lockDigest = await hashLockfile(root);
+  const bunVersion = runtimeBunVersion();
   if (
     sourceDigest !== attestation.sourceDigest ||
-    browserDigest !== attestation.browserDigest
+    browserDigest !== attestation.browserDigest ||
+    lockDigest !== attestation.lockDigest ||
+    bunVersion !== attestation.bunVersion
   ) {
+    throw new BuildAttestationTamperError();
+  }
+  return attestation;
+}
+
+let cachedDependencyDigest: string | undefined;
+
+export function resetBuildAttestationCache(): void {
+  cachedDependencyDigest = undefined;
+}
+
+export async function verifyBuildAttestationAtStartup(
+  root: string,
+): Promise<BuildAttestation> {
+  const attestation = await readAndVerifyBuildAttestation(root);
+  const dependencyDigest = await hashProductionDependencies(root);
+  if (dependencyDigest !== attestation.dependencyDigest) {
+    throw new BuildAttestationTamperError();
+  }
+  cachedDependencyDigest = dependencyDigest;
+  return attestation;
+}
+
+export async function verifyBuildAttestationForHealth(
+  root: string,
+): Promise<BuildAttestation> {
+  if (cachedDependencyDigest === undefined) {
+    return verifyBuildAttestationAtStartup(root);
+  }
+  const attestation = await readAndVerifyBuildAttestation(root);
+  if (attestation.dependencyDigest !== cachedDependencyDigest) {
     throw new BuildAttestationTamperError();
   }
   return attestation;

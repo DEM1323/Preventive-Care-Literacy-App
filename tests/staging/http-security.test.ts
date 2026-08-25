@@ -71,6 +71,12 @@ describe.serial('staging HTTP security boundary', () => {
     expect(response.headers['content-security-policy']).toContain(
       "default-src 'self'",
     );
+    expect(response.headers['content-security-policy']).toContain(
+      "script-src 'self'",
+    );
+    expect(response.headers['content-security-policy']).not.toContain(
+      'unsafe-eval',
+    );
     expect(response.headers['strict-transport-security']).toBe(
       'max-age=31536000; includeSubDomains',
     );
@@ -203,13 +209,18 @@ describe.serial('staging HTTP security boundary', () => {
         }),
       },
       buildIdentity: {
-        schemaVersion: 1 as const,
+        schemaVersion: 2 as const,
         commit: 'beda69fca3f7954a0200a3209cb44aac7ade4a72',
         tree: '89abcdef0123456789abcdef0123456789abcdef',
         sourceDigest:
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         browserDigest:
           'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        lockDigest:
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        dependencyDigest:
+          'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        bunVersion: '1.3.14',
         artifactDigest:
           '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
         envelopeAdapter: 'application-layer-envelope/v1' as const,
@@ -225,6 +236,11 @@ describe.serial('staging HTTP security boundary', () => {
         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       browserDigest:
         'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      lockDigest:
+        'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+      dependencyDigest:
+        'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+      bunVersion: '1.3.14',
       artifactDigest:
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       envelopeAdapter: 'application-layer-envelope/v1',

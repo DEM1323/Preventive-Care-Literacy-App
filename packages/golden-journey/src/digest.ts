@@ -21,6 +21,9 @@ export type DeployedSourceIdentity = {
   tree: string;
   sourceDigest: string;
   browserDigest: string;
+  lockDigest: string;
+  dependencyDigest: string;
+  bunVersion: string;
   artifactDigest: string;
   envelopeAdapter: string;
 };
@@ -30,6 +33,9 @@ export type ExpectedSourceIdentity = {
   tree: string;
   sourceDigest: string;
   browserDigest: string;
+  lockDigest: string;
+  dependencyDigest: string;
+  bunVersion: string;
   artifactDigest: string;
 };
 
@@ -47,6 +53,9 @@ export function assertDeployedSourceIdentity(
     deployed.tree !== expected.tree ||
     deployed.sourceDigest !== expected.sourceDigest ||
     deployed.browserDigest !== expected.browserDigest ||
+    deployed.lockDigest !== expected.lockDigest ||
+    deployed.dependencyDigest !== expected.dependencyDigest ||
+    deployed.bunVersion !== expected.bunVersion ||
     deployed.artifactDigest !== expected.artifactDigest
   ) {
     throw new GoldenJourneyDigestMismatchError(

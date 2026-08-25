@@ -8,9 +8,13 @@ export {
   type BrowserAssertionOutcomes,
   type BrowserLocale,
 } from './browser-assertions.ts';
+export { goldenJourneyBrowserContextOptions } from './browser-context.ts';
 export { goldenJourneyBrowserControls } from './browser-controls.ts';
 export { sessionCookiesForOrigin } from './browser-cookies.ts';
-export { cleanupEphemeralAuthUsers } from './cleanup.ts';
+export {
+  cleanupEphemeralAuthUsers,
+  type EphemeralAuthIdentity,
+} from './cleanup.ts';
 export {
   environmentHostFromOrigin,
   normalizeGoldenJourneyEnvironment,
@@ -25,6 +29,7 @@ export {
 } from './digest.ts';
 export {
   GOLDEN_JOURNEY_EVIDENCE_SCHEMA_VERSION,
+  artifactDigestForFailureEvidence,
   assertSafeGoldenJourneyEvidence,
   createFailedGoldenJourneyEvidence,
   createGoldenJourneyEvidence,
@@ -41,6 +46,7 @@ export {
   type GoldenJourneyIds,
 } from './journey.ts';
 export {
+  captureInvitationMailboxBaseline,
   createResendInvitationMailbox,
   extractInvitationCode,
   waitForInvitationCode,
@@ -53,6 +59,13 @@ export {
   goldenJourneyRequiredConfigurationNames,
   reportGoldenJourneyPreflight,
 } from './preflight.ts';
+export {
+  assertStableReplay,
+  invitationReplayFields,
+  intakeReplayFields,
+  learningReplayFields,
+  publishReplayFields,
+} from './replay.ts';
 export { retryTransient } from './retry.ts';
 export { GoldenJourneyStateError, createGoldenJourneyState } from './state.ts';
 export type { GoldenJourneyStep } from './state.ts';

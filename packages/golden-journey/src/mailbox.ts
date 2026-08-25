@@ -60,6 +60,25 @@ export type ObservedInvitationMail = {
   createdAt: string;
 };
 
+export async function captureInvitationMailboxBaseline(
+  mailbox: InvitationMailbox,
+  options: { expectedRecipient: string },
+): Promise<string[]> {
+  const expectedRecipient = normalizeMailboxRecipient(
+    options.expectedRecipient,
+  );
+  const messages = await listAllMessages(mailbox);
+  const ids: string[] = [];
+  for (const message of messages) {
+    if (message.subject !== 'Your Invitation Code') continue;
+    const body = await mailbox.read(message.id);
+    const recipients = body.to.map(normalizeMailboxRecipient);
+    if (!recipients.includes(expectedRecipient)) continue;
+    ids.push(message.id);
+  }
+  return ids;
+}
+
 export async function waitForInvitationCode(
   mailbox: InvitationMailbox,
   options: {

@@ -137,6 +137,7 @@ test('operator evidence ignores startup heartbeats, other Invitations, stale tim
         'clinicalRevealOccurredAt',
         'intakeEntityId',
         'intakeOccurredAt',
+        'intakeOutboxCount',
         'intakeReceiptCount',
         'invitationAuditCount',
         'invitationOccurredAt',
@@ -145,6 +146,7 @@ test('operator evidence ignores startup heartbeats, other Invitations, stale tim
         'invitationStatus',
         'learningEntityId',
         'learningOccurredAt',
+        'learningOutboxCount',
         'learningReceiptCount',
         'publishAuditCount',
         'publishOccurredAt',
@@ -159,6 +161,138 @@ test('operator evidence ignores startup heartbeats, other Invitations, stale tim
         'workerEnvelopeAdapter',
         'workerRecordedAt',
       ]);
+    } finally {
+      await client.end();
+    }
+  } finally {
+    await postgres.stop();
+  }
+});
+
+test('operator outbox counts require exact topic, entity identity, status, and reject generic rows', async () => {
+  const postgres = await startEphemeralPostgres();
+  try {
+    await migrate(postgres.connectionString);
+    const client = new Client({ connectionString: postgres.connectionString });
+    await client.connect();
+    const pool = {
+      query: (text: string, values?: unknown[]) => client.query(text, values),
+    };
+    try {
+      const releaseId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf9111';
+      await client.query(
+        `insert into identity_access.school_workspaces
+           (workspace_id, display_name, created_at, record_owner,
+            record_classification, disposal_class)
+         values ($1, 'golden', $2, 'school', 'school_administrative',
+                 'school_workspace'),
+                ($3, 'isolation', $2, 'school', 'school_administrative',
+                 'school_workspace')`,
+        [workspaceId, startedAt, isolationWorkspaceId],
+      );
+      await client.query(
+        `insert into infrastructure.operation_receipts
+           (workspace_id, operation_id, command_name, result, recorded_at,
+            record_owner, record_classification, disposal_class)
+         values ($1, $2, 'publishSchoolConfigurationRelease',
+                 jsonb_build_object('releaseId', $3::text), $4,
+                 'school', 'operational_evidence', 'operation_receipt')`,
+        [workspaceId, publishOperationId, releaseId, startedAt],
+      );
+      await client.query(
+        `insert into infrastructure.outbox
+           (outbox_id, workspace_id, operation_id, topic, payload, status,
+            recorded_at, record_owner, record_classification, disposal_class)
+         values ($1, $2, $3, 'school_workspace.created', '{}'::jsonb, 'pending',
+                 $4, 'school', 'operational_evidence', 'transactional_outbox')`,
+        [
+          '018f1f5e-7b76-7f70-8f4d-9dc17ecf9201',
+          workspaceId,
+          publishOperationId,
+          startedAt,
+        ],
+      );
+      const generic = (await queryGoldenJourneyOperatorEvidence(
+        pool as never,
+        queryInput(),
+      )) as Record<string, unknown>;
+      expect(generic.publishOutboxCount).toBe(0);
+      expect(JSON.stringify(generic)).not.toContain('payload');
+
+      await client.query(
+        `insert into infrastructure.outbox
+           (outbox_id, workspace_id, operation_id, topic, payload, status,
+            recorded_at, record_owner, record_classification, disposal_class)
+         values ($1, $2, $3, 'school_configuration_release.published',
+                 jsonb_build_object('releaseId', $4::text), 'pending', $5,
+                 'school', 'operational_evidence', 'transactional_outbox')`,
+        [
+          '018f1f5e-7b76-7f70-8f4d-9dc17ecf9202',
+          workspaceId,
+          publishOperationId,
+          releaseId,
+          startedAt,
+        ],
+      );
+      const matching = (await queryGoldenJourneyOperatorEvidence(
+        pool as never,
+        queryInput(),
+      )) as Record<string, unknown>;
+      expect(matching.publishOutboxCount).toBe(1);
+
+      await client.query(
+        `insert into infrastructure.outbox
+           (outbox_id, workspace_id, operation_id, topic, payload, status,
+            recorded_at, record_owner, record_classification, disposal_class)
+         values ($1, $2, $3, 'school_configuration_release.published',
+                 jsonb_build_object('releaseId', $4::text), 'pending', $5,
+                 'school', 'operational_evidence', 'transactional_outbox')`,
+        [
+          '018f1f5e-7b76-7f70-8f4d-9dc17ecf9203',
+          workspaceId,
+          publishOperationId,
+          releaseId,
+          startedAt,
+        ],
+      );
+      const duplicated = (await queryGoldenJourneyOperatorEvidence(
+        pool as never,
+        queryInput(),
+      )) as Record<string, unknown>;
+      expect(duplicated.publishOutboxCount).toBe(2);
+
+      await client.query(
+        `insert into infrastructure.outbox
+           (outbox_id, workspace_id, operation_id, topic, payload, status,
+            recorded_at, record_owner, record_classification, disposal_class)
+         values ($1, $2, $3, 'invitation.delivery_requested',
+                 jsonb_build_object('invitationId', $4::text, 'generation', 1),
+                 'pending', $5, 'school', 'operational_evidence',
+                 'transactional_outbox')`,
+        [
+          '018f1f5e-7b76-7f70-8f4d-9dc17ecf9204',
+          workspaceId,
+          invitationOperationId,
+          invitationId,
+          startedAt,
+        ],
+      );
+      const pendingInvitation = (await queryGoldenJourneyOperatorEvidence(
+        pool as never,
+        queryInput(),
+      )) as Record<string, unknown>;
+      expect(pendingInvitation.invitationOutboxCount).toBe(0);
+
+      await client.query(
+        `update infrastructure.outbox set status = 'completed'
+          where outbox_id = $1`,
+        ['018f1f5e-7b76-7f70-8f4d-9dc17ecf9204'],
+      );
+      const completedInvitation = (await queryGoldenJourneyOperatorEvidence(
+        pool as never,
+        queryInput(),
+      )) as Record<string, unknown>;
+      expect(completedInvitation.invitationOutboxCount).toBe(1);
     } finally {
       await client.end();
     }

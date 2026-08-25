@@ -2,6 +2,7 @@ import { APPLICATION_LAYER_ENVELOPE_V1 } from '../../application-keys/src/index.
 import { totpCode } from '../../supabase-auth/src/index.ts';
 import type { BrowserAssertionOutcomes } from './browser-assertions.ts';
 import { cleanupEphemeralAuthUsers } from './cleanup.ts';
+import type { EphemeralAuthIdentity } from './cleanup.ts';
 import {
   assertExactSubmittedAnswers,
   discardClinicalRevealAnswers,
@@ -29,6 +30,8 @@ import {
 } from './http.ts';
 import { completeSyntheticIntakeAnswers } from './intake-answers.ts';
 import {
+  captureInvitationMailboxBaseline,
+  normalizeMailboxRecipient,
   waitForInvitationCode,
   type InvitationMailbox,
   type ObservedInvitationMail,
@@ -38,6 +41,13 @@ import {
   GoldenJourneyPreflightError,
   reportGoldenJourneyPreflight,
 } from './preflight.ts';
+import {
+  assertStableReplay,
+  invitationReplayFields,
+  intakeReplayFields,
+  learningReplayFields,
+  publishReplayFields,
+} from './replay.ts';
 import { NonRetryableGoldenJourneyError, retryTransient } from './retry.ts';
 import { createGoldenJourneyState, type GoldenJourneyStep } from './state.ts';
 
@@ -95,6 +105,7 @@ export type GoldenJourneyRunInput = {
   >;
   mailbox: InvitationMailbox;
   waitForInvitationCode?: typeof waitForInvitationCode;
+  captureInvitationMailboxBaseline?: typeof captureInvitationMailboxBaseline;
   runBrowser: (input: {
     origin: string;
     staffCookie?: string;
@@ -124,31 +135,6 @@ function requireUuidField(value: unknown, label: string): string {
     throw new NonRetryableGoldenJourneyError(`${label} was not returned`);
   }
   return text;
-}
-
-function assertStableReplay(input: {
-  first: unknown;
-  second: unknown;
-  entityKeys: readonly string[];
-  replayedSupported: boolean;
-}): void {
-  if (!isRecord(input.first) || !isRecord(input.second)) {
-    throw new NonRetryableGoldenJourneyError(
-      'Replay did not return a stable result',
-    );
-  }
-  for (const key of input.entityKeys) {
-    if (input.first[key] !== input.second[key]) {
-      throw new NonRetryableGoldenJourneyError(
-        'Replay did not return a stable result',
-      );
-    }
-  }
-  if (input.replayedSupported && input.second.replayed !== true) {
-    throw new NonRetryableGoldenJourneyError(
-      'Replay did not return a stable result',
-    );
-  }
 }
 
 function totpSecretFromOtpauth(uri: string): string {
@@ -260,8 +246,7 @@ export async function runGoldenJourney(
 ): Promise<GoldenJourneyEvidence> {
   const state = createGoldenJourneyState();
   const startedAt = input.clock.now();
-  const ephemeralEmails: string[] = [];
-  const ephemeralAuthUserIds: string[] = [];
+  const ephemeralIdentities: EphemeralAuthIdentity[] = [];
   let authCleanup: 'completed' | 'not-attempted' | 'failed' = 'not-attempted';
   const cleanupAuth = input.cleanupAuthUsers ?? cleanupEphemeralAuthUsers;
   try {
@@ -339,6 +324,9 @@ export async function runGoldenJourney(
       typeof build.body.tree !== 'string' ||
       typeof build.body.sourceDigest !== 'string' ||
       typeof build.body.browserDigest !== 'string' ||
+      typeof build.body.lockDigest !== 'string' ||
+      typeof build.body.dependencyDigest !== 'string' ||
+      typeof build.body.bunVersion !== 'string' ||
       typeof build.body.artifactDigest !== 'string' ||
       typeof build.body.envelopeAdapter !== 'string'
     ) {
@@ -353,6 +341,9 @@ export async function runGoldenJourney(
         tree: build.body.tree,
         sourceDigest: build.body.sourceDigest,
         browserDigest: build.body.browserDigest,
+        lockDigest: build.body.lockDigest,
+        dependencyDigest: build.body.dependencyDigest,
+        bunVersion: build.body.bunVersion,
         artifactDigest: build.body.artifactDigest,
         envelopeAdapter: build.body.envelopeAdapter,
       },
@@ -381,7 +372,26 @@ export async function runGoldenJourney(
     const marker = `golden-journey/${input.ids.runId}`;
     const staffEmail = `g${input.ids.runId.replaceAll('-', '')}@example.test`;
     const isolationStaffEmail = `i${input.ids.runId.replaceAll('-', '')}@example.test`;
-    ephemeralEmails.push(staffEmail, isolationStaffEmail);
+    ephemeralIdentities.push(
+      { normalizedEmail: normalizeMailboxRecipient(staffEmail) },
+      { normalizedEmail: normalizeMailboxRecipient(isolationStaffEmail) },
+    );
+    function recordProvisionedAuthUser(email: string, body: unknown) {
+      const identity = ephemeralIdentities.find(
+        (entry) => entry.normalizedEmail === normalizeMailboxRecipient(email),
+      );
+      if (
+        !identity ||
+        !isRecord(body) ||
+        typeof body.supabaseUserId !== 'string' ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          body.supabaseUserId,
+        )
+      ) {
+        return;
+      }
+      identity.providerUserId = body.supabaseUserId;
+    }
     await requestJson(
       operatorFetch,
       `${origin}/api/v1/administration/school-workspaces`,
@@ -414,12 +424,7 @@ export async function runGoldenJourney(
       },
       [201],
     ).then((provisioned) => {
-      if (
-        isRecord(provisioned.body) &&
-        typeof provisioned.body.supabaseUserId === 'string'
-      ) {
-        ephemeralAuthUserIds.push(provisioned.body.supabaseUserId);
-      }
+      recordProvisionedAuthUser(staffEmail, provisioned.body);
     });
 
     const started = await requestJson(
@@ -536,6 +541,15 @@ export async function runGoldenJourney(
         'RELEASE_PUBLISH_FAILED',
       );
     }
+    const releaseNumber = isRecord(published.body)
+      ? published.body.releaseNumber
+      : undefined;
+    if (typeof releaseNumber !== 'number' || releaseNumber < 1) {
+      throw new NonRetryableGoldenJourneyError(
+        'Published release number is missing',
+        'RELEASE_PUBLISH_FAILED',
+      );
+    }
     const republished = await requestJson(
       staffFetch,
       `${origin}/api/v1/administration/school-configuration/releases`,
@@ -554,21 +568,18 @@ export async function runGoldenJourney(
     assertStableReplay({
       first: published.body,
       second: republished.body,
-      entityKeys: ['releaseId'],
+      fields: publishReplayFields,
       replayedSupported: true,
     });
-    if (
-      !isRecord(republished.body) ||
-      !isRecord(republished.body.package) ||
-      republished.body.package.digest !== packageDigest
-    ) {
-      throw new NonRetryableGoldenJourneyError(
-        'Replay did not return a stable result',
-        'RELEASE_PUBLISH_FAILED',
-      );
-    }
     state.advance('release_published');
 
+    const captureMailboxBaseline =
+      input.captureInvitationMailboxBaseline ??
+      captureInvitationMailboxBaseline;
+    const invitationMailboxBaseline = await captureMailboxBaseline(
+      input.mailbox,
+      { expectedRecipient: mailbox },
+    );
     const created = await requestJson(
       staffFetch,
       `${origin}/api/v1/administration/classes`,
@@ -608,7 +619,7 @@ export async function runGoldenJourney(
     assertStableReplay({
       first: created.body,
       second: recreated.body,
-      entityKeys: ['classId', 'invitationId', 'outcome'],
+      fields: invitationReplayFields,
       replayedSupported: false,
     });
     state.advance('invitation_created');
@@ -627,6 +638,7 @@ export async function runGoldenJourney(
       {
         expectedRecipient: mailbox,
         since: invitationSentAt,
+        excludeMessageIds: invitationMailboxBaseline,
         attempts: 12,
         sleep: input.sleep,
         delayMs: 500,
@@ -773,7 +785,7 @@ export async function runGoldenJourney(
     assertStableReplay({
       first: submitted.body,
       second: resubmitted.body,
-      entityKeys: ['intakeRecordVersionId'],
+      fields: intakeReplayFields,
       replayedSupported: true,
     });
     state.advance('intake_submitted');
@@ -830,7 +842,7 @@ export async function runGoldenJourney(
     assertStableReplay({
       first: acknowledged.body,
       second: reacknowledged.body,
-      entityKeys: ['itemCompletionId'],
+      fields: learningReplayFields,
       replayedSupported: true,
     });
     state.advance('learning_acknowledged');
@@ -907,12 +919,7 @@ export async function runGoldenJourney(
       },
       [201],
     ).then((provisioned) => {
-      if (
-        isRecord(provisioned.body) &&
-        typeof provisioned.body.supabaseUserId === 'string'
-      ) {
-        ephemeralAuthUserIds.push(provisioned.body.supabaseUserId);
-      }
+      recordProvisionedAuthUser(isolationStaffEmail, provisioned.body);
     });
     const isolationJar = new CookieJar();
     const isolationFetch = createOriginFetch({
@@ -1005,6 +1012,10 @@ export async function runGoldenJourney(
       );
     }
 
+    const restorationMailboxBaseline = await captureMailboxBaseline(
+      input.mailbox,
+      { expectedRecipient: mailbox },
+    );
     await requestJson(
       staffFetch,
       `${origin}/api/v1/administration/classes`,
@@ -1032,7 +1043,7 @@ export async function runGoldenJourney(
       {
         expectedRecipient: mailbox,
         since: restorationSentAt,
-        excludeMessageIds: [invitationMail.messageId],
+        excludeMessageIds: restorationMailboxBaseline,
         attempts: 12,
         sleep: input.sleep,
         delayMs: 500,
@@ -1126,12 +1137,15 @@ export async function runGoldenJourney(
       operatorEvidence.publishReceiptCount !== 1 ||
       operatorEvidence.publishReleaseId !== releaseId ||
       operatorEvidence.publishPackageDigest !== packageDigest ||
+      operatorEvidence.publishReleaseNumber !== releaseNumber ||
       operatorEvidence.invitationAuditCount !== 1 ||
       operatorEvidence.invitationOutboxCount !== 1 ||
       operatorEvidence.invitationReceiptCount !== 1 ||
       operatorEvidence.intakeReceiptCount !== 1 ||
+      operatorEvidence.intakeOutboxCount !== 1 ||
       operatorEvidence.intakeEntityId !== intakeRecordVersionId ||
       operatorEvidence.learningReceiptCount !== 1 ||
+      operatorEvidence.learningOutboxCount !== 1 ||
       operatorEvidence.learningEntityId !== itemCompletionId ||
       operatorEvidence.clinicalRevealAuditCount < 1 ||
       operatorEvidence.clinicalDenialAuditCount < 1 ||
@@ -1215,9 +1229,14 @@ export async function runGoldenJourney(
     authCleanup = await cleanupAuth({
       supabaseUrl: input.environment.SUPABASE_URL ?? '',
       secretKey: input.environment.SUPABASE_SECRET_KEY ?? '',
-      userIds: ephemeralAuthUserIds,
-      emails: ephemeralEmails,
+      identities: ephemeralIdentities,
     });
+    if (authCleanup !== 'completed') {
+      throw new NonRetryableGoldenJourneyError(
+        'Ephemeral Auth cleanup failed',
+        'CLEANUP_FAILED',
+      );
+    }
 
     return createGoldenJourneyEvidence({
       environment: 'staging',
@@ -1281,8 +1300,7 @@ export async function runGoldenJourney(
     authCleanup = await cleanupAuth({
       supabaseUrl: input.environment.SUPABASE_URL ?? '',
       secretKey: input.environment.SUPABASE_SECRET_KEY ?? '',
-      userIds: ephemeralAuthUserIds,
-      emails: ephemeralEmails,
+      identities: ephemeralIdentities,
     });
     throw new GoldenJourneyRunError(
       mapJourneyError(error),

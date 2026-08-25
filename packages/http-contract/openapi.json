@@ -3062,6 +3062,7 @@
                     "intakeOccurredAt": {
                       "anyOf": [{ "type": "string" }, { "type": "null" }]
                     },
+                    "intakeOutboxCount": { "minimum": 0, "type": "integer" },
                     "intakeReceiptCount": { "minimum": 0, "type": "integer" },
                     "invitationAuditCount": { "minimum": 0, "type": "integer" },
                     "invitationOccurredAt": {
@@ -3087,6 +3088,7 @@
                     "learningOccurredAt": {
                       "anyOf": [{ "type": "string" }, { "type": "null" }]
                     },
+                    "learningOutboxCount": { "minimum": 0, "type": "integer" },
                     "learningReceiptCount": { "minimum": 0, "type": "integer" },
                     "publishAuditCount": { "minimum": 0, "type": "integer" },
                     "publishOccurredAt": {
@@ -3155,9 +3157,11 @@
                     "invitationReceiptCount",
                     "invitationOccurredAt",
                     "intakeReceiptCount",
+                    "intakeOutboxCount",
                     "intakeEntityId",
                     "intakeOccurredAt",
                     "learningReceiptCount",
+                    "learningOutboxCount",
                     "learningEntityId",
                     "learningOccurredAt",
                     "clinicalRevealAuditCount",
@@ -4788,9 +4792,18 @@
                       "pattern": "^[0-9a-f]{64}$",
                       "type": "string"
                     },
+                    "bunVersion": { "minLength": 1, "type": "string" },
                     "commit": { "pattern": "^[0-9a-f]{40}$", "type": "string" },
+                    "dependencyDigest": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
                     "envelopeAdapter": {
                       "enum": ["application-layer-envelope/v1"],
+                      "type": "string"
+                    },
+                    "lockDigest": {
+                      "pattern": "^[0-9a-f]{64}$",
                       "type": "string"
                     },
                     "sourceDigest": {
@@ -4804,6 +4817,9 @@
                     "tree",
                     "sourceDigest",
                     "browserDigest",
+                    "lockDigest",
+                    "dependencyDigest",
+                    "bunVersion",
                     "artifactDigest",
                     "envelopeAdapter"
                   ],

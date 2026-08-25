@@ -23,9 +23,11 @@ const allowedKeys = [
   'invitationReceiptCount',
   'invitationOccurredAt',
   'intakeReceiptCount',
+  'intakeOutboxCount',
   'intakeEntityId',
   'intakeOccurredAt',
   'learningReceiptCount',
+  'learningOutboxCount',
   'learningEntityId',
   'learningOccurredAt',
   'clinicalRevealAuditCount',
@@ -53,9 +55,11 @@ export type GoldenJourneyOperatorEvidence = {
   invitationReceiptCount: number;
   invitationOccurredAt: string | null;
   intakeReceiptCount: number;
+  intakeOutboxCount: number;
   intakeEntityId: string | null;
   intakeOccurredAt: string | null;
   learningReceiptCount: number;
+  learningOutboxCount: number;
   learningEntityId: string | null;
   learningOccurredAt: string | null;
   clinicalRevealAuditCount: number;
@@ -133,7 +137,9 @@ export function parseGoldenJourneyOperatorEvidence(
     invitationOutboxCount: requireCount(value.invitationOutboxCount),
     invitationReceiptCount: requireCount(value.invitationReceiptCount),
     intakeReceiptCount: requireCount(value.intakeReceiptCount),
+    intakeOutboxCount: requireCount(value.intakeOutboxCount),
     learningReceiptCount: requireCount(value.learningReceiptCount),
+    learningOutboxCount: requireCount(value.learningOutboxCount),
     clinicalRevealAuditCount: requireCount(value.clinicalRevealAuditCount),
     clinicalDenialAuditCount: requireCount(value.clinicalDenialAuditCount),
     unattributedDenialCount: requireCount(value.unattributedDenialCount),
@@ -177,9 +183,11 @@ export function parseGoldenJourneyOperatorEvidence(
     invitationReceiptCount: counts.invitationReceiptCount!,
     invitationOccurredAt: requireOptionalIso(value.invitationOccurredAt),
     intakeReceiptCount: counts.intakeReceiptCount!,
+    intakeOutboxCount: counts.intakeOutboxCount!,
     intakeEntityId,
     intakeOccurredAt: requireOptionalIso(value.intakeOccurredAt),
     learningReceiptCount: counts.learningReceiptCount!,
+    learningOutboxCount: counts.learningOutboxCount!,
     learningEntityId,
     learningOccurredAt: requireOptionalIso(value.learningOccurredAt),
     clinicalRevealAuditCount: counts.clinicalRevealAuditCount!,

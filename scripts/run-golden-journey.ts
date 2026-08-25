@@ -7,6 +7,7 @@ import {
   createFailedGoldenJourneyEvidence,
   createResendInvitationMailbox,
   GoldenJourneyRunError,
+  artifactDigestForFailureEvidence,
   normalizeGoldenJourneyEnvironment,
   reportGoldenJourneyPreflight,
   runGoldenJourney,
@@ -70,6 +71,7 @@ async function writeEvidence(value: unknown) {
   await writeFile(evidencePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+let computedArtifactDigest: string | undefined;
 try {
   reportGoldenJourneyPreflight(environment, { failClosed: true });
   const commit = environment.EXPECTED_COMMIT as string;
@@ -78,6 +80,7 @@ try {
     commit,
     tree,
   });
+  computedArtifactDigest = expected.artifactDigest;
   const fixtureCandidate = JSON.parse(
     await readFile(
       new URL(
@@ -95,6 +98,9 @@ try {
       tree: expected.tree,
       sourceDigest: expected.sourceDigest,
       browserDigest: expected.browserDigest,
+      lockDigest: expected.lockDigest,
+      dependencyDigest: expected.dependencyDigest,
+      bunVersion: expected.bunVersion,
       artifactDigest: expected.artifactDigest,
     },
     fixtureCandidate,
@@ -138,7 +144,7 @@ try {
   const failed = createFailedGoldenJourneyEvidence({
     environmentHost,
     commit: environment.EXPECTED_COMMIT,
-    artifactDigest: undefined,
+    artifactDigest: artifactDigestForFailureEvidence(computedArtifactDigest),
     runId,
     startedAt,
     completedAt: new Date().toISOString(),

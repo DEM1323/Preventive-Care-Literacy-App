@@ -13,12 +13,13 @@ function stageBody(dockerfile: string, stage: string): string {
   return match[1];
 }
 
-test('build stage declares SOURCE_COMMIT and SOURCE_TREE as ARGs and runtime does not trust them', async () => {
+test('attest stage hashes production dependencies with SOURCE_COMMIT and runtime does not trust them', async () => {
   const dockerfile = await readFile(
     new URL('../../Dockerfile', import.meta.url),
     'utf8',
   );
   const build = stageBody(dockerfile, 'build');
+  const attest = stageBody(dockerfile, 'attest');
   const runtime = stageBody(dockerfile, 'runtime');
 
   expect(build).toContain('ARG SOURCE_COMMIT');
@@ -26,12 +27,17 @@ test('build stage declares SOURCE_COMMIT and SOURCE_TREE as ARGs and runtime doe
   expect(build).toContain(
     'RUN test -n "$SOURCE_COMMIT" && test -n "$SOURCE_TREE"',
   );
-  expect(build).toContain('bun scripts/write-build-attestation.ts');
+  expect(attest).toContain('ARG SOURCE_COMMIT');
+  expect(attest).toContain('ARG SOURCE_TREE');
+  expect(attest).toContain('bun scripts/write-build-attestation.ts');
   expect(runtime).not.toContain('ARG SOURCE_COMMIT');
   expect(runtime).not.toContain('ARG SOURCE_TREE');
   expect(runtime).not.toContain('ENV SOURCE_COMMIT');
   expect(runtime).toContain(
-    'COPY --from=build --chown=bun:bun /app/build-attestation.json',
+    'COPY --from=attest --chown=bun:bun /app/build-attestation.json',
+  );
+  expect(runtime).toContain(
+    'COPY --from=production-dependencies --chown=bun:bun /app/bun.lock',
   );
 });
 

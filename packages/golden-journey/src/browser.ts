@@ -9,6 +9,7 @@ import {
   type BrowserLocale,
 } from './browser-assertions.ts';
 import { goldenJourneyBrowserControls } from './browser-controls.ts';
+import { goldenJourneyBrowserContextOptions } from './browser-context.ts';
 import { sessionCookiesForOrigin } from './browser-cookies.ts';
 
 const locales: BrowserLocale[] = ['en-US', 'es-US', 'pt-BR', 'fr-CA', 'ht-HT'];
@@ -330,11 +331,9 @@ export async function runGoldenJourneyBrowser(input: {
     });
     const snapshots: AccessibilitySnapshot[] = [];
 
-    const anonymous = await browser.newContext({
-      ignoreHTTPSErrors: false,
-      locale: 'en-US',
-      serviceWorkers: 'block',
-    });
+    const anonymous = await browser.newContext(
+      goldenJourneyBrowserContextOptions,
+    );
     anonymous.setDefaultTimeout(15_000);
     const anonymousPage = await anonymous.newPage();
     snapshots.push(
@@ -378,11 +377,7 @@ export async function runGoldenJourneyBrowser(input: {
       throw new Error('authenticated browser cookies are required');
     }
 
-    const staff = await browser.newContext({
-      ignoreHTTPSErrors: false,
-      locale: 'en-US',
-      serviceWorkers: 'block',
-    });
+    const staff = await browser.newContext(goldenJourneyBrowserContextOptions);
     staff.setDefaultTimeout(15_000);
     await applyCookies(staff, input.origin, input.staffCookie);
     const staffPage = await staff.newPage();
@@ -392,11 +387,9 @@ export async function runGoldenJourneyBrowser(input: {
     );
     await staff.close();
 
-    const student = await browser.newContext({
-      ignoreHTTPSErrors: false,
-      locale: 'en-US',
-      serviceWorkers: 'block',
-    });
+    const student = await browser.newContext(
+      goldenJourneyBrowserContextOptions,
+    );
     student.setDefaultTimeout(15_000);
     await applyCookies(student, input.origin, input.studentCookie);
     const studentPage = await student.newPage();
