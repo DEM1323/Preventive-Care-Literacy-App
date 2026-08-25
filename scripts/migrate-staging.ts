@@ -134,7 +134,7 @@ try {
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
-    `grant execute on function infrastructure.golden_journey_operator_evidence(uuid, uuid, uuid, uuid, uuid)
+    `grant execute on function infrastructure.golden_journey_operator_evidence(uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, timestamptz)
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(

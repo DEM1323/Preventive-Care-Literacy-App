@@ -54,7 +54,8 @@ test('mailbox waiter correlates subject, sent-after, and the expected recipient 
     },
   );
 
-  expect(code).toBe('654321');
+  expect(code.code).toBe('654321');
+  expect(code.messageId).toBe('msg-1');
   expect(requests).toEqual(['list', 'list', 'read:msg-1']);
 });
 
@@ -174,7 +175,7 @@ test('mailbox waiter paginates past a 20-message page and applies backoff delays
     },
   );
 
-  expect(code).toBe('777888');
+  expect(code.code).toBe('777888');
   expect(pages).toEqual([undefined, 'page-2']);
   expect(delays).toEqual([]);
 });
@@ -216,6 +217,73 @@ test('mailbox waiter uses bounded exponential backoff while delivery is delayed'
       now: () => new Date('2026-08-25T16:02:00.000Z'),
     },
   );
-  expect(code).toBe('654321');
+  expect(code.code).toBe('654321');
   expect(delays).toEqual([500, 1_000]);
+});
+
+test('second mailbox wait excludes the first seen message id even for the same recipient and subject', async () => {
+  const first = {
+    id: 'msg-first',
+    createdAt: '2026-08-25T16:01:00.000Z',
+    subject: 'Your Invitation Code',
+  };
+  const second = {
+    id: 'msg-second',
+    createdAt: '2026-08-25T16:04:00.000Z',
+    subject: 'Your Invitation Code',
+  };
+  const observed = await waitForInvitationCode(
+    {
+      list: async () => ({ messages: [first, second] }),
+      read: async (id) => ({
+        id,
+        text:
+          id === 'msg-first'
+            ? 'Your Invitation Code is 111111. It expires in 10 minutes.'
+            : 'Your Invitation Code is 222222. It expires in 10 minutes.',
+        to: [recipient],
+      }),
+    },
+    {
+      expectedRecipient: recipient,
+      since: new Date('2026-08-25T16:03:00.000Z'),
+      excludeMessageIds: ['msg-first'],
+      sleep: async () => undefined,
+      attempts: 1,
+      now: () => new Date('2026-08-25T16:05:00.000Z'),
+    },
+  );
+  expect(observed.code).toBe('222222');
+  expect(observed.messageId).toBe('msg-second');
+});
+
+test('second mailbox wait does not reuse the first code when only the first message exists', async () => {
+  await expect(
+    waitForInvitationCode(
+      {
+        list: async () => ({
+          messages: [
+            {
+              id: 'msg-first',
+              createdAt: '2026-08-25T16:04:00.000Z',
+              subject: 'Your Invitation Code',
+            },
+          ],
+        }),
+        read: async (id) => ({
+          id,
+          text: 'Your Invitation Code is 111111. It expires in 10 minutes.',
+          to: [recipient],
+        }),
+      },
+      {
+        expectedRecipient: recipient,
+        since: new Date('2026-08-25T16:03:00.000Z'),
+        excludeMessageIds: ['msg-first'],
+        sleep: async () => undefined,
+        attempts: 1,
+        now: () => new Date('2026-08-25T16:05:00.000Z'),
+      },
+    ),
+  ).rejects.toThrow('Invitation delivery');
 });

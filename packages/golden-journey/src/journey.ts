@@ -10,6 +10,7 @@ import { environmentHostFromOrigin } from './configuration.ts';
 import {
   assertDeployedSourceIdentity,
   assertWorkerArtifactDigest,
+  isTimestampWithinRun,
   GoldenJourneyDigestMismatchError,
   type ExpectedSourceIdentity,
 } from './digest.ts';
@@ -27,7 +28,11 @@ import {
   type GoldenJourneyFetch,
 } from './http.ts';
 import { completeSyntheticIntakeAnswers } from './intake-answers.ts';
-import { waitForInvitationCode, type InvitationMailbox } from './mailbox.ts';
+import {
+  waitForInvitationCode,
+  type InvitationMailbox,
+  type ObservedInvitationMail,
+} from './mailbox.ts';
 import { parseGoldenJourneyOperatorEvidence } from './operator-evidence.ts';
 import {
   GoldenJourneyPreflightError,
@@ -39,15 +44,18 @@ import { createGoldenJourneyState, type GoldenJourneyStep } from './state.ts';
 export class GoldenJourneyRunError extends Error {
   readonly code: GoldenJourneyErrorCode;
   readonly lastCompletedStep: GoldenJourneyStep;
+  readonly authCleanup: 'completed' | 'not-attempted' | 'failed';
 
   constructor(
     code: GoldenJourneyErrorCode,
     lastCompletedStep: GoldenJourneyStep,
+    authCleanup: 'completed' | 'not-attempted' | 'failed' = 'not-attempted',
   ) {
     super('Golden journey failed');
     this.name = 'GoldenJourneyRunError';
     this.code = code;
     this.lastCompletedStep = lastCompletedStep;
+    this.authCleanup = authCleanup;
   }
 }
 
@@ -91,6 +99,7 @@ export type GoldenJourneyRunInput = {
     origin: string;
     staffCookie?: string;
     studentCookie?: string;
+    studentId: string;
   }) => Promise<BrowserAssertionOutcomes>;
   ids: GoldenJourneyIds;
   staffPassword: string;
@@ -115,6 +124,31 @@ function requireUuidField(value: unknown, label: string): string {
     throw new NonRetryableGoldenJourneyError(`${label} was not returned`);
   }
   return text;
+}
+
+function assertStableReplay(input: {
+  first: unknown;
+  second: unknown;
+  entityKeys: readonly string[];
+  replayedSupported: boolean;
+}): void {
+  if (!isRecord(input.first) || !isRecord(input.second)) {
+    throw new NonRetryableGoldenJourneyError(
+      'Replay did not return a stable result',
+    );
+  }
+  for (const key of input.entityKeys) {
+    if (input.first[key] !== input.second[key]) {
+      throw new NonRetryableGoldenJourneyError(
+        'Replay did not return a stable result',
+      );
+    }
+  }
+  if (input.replayedSupported && input.second.replayed !== true) {
+    throw new NonRetryableGoldenJourneyError(
+      'Replay did not return a stable result',
+    );
+  }
 }
 
 function totpSecretFromOtpauth(uri: string): string {
@@ -227,6 +261,7 @@ export async function runGoldenJourney(
   const state = createGoldenJourneyState();
   const startedAt = input.clock.now();
   const ephemeralEmails: string[] = [];
+  const ephemeralAuthUserIds: string[] = [];
   let authCleanup: 'completed' | 'not-attempted' | 'failed' = 'not-attempted';
   const cleanupAuth = input.cleanupAuthUsers ?? cleanupEphemeralAuthUsers;
   try {
@@ -378,7 +413,14 @@ export async function runGoldenJourney(
         }),
       },
       [201],
-    );
+    ).then((provisioned) => {
+      if (
+        isRecord(provisioned.body) &&
+        typeof provisioned.body.supabaseUserId === 'string'
+      ) {
+        ephemeralAuthUserIds.push(provisioned.body.supabaseUserId);
+      }
+    });
 
     const started = await requestJson(
       anonymousFetch,
@@ -494,7 +536,7 @@ export async function runGoldenJourney(
         'RELEASE_PUBLISH_FAILED',
       );
     }
-    await requestJson(
+    const republished = await requestJson(
       staffFetch,
       `${origin}/api/v1/administration/school-configuration/releases`,
       {
@@ -509,6 +551,22 @@ export async function runGoldenJourney(
       },
       [201],
     );
+    assertStableReplay({
+      first: published.body,
+      second: republished.body,
+      entityKeys: ['releaseId'],
+      replayedSupported: true,
+    });
+    if (
+      !isRecord(republished.body) ||
+      !isRecord(republished.body.package) ||
+      republished.body.package.digest !== packageDigest
+    ) {
+      throw new NonRetryableGoldenJourneyError(
+        'Replay did not return a stable result',
+        'RELEASE_PUBLISH_FAILED',
+      );
+    }
     state.advance('release_published');
 
     const created = await requestJson(
@@ -532,7 +590,7 @@ export async function runGoldenJourney(
         'INVITATION_FAILED',
       );
     }
-    await requestJson(
+    const recreated = await requestJson(
       staffFetch,
       `${origin}/api/v1/administration/classes`,
       {
@@ -547,6 +605,12 @@ export async function runGoldenJourney(
       },
       [201],
     );
+    assertStableReplay({
+      first: created.body,
+      second: recreated.body,
+      entityKeys: ['classId', 'invitationId', 'outcome'],
+      replayedSupported: false,
+    });
     state.advance('invitation_created');
 
     const invitationSentAt = input.clock.now();
@@ -558,15 +622,19 @@ export async function runGoldenJourney(
     });
     const readInvitationCode =
       input.waitForInvitationCode ?? waitForInvitationCode;
-    const invitationCode = await readInvitationCode(input.mailbox, {
-      expectedRecipient: mailbox,
-      since: invitationSentAt,
-      attempts: 12,
-      sleep: input.sleep,
-      delayMs: 500,
-      backoffFactor: 2,
-      maxDelayMs: 8_000,
-    });
+    const invitationMail: ObservedInvitationMail = await readInvitationCode(
+      input.mailbox,
+      {
+        expectedRecipient: mailbox,
+        since: invitationSentAt,
+        attempts: 12,
+        sleep: input.sleep,
+        delayMs: 500,
+        backoffFactor: 2,
+        maxDelayMs: 8_000,
+      },
+    );
+    const invitationCode = invitationMail.code;
     state.advance('invitation_delivered');
 
     await requestJson(
@@ -672,6 +740,42 @@ export async function runGoldenJourney(
         : undefined,
       'intakeRecordVersionId',
     );
+    const resubmitted = await requestJson(
+      studentFetch,
+      `${origin}/api/v1/student/intake/submissions`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          operationId: input.ids.operationIds.intake,
+          expectedSchoolConfigurationReleaseId:
+            form.schoolConfigurationReleaseId,
+          expectedIntakeForm: {
+            resourceId: form.intakeForm.resourceId,
+            revisionNumber: form.intakeForm.revisionNumber,
+          },
+          expectedSubmissionAttestation: {
+            resourceId: form.submissionAttestation.resourceId,
+            revisionNumber: form.submissionAttestation.revisionNumber,
+          },
+          locale: 'en-US',
+          answers,
+          attestation: {
+            locale: 'en-US',
+            notice: {
+              resourceId: form.submissionAttestation.resourceId,
+              revisionNumber: form.submissionAttestation.revisionNumber,
+            },
+          },
+        }),
+      },
+      [201],
+    );
+    assertStableReplay({
+      first: submitted.body,
+      second: resubmitted.body,
+      entityKeys: ['intakeRecordVersionId'],
+      replayedSupported: true,
+    });
     state.advance('intake_submitted');
 
     const learning = await requestJson(
@@ -708,6 +812,27 @@ export async function runGoldenJourney(
         : undefined,
       'itemCompletionId',
     );
+    const reacknowledged = await requestJson(
+      studentFetch,
+      `${origin}/api/v1/student/learning/acknowledgements`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          operationId: input.ids.operationIds.learning,
+          expectedSchoolConfigurationReleaseId:
+            learning.body.schoolConfigurationReleaseId,
+          itemId: learning.body.item.itemId,
+          revisionNumber: learning.body.item.revisionNumber,
+        }),
+      },
+      [201],
+    );
+    assertStableReplay({
+      first: acknowledged.body,
+      second: reacknowledged.body,
+      entityKeys: ['itemCompletionId'],
+      replayedSupported: true,
+    });
     state.advance('learning_acknowledged');
 
     const directory = await requestJson(
@@ -781,7 +906,14 @@ export async function runGoldenJourney(
         }),
       },
       [201],
-    );
+    ).then((provisioned) => {
+      if (
+        isRecord(provisioned.body) &&
+        typeof provisioned.body.supabaseUserId === 'string'
+      ) {
+        ephemeralAuthUserIds.push(provisioned.body.supabaseUserId);
+      }
+    });
     const isolationJar = new CookieJar();
     const isolationFetch = createOriginFetch({
       origin,
@@ -895,15 +1027,20 @@ export async function runGoldenJourney(
       invitationId: input.ids.restorationInvitationId,
       sleep: input.sleep,
     });
-    const restorationCode = await readInvitationCode(input.mailbox, {
-      expectedRecipient: mailbox,
-      since: restorationSentAt,
-      attempts: 12,
-      sleep: input.sleep,
-      delayMs: 500,
-      backoffFactor: 2,
-      maxDelayMs: 8_000,
-    });
+    const restorationMail: ObservedInvitationMail = await readInvitationCode(
+      input.mailbox,
+      {
+        expectedRecipient: mailbox,
+        since: restorationSentAt,
+        excludeMessageIds: [invitationMail.messageId],
+        attempts: 12,
+        sleep: input.sleep,
+        delayMs: 500,
+        backoffFactor: 2,
+        maxDelayMs: 8_000,
+      },
+    );
+    const restorationCode = restorationMail.code;
     await requestJson(
       restoredFetch,
       `${origin}/api/v1/auth/student/invitations/redeem`,
@@ -956,6 +1093,10 @@ export async function runGoldenJourney(
       input.ids.operationIds.publish,
     );
     evidenceQuery.searchParams.set(
+      'invitationOperationId',
+      input.ids.operationIds.invitation,
+    );
+    evidenceQuery.searchParams.set(
       'intakeOperationId',
       input.ids.operationIds.intake,
     );
@@ -963,6 +1104,12 @@ export async function runGoldenJourney(
       'learningOperationId',
       input.ids.operationIds.learning,
     );
+    evidenceQuery.searchParams.set(
+      'isolationWorkspaceId',
+      input.ids.isolationWorkspaceId,
+    );
+    evidenceQuery.searchParams.set('studentId', studentId);
+    evidenceQuery.searchParams.set('startedAt', startedAt.toISOString());
     const operatorEvidenceResponse = await requestJson(
       operatorFetch,
       evidenceQuery.toString(),
@@ -972,15 +1119,60 @@ export async function runGoldenJourney(
     const operatorEvidence = parseGoldenJourneyOperatorEvidence(
       operatorEvidenceResponse.body,
     );
+    const completedAt = input.clock.now();
     if (
-      operatorEvidence.auditRowCount < 1 ||
-      operatorEvidence.outboxCompletedCount < 1 ||
-      operatorEvidence.releaseId !== releaseId ||
-      operatorEvidence.packageDigest !== packageDigest ||
-      operatorEvidence.intakeReceiptPresent !== true ||
-      operatorEvidence.learningReceiptPresent !== true ||
+      operatorEvidence.publishAuditCount !== 1 ||
+      operatorEvidence.publishOutboxCount !== 1 ||
+      operatorEvidence.publishReceiptCount !== 1 ||
+      operatorEvidence.publishReleaseId !== releaseId ||
+      operatorEvidence.publishPackageDigest !== packageDigest ||
+      operatorEvidence.invitationAuditCount !== 1 ||
+      operatorEvidence.invitationOutboxCount !== 1 ||
+      operatorEvidence.invitationReceiptCount !== 1 ||
+      operatorEvidence.intakeReceiptCount !== 1 ||
+      operatorEvidence.intakeEntityId !== intakeRecordVersionId ||
+      operatorEvidence.learningReceiptCount !== 1 ||
+      operatorEvidence.learningEntityId !== itemCompletionId ||
+      operatorEvidence.clinicalRevealAuditCount < 1 ||
+      operatorEvidence.clinicalDenialAuditCount < 1 ||
+      operatorEvidence.unattributedDenialCount < 1 ||
       (operatorEvidence.invitationStatus !== 'delivered' &&
-        operatorEvidence.invitationStatus !== 'completed')
+        operatorEvidence.invitationStatus !== 'completed') ||
+      !isTimestampWithinRun(
+        operatorEvidence.publishOccurredAt,
+        startedAt,
+        completedAt,
+      ) ||
+      !isTimestampWithinRun(
+        operatorEvidence.invitationOccurredAt,
+        startedAt,
+        completedAt,
+      ) ||
+      !isTimestampWithinRun(
+        operatorEvidence.intakeOccurredAt,
+        startedAt,
+        completedAt,
+      ) ||
+      !isTimestampWithinRun(
+        operatorEvidence.learningOccurredAt,
+        startedAt,
+        completedAt,
+      ) ||
+      !isTimestampWithinRun(
+        operatorEvidence.clinicalRevealOccurredAt,
+        startedAt,
+        completedAt,
+      ) ||
+      !isTimestampWithinRun(
+        operatorEvidence.clinicalDenialOccurredAt,
+        startedAt,
+        completedAt,
+      ) ||
+      !isTimestampWithinRun(
+        operatorEvidence.unattributedDenialOccurredAt,
+        startedAt,
+        completedAt,
+      )
     ) {
       throw new NonRetryableGoldenJourneyError(
         'Operator evidence is unavailable',
@@ -991,12 +1183,18 @@ export async function runGoldenJourney(
       publicDigest: expectedSource.artifactDigest,
       workerDigest: operatorEvidence.workerArtifactDigest ?? undefined,
       expectedDigest: expectedSource.artifactDigest,
+      invitationId: input.ids.invitationId,
+      invitationStatus: operatorEvidence.invitationStatus,
+      workerRecordedAt: operatorEvidence.workerRecordedAt,
+      runStartedAt: startedAt,
+      runCompletedAt: completedAt,
     });
 
     const browser = await input.runBrowser({
       origin,
       staffCookie: staffJar.header(),
       studentCookie: studentJar.header(),
+      studentId,
     });
     if (
       browser.keyboard !== 'pass' ||
@@ -1017,6 +1215,7 @@ export async function runGoldenJourney(
     authCleanup = await cleanupAuth({
       supabaseUrl: input.environment.SUPABASE_URL ?? '',
       secretKey: input.environment.SUPABASE_SECRET_KEY ?? '',
+      userIds: ephemeralAuthUserIds,
       emails: ephemeralEmails,
     });
 
@@ -1079,14 +1278,16 @@ export async function runGoldenJourney(
     if (state.step() !== 'failed' && state.step() !== 'completed') {
       state.fail();
     }
-    await cleanupAuth({
+    authCleanup = await cleanupAuth({
       supabaseUrl: input.environment.SUPABASE_URL ?? '',
       secretKey: input.environment.SUPABASE_SECRET_KEY ?? '',
+      userIds: ephemeralAuthUserIds,
       emails: ephemeralEmails,
     });
     throw new GoldenJourneyRunError(
       mapJourneyError(error),
       lastCompletedStep === 'failed' ? 'idle' : lastCompletedStep,
+      authCleanup,
     );
   }
 }

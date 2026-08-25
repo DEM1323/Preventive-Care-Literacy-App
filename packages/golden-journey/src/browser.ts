@@ -8,6 +8,7 @@ import {
   type BrowserAssertionOutcomes,
   type BrowserLocale,
 } from './browser-assertions.ts';
+import { goldenJourneyBrowserControls } from './browser-controls.ts';
 import { sessionCookiesForOrigin } from './browser-cookies.ts';
 
 const locales: BrowserLocale[] = ['en-US', 'es-US', 'pt-BR', 'fr-CA', 'ht-HT'];
@@ -224,7 +225,7 @@ async function collectLocaleSnapshots(
           route: '/staff/configuration',
           locale,
           viewport,
-          expectedFocus: ['preview-locale', 'preview-width'],
+          expectedFocus: [...goldenJourneyBrowserControls.configuration],
           expectedTranslatedText: [
             'UMass Boston Demo Workspace',
             fixtureModuleTitles[locale],
@@ -246,13 +247,14 @@ async function collectLocaleSnapshots(
 async function collectClinicalClearing(
   page: Page,
   origin: string,
+  studentId: string,
 ): Promise<AccessibilitySnapshot> {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(`${origin}/staff`, { waitUntil: 'networkidle' });
   await page.getByRole('heading', { name: 'Intake review' }).waitFor();
   const reveal = page.getByRole('button', { name: 'Reveal current record' });
   await reveal.first().waitFor({ timeout: 15_000 });
-  await page.locator('#student-filter').fill('synthetic');
+  await page.locator('#student-filter').fill(studentId);
   await reveal.first().click();
   const record = page.locator('article').filter({
     has: page.getByRole('heading', { name: 'Current Intake Record' }),
@@ -288,7 +290,7 @@ async function collectClinicalClearing(
     route: '/staff',
     locale: 'en-US',
     viewport: { width: 1280, height: 800, zoom: 1 },
-    expectedFocus: ['class-name', 'invitation-recipient'],
+    expectedFocus: [...goldenJourneyBrowserControls.staffHome],
     expectedTranslatedText: ['Intake review'],
     expectedAnnouncementText: [
       'Clinical access is being rechecked. Sensitive values were cleared.',
@@ -318,6 +320,7 @@ export async function runGoldenJourneyBrowser(input: {
   origin: string;
   staffCookie?: string;
   studentCookie?: string;
+  studentId: string;
 }): Promise<BrowserAssertionOutcomes> {
   const playwright = await import('playwright');
   let browser: Browser | undefined;
@@ -341,7 +344,7 @@ export async function runGoldenJourneyBrowser(input: {
         route: '/staff/sign-in',
         locale: 'en-US',
         viewport: { width: 1280, height: 800, zoom: 1 },
-        expectedFocus: ['email', 'password', 'submit'],
+        expectedFocus: [...goldenJourneyBrowserControls.signIn],
         expectedTranslatedText: ['Sign in'],
         expectedAnnouncementText: [
           'Sign-in failed. Check your email address and password.',
@@ -365,7 +368,7 @@ export async function runGoldenJourneyBrowser(input: {
         route: '/student/invitation',
         locale: 'en-US',
         viewport: { width: 375, height: 812, zoom: 1 },
-        expectedFocus: ['email', 'text', 'submit'],
+        expectedFocus: [...goldenJourneyBrowserControls.invitation],
         expectedTranslatedText: ['Join your class.'],
       }),
     );
@@ -384,7 +387,9 @@ export async function runGoldenJourneyBrowser(input: {
     await applyCookies(staff, input.origin, input.staffCookie);
     const staffPage = await staff.newPage();
     snapshots.push(...(await collectLocaleSnapshots(staffPage, input.origin)));
-    snapshots.push(await collectClinicalClearing(staffPage, input.origin));
+    snapshots.push(
+      await collectClinicalClearing(staffPage, input.origin, input.studentId),
+    );
     await staff.close();
 
     const student = await browser.newContext({
@@ -402,7 +407,7 @@ export async function runGoldenJourneyBrowser(input: {
         route: '/student',
         locale: 'en-US',
         viewport: { width: 1280, height: 800, zoom: 1 },
-        expectedFocus: ['open-learning'],
+        expectedFocus: [...goldenJourneyBrowserControls.studentHomeUnlocked],
         expectedTranslatedText: ['Your learning space'],
       }),
     );
@@ -413,8 +418,8 @@ export async function runGoldenJourneyBrowser(input: {
         route: '/student/intake',
         locale: 'en-US',
         viewport: { width: 375, height: 812, zoom: 1 },
-        expectedFocus: ['save-draft', 'submit-intake'],
-        expectedTranslatedText: [],
+        expectedFocus: [...goldenJourneyBrowserControls.intakeAccepted],
+        expectedTranslatedText: ['Intake accepted', 'Learning is unlocked.'],
       }),
     );
     snapshots.push(
@@ -424,7 +429,7 @@ export async function runGoldenJourneyBrowser(input: {
         route: '/student/learning',
         locale: 'en-US',
         viewport: { width: 320, height: 640, zoom: 2 },
-        expectedFocus: ['back-to-student'],
+        expectedFocus: [...goldenJourneyBrowserControls.learning],
         expectedTranslatedText: [],
       }),
     );

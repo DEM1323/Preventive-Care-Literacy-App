@@ -54,6 +54,12 @@ async function listAllMessages(
   return messages;
 }
 
+export type ObservedInvitationMail = {
+  code: string;
+  messageId: string;
+  createdAt: string;
+};
+
 export async function waitForInvitationCode(
   mailbox: InvitationMailbox,
   options: {
@@ -66,11 +72,13 @@ export async function waitForInvitationCode(
     maxDelayMs?: number;
     clockSkewMs?: number;
     now?: () => Date;
+    excludeMessageIds?: readonly string[];
   },
-): Promise<string> {
+): Promise<ObservedInvitationMail> {
   const expectedRecipient = normalizeMailboxRecipient(
     options.expectedRecipient,
   );
+  const excluded = new Set(options.excludeMessageIds ?? []);
   const skewMs = options.clockSkewMs ?? 30_000;
   const now = options.now ?? (() => new Date());
   try {
@@ -80,6 +88,7 @@ export async function waitForInvitationCode(
         const earliest = options.since.getTime() - skewMs;
         const latest = now().getTime() + skewMs;
         const candidates = messages.filter((message) => {
+          if (excluded.has(message.id)) return false;
           if (message.subject !== 'Your Invitation Code') return false;
           const createdAt = Date.parse(message.createdAt);
           if (Number.isNaN(createdAt)) return false;
@@ -96,7 +105,11 @@ export async function waitForInvitationCode(
           const body = await mailbox.read(candidate.id);
           const recipients = body.to.map(normalizeMailboxRecipient);
           if (!recipients.includes(expectedRecipient)) continue;
-          return extractInvitationCode(body.text);
+          return {
+            code: extractInvitationCode(body.text),
+            messageId: candidate.id,
+            createdAt: candidate.createdAt,
+          };
         }
         throw new Error('Invitation delivery has not completed');
       },

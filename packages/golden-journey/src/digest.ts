@@ -59,7 +59,23 @@ export function assertWorkerArtifactDigest(input: {
   publicDigest: string;
   workerDigest: string | undefined;
   expectedDigest: string;
+  invitationId: string;
+  invitationStatus: string | null;
+  workerInvitationId?: string | null;
+  workerRecordedAt?: string | null;
+  runStartedAt: Date;
+  runCompletedAt: Date;
+  clockSkewMs?: number;
 }): void {
+  if (
+    input.invitationStatus !== 'delivered' &&
+    input.invitationStatus !== 'completed'
+  ) {
+    throw new GoldenJourneyDigestMismatchError(
+      'Invitation worker attestation was not observed',
+      'STALE_WORKER',
+    );
+  }
   if (!input.workerDigest) {
     throw new GoldenJourneyDigestMismatchError(
       'Invitation worker attestation was not observed',
@@ -67,12 +83,74 @@ export function assertWorkerArtifactDigest(input: {
     );
   }
   if (
+    input.workerInvitationId &&
+    input.workerInvitationId !== input.invitationId
+  ) {
+    throw new GoldenJourneyDigestMismatchError(
+      'Invitation worker attestation was not observed',
+      'STALE_WORKER',
+    );
+  }
+  assertTimestampWithinRun(
+    input.workerRecordedAt,
+    input.runStartedAt,
+    input.runCompletedAt,
+    input.clockSkewMs,
+    'STALE_WORKER',
+  );
+  if (
     input.workerDigest !== input.publicDigest ||
     input.workerDigest !== input.expectedDigest
   ) {
     throw new GoldenJourneyDigestMismatchError(
       'Invitation worker artifact digest differs from the public attestation',
       'WORKER_DIGEST_MISMATCH',
+    );
+  }
+}
+
+export function isTimestampWithinRun(
+  value: string | null | undefined,
+  startedAt: Date,
+  completedAt: Date,
+  skewMs = 30_000,
+): boolean {
+  if (!value) return false;
+  const occurred = Date.parse(value);
+  if (Number.isNaN(occurred)) return false;
+  return (
+    occurred >= startedAt.getTime() - skewMs &&
+    occurred <= completedAt.getTime() + skewMs
+  );
+}
+
+export function assertTimestampWithinRun(
+  value: string | null | undefined,
+  startedAt: Date,
+  completedAt: Date,
+  skewMs = 30_000,
+  code: GoldenJourneyDigestMismatchError['code'] = 'STALE_WORKER',
+): void {
+  if (!value) {
+    throw new GoldenJourneyDigestMismatchError(
+      'Invitation worker attestation was not observed',
+      code,
+    );
+  }
+  const occurred = Date.parse(value);
+  if (Number.isNaN(occurred)) {
+    throw new GoldenJourneyDigestMismatchError(
+      'Invitation worker attestation was not observed',
+      code,
+    );
+  }
+  if (
+    occurred < startedAt.getTime() - skewMs ||
+    occurred > completedAt.getTime() + skewMs
+  ) {
+    throw new GoldenJourneyDigestMismatchError(
+      'Invitation worker attestation was not observed',
+      code,
     );
   }
 }

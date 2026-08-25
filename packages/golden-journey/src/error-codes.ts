@@ -18,6 +18,7 @@ export const goldenJourneyErrorCodes = [
   'OPERATOR_EVIDENCE_FAILED',
   'RESTORATION_FAILED',
   'BROWSER_ASSERTION_FAILED',
+  'CLEANUP_FAILED',
   'UNEXPECTED_FAILURE',
 ] as const;
 

@@ -181,6 +181,7 @@ const ProvisionStaffIdentityBody = Type.Object(
 const ProvisionStaffIdentityResponse = Type.Object({
   operationId: Type.String({ format: 'uuid' }),
   staffIdentityId: Type.String({ format: 'uuid' }),
+  supabaseUserId: Type.String({ format: 'uuid' }),
   outcome: Type.Literal('provisioned'),
 });
 
@@ -622,13 +623,16 @@ const GoldenJourneyOperatorEvidenceQuery = Type.Object({
   workspaceId: Type.String({ format: 'uuid' }),
   invitationId: Type.String({ format: 'uuid' }),
   publishOperationId: Type.String({ format: 'uuid' }),
+  invitationOperationId: Type.String({ format: 'uuid' }),
   intakeOperationId: Type.String({ format: 'uuid' }),
   learningOperationId: Type.String({ format: 'uuid' }),
+  isolationWorkspaceId: Type.String({ format: 'uuid' }),
+  studentId: Type.String({ format: 'uuid' }),
+  startedAt: Type.String({ format: 'date-time' }),
 });
+const GoldenJourneyCount = Type.Integer({ minimum: 0 });
 const GoldenJourneyOperatorEvidenceResponse = Type.Object(
   {
-    auditRowCount: Type.Integer({ minimum: 0 }),
-    outboxCompletedCount: Type.Integer({ minimum: 0 }),
     invitationStatus: Type.Union([Type.String(), Type.Null()]),
     workerArtifactDigest: Type.Union([
       Type.String({ pattern: '^[0-9a-f]{64}$' }),
@@ -639,14 +643,41 @@ const GoldenJourneyOperatorEvidenceResponse = Type.Object(
       Type.Null(),
     ]),
     workerRecordedAt: Type.Union([Type.String(), Type.Null()]),
-    releaseId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
-    packageDigest: Type.Union([
+    publishReleaseId: Type.Union([
+      Type.String({ format: 'uuid' }),
+      Type.Null(),
+    ]),
+    publishPackageDigest: Type.Union([
       Type.String({ pattern: '^[0-9a-f]{64}$' }),
       Type.Null(),
     ]),
-    releaseNumber: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
-    intakeReceiptPresent: Type.Boolean(),
-    learningReceiptPresent: Type.Boolean(),
+    publishReleaseNumber: Type.Union([
+      Type.Integer({ minimum: 1 }),
+      Type.Null(),
+    ]),
+    publishAuditCount: GoldenJourneyCount,
+    publishOutboxCount: GoldenJourneyCount,
+    publishReceiptCount: GoldenJourneyCount,
+    publishOccurredAt: Type.Union([Type.String(), Type.Null()]),
+    invitationAuditCount: GoldenJourneyCount,
+    invitationOutboxCount: GoldenJourneyCount,
+    invitationReceiptCount: GoldenJourneyCount,
+    invitationOccurredAt: Type.Union([Type.String(), Type.Null()]),
+    intakeReceiptCount: GoldenJourneyCount,
+    intakeEntityId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
+    intakeOccurredAt: Type.Union([Type.String(), Type.Null()]),
+    learningReceiptCount: GoldenJourneyCount,
+    learningEntityId: Type.Union([
+      Type.String({ format: 'uuid' }),
+      Type.Null(),
+    ]),
+    learningOccurredAt: Type.Union([Type.String(), Type.Null()]),
+    clinicalRevealAuditCount: GoldenJourneyCount,
+    clinicalRevealOccurredAt: Type.Union([Type.String(), Type.Null()]),
+    clinicalDenialAuditCount: GoldenJourneyCount,
+    clinicalDenialOccurredAt: Type.Union([Type.String(), Type.Null()]),
+    unattributedDenialCount: GoldenJourneyCount,
+    unattributedDenialOccurredAt: Type.Union([Type.String(), Type.Null()]),
   },
   { additionalProperties: false },
 );
@@ -703,8 +734,12 @@ export async function buildApp(
       workspaceId: string;
       invitationId: string;
       publishOperationId: string;
+      invitationOperationId: string;
       intakeOperationId: string;
       learningOperationId: string;
+      isolationWorkspaceId: string;
+      studentId: string;
+      startedAt: string;
     }) => Promise<unknown>;
   },
 ): Promise<FastifyInstance> {

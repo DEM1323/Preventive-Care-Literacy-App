@@ -1476,6 +1476,8 @@ export interface operations {
             outcome: 'provisioned';
             /** Format: uuid */
             staffIdentityId: string;
+            /** Format: uuid */
+            supabaseUserId: string;
           };
         };
       };
@@ -2466,8 +2468,12 @@ export interface operations {
       query: {
         intakeOperationId: string;
         invitationId: string;
+        invitationOperationId: string;
+        isolationWorkspaceId: string;
         learningOperationId: string;
         publishOperationId: string;
+        startedAt: string;
+        studentId: string;
         workspaceId: string;
       };
       header: {
@@ -2485,14 +2491,30 @@ export interface operations {
         };
         content: {
           'application/json': {
-            auditRowCount: number;
-            intakeReceiptPresent: boolean;
+            clinicalDenialAuditCount: number;
+            clinicalDenialOccurredAt: string | null;
+            clinicalRevealAuditCount: number;
+            clinicalRevealOccurredAt: string | null;
+            intakeEntityId: string | null;
+            intakeOccurredAt: string | null;
+            intakeReceiptCount: number;
+            invitationAuditCount: number;
+            invitationOccurredAt: string | null;
+            invitationOutboxCount: number;
+            invitationReceiptCount: number;
             invitationStatus: string | null;
-            learningReceiptPresent: boolean;
-            outboxCompletedCount: number;
-            packageDigest: string | null;
-            releaseId: string | null;
-            releaseNumber: number | null;
+            learningEntityId: string | null;
+            learningOccurredAt: string | null;
+            learningReceiptCount: number;
+            publishAuditCount: number;
+            publishOccurredAt: string | null;
+            publishOutboxCount: number;
+            publishPackageDigest: string | null;
+            publishReceiptCount: number;
+            publishReleaseId: string | null;
+            publishReleaseNumber: number | null;
+            unattributedDenialCount: number;
+            unattributedDenialOccurredAt: string | null;
             workerArtifactDigest: string | null;
             workerEnvelopeAdapter: 'application-layer-envelope/v1' | null;
             workerRecordedAt: string | null;

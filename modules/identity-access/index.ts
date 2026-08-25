@@ -294,6 +294,7 @@ export type ProvisionStaffIdentityCommand = {
 export type ProvisionStaffIdentityResult = {
   operationId: string;
   staffIdentityId: string;
+  supabaseUserId: string;
   outcome: 'provisioned';
 };
 
@@ -959,6 +960,7 @@ export function createIdentityAndAccess(dependencies: {
             const result: ProvisionStaffIdentityResult = {
               operationId: command.operationId,
               staffIdentityId: command.staffIdentityId,
+              supabaseUserId: credentials.supabaseUserId,
               outcome: 'provisioned',
             };
             const recordedAt = dependencies.clock.now();

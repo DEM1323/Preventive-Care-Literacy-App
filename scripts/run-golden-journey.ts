@@ -158,7 +158,10 @@ try {
       restorationInvitationId: ids.restorationInvitationId,
       isolationWorkspaceId: ids.isolationWorkspaceId,
     },
-    authCleanup: 'not-attempted',
+    authCleanup:
+      error instanceof GoldenJourneyRunError
+        ? error.authCleanup
+        : 'not-attempted',
   });
   await writeEvidence(failed);
   console.log(

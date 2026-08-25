@@ -6,6 +6,8 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 FROM dependencies AS build
+ARG SOURCE_COMMIT
+ARG SOURCE_TREE
 COPY . .
 RUN test -n "$SOURCE_COMMIT" && test -n "$SOURCE_TREE"
 RUN bun run check:contracts && bun run build

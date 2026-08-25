@@ -8,6 +8,7 @@ export {
   type BrowserAssertionOutcomes,
   type BrowserLocale,
 } from './browser-assertions.ts';
+export { goldenJourneyBrowserControls } from './browser-controls.ts';
 export { sessionCookiesForOrigin } from './browser-cookies.ts';
 export { cleanupEphemeralAuthUsers } from './cleanup.ts';
 export {
@@ -18,6 +19,7 @@ export {
   GoldenJourneyDigestMismatchError,
   assertDeployedSourceIdentity,
   assertWorkerArtifactDigest,
+  isTimestampWithinRun,
   type DeployedSourceIdentity,
   type ExpectedSourceIdentity,
 } from './digest.ts';
@@ -43,6 +45,7 @@ export {
   extractInvitationCode,
   waitForInvitationCode,
   type InvitationMailbox,
+  type ObservedInvitationMail,
 } from './mailbox.ts';
 export { parseGoldenJourneyOperatorEvidence } from './operator-evidence.ts';
 export {

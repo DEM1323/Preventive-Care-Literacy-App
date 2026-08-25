@@ -71,11 +71,18 @@ test('digest gate rejects an unexpected envelope adapter without recording key m
 });
 
 test('worker digest comparison fails closed for a missing or stale worker attestation', () => {
+  const window = {
+    invitationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8004',
+    invitationStatus: 'delivered' as const,
+    runStartedAt: new Date('2026-08-25T16:00:00.000Z'),
+    runCompletedAt: new Date('2026-08-25T16:05:00.000Z'),
+  };
   expect(() =>
     assertWorkerArtifactDigest({
       publicDigest: artifactDigest,
       workerDigest: undefined,
       expectedDigest: artifactDigest,
+      ...window,
     }),
   ).toThrow('Invitation worker attestation was not observed');
 
@@ -84,6 +91,8 @@ test('worker digest comparison fails closed for a missing or stale worker attest
       publicDigest: artifactDigest,
       workerDigest: 'd'.repeat(64),
       expectedDigest: artifactDigest,
+      workerRecordedAt: '2026-08-25T16:01:00.000Z',
+      ...window,
     });
   } catch (error) {
     expect(error).toBeInstanceOf(GoldenJourneyDigestMismatchError);
@@ -95,12 +104,50 @@ test('worker digest comparison fails closed for a missing or stale worker attest
   throw new Error('expected worker digest mismatch');
 });
 
+test('worker digest comparison rejects a startup heartbeat, another Invitation, or a stale timestamp', () => {
+  const window = {
+    publicDigest: artifactDigest,
+    workerDigest: artifactDigest,
+    expectedDigest: artifactDigest,
+    invitationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8004',
+    runStartedAt: new Date('2026-08-25T16:00:00.000Z'),
+    runCompletedAt: new Date('2026-08-25T16:05:00.000Z'),
+  };
+  expect(() =>
+    assertWorkerArtifactDigest({
+      ...window,
+      invitationStatus: 'pending_delivery',
+      workerRecordedAt: '2026-08-25T16:01:00.000Z',
+    }),
+  ).toThrow('Invitation worker attestation was not observed');
+  expect(() =>
+    assertWorkerArtifactDigest({
+      ...window,
+      invitationStatus: 'delivered',
+      workerInvitationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8999',
+      workerRecordedAt: '2026-08-25T16:01:00.000Z',
+    }),
+  ).toThrow('Invitation worker attestation was not observed');
+  expect(() =>
+    assertWorkerArtifactDigest({
+      ...window,
+      invitationStatus: 'delivered',
+      workerRecordedAt: '2026-08-25T15:00:00.000Z',
+    }),
+  ).toThrow('Invitation worker attestation was not observed');
+});
+
 test('worker digest comparison requires the public, worker, and expected digests to match', () => {
   expect(() =>
     assertWorkerArtifactDigest({
       publicDigest: artifactDigest,
       workerDigest: artifactDigest,
       expectedDigest: artifactDigest,
+      invitationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8004',
+      invitationStatus: 'delivered',
+      workerRecordedAt: '2026-08-25T16:01:00.000Z',
+      runStartedAt: new Date('2026-08-25T16:00:00.000Z'),
+      runCompletedAt: new Date('2026-08-25T16:05:00.000Z'),
     }),
   ).not.toThrow();
 });

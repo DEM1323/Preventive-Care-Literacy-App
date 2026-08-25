@@ -7,7 +7,10 @@ import { APPLICATION_LAYER_ENVELOPE_V1 } from '../../../packages/application-key
 import { readAndVerifyBuildAttestation } from '../../../packages/build-attestation/src/index.ts';
 import { createResendInvitationMail } from '../../../packages/invitation-mail/src/index.ts';
 import { decryptInvitationDelivery } from '../../../packages/invitation-secrets/src/index.ts';
-import { recordWorkerArtifactHeartbeat } from '../../../packages/postgres/src/golden-journey-evidence.ts';
+import {
+  recordInvitationDeliveryAttestation,
+  recordWorkerArtifactHeartbeat,
+} from '../../../packages/postgres/src/golden-journey-evidence.ts';
 import { createPostgresInvitationDeliveryPorts } from '../../../packages/postgres/src/invitation-delivery.ts';
 import { assertRestrictedDatabaseRole } from '../../../packages/postgres/src/identity-access.ts';
 import { createSupabaseInvitationQueue } from '../../../packages/supabase-queue/src/index.ts';
@@ -40,10 +43,10 @@ const deliveries: InvitationDeliveryDependencies['deliveries'] = {
   suppress: (input) => ports.deliveries.suppress(input),
   async complete(input) {
     await ports.deliveries.complete(input);
-    await recordWorkerArtifactHeartbeat(pool, {
+    await recordInvitationDeliveryAttestation(pool, {
+      invitationId: input.invitationId,
       artifactDigest: attestation.artifactDigest,
       envelopeAdapter: APPLICATION_LAYER_ENVELOPE_V1,
-      invitationId: input.invitationId,
       recordedAt: new Date(),
     });
   },

@@ -1471,9 +1471,15 @@
                   "properties": {
                     "operationId": { "format": "uuid", "type": "string" },
                     "outcome": { "enum": ["provisioned"], "type": "string" },
-                    "staffIdentityId": { "format": "uuid", "type": "string" }
+                    "staffIdentityId": { "format": "uuid", "type": "string" },
+                    "supabaseUserId": { "format": "uuid", "type": "string" }
                   },
-                  "required": ["operationId", "staffIdentityId", "outcome"],
+                  "required": [
+                    "operationId",
+                    "staffIdentityId",
+                    "supabaseUserId",
+                    "outcome"
+                  ],
                   "type": "object"
                 }
               }
@@ -2985,6 +2991,12 @@
           },
           {
             "in": "query",
+            "name": "invitationOperationId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
             "name": "intakeOperationId",
             "required": true,
             "schema": { "format": "uuid", "type": "string" }
@@ -2994,6 +3006,24 @@
             "name": "learningOperationId",
             "required": true,
             "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "isolationWorkspaceId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "studentId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "startedAt",
+            "required": true,
+            "schema": { "format": "date-time", "type": "string" }
           },
           {
             "in": "header",
@@ -3009,30 +3039,85 @@
                 "schema": {
                   "additionalProperties": false,
                   "properties": {
-                    "auditRowCount": { "minimum": 0, "type": "integer" },
-                    "intakeReceiptPresent": { "type": "boolean" },
-                    "invitationStatus": {
+                    "clinicalDenialAuditCount": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "clinicalDenialOccurredAt": {
                       "anyOf": [{ "type": "string" }, { "type": "null" }]
                     },
-                    "learningReceiptPresent": { "type": "boolean" },
-                    "outboxCompletedCount": { "minimum": 0, "type": "integer" },
-                    "packageDigest": {
-                      "anyOf": [
-                        { "pattern": "^[0-9a-f]{64}$", "type": "string" },
-                        { "type": "null" }
-                      ]
+                    "clinicalRevealAuditCount": {
+                      "minimum": 0,
+                      "type": "integer"
                     },
-                    "releaseId": {
+                    "clinicalRevealOccurredAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "intakeEntityId": {
                       "anyOf": [
                         { "format": "uuid", "type": "string" },
                         { "type": "null" }
                       ]
                     },
-                    "releaseNumber": {
+                    "intakeOccurredAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "intakeReceiptCount": { "minimum": 0, "type": "integer" },
+                    "invitationAuditCount": { "minimum": 0, "type": "integer" },
+                    "invitationOccurredAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "invitationOutboxCount": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "invitationReceiptCount": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "invitationStatus": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "learningEntityId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "learningOccurredAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "learningReceiptCount": { "minimum": 0, "type": "integer" },
+                    "publishAuditCount": { "minimum": 0, "type": "integer" },
+                    "publishOccurredAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "publishOutboxCount": { "minimum": 0, "type": "integer" },
+                    "publishPackageDigest": {
+                      "anyOf": [
+                        { "pattern": "^[0-9a-f]{64}$", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "publishReceiptCount": { "minimum": 0, "type": "integer" },
+                    "publishReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "publishReleaseNumber": {
                       "anyOf": [
                         { "minimum": 1, "type": "integer" },
                         { "type": "null" }
                       ]
+                    },
+                    "unattributedDenialCount": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "unattributedDenialOccurredAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
                     },
                     "workerArtifactDigest": {
                       "anyOf": [
@@ -3054,17 +3139,33 @@
                     }
                   },
                   "required": [
-                    "auditRowCount",
-                    "outboxCompletedCount",
                     "invitationStatus",
                     "workerArtifactDigest",
                     "workerEnvelopeAdapter",
                     "workerRecordedAt",
-                    "releaseId",
-                    "packageDigest",
-                    "releaseNumber",
-                    "intakeReceiptPresent",
-                    "learningReceiptPresent"
+                    "publishReleaseId",
+                    "publishPackageDigest",
+                    "publishReleaseNumber",
+                    "publishAuditCount",
+                    "publishOutboxCount",
+                    "publishReceiptCount",
+                    "publishOccurredAt",
+                    "invitationAuditCount",
+                    "invitationOutboxCount",
+                    "invitationReceiptCount",
+                    "invitationOccurredAt",
+                    "intakeReceiptCount",
+                    "intakeEntityId",
+                    "intakeOccurredAt",
+                    "learningReceiptCount",
+                    "learningEntityId",
+                    "learningOccurredAt",
+                    "clinicalRevealAuditCount",
+                    "clinicalRevealOccurredAt",
+                    "clinicalDenialAuditCount",
+                    "clinicalDenialOccurredAt",
+                    "unattributedDenialCount",
+                    "unattributedDenialOccurredAt"
                   ],
                   "type": "object"
                 }

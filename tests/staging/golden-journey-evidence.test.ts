@@ -170,6 +170,22 @@ test('evidence fails closed when required coverage or provider contracts are mis
   ).toThrow('Golden journey evidence provider contracts are incomplete');
 });
 
+test('failed evidence records the observed cleanup status instead of always not-attempted', () => {
+  const failed = createFailedGoldenJourneyEvidence({
+    environmentHost: 'staging.up.railway.app',
+    commit: validInput().commit,
+    artifactDigest: validInput().artifactDigest,
+    runId: validInput().runId,
+    startedAt: validInput().startedAt,
+    completedAt: validInput().completedAt,
+    lastCompletedStep: 'browser_checked',
+    errorCode: 'CLEANUP_FAILED',
+    authCleanup: 'failed',
+  });
+  expect(failed.cleanupBoundary.authCleanup).toBe('failed');
+  expect(failed.cleanupBoundary.authCleanup).not.toBe('not-attempted');
+});
+
 test('failed evidence records a fixed error code and last step without exception text', () => {
   const failed = createFailedGoldenJourneyEvidence({
     environmentHost: 'staging.up.railway.app',

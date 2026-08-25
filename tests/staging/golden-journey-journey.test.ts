@@ -115,6 +115,9 @@ function createFetch() {
   const invitationStatus = new Map<string, string>();
   let studentSessions = 0;
   let staffTotp = 0;
+  let publishCalls = 0;
+  let intakeCalls = 0;
+  let learningCalls = 0;
   return async (input: string | URL | Request, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : input.toString();
     const method = (init?.method ?? 'GET').toUpperCase();
@@ -154,6 +157,10 @@ function createFetch() {
       return jsonResponse(201, {
         operationId: 'op',
         staffIdentityId: body.staffIdentityId,
+        supabaseUserId:
+          body.staffIdentityId === '018f1f5e-7b76-7f70-8f4d-9dc17ecf8002'
+            ? '018f1f5e-7b76-7f70-8f4d-9dc17ecf8401'
+            : '018f1f5e-7b76-7f70-8f4d-9dc17ecf8402',
         outcome: 'provisioned',
       });
     }
@@ -195,9 +202,11 @@ function createFetch() {
       return jsonResponse(200, { freshUntil: '2026-08-25T16:15:00.000Z' });
     }
     if (path === '/api/v1/administration/school-configuration/releases') {
+      publishCalls += 1;
       return jsonResponse(201, {
         releaseId,
         package: { format: 'json', digest: 'd'.repeat(64), byteLength: 12 },
+        replayed: publishCalls > 1,
       });
     }
     if (path === '/api/v1/administration/classes' && method === 'POST') {
@@ -274,11 +283,12 @@ function createFetch() {
       });
     }
     if (path === '/api/v1/student/intake/submissions') {
+      intakeCalls += 1;
       return jsonResponse(201, {
         operationId: 'op',
         intakeRecordVersionId,
         acceptedAt: '2026-08-25T16:05:00.000Z',
-        replayed: false,
+        replayed: intakeCalls > 1,
       });
     }
     if (path === '/api/v1/student/learning' && method === 'GET') {
@@ -309,6 +319,7 @@ function createFetch() {
       });
     }
     if (path === '/api/v1/student/learning/acknowledgements') {
+      learningCalls += 1;
       return jsonResponse(201, {
         operationId: 'op',
         itemCompletionId,
@@ -316,7 +327,7 @@ function createFetch() {
         revisionNumber: 1,
         schoolConfigurationReleaseId: releaseId,
         completedAt: '2026-08-25T16:06:00.000Z',
-        replayed: false,
+        replayed: learningCalls > 1,
       });
     }
     if (path === '/api/v1/clinical/review-directory') {
@@ -361,17 +372,33 @@ function createFetch() {
     }
     if (path === '/api/v1/operator/golden-journey-evidence') {
       return jsonResponse(200, {
-        auditRowCount: 4,
-        outboxCompletedCount: 2,
         invitationStatus: 'delivered',
         workerArtifactDigest: artifactDigest,
         workerEnvelopeAdapter: 'application-layer-envelope/v1',
-        workerRecordedAt: '2026-08-25T16:01:00.000Z',
-        releaseId,
-        packageDigest: 'd'.repeat(64),
-        releaseNumber: 1,
-        intakeReceiptPresent: true,
-        learningReceiptPresent: true,
+        workerRecordedAt: '2026-08-25T16:00:00.000Z',
+        publishReleaseId: releaseId,
+        publishPackageDigest: 'd'.repeat(64),
+        publishReleaseNumber: 1,
+        publishAuditCount: 1,
+        publishOutboxCount: 1,
+        publishReceiptCount: 1,
+        publishOccurredAt: '2026-08-25T16:00:00.000Z',
+        invitationAuditCount: 1,
+        invitationOutboxCount: 1,
+        invitationReceiptCount: 1,
+        invitationOccurredAt: '2026-08-25T16:00:00.000Z',
+        intakeReceiptCount: 1,
+        intakeEntityId: intakeRecordVersionId,
+        intakeOccurredAt: '2026-08-25T16:00:00.000Z',
+        learningReceiptCount: 1,
+        learningEntityId: itemCompletionId,
+        learningOccurredAt: '2026-08-25T16:00:00.000Z',
+        clinicalRevealAuditCount: 1,
+        clinicalRevealOccurredAt: '2026-08-25T16:00:00.000Z',
+        clinicalDenialAuditCount: 1,
+        clinicalDenialOccurredAt: '2026-08-25T16:00:00.000Z',
+        unattributedDenialCount: 1,
+        unattributedDenialOccurredAt: '2026-08-25T16:00:00.000Z',
       });
     }
     return jsonResponse(404, { code: 'NOT_FOUND' });
@@ -433,7 +460,17 @@ function journeyInput(overrides: Record<string, unknown> = {}) {
     },
     waitForInvitationCode: async () => {
       invitationReads += 1;
-      return invitationReads === 1 ? '729104' : '456789';
+      return invitationReads === 1
+        ? {
+            code: '729104',
+            messageId: 'msg-first',
+            createdAt: '2026-08-25T16:00:00.000Z',
+          }
+        : {
+            code: '456789',
+            messageId: 'msg-second',
+            createdAt: '2026-08-25T16:00:00.000Z',
+          };
     },
     runBrowser: async () => ({
       keyboard: 'pass' as const,
