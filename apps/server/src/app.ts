@@ -1,13 +1,12 @@
 import swagger from '@fastify/swagger';
 import fastifyStatic from '@fastify/static';
 import { Type, type Static } from '@sinclair/typebox';
-import Fastify, { type FastifyInstance } from 'fastify';
-import {
-  createHash,
-  randomBytes,
-  randomUUID,
-  timingSafeEqual,
-} from 'node:crypto';
+import Fastify, {
+  type FastifyInstance,
+  type FastifyReply,
+  type FastifyRequest,
+} from 'fastify';
+import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { resolve } from 'node:path';
 import { Pool } from 'pg';
 import type {
@@ -29,15 +28,20 @@ import {
   StepUpRejectedError,
   AdministrativePermissionRequiredError,
 } from '../../../modules/identity-access/index.ts';
-import type { Intake } from '../../../modules/intake/index.ts';
+import type {
+  Intake,
+  UnattributedRevealOutcome,
+} from '../../../modules/intake/index.ts';
 import {
   IntakeAlreadyAcceptedError,
   IntakeIncompleteError,
   IntakeOperationReusedError,
+  IntakeRecordNotFoundError,
   IntakeRevisionConflictError,
   IntakeUnavailableError,
 } from '../../../modules/intake/index.ts';
 import { createIntake } from '../../../modules/intake/index.ts';
+import type { ApplicationKeyManagement } from '../../../modules/intake/index.ts';
 import type { LearningProgress } from '../../../modules/learning-progress/index.ts';
 import {
   LearningLockedError,
@@ -114,6 +118,7 @@ const securityHeaders = {
 } as const;
 
 class UntrustedRequestOriginError extends Error {}
+class UntrustedRequestCsrfError extends Error {}
 
 const CreateSchoolWorkspaceBody = Type.Object(
   {
@@ -222,10 +227,6 @@ const StaffDirectoryEntryResponse = Type.Object({
 
 const StaffDirectoryResponse = Type.Object({
   staffIdentities: Type.Array(StaffDirectoryEntryResponse),
-});
-
-const ClinicalDirectoryResponse = Type.Object({
-  students: Type.Array(Type.Unknown(), { maxItems: 0 }),
 });
 
 const CreateClassInvitationBody = Type.Object(
@@ -427,6 +428,39 @@ const SubmitIntakeRecordVersionResponse = Type.Object({
   learningUnlocked: Type.Literal(true),
   replayed: Type.Boolean(),
 });
+const ClinicalDirectoryResponse = Type.Object({
+  students: Type.Array(
+    Type.Object({
+      studentId: Type.String({ format: 'uuid' }),
+      createdAt: Type.String({ format: 'date-time' }),
+      currentIntakeRecordVersion: Type.Union([
+        Type.Null(),
+        Type.Object({
+          intakeRecordVersionId: Type.String({ format: 'uuid' }),
+          acceptedAt: Type.String({ format: 'date-time' }),
+          locale: IntakeLocaleSchema,
+        }),
+      ]),
+    }),
+  ),
+  freshUntil: Type.String({ format: 'date-time' }),
+});
+const RevealCurrentIntakeRecordBody = Type.Object(
+  {
+    studentId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+const RevealedCurrentIntakeRecordResponse = Type.Object({
+  studentId: Type.String({ format: 'uuid' }),
+  intakeRecordVersionId: Type.String({ format: 'uuid' }),
+  acceptedAt: Type.String({ format: 'date-time' }),
+  schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+  locale: IntakeLocaleSchema,
+  intakeForm: StudentIntakeFormResponse.properties.intakeForm,
+  answers: IntakeAnswersSchema,
+  freshUntil: Type.String({ format: 'date-time' }),
+});
 const StudentLearningQuery = Type.Object({
   locale: Type.Optional(IntakeLocaleSchema),
 });
@@ -624,6 +658,35 @@ export async function buildApp(
     logger: false,
   });
   if (options.onClose) app.addHook('onClose', options.onClose);
+
+  async function recordClinicalRevealBoundaryDenial(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    outcome: UnattributedRevealOutcome,
+  ): Promise<boolean> {
+    if (
+      request.method !== 'POST' ||
+      request.routeOptions.url !== '/api/v1/clinical/intake-records/current'
+    ) {
+      return true;
+    }
+    try {
+      if (!options.intake) {
+        throw new Error('clinical reveal boundary audit requires intake');
+      }
+      await options.intake.reportUnauthenticatedReveal({ outcome });
+      return true;
+    } catch {
+      reply.type('application/problem+json').code(500).send({
+        type: 'https://preventive-care-literacy.example/problems/internal-error',
+        title: 'Internal server error',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+      });
+      return false;
+    }
+  }
+
   app.addHook('onRequest', async (request, reply) => {
     requestStartedAt.set(request, performance.now());
     for (const [name, value] of Object.entries(securityHeaders)) {
@@ -633,11 +696,13 @@ export async function buildApp(
     if (!['DELETE', 'PATCH', 'POST', 'PUT'].includes(request.method)) return;
     if (
       request.headers.origin !== publicOrigin ||
-      request.headers['x-prevcare-csrf'] !== '1' ||
       (request.headers['sec-fetch-site'] !== undefined &&
         request.headers['sec-fetch-site'] !== 'same-origin')
     ) {
       throw new UntrustedRequestOriginError();
+    }
+    if (request.headers['x-prevcare-csrf'] !== '1') {
+      throw new UntrustedRequestCsrfError();
     }
   });
   if (telemetry) {
@@ -662,20 +727,22 @@ export async function buildApp(
                     ? 'staff-session'
                     : route === '/api/v1/clinical/review-directory'
                       ? 'clinical-directory'
-                      : route === '/api/v1/administration/classes'
-                        ? 'classes'
-                        : route === '/api/v1/student/intake'
-                          ? 'student-intake'
-                          : route === '/api/v1/student/intake/draft'
-                            ? 'student-intake-draft'
-                            : route === '/api/v1/student/intake/submissions'
-                              ? 'student-intake-submission'
-                              : route === '/api/v1/student/learning'
-                                ? 'student-learning'
-                                : route ===
-                                    '/api/v1/student/learning/acknowledgements'
-                                  ? 'student-learning-acknowledgement'
-                                  : 'unknown';
+                      : route === '/api/v1/clinical/intake-records/current'
+                        ? 'clinical-intake-reveal'
+                        : route === '/api/v1/administration/classes'
+                          ? 'classes'
+                          : route === '/api/v1/student/intake'
+                            ? 'student-intake'
+                            : route === '/api/v1/student/intake/draft'
+                              ? 'student-intake-draft'
+                              : route === '/api/v1/student/intake/submissions'
+                                ? 'student-intake-submission'
+                                : route === '/api/v1/student/learning'
+                                  ? 'student-learning'
+                                  : route ===
+                                      '/api/v1/student/learning/acknowledgements'
+                                    ? 'student-learning-acknowledgement'
+                                    : 'unknown';
       telemetry.record({
         name: 'http.request.completed',
         method: ['DELETE', 'GET', 'PATCH', 'POST', 'PUT'].includes(
@@ -695,8 +762,34 @@ export async function buildApp(
       });
     });
   }
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler(async (error, request, reply) => {
     if (error instanceof UntrustedRequestOriginError) {
+      if (
+        !(await recordClinicalRevealBoundaryDenial(
+          request,
+          reply,
+          'denied_origin',
+        ))
+      ) {
+        return;
+      }
+      return reply.type('application/problem+json').code(403).send({
+        type: 'https://preventive-care-literacy.example/problems/request-origin',
+        title: 'Trusted request origin required',
+        status: 403,
+        code: 'TRUSTED_ORIGIN_REQUIRED',
+      });
+    }
+    if (error instanceof UntrustedRequestCsrfError) {
+      if (
+        !(await recordClinicalRevealBoundaryDenial(
+          request,
+          reply,
+          'denied_csrf',
+        ))
+      ) {
+        return;
+      }
       return reply.type('application/problem+json').code(403).send({
         type: 'https://preventive-care-literacy.example/problems/request-origin',
         title: 'Trusted request origin required',
@@ -863,6 +956,14 @@ export async function buildApp(
         code: error.code,
       });
     }
+    if (error instanceof IntakeRecordNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/intake-record',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
     if (error instanceof LearningUnavailableError) {
       return reply.type('application/problem+json').code(404).send({
         type: 'https://preventive-care-literacy.example/problems/learning-unavailable',
@@ -891,11 +992,26 @@ export async function buildApp(
       });
     }
     if (
-      typeof error === 'object' &&
-      error !== null &&
-      'validation' in error &&
-      error.validation
+      (typeof error === 'object' &&
+        error !== null &&
+        'validation' in error &&
+        error.validation) ||
+      (typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error.code === 'FST_ERR_CTP_INVALID_JSON_BODY' ||
+          error.code === 'FST_ERR_CTP_EMPTY_JSON_BODY' ||
+          error.code === 'FST_ERR_CTP_INVALID_MEDIA_TYPE'))
     ) {
+      if (
+        !(await recordClinicalRevealBoundaryDenial(
+          request,
+          reply,
+          'denied_invalid_request',
+        ))
+      ) {
+        return;
+      }
       return reply.type('application/problem+json').code(400).send({
         type: 'https://preventive-care-literacy.example/problems/invalid-request',
         title: 'Request validation failed',
@@ -909,6 +1025,15 @@ export async function buildApp(
       'code' in error &&
       error.code === 'FST_ERR_CTP_BODY_TOO_LARGE'
     ) {
+      if (
+        !(await recordClinicalRevealBoundaryDenial(
+          request,
+          reply,
+          'denied_body_too_large',
+        ))
+      ) {
+        return;
+      }
       return reply.type('application/problem+json').code(413).send({
         type: 'https://preventive-care-literacy.example/problems/request-too-large',
         title: 'Request body is too large',
@@ -1241,8 +1366,81 @@ export async function buildApp(
           code: 'STAFF_SESSION_REQUIRED',
         });
       }
-      return identityAndAccess.openClinicalDirectory({
+      const directory = await identityAndAccess.openClinicalDirectory({
         sessionHandle: sessionHandle as string,
+      });
+      return {
+        freshUntil: directory.freshUntil.toISOString(),
+        students: directory.students.map((student) => ({
+          studentId: student.studentId,
+          createdAt: student.createdAt.toISOString(),
+          currentIntakeRecordVersion: student.currentIntakeRecordVersion && {
+            intakeRecordVersionId:
+              student.currentIntakeRecordVersion.intakeRecordVersionId,
+            acceptedAt:
+              student.currentIntakeRecordVersion.acceptedAt.toISOString(),
+            locale: student.currentIntakeRecordVersion.locale,
+          },
+        })),
+      };
+    },
+  );
+
+  app.post<{ Body: Static<typeof RevealCurrentIntakeRecordBody> }>(
+    '/api/v1/clinical/intake-records/current',
+    {
+      schema: {
+        operationId: 'revealCurrentIntakeRecord',
+        security: [{ staffSession: [] }],
+        body: RevealCurrentIntakeRecordBody,
+        response: {
+          200: RevealedCurrentIntakeRecordResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        staffSessionCookie,
+      );
+      if (!sessionHandle) {
+        if (!options.intake) {
+          return reply.type('application/problem+json').code(401).send({
+            type: 'https://preventive-care-literacy.example/problems/staff-session',
+            title: 'Staff session required',
+            status: 401,
+            code: 'STAFF_SESSION_REQUIRED',
+          });
+        }
+        await options.intake.reportUnauthenticatedReveal({
+          outcome: 'denied_unauthenticated',
+          studentId: request.body.studentId,
+        });
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      if (!options.intake) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      reply.header('cache-control', 'no-store');
+      return options.intake.revealCurrent({
+        sessionHandle,
+        studentId: request.body.studentId,
       });
     },
   );
@@ -1741,6 +1939,7 @@ export async function createServer(options: {
   ids?: IdGenerator;
   invitationSecrets?: InvitationSecretKeys;
   wrappingKeys?: EnvelopeKeyMaterial;
+  applicationKeys?: ApplicationKeyManagement;
   releasePackages?: ReleasePackageStorage;
 }): Promise<FastifyInstance> {
   const connectionUrl = new URL(options.databaseUrl);
@@ -1775,7 +1974,7 @@ export async function createServer(options: {
     ids,
     handles: {
       create: () => randomBytes(32).toString('base64url'),
-      hash: (handle) => createHash('sha256').update(handle).digest('hex'),
+      hash: sha256SessionHandle,
     },
     invitationSecrets: createInvitationSecretProtector(
       options.invitationSecrets ?? {
@@ -1799,15 +1998,18 @@ export async function createServer(options: {
     resolveStudentSession: (command) =>
       identityAndAccess.resolveStudentSession(command),
     store: createPostgresIntakeStore({ pool }),
-    keys: createEnvelopeKeyManagement(
-      options.wrappingKeys ?? {
-        wrappingKeys: { ephemeral: randomBytes(32) },
-        activeWrappingKeyId: 'ephemeral',
-        idempotencyKey: randomBytes(32),
-      },
-    ),
+    keys:
+      options.applicationKeys ??
+      createEnvelopeKeyManagement(
+        options.wrappingKeys ?? {
+          wrappingKeys: { ephemeral: randomBytes(32) },
+          activeWrappingKeyId: 'ephemeral',
+          idempotencyKey: randomBytes(32),
+        },
+      ),
     clock,
     ids,
+    hashSessionHandle: sha256SessionHandle,
   });
   const learningProgress = createLearningProgress({
     resolveStudentSession: (command) =>

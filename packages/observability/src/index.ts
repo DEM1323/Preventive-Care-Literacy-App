@@ -22,6 +22,7 @@ export type TelemetryEvent =
         | 'staff-sign-out'
         | 'staff-session'
         | 'clinical-directory'
+        | 'clinical-intake-reveal'
         | 'classes'
         | 'student-intake'
         | 'student-intake-draft'
@@ -71,6 +72,7 @@ const routes = new Set([
   'staff-sign-out',
   'staff-session',
   'clinical-directory',
+  'clinical-intake-reveal',
   'classes',
   'student-intake',
   'student-intake-draft',

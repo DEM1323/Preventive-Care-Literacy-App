@@ -53,6 +53,9 @@ async function renderContracts() {
       openClinicalDirectory: async () => {
         throw new Error('Contract generation does not execute queries');
       },
+      requireFreshClinicalSession: async () => {
+        throw new Error('Contract generation does not execute queries');
+      },
       createClassInvitation: async () => {
         throw new Error('Contract generation does not execute commands');
       },
@@ -92,6 +95,12 @@ async function renderContracts() {
           throw new Error('Contract generation does not execute commands');
         },
         submit: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        revealCurrent: async () => {
+          throw new Error('Contract generation does not execute queries');
+        },
+        reportUnauthenticatedReveal: async () => {
           throw new Error('Contract generation does not execute commands');
         },
       },

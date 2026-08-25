@@ -1,6 +1,7 @@
 const owningModules = [
   'identity-access',
   'school-configuration',
+  'intake-answers',
   'intake',
   'learning-progress',
   'records-governance',
@@ -16,6 +17,24 @@ module.exports = {
       from: { path: '^modules/' },
       to: {
         path: '^(apps/|packages/|fastify$|@fastify/|pg$|kysely$|firebase|@google-cloud/|@supabase/)',
+      },
+    },
+    {
+      name: 'browser-must-not-import-node-core',
+      comment:
+        'Browser UI cannot import Node builtins. Do not polyfill node:crypto.',
+      severity: 'error',
+      from: { path: '^src/' },
+      to: { dependencyTypes: ['core'] },
+    },
+    {
+      name: 'browser-must-not-import-node-crypto-modules',
+      comment:
+        'Browser UI cannot import owning modules that load Node builtins. Clinical answer labels live in modules/intake-answers.',
+      severity: 'error',
+      from: { path: '^src/' },
+      to: {
+        path: '^modules/(school-configuration|intake|learning-progress)/',
       },
     },
     ...owningModules.map((moduleName) => ({

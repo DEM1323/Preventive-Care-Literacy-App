@@ -180,6 +180,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/clinical/intake-records/current': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['revealCurrentIntakeRecord'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/clinical/review-directory': {
     parameters: {
       query?: never;
@@ -2099,6 +2115,191 @@ export interface operations {
       };
     };
   };
+  revealCurrentIntakeRecord: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          studentId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: date-time */
+            acceptedAt: string;
+            answers: {
+              [key: string]: string;
+            };
+            /** Format: date-time */
+            freshUntil: string;
+            intakeForm: {
+              fields: {
+                /** Format: uuid */
+                id: string;
+                key: string;
+                label: string;
+                options: {
+                  code: string;
+                  label: string;
+                }[];
+                order: number;
+                required: boolean;
+                requiredWhenVisible: boolean;
+                revision: number;
+                /** Format: uuid */
+                sectionId: string;
+                type: 'text' | 'date' | 'tel' | 'yes-no' | 'textarea';
+                visibility: null | {
+                  equalsOptionCode: string;
+                  /** Format: uuid */
+                  fieldId: string;
+                };
+              }[];
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+              sections: {
+                /** Format: uuid */
+                id: string;
+                order: number;
+                revision: number;
+                title: string;
+              }[];
+              title: string;
+            };
+            /** Format: uuid */
+            intakeRecordVersionId: string;
+            locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+            /** Format: uuid */
+            schoolConfigurationReleaseId: string;
+            /** Format: uuid */
+            studentId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
   openClinicalDirectory: {
     parameters: {
       query?: never;
@@ -2115,7 +2316,21 @@ export interface operations {
         };
         content: {
           'application/json': {
-            students: unknown[];
+            /** Format: date-time */
+            freshUntil: string;
+            students: {
+              /** Format: date-time */
+              createdAt: string;
+              currentIntakeRecordVersion: null | {
+                /** Format: date-time */
+                acceptedAt: string;
+                /** Format: uuid */
+                intakeRecordVersionId: string;
+                locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+              };
+              /** Format: uuid */
+              studentId: string;
+            }[];
           };
         };
       };

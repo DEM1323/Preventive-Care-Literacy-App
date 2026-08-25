@@ -122,6 +122,18 @@ try {
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
+    `revoke select, insert, update, delete on audit.security_events
+       from ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function audit.record_unattributed_reveal_attempt(uuid, uuid, timestamptz, text, jsonb)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function identity_access.lock_clinical_reveal_authority(text)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
     `grant select, usage on all sequences in schema infrastructure
        to ${runtimeRoleIdentifier}`,
   );

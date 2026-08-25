@@ -560,7 +560,11 @@ test('staff cannot read or mutate Item Completions and no uncomplete path exists
   );
   expect(clinical.response.status).toBe(200);
   expect(JSON.stringify(clinical.data)).not.toContain('itemCompletion');
-  expect(clinical.data?.students).toEqual([]);
+  expect(clinical.data?.students).toEqual([
+    expect.objectContaining({
+      studentId: expect.any(String),
+    }),
+  ]);
 });
 
 test('one Student cannot replay another Student acknowledgement', async () => {

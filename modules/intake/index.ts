@@ -4,9 +4,19 @@ import type {
   StudentSessionContext,
 } from '../identity-access/index.ts';
 import {
+  StaffAuthenticationFailedError,
+  StaffAuthenticationStaleError,
+  StaffPermissionRequiredError,
+  StaffSessionExpiredError,
+  StaffSessionRevokedError,
+} from '../identity-access/index.ts';
+import {
   canonicalJson,
   supportedLocales,
 } from '../school-configuration/index.ts';
+
+export { renderIntakeAnswer } from '../intake-answers/index.ts';
+export type { LocalizedIntakeAnswerField } from '../intake-answers/index.ts';
 
 export const intakeKeyManagementName = 'application-layer-envelope/v1' as const;
 export const supportedIntakeLocales = supportedLocales;
@@ -38,7 +48,10 @@ export type IdempotencyBindingContext = {
 export type ApplicationKeyManagement = {
   readonly name: typeof intakeKeyManagementName;
   seal(plaintext: Uint8Array, context: KeyWrappingContext): SealedRecord;
-  open(sealed: SealedRecord, context: KeyWrappingContext): Uint8Array;
+  open(
+    sealed: SealedRecord,
+    context: KeyWrappingContext,
+  ): Uint8Array | Promise<Uint8Array>;
   bind(plaintext: Uint8Array, context: IdempotencyBindingContext): string;
 };
 
@@ -177,6 +190,57 @@ export class IntakeOperationReusedError extends Error {
   }
 }
 
+export class IntakeRecordNotFoundError extends Error {
+  readonly code = 'INTAKE_RECORD_NOT_FOUND';
+  constructor() {
+    super('No current Intake Record Version is available');
+    this.name = 'IntakeRecordNotFoundError';
+  }
+}
+
+export type RevealCurrentIntakeRecordCommand = {
+  sessionHandle: string;
+  studentId: string;
+};
+
+export type RevealedCurrentIntakeRecord = {
+  studentId: string;
+  intakeRecordVersionId: string;
+  acceptedAt: string;
+  schoolConfigurationReleaseId: string;
+  locale: IntakeLocale;
+  intakeForm: StudentIntakeForm['intakeForm'];
+  answers: IntakeAnswerMap;
+  freshUntil: string;
+};
+
+export type UnattributedRevealOutcome =
+  | 'denied_unauthenticated'
+  | 'denied_session_unknown'
+  | 'denied_origin'
+  | 'denied_csrf'
+  | 'denied_invalid_request'
+  | 'denied_body_too_large';
+
+export type ClinicalRevealDenialReason =
+  'revoked' | 'expired' | 'disabled' | 'permission' | 'stale';
+
+export type ClinicalRevealAttempt =
+  | { outcome: 'missing_session' }
+  | { outcome: 'denied'; reason: ClinicalRevealDenialReason }
+  | { outcome: 'not_found' }
+  | { outcome: 'failed'; cause: 'read' | 'projection' | 'decrypt' }
+  | {
+      outcome: 'revealed';
+      intakeRecordVersionId: string;
+      acceptedAt: Date;
+      schoolConfigurationReleaseId: string;
+      locale: IntakeLocale;
+      intakeForm: StudentIntakeForm['intakeForm'];
+      answers: IntakeAnswerMap;
+      freshUntil: Date;
+    };
+
 export type ActiveIntakeRelease = {
   schoolConfigurationReleaseId: string;
   intakeForm: {
@@ -242,6 +306,28 @@ export type IntakeStore = {
     | { outcome: 'accepted'; intakeRecordVersionId: string; acceptedAt: Date }
     | { outcome: 'replayed'; result: SubmitIntakeRecordVersionResult }
   >;
+  revealCurrent(input: {
+    sessionHandleHash: string;
+    studentId: string;
+    now: () => Date;
+    auditId: string;
+    operationId: string;
+    projectForm: (
+      release: ActiveIntakeRelease,
+      locale: IntakeLocale,
+    ) => StudentIntakeForm;
+    openAnswers: (
+      sealed: SealedRecord,
+      context: { workspaceId: string; studentId: string },
+    ) => Promise<IntakeAnswerMap>;
+  }): Promise<ClinicalRevealAttempt>;
+  recordUnattributedRevealAttempt(input: {
+    auditId: string;
+    operationId: string;
+    occurredAt: Date;
+    outcome: UnattributedRevealOutcome;
+    studentId?: string;
+  }): Promise<void>;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -460,6 +546,7 @@ export function createIntake(dependencies: {
   keys: ApplicationKeyManagement;
   clock: Clock;
   ids: IdGenerator;
+  hashSessionHandle: (sessionHandle: string) => string;
 }) {
   async function requireStudent(sessionHandle: string) {
     return dependencies.resolveStudentSession({ sessionHandle });
@@ -493,7 +580,7 @@ export function createIntake(dependencies: {
               locale: state.draft.locale,
               updatedAt: state.draft.updatedAt.toISOString(),
               answers: decodeAnswers(
-                dependencies.keys.open(state.draft.sealed, {
+                await dependencies.keys.open(state.draft.sealed, {
                   purpose: 'intake-draft',
                   workspaceId: session.workspaceId,
                   studentId: session.studentId,
@@ -613,6 +700,77 @@ export function createIntake(dependencies: {
         learningUnlocked: true as const,
         replayed: false,
       };
+    },
+
+    async reportUnauthenticatedReveal(command: {
+      studentId?: string;
+      outcome: UnattributedRevealOutcome;
+    }) {
+      await dependencies.store.recordUnattributedRevealAttempt({
+        auditId: dependencies.ids.create(),
+        operationId: dependencies.ids.create(),
+        occurredAt: dependencies.clock.now(),
+        outcome: command.outcome,
+        studentId: command.studentId,
+      });
+    },
+
+    async revealCurrent(command: RevealCurrentIntakeRecordCommand) {
+      const auditId = dependencies.ids.create();
+      const operationId = dependencies.ids.create();
+      const attempted = await dependencies.store.revealCurrent({
+        sessionHandleHash: dependencies.hashSessionHandle(
+          command.sessionHandle,
+        ),
+        studentId: command.studentId,
+        now: () => dependencies.clock.now(),
+        auditId,
+        operationId,
+        projectForm: projectStudentIntakeForm,
+        openAnswers: async (sealed, context) =>
+          decodeAnswers(
+            await dependencies.keys.open(sealed, {
+              purpose: 'intake-record-version',
+              workspaceId: context.workspaceId,
+              studentId: context.studentId,
+            }),
+          ),
+      });
+      if (attempted.outcome === 'missing_session') {
+        throw new StaffAuthenticationFailedError();
+      }
+      if (attempted.outcome === 'denied') {
+        if (attempted.reason === 'revoked')
+          throw new StaffSessionRevokedError();
+        if (attempted.reason === 'expired')
+          throw new StaffSessionExpiredError();
+        if (attempted.reason === 'permission') {
+          throw new StaffPermissionRequiredError('clinical');
+        }
+        if (attempted.reason === 'stale') {
+          throw new StaffAuthenticationStaleError();
+        }
+        throw new StaffAuthenticationFailedError();
+      }
+      if (attempted.outcome === 'not_found') {
+        throw new IntakeRecordNotFoundError();
+      }
+      if (attempted.outcome === 'failed') {
+        if (attempted.cause === 'decrypt') {
+          throw new Error('Unable to open the current Intake Record Version');
+        }
+        throw new IntakeUnavailableError();
+      }
+      return {
+        studentId: command.studentId,
+        intakeRecordVersionId: attempted.intakeRecordVersionId,
+        acceptedAt: new Date(attempted.acceptedAt).toISOString(),
+        schoolConfigurationReleaseId: attempted.schoolConfigurationReleaseId,
+        locale: attempted.locale,
+        intakeForm: attempted.intakeForm,
+        answers: attempted.answers,
+        freshUntil: new Date(attempted.freshUntil).toISOString(),
+      } satisfies RevealedCurrentIntakeRecord;
     },
   };
 }

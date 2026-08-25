@@ -132,4 +132,20 @@ test('tracked envelope threat model names the selected adapter and its limits', 
   expect(doc.toLowerCase()).toContain('rotation');
   expect(doc).toContain('unrecoverable');
   expect(doc).toContain('process secret');
+  expect(doc).toContain('/api/v1/clinical/intake-records/current');
+  expect(doc).toContain('/api/v1/student/intake');
+  expect(doc).toContain('Student-private draft restore');
+  expect(doc).toContain(
+    'Ordinary clinical and administrative HTTP projections must not receive those answers',
+  );
+  expect(doc).not.toContain(
+    'is the only HTTP seam that may return plaintext answers',
+  );
+  expect(doc).toContain(
+    'separately authorized, freshness-gated, no-store clinical reveal',
+  );
+  expect(doc).toContain('staff_identities');
+  expect(doc).toContain('staff_permission_grants');
+  expect(doc).toContain('rechecked after decrypt');
+  expect(doc).toContain('issue #32');
 });

@@ -667,7 +667,13 @@ test('retries, staff projections, and failures cannot expose or duplicate protec
   });
   expect(clinical.response.status).toBe(200);
   expect(JSON.stringify(clinical.data)).not.toContain(distinctiveAnswer);
-  expect(clinical.data?.students).toEqual([]);
+  expect(clinical.data?.students).toEqual([
+    expect.objectContaining({
+      currentIntakeRecordVersion: expect.objectContaining({
+        locale: 'en-US',
+      }),
+    }),
+  ]);
 
   const staffIntake = await client.GET('/api/v1/student/intake', {
     headers: { cookie: administratorCookie },
