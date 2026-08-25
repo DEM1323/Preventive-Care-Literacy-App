@@ -134,6 +134,10 @@ try {
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
+    `grant execute on function infrastructure.golden_journey_operator_evidence(uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, timestamptz)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
     `grant select, usage on all sequences in schema infrastructure
        to ${runtimeRoleIdentifier}`,
   );

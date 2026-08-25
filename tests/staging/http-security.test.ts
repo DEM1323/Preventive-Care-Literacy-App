@@ -71,6 +71,12 @@ describe.serial('staging HTTP security boundary', () => {
     expect(response.headers['content-security-policy']).toContain(
       "default-src 'self'",
     );
+    expect(response.headers['content-security-policy']).toContain(
+      "script-src 'self'",
+    );
+    expect(response.headers['content-security-policy']).not.toContain(
+      'unsafe-eval',
+    );
     expect(response.headers['strict-transport-security']).toBe(
       'max-age=31536000; includeSubDomains',
     );
@@ -179,6 +185,65 @@ describe.serial('staging HTTP security boundary', () => {
       title: 'Request body is too large',
       status: 413,
       code: 'REQUEST_TOO_LARGE',
+    });
+  });
+
+  test('build identity is unavailable until an exact commit and artifact digest are configured', async () => {
+    const app = await createApp();
+    const unavailable = await app.inject({
+      method: 'GET',
+      url: '/health/build',
+    });
+    await app.close();
+    expect(unavailable.statusCode).toBe(503);
+    expect(unavailable.json()).toEqual({ status: 'unavailable' });
+  });
+
+  test('build identity exposes only commit, artifact digest, and selected envelope adapter', async () => {
+    const app = await buildApp(createStubIdentityAndAccess(), {
+      publicOrigin,
+      operatorAuthenticator: {
+        authenticate: () => ({
+          type: 'technical_operator',
+          id: 'operator@example.test',
+        }),
+      },
+      buildIdentity: {
+        schemaVersion: 2 as const,
+        commit: 'beda69fca3f7954a0200a3209cb44aac7ade4a72',
+        tree: '89abcdef0123456789abcdef0123456789abcdef',
+        sourceDigest:
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        browserDigest:
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        lockDigest:
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        dependencyDigest:
+          'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        bunVersion: '1.3.14',
+        artifactDigest:
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        envelopeAdapter: 'application-layer-envelope/v1' as const,
+      },
+    });
+    const response = await app.inject({ method: 'GET', url: '/health/build' });
+    await app.close();
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      commit: 'beda69fca3f7954a0200a3209cb44aac7ade4a72',
+      tree: '89abcdef0123456789abcdef0123456789abcdef',
+      sourceDigest:
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      browserDigest:
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      lockDigest:
+        'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+      dependencyDigest:
+        'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+      bunVersion: '1.3.14',
+      artifactDigest:
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      envelopeAdapter: 'application-layer-envelope/v1',
     });
   });
 });

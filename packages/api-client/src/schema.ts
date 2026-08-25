@@ -212,6 +212,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/operator/golden-journey-evidence': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['goldenJourneyOperatorEvidence'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/staff/session': {
     parameters: {
       query?: never;
@@ -316,6 +332,64 @@ export interface paths {
       cookie?: never;
     };
     get: operations['readStudentSession'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/health/build': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Default Response */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              artifactDigest: string;
+              browserDigest: string;
+              bunVersion: string;
+              commit: string;
+              dependencyDigest: string;
+              /** @enum {string} */
+              envelopeAdapter: 'application-layer-envelope/v1';
+              lockDigest: string;
+              sourceDigest: string;
+              tree: string;
+            };
+          };
+        };
+        /** @description Default Response */
+        503: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              /** @enum {string} */
+              status: 'unavailable';
+            };
+          };
+        };
+      };
+    };
     put?: never;
     post?: never;
     delete?: never;
@@ -1405,6 +1479,8 @@ export interface operations {
             outcome: 'provisioned';
             /** Format: uuid */
             staffIdentityId: string;
+            /** Format: uuid */
+            supabaseUserId: string;
           };
         };
       };
@@ -2372,6 +2448,104 @@ export interface operations {
       };
       /** @description Default Response */
       500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  goldenJourneyOperatorEvidence: {
+    parameters: {
+      query: {
+        intakeOperationId: string;
+        invitationId: string;
+        invitationOperationId: string;
+        isolationWorkspaceId: string;
+        learningOperationId: string;
+        publishOperationId: string;
+        startedAt: string;
+        studentId: string;
+        workspaceId: string;
+      };
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            clinicalDenialAuditCount: number;
+            clinicalDenialOccurredAt: string | null;
+            clinicalRevealAuditCount: number;
+            clinicalRevealOccurredAt: string | null;
+            intakeEntityId: string | null;
+            intakeOccurredAt: string | null;
+            intakeOutboxCount: number;
+            intakeReceiptCount: number;
+            invitationAuditCount: number;
+            invitationOccurredAt: string | null;
+            invitationOutboxCount: number;
+            invitationReceiptCount: number;
+            invitationStatus: string | null;
+            learningEntityId: string | null;
+            learningOccurredAt: string | null;
+            learningOutboxCount: number;
+            learningReceiptCount: number;
+            publishAuditCount: number;
+            publishOccurredAt: string | null;
+            publishOutboxCount: number;
+            publishPackageDigest: string | null;
+            publishReceiptCount: number;
+            publishReleaseId: string | null;
+            publishReleaseNumber: number | null;
+            unattributedDenialCount: number;
+            unattributedDenialOccurredAt: string | null;
+            workerArtifactDigest: string | null;
+            workerEnvelopeAdapter: 'application-layer-envelope/v1' | null;
+            workerRecordedAt: string | null;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
         headers: {
           [name: string]: unknown;
         };

@@ -6,13 +6,27 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 FROM dependencies AS build
+ARG SOURCE_COMMIT
+ARG SOURCE_TREE
 COPY . .
+RUN test -n "$SOURCE_COMMIT" && test -n "$SOURCE_TREE"
 RUN bun run check:contracts && bun run build
 
 FROM oven/bun:1.3.14-alpine AS production-dependencies
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
+
+FROM production-dependencies AS attest
+ARG SOURCE_COMMIT
+ARG SOURCE_TREE
+COPY --from=build /app/apps ./apps
+COPY --from=build /app/modules ./modules
+COPY --from=build /app/packages ./packages
+COPY --from=build /app/scripts ./scripts
+COPY --from=build /app/dist ./dist
+RUN test -n "$SOURCE_COMMIT" && test -n "$SOURCE_TREE"
+RUN bun scripts/write-build-attestation.ts
 
 FROM oven/bun:1.3.14-alpine AS runtime
 ENV HOST=0.0.0.0 \
@@ -21,12 +35,14 @@ ENV HOST=0.0.0.0 \
     WEB_ROOT=/app/dist
 WORKDIR /app
 COPY --from=production-dependencies --chown=bun:bun /app/node_modules ./node_modules
+COPY --from=production-dependencies --chown=bun:bun /app/bun.lock ./bun.lock
 COPY --from=build --chown=bun:bun /app/apps ./apps
 COPY --from=build --chown=bun:bun /app/dist ./dist
 COPY --from=build --chown=bun:bun /app/modules ./modules
 COPY --from=build --chown=bun:bun /app/packages ./packages
 COPY --from=build --chown=bun:bun /app/scripts ./scripts
 COPY --from=build --chown=bun:bun /app/package.json ./package.json
+COPY --from=attest --chown=bun:bun /app/build-attestation.json ./build-attestation.json
 USER bun
 EXPOSE 8080
 CMD ["bun", "apps/server/src/api.ts"]

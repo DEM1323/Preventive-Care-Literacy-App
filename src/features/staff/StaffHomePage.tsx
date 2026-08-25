@@ -231,7 +231,7 @@ export function StaffHomePage() {
                     pendingCommand.current = undefined;
                     setInvitationOutcome('idle');
                   }}
-                  className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal"
+                  className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 />
               </label>
               <label
@@ -250,7 +250,7 @@ export function StaffHomePage() {
                     pendingCommand.current = undefined;
                     setInvitationOutcome('idle');
                   }}
-                  className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal"
+                  className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 />
               </label>
               <button

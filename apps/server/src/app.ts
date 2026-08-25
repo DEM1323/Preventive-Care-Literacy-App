@@ -60,8 +60,10 @@ import {
   OperationIdReusedError,
   ResourceRevisionConflictError,
 } from '../../../modules/school-configuration/index.ts';
-import { createEnvelopeKeyManagement } from '../../../packages/application-keys/src/index.ts';
-import type { EnvelopeKeyMaterial } from '../../../packages/application-keys/src/index.ts';
+import {
+  createEnvelopeKeyManagement,
+  type EnvelopeKeyMaterial,
+} from '../../../packages/application-keys/src/index.ts';
 import {
   createTelemetry,
   type Telemetry,
@@ -89,6 +91,12 @@ import { createMemoryReleasePackageStorage } from '../../../packages/release-pac
 import type { ReleasePackageStorage } from '../../../modules/school-configuration/index.ts';
 import { createPostgresIntakeStore } from '../../../packages/postgres/src/intake.ts';
 import { createPostgresLearningProgressStore } from '../../../packages/postgres/src/learning-progress.ts';
+import { queryGoldenJourneyOperatorEvidence } from '../../../packages/postgres/src/golden-journey-evidence.ts';
+import {
+  BUILD_ATTESTATION_SCHEMA_VERSION,
+  verifyBuildAttestationForHealth,
+  type BuildAttestation,
+} from '../../../packages/build-attestation/src/index.ts';
 
 const staffSessionCookie = '__Host-prevcare-staff-session' as const;
 const studentSessionCookie = '__Host-prevcare-student-session' as const;
@@ -174,6 +182,7 @@ const ProvisionStaffIdentityBody = Type.Object(
 const ProvisionStaffIdentityResponse = Type.Object({
   operationId: Type.String({ format: 'uuid' }),
   staffIdentityId: Type.String({ format: 'uuid' }),
+  supabaseUserId: Type.String({ format: 'uuid' }),
   outcome: Type.Literal('provisioned'),
 });
 
@@ -603,6 +612,84 @@ const ReadyHealthResponse = Type.Object({ status: Type.Literal('ready') });
 const NotReadyHealthResponse = Type.Object({
   status: Type.Literal('not-ready'),
 });
+const BuildHealthResponse = Type.Object({
+  commit: Type.String({ pattern: '^[0-9a-f]{40}$' }),
+  tree: Type.String({ pattern: '^[0-9a-f]{40}$' }),
+  sourceDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  browserDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  lockDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  dependencyDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  bunVersion: Type.String({ minLength: 1 }),
+  artifactDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  envelopeAdapter: Type.Literal('application-layer-envelope/v1'),
+});
+const GoldenJourneyOperatorEvidenceQuery = Type.Object({
+  workspaceId: Type.String({ format: 'uuid' }),
+  invitationId: Type.String({ format: 'uuid' }),
+  publishOperationId: Type.String({ format: 'uuid' }),
+  invitationOperationId: Type.String({ format: 'uuid' }),
+  intakeOperationId: Type.String({ format: 'uuid' }),
+  learningOperationId: Type.String({ format: 'uuid' }),
+  isolationWorkspaceId: Type.String({ format: 'uuid' }),
+  studentId: Type.String({ format: 'uuid' }),
+  startedAt: Type.String({ format: 'date-time' }),
+});
+const GoldenJourneyCount = Type.Integer({ minimum: 0 });
+const GoldenJourneyOperatorEvidenceResponse = Type.Object(
+  {
+    invitationStatus: Type.Union([Type.String(), Type.Null()]),
+    workerArtifactDigest: Type.Union([
+      Type.String({ pattern: '^[0-9a-f]{64}$' }),
+      Type.Null(),
+    ]),
+    workerEnvelopeAdapter: Type.Union([
+      Type.Literal('application-layer-envelope/v1'),
+      Type.Null(),
+    ]),
+    workerRecordedAt: Type.Union([Type.String(), Type.Null()]),
+    publishReleaseId: Type.Union([
+      Type.String({ format: 'uuid' }),
+      Type.Null(),
+    ]),
+    publishPackageDigest: Type.Union([
+      Type.String({ pattern: '^[0-9a-f]{64}$' }),
+      Type.Null(),
+    ]),
+    publishReleaseNumber: Type.Union([
+      Type.Integer({ minimum: 1 }),
+      Type.Null(),
+    ]),
+    publishAuditCount: GoldenJourneyCount,
+    publishOutboxCount: GoldenJourneyCount,
+    publishReceiptCount: GoldenJourneyCount,
+    publishOccurredAt: Type.Union([Type.String(), Type.Null()]),
+    invitationAuditCount: GoldenJourneyCount,
+    invitationOutboxCount: GoldenJourneyCount,
+    invitationReceiptCount: GoldenJourneyCount,
+    invitationOccurredAt: Type.Union([Type.String(), Type.Null()]),
+    intakeReceiptCount: GoldenJourneyCount,
+    intakeOutboxCount: GoldenJourneyCount,
+    intakeEntityId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
+    intakeOccurredAt: Type.Union([Type.String(), Type.Null()]),
+    learningReceiptCount: GoldenJourneyCount,
+    learningOutboxCount: GoldenJourneyCount,
+    learningEntityId: Type.Union([
+      Type.String({ format: 'uuid' }),
+      Type.Null(),
+    ]),
+    learningOccurredAt: Type.Union([Type.String(), Type.Null()]),
+    clinicalRevealAuditCount: GoldenJourneyCount,
+    clinicalRevealOccurredAt: Type.Union([Type.String(), Type.Null()]),
+    clinicalDenialAuditCount: GoldenJourneyCount,
+    clinicalDenialOccurredAt: Type.Union([Type.String(), Type.Null()]),
+    unattributedDenialCount: GoldenJourneyCount,
+    unattributedDenialOccurredAt: Type.Union([Type.String(), Type.Null()]),
+  },
+  { additionalProperties: false },
+);
+const BuildUnavailableResponse = Type.Object({
+  status: Type.Literal('unavailable'),
+});
 
 type OperatorAuthenticator = {
   authenticate(
@@ -647,6 +734,19 @@ export async function buildApp(
     schoolConfiguration?: SchoolConfiguration;
     intake?: Intake;
     learningProgress?: LearningProgress;
+    buildIdentity?: BuildAttestation;
+    verifyBuildAttestation?: () => Promise<BuildAttestation | undefined>;
+    queryGoldenJourneyEvidence?: (input: {
+      workspaceId: string;
+      invitationId: string;
+      publishOperationId: string;
+      invitationOperationId: string;
+      intakeOperationId: string;
+      learningOperationId: string;
+      isolationWorkspaceId: string;
+      studentId: string;
+      startedAt: string;
+    }) => Promise<unknown>;
   },
 ): Promise<FastifyInstance> {
   const publicOrigin = new URL(options.publicOrigin).origin;
@@ -1108,6 +1208,49 @@ export async function buildApp(
       return { status: 'ok' };
     },
   );
+  app.get(
+    '/health/build',
+    {
+      schema: {
+        response: {
+          200: BuildHealthResponse,
+          503: BuildUnavailableResponse,
+        },
+      },
+    },
+    async (_request, reply) => {
+      const identity = options.verifyBuildAttestation
+        ? await options.verifyBuildAttestation()
+        : options.buildIdentity;
+      if (
+        !identity ||
+        identity.schemaVersion !== BUILD_ATTESTATION_SCHEMA_VERSION ||
+        !/^[0-9a-f]{40}$/.test(identity.commit) ||
+        !/^[0-9a-f]{40}$/.test(identity.tree) ||
+        !/^[0-9a-f]{64}$/.test(identity.sourceDigest) ||
+        !/^[0-9a-f]{64}$/.test(identity.browserDigest) ||
+        !/^[0-9a-f]{64}$/.test(identity.lockDigest) ||
+        !/^[0-9a-f]{64}$/.test(identity.dependencyDigest) ||
+        typeof identity.bunVersion !== 'string' ||
+        identity.bunVersion.length === 0 ||
+        !/^[0-9a-f]{64}$/.test(identity.artifactDigest) ||
+        identity.envelopeAdapter !== 'application-layer-envelope/v1'
+      ) {
+        return reply.code(503).send({ status: 'unavailable' });
+      }
+      return {
+        commit: identity.commit,
+        tree: identity.tree,
+        sourceDigest: identity.sourceDigest,
+        browserDigest: identity.browserDigest,
+        lockDigest: identity.lockDigest,
+        dependencyDigest: identity.dependencyDigest,
+        bunVersion: identity.bunVersion,
+        artifactDigest: identity.artifactDigest,
+        envelopeAdapter: identity.envelopeAdapter,
+      };
+    },
+  );
 
   app.post<{
     Body: Static<typeof CreateSchoolWorkspaceBody>;
@@ -1190,6 +1333,49 @@ export async function buildApp(
         actor,
       });
       return reply.code(201).send(result);
+    },
+  );
+
+  app.get<{
+    Querystring: Static<typeof GoldenJourneyOperatorEvidenceQuery>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/golden-journey-evidence',
+    {
+      schema: {
+        operationId: 'goldenJourneyOperatorEvidence',
+        security: [{ bearerAuth: [] }],
+        headers: OperatorHeaders,
+        querystring: GoldenJourneyOperatorEvidenceQuery,
+        response: {
+          200: GoldenJourneyOperatorEvidenceResponse,
+          401: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = options.operatorAuthenticator.authenticate(
+        request.headers.authorization,
+      );
+      if (!actor) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/operator-authentication',
+          title: 'Operator authentication required',
+          status: 401,
+          code: 'OPERATOR_AUTHENTICATION_REQUIRED',
+        });
+      }
+      if (!options.queryGoldenJourneyEvidence) {
+        return reply.type('application/problem+json').code(503).send({
+          type: 'https://preventive-care-literacy.example/problems/operator-evidence',
+          title: 'Operator evidence is unavailable',
+          status: 503,
+          code: 'OPERATOR_EVIDENCE_UNAVAILABLE',
+        });
+      }
+      const evidence = await options.queryGoldenJourneyEvidence(request.query);
+      return evidence;
     },
   );
 
@@ -1941,6 +2127,7 @@ export async function createServer(options: {
   wrappingKeys?: EnvelopeKeyMaterial;
   applicationKeys?: ApplicationKeyManagement;
   releasePackages?: ReleasePackageStorage;
+  buildIdentity?: BuildAttestation;
 }): Promise<FastifyInstance> {
   const connectionUrl = new URL(options.databaseUrl);
   if (options.databaseCaCertificate) {
@@ -2032,6 +2219,15 @@ export async function createServer(options: {
     schoolConfiguration,
     intake,
     learningProgress,
+    verifyBuildAttestation: async () => {
+      try {
+        return await verifyBuildAttestationForHealth(process.cwd());
+      } catch {
+        return undefined;
+      }
+    },
+    queryGoldenJourneyEvidence: (input) =>
+      queryGoldenJourneyOperatorEvidence(pool, input),
     onClose: () => pool.end(),
   });
 }

@@ -1471,9 +1471,15 @@
                   "properties": {
                     "operationId": { "format": "uuid", "type": "string" },
                     "outcome": { "enum": ["provisioned"], "type": "string" },
-                    "staffIdentityId": { "format": "uuid", "type": "string" }
+                    "staffIdentityId": { "format": "uuid", "type": "string" },
+                    "supabaseUserId": { "format": "uuid", "type": "string" }
                   },
-                  "required": ["operationId", "staffIdentityId", "outcome"],
+                  "required": [
+                    "operationId",
+                    "staffIdentityId",
+                    "supabaseUserId",
+                    "outcome"
+                  ],
                   "type": "object"
                 }
               }
@@ -2959,6 +2965,272 @@
           }
         },
         "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/operator/golden-journey-evidence": {
+      "get": {
+        "operationId": "goldenJourneyOperatorEvidence",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspaceId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "invitationId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "publishOperationId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "invitationOperationId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "intakeOperationId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "learningOperationId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "isolationWorkspaceId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "studentId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "startedAt",
+            "required": true,
+            "schema": { "format": "date-time", "type": "string" }
+          },
+          {
+            "in": "header",
+            "name": "x-prevcare-csrf",
+            "required": true,
+            "schema": { "enum": ["1"], "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "clinicalDenialAuditCount": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "clinicalDenialOccurredAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "clinicalRevealAuditCount": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "clinicalRevealOccurredAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "intakeEntityId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "intakeOccurredAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "intakeOutboxCount": { "minimum": 0, "type": "integer" },
+                    "intakeReceiptCount": { "minimum": 0, "type": "integer" },
+                    "invitationAuditCount": { "minimum": 0, "type": "integer" },
+                    "invitationOccurredAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "invitationOutboxCount": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "invitationReceiptCount": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "invitationStatus": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "learningEntityId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "learningOccurredAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "learningOutboxCount": { "minimum": 0, "type": "integer" },
+                    "learningReceiptCount": { "minimum": 0, "type": "integer" },
+                    "publishAuditCount": { "minimum": 0, "type": "integer" },
+                    "publishOccurredAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "publishOutboxCount": { "minimum": 0, "type": "integer" },
+                    "publishPackageDigest": {
+                      "anyOf": [
+                        { "pattern": "^[0-9a-f]{64}$", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "publishReceiptCount": { "minimum": 0, "type": "integer" },
+                    "publishReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "publishReleaseNumber": {
+                      "anyOf": [
+                        { "minimum": 1, "type": "integer" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "unattributedDenialCount": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "unattributedDenialOccurredAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "workerArtifactDigest": {
+                      "anyOf": [
+                        { "pattern": "^[0-9a-f]{64}$", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "workerEnvelopeAdapter": {
+                      "anyOf": [
+                        {
+                          "enum": ["application-layer-envelope/v1"],
+                          "type": "string"
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "workerRecordedAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    }
+                  },
+                  "required": [
+                    "invitationStatus",
+                    "workerArtifactDigest",
+                    "workerEnvelopeAdapter",
+                    "workerRecordedAt",
+                    "publishReleaseId",
+                    "publishPackageDigest",
+                    "publishReleaseNumber",
+                    "publishAuditCount",
+                    "publishOutboxCount",
+                    "publishReceiptCount",
+                    "publishOccurredAt",
+                    "invitationAuditCount",
+                    "invitationOutboxCount",
+                    "invitationReceiptCount",
+                    "invitationOccurredAt",
+                    "intakeReceiptCount",
+                    "intakeOutboxCount",
+                    "intakeEntityId",
+                    "intakeOccurredAt",
+                    "learningReceiptCount",
+                    "learningOutboxCount",
+                    "learningEntityId",
+                    "learningOccurredAt",
+                    "clinicalRevealAuditCount",
+                    "clinicalRevealOccurredAt",
+                    "clinicalDenialAuditCount",
+                    "clinicalDenialOccurredAt",
+                    "unattributedDenialCount",
+                    "unattributedDenialOccurredAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
       }
     },
     "/api/v1/staff/session": {
@@ -4502,6 +4774,76 @@
           }
         },
         "security": [{ "studentSession": [] }]
+      }
+    },
+    "/health/build": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "artifactDigest": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "browserDigest": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "bunVersion": { "minLength": 1, "type": "string" },
+                    "commit": { "pattern": "^[0-9a-f]{40}$", "type": "string" },
+                    "dependencyDigest": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "envelopeAdapter": {
+                      "enum": ["application-layer-envelope/v1"],
+                      "type": "string"
+                    },
+                    "lockDigest": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "sourceDigest": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "tree": { "pattern": "^[0-9a-f]{40}$", "type": "string" }
+                  },
+                  "required": [
+                    "commit",
+                    "tree",
+                    "sourceDigest",
+                    "browserDigest",
+                    "lockDigest",
+                    "dependencyDigest",
+                    "bunVersion",
+                    "artifactDigest",
+                    "envelopeAdapter"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": { "enum": ["unavailable"], "type": "string" }
+                  },
+                  "required": ["status"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        }
       }
     },
     "/health/live": {

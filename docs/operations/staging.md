@@ -39,6 +39,28 @@ The **Deploy staging** workflow applies owner migrations over certificate-verifi
 
 The provider checks expose only fixed capability names, status, and duration. They parse only the provider fields needed to prove each capability, discard bodies and errors after the check, and must not emit addresses, codes, session handles, answers, request bodies, or generated content. The Invitation queue contains only an outbox ID; its outbox payload contains only the Invitation ID. Recipient and code delivery material is authenticated-encrypted under `INVITATION_DELIVERY_KEY_ID` and decrypted only in worker memory. Resend receives a stable generation-bound idempotency key. The Auth check uses a dedicated synthetic Supabase Auth identity with a pre-enrolled TOTP factor to prove password, challenge, verification, and `aal2` behavior. It is not linked to an application-owned Staff Identity, cannot obtain a Staff Session, and is maintained only by the Technical Operator.
 
+## Golden journey evidence
+
+The **Golden journey** workflow is the repeatable staging proof for issue #31. It is manually dispatched against the GitHub `staging` environment and must run only after **Deploy staging** has published the exact `main` commit being verified. The public process exposes `/health/build` by reading a build-generated attestation file that hashes copied source, browser artifacts, `bun.lock`, the installed production dependency graph, and the Bun runtime version. Production-graph hashing excludes extra/dev packages so a CI full install can match a production image; optional platform-specific files inside a production package are hashed and can diverge across OS/libc; extra packages outside that graph are not part of the digest. The API verifies the installed production tree once at process startup and caches that result, then re-hashes source, browser, lock, and Bun version on `/health/build` without re-walking `node_modules`. The GitHub workflow commit/tree is a comparison input, not the attestation source of truth. The private Invitation worker records a delivery attestation tied to the exact Invitation after each successful delivery; the golden harness compares that digest, Invitation ID, delivered status, and recordedAt to the public `/health/build` digest and the run window. A worker startup heartbeat is not treated as journey proof.
+
+Each run creates a unique School Workspace, Staff Identity, Class, and Invitation through the public HTTP contracts. Invitation Codes are read from Resend in process memory and never written to evidence, logs, or artifacts. Intake answers, credentials, addresses, session handles, request/response bodies, and rendered clinical content are excluded by schema. Evidence is uploaded as a workflow artifact and is not committed.
+
+Operator prerequisites, as configuration _names_ only:
+
+- GitHub `staging` environment protection on `main`, plus the existing Verify-staging provider variables and secrets.
+- `OPERATOR_PROVISIONING_TOKEN` and `INVITATION_CONTROLLED_MAILBOX` as `staging` secrets so the journey can provision a unique workspace and redeem the controlled mailbox.
+- Envelope and deploy credentials already required by **Deploy staging**: `APPLICATION_WRAPPING_KEY`, `APPLICATION_IDEMPOTENCY_KEY`, `APPLICATION_WRAPPING_KEY_ID`, and the temporary human-controlled `RAILWAY_CONFIG_B64` / `DEPLOY_SETUP_GH_TOKEN`.
+- Chromium is installed by the workflow for keyboard, focus, announcement, contrast, zoom/reflow, and multilingual layout checks. Health-content correctness is out of scope.
+
+Cleanup is an operator boundary: each evidence file records `cleanupBoundary.marker` as `golden-journey/<runId>` with `operator-cleanup-required` for retained synthetic application fixtures. The harness deletes each ephemeral Auth identity independently by known provider user ID, or by exact-email resolve when the provision response did not return an ID. If any ephemeral Auth identity cannot be cleaned, the run fails with `CLEANUP_FAILED` and does not emit unqualified completed evidence. Full pilot disposition remains issues #49, #50, and #55. Failed runs still upload a redacted evidence file with a fixed `errorCode` and `lastCompletedStep`; they never include raw exception text. After the checkout attestation is computed, later-step failure evidence includes that digest; pre-attestation failures omit it.
+
+Dispatch after a matching deploy:
+
+```bash
+gh workflow run "Deploy staging" --ref main
+gh workflow run "Golden journey" --ref main
+```
+
 ## Staff identity provisioning
 
 Staff Identities are provisioned by the Technical Operator after out-of-band school authorization; there is no self-service staff administration. Run `bun scripts/provision-staff.ts` once per staff member with the restricted runtime `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and the `STAFF_*`, `SCHOOL_APPROVER`, and `PROVISIONING_REASON` inputs documented in the script header. For the alpha, provision the School Nurse with `STAFF_PERMISSIONS=administrative,clinical` and the Administrator with `STAFF_PERMISSIONS=administrative`. The script prints a one-time initial password; deliver it out of band. The staff member signs in at `/staff/sign-in`, enrolls TOTP from the shown authenticator URI, and thereafter reaches `aal2` before the server issues its opaque, non-persistent `__Host-prevcare-staff-session` cookie. Every protected request rechecks the Staff Identity, School Workspace, session, assurance timestamp, and permission grants in PostgreSQL, which independently enforces Administrative and Clinical Permission through row-level security.

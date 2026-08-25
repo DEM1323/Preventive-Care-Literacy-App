@@ -196,8 +196,9 @@ export function StudentHomePage() {
               </p>
               {learningUnlocked ? null : (
                 <Link
+                  id="open-intake"
                   to="/student/intake"
-                  className="mt-6 inline-block bg-[#e6af2e] px-5 py-3 font-black text-[#17332d]"
+                  className="mt-6 inline-block bg-[#e6af2e] px-5 py-3 font-black text-[#17332d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
                   Open intake
                 </Link>
@@ -215,8 +216,9 @@ export function StudentHomePage() {
                   Completed appears only after the school confirms it
                 </p>
                 <Link
+                  id="open-learning"
                   to="/student/learning"
-                  className="mt-6 inline-block bg-[#e6af2e] px-5 py-3 font-black text-[#17332d]"
+                  className="mt-6 inline-block bg-[#e6af2e] px-5 py-3 font-black text-[#17332d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
                   Open learning
                 </Link>

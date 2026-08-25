@@ -292,20 +292,22 @@ export function SchoolConfigurationPage() {
             </div>
             <div className="flex gap-2">
               <select
+                id="preview-locale"
                 value={locale}
                 onChange={(event) => setLocale(event.target.value as Locale)}
-                className="rounded-lg border bg-white px-3 py-2"
+                className="rounded-lg border bg-white px-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 {locales.map((item) => (
                   <option key={item}>{item}</option>
                 ))}
               </select>
               <button
+                id="preview-width"
                 type="button"
                 onClick={() =>
                   setWidth(width === 'desktop' ? 'mobile' : 'desktop')
                 }
-                className="rounded-lg border bg-white px-3 py-2 font-bold"
+                className="rounded-lg border bg-white px-3 py-2 font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 {width}
               </button>

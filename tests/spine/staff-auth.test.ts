@@ -169,11 +169,14 @@ describe.serial('staff provisioning', () => {
       initialPassword: nursePassword,
     });
     expect(nurse.response.status).toBe(201);
-    expect(nurse.data).toEqual({
+    expect(nurse.data).toMatchObject({
       operationId: nurseOperationId,
       staffIdentityId: nurseIdentityId,
       outcome: 'provisioned',
     });
+    expect(nurse.data?.supabaseUserId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
 
     const replayed = await provisionStaffIdentity(client, {
       operationId: nurseOperationId,
@@ -318,10 +321,15 @@ describe.serial('staff provisioning', () => {
       }),
     ]);
     expect(results.map((result) => result.response.status)).toEqual([201, 201]);
-    expect(results.map((result) => result.data)).toEqual([
-      { operationId, staffIdentityId, outcome: 'provisioned' },
-      { operationId, staffIdentityId, outcome: 'provisioned' },
-    ]);
+    expect(results[0]?.data).toEqual(results[1]?.data);
+    expect(results[0]?.data).toMatchObject({
+      operationId,
+      staffIdentityId,
+      outcome: 'provisioned',
+    });
+    expect(results[0]?.data?.supabaseUserId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
     expect(fakeAuth.hasCredentials(email)).toBe(true);
   });
 });

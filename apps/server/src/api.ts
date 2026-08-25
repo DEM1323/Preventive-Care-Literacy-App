@@ -1,4 +1,5 @@
 import { createSupabaseStaffAuth } from '../../../packages/supabase-auth/src/index.ts';
+import { verifyBuildAttestationAtStartup } from '../../../packages/build-attestation/src/index.ts';
 import { createServer } from './app.ts';
 import { createSupabaseReleasePackageStorage } from '../../../packages/release-package-storage/src/index.ts';
 
@@ -32,6 +33,7 @@ const applicationIdempotencyKey = process.env.APPLICATION_IDEMPOTENCY_KEY;
 if (!applicationIdempotencyKey)
   throw new Error('APPLICATION_IDEMPOTENCY_KEY is required');
 
+await verifyBuildAttestationAtStartup(process.cwd());
 const server = await createServer({
   databaseUrl,
   databaseCaCertificate: process.env.DATABASE_CA_CERT,

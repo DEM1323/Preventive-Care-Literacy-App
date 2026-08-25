@@ -165,8 +165,9 @@ export function StudentLearningPage() {
           ) : null}
 
           <Link
+            id="back-to-student"
             to="/student"
-            className="mt-8 inline-block text-sm font-black uppercase tracking-wide underline"
+            className="mt-8 inline-block text-sm font-black uppercase tracking-wide underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Back to learning space
           </Link>

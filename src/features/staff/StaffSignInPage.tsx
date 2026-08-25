@@ -83,7 +83,7 @@ export function StaffSignInPage() {
                 autoComplete="username"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="mt-2 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+                className="mt-2 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
               />
             </label>
             <label className="block text-sm font-bold text-slate-300">
@@ -94,13 +94,13 @@ export function StaffSignInPage() {
                 autoComplete="current-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="mt-2 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+                className="mt-2 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
               />
             </label>
             <button
               type="submit"
               disabled={busy}
-              className="w-full rounded bg-sky-400 px-4 py-2 font-black text-slate-950 disabled:opacity-50"
+              className="w-full rounded bg-sky-400 px-4 py-2 font-black text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:opacity-50"
             >
               Continue
             </button>
@@ -132,13 +132,13 @@ export function StaffSignInPage() {
                 autoComplete="one-time-code"
                 value={code}
                 onChange={(event) => setCode(event.target.value)}
-                className="mt-2 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100"
+                className="mt-2 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
               />
             </label>
             <button
               type="submit"
               disabled={busy}
-              className="w-full rounded bg-sky-400 px-4 py-2 font-black text-slate-950 disabled:opacity-50"
+              className="w-full rounded bg-sky-400 px-4 py-2 font-black text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:opacity-50"
             >
               Verify and sign in
             </button>
