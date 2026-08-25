@@ -2,12 +2,13 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
-import { createBuildAttestation } from '../packages/build-attestation/src/index.ts';
+import { parseBuildAttestation } from '../packages/build-attestation/src/index.ts';
 import {
   createFailedGoldenJourneyEvidence,
   createResendInvitationMailbox,
   GoldenJourneyRunError,
   artifactDigestForFailureEvidence,
+  expectedSourceIdentityFromProductionAttestation,
   normalizeGoldenJourneyEnvironment,
   reportGoldenJourneyPreflight,
   runGoldenJourney,
@@ -76,10 +77,16 @@ try {
   reportGoldenJourneyPreflight(environment, { failClosed: true });
   const commit = environment.EXPECTED_COMMIT as string;
   const tree = environment.EXPECTED_GIT_TREE as string;
-  const expected = await createBuildAttestation(process.cwd(), {
-    commit,
-    tree,
-  });
+  const attestationPath = process.env.PRODUCTION_ATTESTATION_PATH;
+  if (!attestationPath) {
+    throw new Error('PRODUCTION_ATTESTATION_PATH is required');
+  }
+  const expected = expectedSourceIdentityFromProductionAttestation(
+    parseBuildAttestation(
+      JSON.parse(await readFile(attestationPath, 'utf8')) as unknown,
+    ),
+    { commit, tree },
+  );
   computedArtifactDigest = expected.artifactDigest;
   const fixtureCandidate = JSON.parse(
     await readFile(

@@ -9,6 +9,14 @@ const goldenWorkflow = readFileSync(
   new URL('../../.github/workflows/golden-journey.yml', import.meta.url),
   'utf8',
 );
+const bakeScript = readFileSync(
+  new URL('../../scripts/bake-production-attestation.ts', import.meta.url),
+  'utf8',
+);
+const goldenScript = readFileSync(
+  new URL('../../scripts/run-golden-journey.ts', import.meta.url),
+  'utf8',
+);
 const stagingDoc = readFileSync(
   new URL('../../docs/operations/staging.md', import.meta.url),
   'utf8',
@@ -98,5 +106,63 @@ test('golden journey authenticates with the same GitHub staging operator token n
   );
   expect(stagingDoc).not.toContain(
     'synchronizes `OPERATOR_PROVISIONING_TOKEN` from that GitHub secret to the private worker',
+  );
+});
+
+test('deploy and golden journey bake the pinned Docker runtime attestation before Railway upload or digest comparison', () => {
+  const deployBake = namedStep(deployWorkflow, 'Bake production attestation');
+  const goldenBake = namedStep(goldenWorkflow, 'Bake production attestation');
+  const bakeIndex = deployWorkflow.indexOf('Bake production attestation');
+  const railwayIndex = deployWorkflow.indexOf(
+    'Restore temporary Railway session',
+  );
+  const deployIndex = deployWorkflow.indexOf('Deploy merged source to Railway');
+  const goldenBakeIndex = goldenWorkflow.indexOf('Bake production attestation');
+  const goldenRunIndex = goldenWorkflow.indexOf(
+    'Run golden journey against deployed staging',
+  );
+
+  expect(deployBake).toContain('bun scripts/bake-production-attestation.ts');
+  expect(deployBake).toContain(
+    'SOURCE_COMMIT: ${{ steps.source.outputs.commit }}',
+  );
+  expect(deployBake).toContain('SOURCE_TREE: ${{ steps.source.outputs.tree }}');
+  expect(goldenBake).toContain('bun scripts/bake-production-attestation.ts');
+  expect(goldenWorkflow).toContain(
+    'PRODUCTION_ATTESTATION_PATH: artifacts/production-attestation.json',
+  );
+  expect(goldenWorkflow).not.toContain(
+    'Build browser artifacts for attestation comparison',
+  );
+  expect(bakeIndex).toBeGreaterThan(-1);
+  expect(bakeIndex).toBeLessThan(railwayIndex);
+  expect(bakeIndex).toBeLessThan(deployIndex);
+  expect(goldenBakeIndex).toBeGreaterThan(-1);
+  expect(goldenBakeIndex).toBeLessThan(goldenRunIndex);
+  expect(deployWorkflow).toContain('bun-version: 1.3.14');
+  expect(goldenWorkflow).toContain('bun-version: 1.3.14');
+});
+
+test('production attestation bake uses explicit Docker build args and prints only the artifact digest', () => {
+  expect(bakeScript).toContain("'--file'");
+  expect(bakeScript).toContain("'Dockerfile'");
+  expect(bakeScript).toContain("'--target'");
+  expect(bakeScript).toContain("'runtime'");
+  expect(bakeScript).toContain("'--build-arg'");
+  expect(bakeScript).toContain('SOURCE_COMMIT=${commit}');
+  expect(bakeScript).toContain('SOURCE_TREE=${tree}');
+  expect(bakeScript).toContain('/app/build-attestation.json');
+  expect(bakeScript).toContain(
+    'process.stdout.write(`${attestation.artifactDigest}\\n`)',
+  );
+  expect(bakeScript).not.toMatch(/JSON\.stringify\(attestation/);
+  expect(goldenScript).toContain('PRODUCTION_ATTESTATION_PATH');
+  expect(goldenScript).toContain('parseBuildAttestation');
+  expect(goldenScript).not.toContain('createBuildAttestation(process.cwd()');
+  expect(deployWorkflow).not.toMatch(
+    /cat[^\n]*build-attestation|jq[^\n]*build-attestation/,
+  );
+  expect(goldenWorkflow).not.toMatch(
+    /cat[^\n]*build-attestation|jq[^\n]*build-attestation/,
   );
 });

@@ -23,6 +23,7 @@ export {
   GoldenJourneyDigestMismatchError,
   assertDeployedSourceIdentity,
   assertWorkerArtifactDigest,
+  expectedSourceIdentityFromProductionAttestation,
   isTimestampWithinRun,
   type DeployedSourceIdentity,
   type ExpectedSourceIdentity,

@@ -1,6 +1,13 @@
 import { createHash } from 'node:crypto';
-import { readdir, readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import {
+  lstat,
+  readdir,
+  readFile,
+  readlink,
+  realpath,
+  writeFile,
+} from 'node:fs/promises';
+import { isAbsolute, join, relative, sep } from 'node:path';
 import { APPLICATION_LAYER_ENVELOPE_V1 } from '../../application-keys/src/index.ts';
 
 export const BUILD_ATTESTATION_FILENAME = 'build-attestation.json';
@@ -13,7 +20,7 @@ const skippedDirectoryNames = new Set([
   '.vite',
 ]);
 
-const skippedDependencyDirectoryNames = new Set(['.bin', '.cache']);
+const skippedDependencyDirectoryNames = new Set(['.bin', '.cache', '.tmp']);
 
 const sourceRoots = ['apps', 'modules', 'packages', 'scripts'] as const;
 
@@ -141,34 +148,6 @@ type BunLockfile = {
   packages?: Record<string, unknown>;
 };
 
-function productionPackageNames(lock: BunLockfile): string[] {
-  const roots = Object.keys(lock.workspaces?.['']?.dependencies ?? {});
-  const packages = lock.packages ?? {};
-  const needed = new Set<string>();
-  const queue = [...roots];
-  while (queue.length > 0) {
-    const name = queue.pop();
-    if (!name || needed.has(name)) continue;
-    needed.add(name);
-    const entry = packages[name];
-    const meta =
-      Array.isArray(entry) && entry.length > 2 && isRecord(entry[2])
-        ? entry[2]
-        : undefined;
-    const dependencies =
-      meta && isRecord(meta.dependencies) ? meta.dependencies : undefined;
-    if (dependencies) queue.push(...Object.keys(dependencies));
-  }
-  return [...needed].sort();
-}
-
-/**
- * Hashes installed files for bun.lock production-graph packages only.
- * Limits: extra/dev packages are excluded so a CI full install can match a
- * production image; optional platform-specific files inside a production
- * package are hashed and can diverge across OS/libc; extra packages that are
- * not in the production graph are not detected by this digest.
- */
 function parseBunLockfile(text: string): unknown {
   const stripped = text.replace(/,\s*([}\]])/g, '$1');
   try {
@@ -178,6 +157,238 @@ function parseBunLockfile(text: string): unknown {
   }
 }
 
+function npmIdentityFromSpec(spec: string): string | undefined {
+  if (spec.startsWith('@')) {
+    const slash = spec.indexOf('/');
+    const at = spec.lastIndexOf('@');
+    if (slash === -1 || at <= slash || at === spec.length - 1) {
+      return undefined;
+    }
+    return spec;
+  }
+  const at = spec.lastIndexOf('@');
+  if (at <= 0 || at === spec.length - 1) return undefined;
+  return spec;
+}
+
+function lockKeyForDependency(
+  parentLockKey: string,
+  depName: string,
+  packages: Record<string, unknown>,
+): string {
+  const nested = parentLockKey ? `${parentLockKey}/${depName}` : depName;
+  return Object.prototype.hasOwnProperty.call(packages, nested)
+    ? nested
+    : depName;
+}
+
+function productionPackageIdentities(lock: BunLockfile): string[] {
+  const packages = lock.packages ?? {};
+  const seenKeys = new Set<string>();
+  const identities = new Set<string>();
+  const queue = Object.keys(lock.workspaces?.['']?.dependencies ?? {}).map(
+    (name) => lockKeyForDependency('', name, packages),
+  );
+  while (queue.length > 0) {
+    const lockKey = queue.pop();
+    if (!lockKey || seenKeys.has(lockKey)) continue;
+    seenKeys.add(lockKey);
+    const entry = packages[lockKey];
+    if (!Array.isArray(entry) || typeof entry[0] !== 'string') {
+      throw new BuildAttestationError('production dependency graph is missing');
+    }
+    const identity = npmIdentityFromSpec(entry[0]);
+    if (!identity) {
+      throw new BuildAttestationError('production dependency graph is missing');
+    }
+    identities.add(identity);
+    const meta = entry.length > 2 && isRecord(entry[2]) ? entry[2] : undefined;
+    const dependencies =
+      meta && isRecord(meta.dependencies) ? meta.dependencies : undefined;
+    if (!dependencies) continue;
+    for (const depName of Object.keys(dependencies)) {
+      queue.push(lockKeyForDependency(lockKey, depName, packages));
+    }
+  }
+  return [...identities].sort();
+}
+
+type InstalledLayoutEntry =
+  | { path: string; kind: 'file'; digest: string }
+  | { path: string; kind: 'symlink'; target: string };
+
+function digestInstalledLayout(entries: InstalledLayoutEntry[]): string {
+  const hash = createHash('sha256');
+  for (const entry of [...entries].sort((left, right) =>
+    left.path.localeCompare(right.path),
+  )) {
+    if (entry.kind === 'file') {
+      hash.update(`${entry.path}\0file\0${entry.digest}\n`);
+      continue;
+    }
+    hash.update(`${entry.path}\0symlink\0${entry.target}\n`);
+  }
+  return hash.digest('hex');
+}
+
+function assertInsideNodeModules(path: string, nodeModulesReal: string): void {
+  const rel = relative(nodeModulesReal, path);
+  if (rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
+    throw new BuildAttestationError('production dependency tree is missing');
+  }
+}
+
+async function readPackageIdentity(
+  packageDirectory: string,
+): Promise<string | undefined> {
+  let raw: string;
+  try {
+    raw = await readFile(join(packageDirectory, 'package.json'), 'utf8');
+  } catch {
+    return undefined;
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      isRecord(parsed) &&
+      typeof parsed.name === 'string' &&
+      parsed.name &&
+      typeof parsed.version === 'string' &&
+      parsed.version
+    ) {
+      return `${parsed.name}@${parsed.version}`;
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
+async function hashPackageContents(packageDirectory: string): Promise<string> {
+  const entries: InstalledLayoutEntry[] = [];
+
+  async function visit(
+    directory: string,
+    relativeDirectory: string,
+  ): Promise<void> {
+    const dirEntries = await readdir(directory, { withFileTypes: true });
+    for (const entry of [...dirEntries].sort((left, right) =>
+      left.name.localeCompare(right.name),
+    )) {
+      if (
+        entry.name === 'node_modules' ||
+        skippedDependencyDirectoryNames.has(entry.name)
+      ) {
+        continue;
+      }
+      const path = relativeDirectory
+        ? `${relativeDirectory}/${entry.name}`
+        : entry.name;
+      const fullPath = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        await visit(fullPath, path);
+      } else if (entry.isSymbolicLink()) {
+        entries.push({
+          path,
+          kind: 'symlink',
+          target: await readlink(fullPath),
+        });
+      } else if (entry.isFile()) {
+        const content = await readFile(fullPath);
+        entries.push({
+          path,
+          kind: 'file',
+          digest: createHash('sha256').update(content).digest('hex'),
+        });
+      }
+    }
+  }
+
+  await visit(packageDirectory, '');
+  if (entries.length === 0) {
+    throw new BuildAttestationError('production dependency tree is missing');
+  }
+  return digestInstalledLayout(entries);
+}
+
+async function installedProductionPackageDigests(
+  nodeModulesReal: string,
+  requiredIdentities: ReadonlySet<string>,
+): Promise<Map<string, Set<string>>> {
+  const found = new Map<string, Set<string>>();
+  const visitedContainers = new Set<string>();
+  const visitedPackages = new Set<string>();
+
+  async function visitContainer(directory: string): Promise<void> {
+    let realDirectory: string;
+    try {
+      realDirectory = await realpath(directory);
+    } catch {
+      throw new BuildAttestationError('production dependency tree is missing');
+    }
+    assertInsideNodeModules(realDirectory, nodeModulesReal);
+    if (visitedContainers.has(realDirectory)) return;
+    visitedContainers.add(realDirectory);
+
+    let entries;
+    try {
+      entries = await readdir(realDirectory, { withFileTypes: true });
+    } catch {
+      throw new BuildAttestationError('production dependency tree is missing');
+    }
+    for (const entry of entries) {
+      if (skippedDependencyDirectoryNames.has(entry.name)) continue;
+      const candidate = join(realDirectory, entry.name);
+      let candidateReal: string;
+      try {
+        candidateReal = await realpath(candidate);
+      } catch {
+        throw new BuildAttestationError(
+          'production dependency tree is missing',
+        );
+      }
+      assertInsideNodeModules(candidateReal, nodeModulesReal);
+
+      const identity = await readPackageIdentity(candidateReal);
+      if (identity) {
+        if (!visitedPackages.has(candidateReal)) {
+          visitedPackages.add(candidateReal);
+          if (requiredIdentities.has(identity)) {
+            const digest = await hashPackageContents(candidateReal);
+            const digests = found.get(identity) ?? new Set<string>();
+            digests.add(digest);
+            found.set(identity, digests);
+          }
+        }
+        try {
+          await visitContainer(join(candidateReal, 'node_modules'));
+        } catch (error) {
+          if (!(error instanceof BuildAttestationError)) throw error;
+        }
+        continue;
+      }
+
+      if (entry.name === '.bun' || entry.name.startsWith('@')) {
+        await visitContainer(candidateReal);
+        continue;
+      }
+      try {
+        await visitContainer(join(candidateReal, 'node_modules'));
+      } catch (error) {
+        if (!(error instanceof BuildAttestationError)) throw error;
+      }
+    }
+  }
+
+  await visitContainer(nodeModulesReal);
+  return found;
+}
+
+/**
+ * Hashes each lockfile-reachable production package by identity and package
+ * contents, independent of whether Bun hoists, nests, or isolates it. Extra
+ * development packages do not affect the digest.
+ */
 export async function hashProductionDependencies(
   root: string,
 ): Promise<string> {
@@ -191,23 +402,34 @@ export async function hashProductionDependencies(
   if (!isRecord(parsed)) {
     throw new BuildAttestationError('lockfile is malformed');
   }
-  const names = productionPackageNames(parsed as BunLockfile);
-  if (names.length === 0) {
+  const identities = productionPackageIdentities(parsed as BunLockfile);
+  if (identities.length === 0) {
     throw new BuildAttestationError('production dependency graph is missing');
   }
-  const files: string[] = [];
-  for (const name of names) {
-    const packageFiles = await collectFiles(
-      root,
-      `node_modules/${name}`,
-      skippedDependencyDirectoryNames,
-    );
-    if (packageFiles.length === 0) {
+
+  const nodeModules = join(root, 'node_modules');
+  let nodeModulesReal: string;
+  try {
+    await lstat(nodeModules);
+    nodeModulesReal = await realpath(nodeModules);
+  } catch {
+    throw new BuildAttestationError('production dependency tree is missing');
+  }
+
+  const required = new Set(identities);
+  const installed = await installedProductionPackageDigests(
+    nodeModulesReal,
+    required,
+  );
+  const hash = createHash('sha256');
+  for (const identity of identities) {
+    const digests = installed.get(identity);
+    if (!digests || digests.size !== 1) {
       throw new BuildAttestationError('production dependency tree is missing');
     }
-    files.push(...packageFiles);
+    hash.update(`${identity}\0${[...digests][0]}\n`);
   }
-  return digestFiles(root, files);
+  return hash.digest('hex');
 }
 
 export function artifactDigestFromParts(input: {

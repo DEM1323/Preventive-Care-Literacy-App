@@ -36,6 +36,13 @@ jobs:
           echo "commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
           echo "tree=$TREE" >> "$GITHUB_OUTPUT"
 
+      - name: Bake production attestation
+        env:
+          SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
+          SOURCE_TREE: ${{ steps.source.outputs.tree }}
+          PRODUCTION_ATTESTATION_PATH: artifacts/production-attestation.json
+        run: bun scripts/bake-production-attestation.ts
+
       - name: Apply forward migrations and runtime grants
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_MIGRATION_DATABASE_URL }}
