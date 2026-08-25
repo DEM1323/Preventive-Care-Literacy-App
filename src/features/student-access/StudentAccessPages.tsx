@@ -203,6 +203,25 @@ export function StudentHomePage() {
                 </Link>
               )}
             </article>
+            {learningUnlocked ? (
+              <article className="border border-[#fffaf0] bg-[#fffaf0] p-6 text-[#17332d] shadow-[6px_6px_0_#d86045]">
+                <p className="font-mono text-xs font-bold text-[#b43c2c]">
+                  LEARNING
+                </p>
+                <h2 className="mt-3 text-2xl font-black">
+                  Review one Learning Module item
+                </h2>
+                <p className="mt-5 text-sm font-bold text-[#49645c]">
+                  Completed appears only after the school confirms it
+                </p>
+                <Link
+                  to="/student/learning"
+                  className="mt-6 inline-block bg-[#e6af2e] px-5 py-3 font-black text-[#17332d]"
+                >
+                  Open learning
+                </Link>
+              </article>
+            ) : null}
             {access.activeClassMemberships.map((membership, index) => (
               <article
                 key={membership.classId}

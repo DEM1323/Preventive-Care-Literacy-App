@@ -95,6 +95,14 @@ async function renderContracts() {
           throw new Error('Contract generation does not execute commands');
         },
       },
+      learningProgress: {
+        read: async () => {
+          throw new Error('Contract generation does not execute queries');
+        },
+        acknowledge: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+      },
     },
   );
   const document = sortDeep(app.swagger());

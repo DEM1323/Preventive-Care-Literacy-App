@@ -26,6 +26,8 @@ export type TelemetryEvent =
         | 'student-intake'
         | 'student-intake-draft'
         | 'student-intake-submission'
+        | 'student-learning'
+        | 'student-learning-acknowledgement'
         | 'unknown';
       statusCode: number;
       durationMs: number;
@@ -73,6 +75,8 @@ const routes = new Set([
   'student-intake',
   'student-intake-draft',
   'student-intake-submission',
+  'student-learning',
+  'student-learning-acknowledgement',
   'unknown',
 ]);
 const providers = new Set<string>(providerNames);

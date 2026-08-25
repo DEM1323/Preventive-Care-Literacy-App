@@ -38,6 +38,14 @@ import {
   IntakeUnavailableError,
 } from '../../../modules/intake/index.ts';
 import { createIntake } from '../../../modules/intake/index.ts';
+import type { LearningProgress } from '../../../modules/learning-progress/index.ts';
+import {
+  LearningLockedError,
+  LearningOperationReusedError,
+  LearningRevisionConflictError,
+  LearningUnavailableError,
+} from '../../../modules/learning-progress/index.ts';
+import { createLearningProgress } from '../../../modules/learning-progress/index.ts';
 import type { SchoolConfiguration } from '../../../modules/school-configuration/index.ts';
 import {
   ActiveReleaseConflictError,
@@ -76,6 +84,7 @@ import {
 import { createMemoryReleasePackageStorage } from '../../../packages/release-package-storage/src/index.ts';
 import type { ReleasePackageStorage } from '../../../modules/school-configuration/index.ts';
 import { createPostgresIntakeStore } from '../../../packages/postgres/src/intake.ts';
+import { createPostgresLearningProgressStore } from '../../../packages/postgres/src/learning-progress.ts';
 
 const staffSessionCookie = '__Host-prevcare-staff-session' as const;
 const studentSessionCookie = '__Host-prevcare-student-session' as const;
@@ -418,6 +427,60 @@ const SubmitIntakeRecordVersionResponse = Type.Object({
   learningUnlocked: Type.Literal(true),
   replayed: Type.Boolean(),
 });
+const StudentLearningQuery = Type.Object({
+  locale: Type.Optional(IntakeLocaleSchema),
+});
+const LearningItemKindSchema = Type.Union([
+  Type.Literal('knowledge'),
+  Type.Literal('skill'),
+  Type.Literal('application'),
+]);
+const StudentLearningSnapshotResponse = Type.Object({
+  learningUnlocked: Type.Boolean(),
+  schoolConfigurationReleaseId: Type.Union([
+    Type.String({ format: 'uuid' }),
+    Type.Null(),
+  ]),
+  locale: IntakeLocaleSchema,
+  item: Type.Union([
+    Type.Null(),
+    Type.Object({
+      itemId: Type.String({ format: 'uuid' }),
+      revisionNumber: Type.Integer({ minimum: 1 }),
+      kind: LearningItemKindSchema,
+      text: Type.String(),
+      moduleTitle: Type.String(),
+    }),
+  ]),
+  completion: Type.Union([
+    Type.Null(),
+    Type.Object({
+      itemCompletionId: Type.String({ format: 'uuid' }),
+      itemId: Type.String({ format: 'uuid' }),
+      revisionNumber: Type.Integer({ minimum: 1 }),
+      schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+      completedAt: Type.String({ format: 'date-time' }),
+    }),
+  ]),
+});
+const AcknowledgeLearningItemBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    expectedSchoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+    itemId: Type.String({ format: 'uuid' }),
+    revisionNumber: Type.Integer({ minimum: 1 }),
+  },
+  { additionalProperties: false },
+);
+const AcknowledgeLearningItemResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  itemCompletionId: Type.String({ format: 'uuid' }),
+  itemId: Type.String({ format: 'uuid' }),
+  revisionNumber: Type.Integer({ minimum: 1 }),
+  schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+  completedAt: Type.String({ format: 'date-time' }),
+  replayed: Type.Boolean(),
+});
 
 const StepUpBody = Type.Object(
   {
@@ -549,6 +612,7 @@ export async function buildApp(
     onClose?: () => Promise<void>;
     schoolConfiguration?: SchoolConfiguration;
     intake?: Intake;
+    learningProgress?: LearningProgress;
   },
 ): Promise<FastifyInstance> {
   const publicOrigin = new URL(options.publicOrigin).origin;
@@ -606,7 +670,12 @@ export async function buildApp(
                             ? 'student-intake-draft'
                             : route === '/api/v1/student/intake/submissions'
                               ? 'student-intake-submission'
-                              : 'unknown';
+                              : route === '/api/v1/student/learning'
+                                ? 'student-learning'
+                                : route ===
+                                    '/api/v1/student/learning/acknowledgements'
+                                  ? 'student-learning-acknowledgement'
+                                  : 'unknown';
       telemetry.record({
         name: 'http.request.completed',
         method: ['DELETE', 'GET', 'PATCH', 'POST', 'PUT'].includes(
@@ -791,6 +860,33 @@ export async function buildApp(
         type: 'https://preventive-care-literacy.example/problems/intake-incomplete',
         title: error.message,
         status: 422,
+        code: error.code,
+      });
+    }
+    if (error instanceof LearningUnavailableError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/learning-unavailable',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof LearningLockedError) {
+      return reply.type('application/problem+json').code(403).send({
+        type: 'https://preventive-care-literacy.example/problems/learning-locked',
+        title: error.message,
+        status: 403,
+        code: error.code,
+      });
+    }
+    if (
+      error instanceof LearningRevisionConflictError ||
+      error instanceof LearningOperationReusedError
+    ) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/learning-conflict',
+        title: error.message,
+        status: 409,
         code: error.code,
       });
     }
@@ -1544,6 +1640,74 @@ export async function buildApp(
     },
   );
 
+  app.get<{ Querystring: Static<typeof StudentLearningQuery> }>(
+    '/api/v1/student/learning',
+    {
+      schema: {
+        operationId: 'readStudentLearning',
+        security: [{ studentSession: [] }],
+        querystring: StudentLearningQuery,
+        response: {
+          200: StudentLearningSnapshotResponse,
+          401: ProblemResponse,
+          404: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        studentSessionCookie,
+      );
+      if (!sessionHandle || !options.learningProgress) {
+        return studentSessionRequired(reply);
+      }
+      const snapshot = await options.learningProgress.read({
+        sessionHandle,
+        locale: request.query.locale ?? 'en-US',
+      });
+      if (!snapshot) return studentSessionRequired(reply);
+      return snapshot;
+    },
+  );
+
+  app.post<{ Body: Static<typeof AcknowledgeLearningItemBody> }>(
+    '/api/v1/student/learning/acknowledgements',
+    {
+      schema: {
+        operationId: 'acknowledgeLearningItem',
+        security: [{ studentSession: [] }],
+        body: AcknowledgeLearningItemBody,
+        response: {
+          201: AcknowledgeLearningItemResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        studentSessionCookie,
+      );
+      if (!sessionHandle || !options.learningProgress) {
+        return studentSessionRequired(reply);
+      }
+      const result = await options.learningProgress.acknowledge({
+        sessionHandle,
+        ...request.body,
+      });
+      if (!result) return studentSessionRequired(reply);
+      return reply.code(201).send(result);
+    },
+  );
+
   app.setNotFoundHandler((request, reply) => {
     if (
       options.webRoot &&
@@ -1645,6 +1809,13 @@ export async function createServer(options: {
     clock,
     ids,
   });
+  const learningProgress = createLearningProgress({
+    resolveStudentSession: (command) =>
+      identityAndAccess.resolveStudentSession(command),
+    store: createPostgresLearningProgressStore({ pool }),
+    clock,
+    ids,
+  });
   return buildApp(identityAndAccess, {
     operatorAuthenticator: createOperatorAuthenticator(
       options.operatorCredentials,
@@ -1658,6 +1829,7 @@ export async function createServer(options: {
     webRoot: options.webRoot,
     schoolConfiguration,
     intake,
+    learningProgress,
     onClose: () => pool.end(),
   });
 }

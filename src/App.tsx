@@ -7,6 +7,7 @@ import {
   StudentHomePage,
 } from './features/student-access/StudentAccessPages';
 import { StudentIntakePage } from './features/intake/StudentIntakePage';
+import { StudentLearningPage } from './features/learning/StudentLearningPage';
 
 function RetiredPrototypePage() {
   return (
@@ -42,6 +43,7 @@ export default function App() {
         />
         <Route path="/student" element={<StudentHomePage />} />
         <Route path="/student/intake" element={<StudentIntakePage />} />
+        <Route path="/student/learning" element={<StudentLearningPage />} />
         <Route
           path="/staff/configuration"
           element={<SchoolConfigurationPage />}
