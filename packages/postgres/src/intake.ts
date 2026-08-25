@@ -13,6 +13,7 @@ import {
   type StoredIntakeRecordVersion,
   type StudentIntakeForm,
   type SubmitIntakeRecordVersionResult,
+  type UnattributedRevealOutcome,
 } from '../../../modules/intake/index.ts';
 import { staffAuthenticationFreshnessMs } from '../../../modules/identity-access/index.ts';
 import { schoolConfigurationWorkspaceLockKey } from './workspace-locks.ts';
@@ -214,10 +215,12 @@ async function insertUnattributedRevealAttempt(
     auditId: string;
     operationId: string;
     occurredAt: Date;
-    outcome: 'denied_unauthenticated' | 'denied_session_unknown';
-    studentId: string;
+    outcome: UnattributedRevealOutcome;
+    studentId?: string;
   },
 ): Promise<void> {
+  const details: Record<string, string> = { outcome: input.outcome };
+  if (input.studentId) details.studentId = input.studentId;
   await client.query(
     `select audit.record_unattributed_reveal_attempt($1, $2, $3, $4, $5)`,
     [
@@ -225,7 +228,7 @@ async function insertUnattributedRevealAttempt(
       input.operationId,
       input.occurredAt,
       input.outcome,
-      { outcome: input.outcome, studentId: input.studentId },
+      details,
     ],
   );
 }
@@ -517,31 +520,37 @@ export function createPostgresIntakeStore(options: {
 
     async revealCurrent(input) {
       return transaction(options.pool, async (client) => {
+        // Lock order is in identity_access.lock_clinical_reveal_authority:
+        // staff_identities, staff_permission_grants, staff_sessions,
+        // school_workspaces. Current mutations still touch one table.
         await client.query(
           "select set_config('app.session_handle_hash', $1, true)",
           [input.sessionHandleHash],
         );
-        const session = await client.query<{
+        const authority = await client.query<{
           session_id: string;
           workspace_id: string;
           staff_identity_id: string;
           authenticated_at: Date;
           expires_at: Date;
           revoked_at: Date | null;
+          identity_status: 'active' | 'disabled' | null;
+          authentication_fresh_at: Date | null;
+          has_clinical_permission: boolean;
+          workspace_found: boolean;
         }>(
-          `select session.session_id, session.workspace_id, session.staff_identity_id,
-                  session.authenticated_at, session.expires_at, session.revoked_at
-             from identity_access.staff_sessions session
-            where session.session_handle_hash = $1
-            for share of session`,
+          `select session_id, workspace_id, staff_identity_id, authenticated_at,
+                  expires_at, revoked_at, identity_status, authentication_fresh_at,
+                  has_clinical_permission, workspace_found
+             from identity_access.lock_clinical_reveal_authority($1)`,
           [input.sessionHandleHash],
         );
-        const currentSession = session.rows[0];
-        if (!currentSession) {
+        const locked = authority.rows[0];
+        if (!locked) {
           await insertUnattributedRevealAttempt(client, {
             auditId: input.auditId,
             operationId: input.operationId,
-            occurredAt: input.now,
+            occurredAt: input.now(),
             outcome: 'denied_session_unknown',
             studentId: input.studentId,
           });
@@ -549,50 +558,22 @@ export function createPostgresIntakeStore(options: {
         }
 
         await client.query("select set_config('app.workspace_id', $1, true)", [
-          currentSession.workspace_id,
+          locked.workspace_id,
         ]);
         await client.query(
           "select set_config('app.staff_identity_id', $1, true)",
-          [currentSession.staff_identity_id],
+          [locked.staff_identity_id],
         );
-        const identity = await client.query<{
-          status: 'active' | 'disabled';
-          authentication_fresh_at: Date;
-        }>(
-          `select identity.status,
-                  coalesce(freshness.refreshed_at, $2::timestamptz)
-                    as authentication_fresh_at
-             from identity_access.staff_identities identity
-             left join identity_access.staff_session_freshness freshness
-               on freshness.session_id = $1
-            where identity.staff_identity_id = $3`,
-          [
-            currentSession.session_id,
-            currentSession.authenticated_at,
-            currentSession.staff_identity_id,
-          ],
-        );
-        const currentIdentity = identity.rows[0];
-        if (!currentIdentity) {
-          await insertRevealAudit(client, {
-            auditId: input.auditId,
-            operationId: input.operationId,
-            workspaceId: currentSession.workspace_id,
-            actorId: currentSession.staff_identity_id,
-            occurredAt: input.now,
-            eventType: 'intake_record.reveal_denied',
-            details: {
-              studentId: input.studentId,
-              outcome: 'denied_disabled',
-              staffSessionId: currentSession.session_id,
-            },
-          });
-          return { outcome: 'denied' as const, reason: 'disabled' };
-        }
+
         const current = {
-          ...currentSession,
-          status: currentIdentity.status,
-          authentication_fresh_at: currentIdentity.authentication_fresh_at,
+          session_id: locked.session_id,
+          workspace_id: locked.workspace_id,
+          staff_identity_id: locked.staff_identity_id,
+          authenticated_at: locked.authenticated_at,
+          expires_at: locked.expires_at,
+          revoked_at: locked.revoked_at,
+          status: locked.identity_status,
+          authentication_fresh_at: locked.authentication_fresh_at,
         };
 
         const deny = async (reason: ClinicalRevealDenialReason) => {
@@ -601,7 +582,7 @@ export function createPostgresIntakeStore(options: {
             operationId: input.operationId,
             workspaceId: current.workspace_id,
             actorId: current.staff_identity_id,
-            occurredAt: input.now,
+            occurredAt: input.now(),
             eventType: 'intake_record.reveal_denied',
             details: {
               studentId: input.studentId,
@@ -612,20 +593,25 @@ export function createPostgresIntakeStore(options: {
           return { outcome: 'denied' as const, reason };
         };
 
-        if (current.revoked_at) return deny('revoked');
-        if (new Date(current.expires_at) <= input.now) return deny('expired');
-        if (current.status !== 'active') return deny('disabled');
-        const permission = await client.query<{ allowed: boolean }>(
-          `select identity_access.current_staff_has_permission('clinical') as allowed`,
-        );
-        if (!permission.rows[0]?.allowed) return deny('permission');
-        if (
-          input.now.getTime() -
-            new Date(current.authentication_fresh_at).getTime() >
-          staffAuthenticationFreshnessMs
-        ) {
-          return deny('stale');
-        }
+        const authorityStillHolds = (at: Date) => {
+          if (current.revoked_at) return 'revoked' as const;
+          if (new Date(current.expires_at) <= at) return 'expired' as const;
+          if (current.status !== 'active' || !locked.workspace_found) {
+            return 'disabled' as const;
+          }
+          if (!locked.has_clinical_permission) return 'permission' as const;
+          if (
+            !current.authentication_fresh_at ||
+            at.getTime() - new Date(current.authentication_fresh_at).getTime() >
+              staffAuthenticationFreshnessMs
+          ) {
+            return 'stale' as const;
+          }
+          return undefined;
+        };
+
+        const initialDenial = authorityStillHolds(input.now());
+        if (initialDenial) return deny(initialDenial);
 
         const version = await client.query<{
           intake_record_version_id: string;
@@ -656,7 +642,7 @@ export function createPostgresIntakeStore(options: {
             operationId: input.operationId,
             workspaceId: current.workspace_id,
             actorId: current.staff_identity_id,
-            occurredAt: input.now,
+            occurredAt: input.now(),
             eventType: 'intake_record.reveal_denied',
             details: {
               studentId: input.studentId,
@@ -683,7 +669,7 @@ export function createPostgresIntakeStore(options: {
             operationId: input.operationId,
             workspaceId: current.workspace_id,
             actorId: current.staff_identity_id,
-            occurredAt: input.now,
+            occurredAt: input.now(),
             eventType: 'intake_record.reveal_denied',
             details: {
               studentId: input.studentId,
@@ -718,7 +704,7 @@ export function createPostgresIntakeStore(options: {
             operationId: input.operationId,
             workspaceId: current.workspace_id,
             actorId: current.staff_identity_id,
-            occurredAt: input.now,
+            occurredAt: input.now(),
             eventType: 'intake_record.reveal_denied',
             details: {
               studentId: input.studentId,
@@ -741,7 +727,7 @@ export function createPostgresIntakeStore(options: {
             operationId: input.operationId,
             workspaceId: current.workspace_id,
             actorId: current.staff_identity_id,
-            occurredAt: input.now,
+            occurredAt: input.now(),
             eventType: 'intake_record.reveal_denied',
             details: {
               studentId: input.studentId,
@@ -752,12 +738,18 @@ export function createPostgresIntakeStore(options: {
           return { outcome: 'failed' as const, cause: 'decrypt' };
         }
 
+        const checkedAt = input.now();
+        const laterDenial = authorityStillHolds(checkedAt);
+        if (laterDenial) return deny(laterDenial);
+        const authenticationFreshAt = current.authentication_fresh_at;
+        if (!authenticationFreshAt) return deny('stale');
+
         await insertRevealAudit(client, {
           auditId: input.auditId,
           operationId: input.operationId,
           workspaceId: current.workspace_id,
           actorId: current.staff_identity_id,
-          occurredAt: input.now,
+          occurredAt: checkedAt,
           eventType: 'intake_record.revealed',
           details: {
             studentId: input.studentId,
@@ -776,8 +768,7 @@ export function createPostgresIntakeStore(options: {
           intakeForm: form.intakeForm,
           answers,
           freshUntil: new Date(
-            new Date(current.authentication_fresh_at).getTime() +
-              staffAuthenticationFreshnessMs,
+            authenticationFreshAt.getTime() + staffAuthenticationFreshnessMs,
           ),
         };
       });

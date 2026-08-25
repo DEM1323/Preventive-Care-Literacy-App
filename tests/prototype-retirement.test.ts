@@ -2,6 +2,11 @@ import { expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename } from 'node:path';
+import { renderIntakeAnswer } from '../modules/intake/index.ts';
+import {
+  clinicalHttpFailureLocksAllState,
+  ignoreStaleClinicalGeneration,
+} from '../src/features/staff/clinical-review-fail-closed.ts';
 
 test('repository contains no Google Apps Script implementation', () => {
   expect(existsSync(new URL('../google-apps-script', import.meta.url))).toBe(
@@ -68,17 +73,17 @@ test('browser exposes only the server-authoritative Student access routes', () =
 
 test('clinical Intake Record reveal stays memory-only and suppresses application print', () => {
   const clinicalSource = readFileSync(
-    new URL(
-      '../src/features/staff/ClinicalReviewSection.tsx',
-      import.meta.url,
-    ),
+    new URL('../src/features/staff/ClinicalReviewSection.tsx', import.meta.url),
     'utf8',
   );
   const staffHomeSource = readFileSync(
     new URL('../src/features/staff/StaffHomePage.tsx', import.meta.url),
     'utf8',
   );
-  const css = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
+  const css = readFileSync(
+    new URL('../src/index.css', import.meta.url),
+    'utf8',
+  );
   const retirement = readFileSync(
     new URL('../docs/security/prototype-retirement.md', import.meta.url),
     'utf8',
@@ -95,7 +100,13 @@ test('clinical Intake Record reveal stays memory-only and suppresses application
   expect(clinicalSource).toContain('setInterval');
   expect(clinicalSource).toContain('AbortController');
   expect(clinicalSource).toContain('generationRef');
+  expect(clinicalSource).toContain('clinicalAuthorizationBackstopMs');
+  expect(clinicalSource).toContain('renderIntakeAnswer');
+  expect(clinicalSource).toContain('status >= 500');
   expect(clinicalSource).not.toContain("mode === 'silent' && busyRef");
+  expect(clinicalSource).not.toContain(
+    'generation !== generationRef.current || isAbortError',
+  );
   const visibleCheck = clinicalSource.indexOf(
     "document.visibilityState === 'visible'",
   );
@@ -121,4 +132,47 @@ test('clinical Intake Record reveal stays memory-only and suppresses application
     'Authenticated staff routes still contain no Student answer entry',
   );
   expect(readme).toContain('clinical Intake Record reveal');
+});
+
+test('clinical UI fail-closed helpers clear immediately and ignore stale in-flight work', () => {
+  expect(clinicalHttpFailureLocksAllState(500, undefined)).toBe(true);
+  expect(
+    clinicalHttpFailureLocksAllState(503, { code: 'INTERNAL_ERROR' }),
+  ).toBe(true);
+  expect(clinicalHttpFailureLocksAllState(0, undefined)).toBe(true);
+  expect(clinicalHttpFailureLocksAllState(400, undefined)).toBe(true);
+  expect(
+    clinicalHttpFailureLocksAllState(404, { code: 'INTAKE_RECORD_NOT_FOUND' }),
+  ).toBe(false);
+  expect(ignoreStaleClinicalGeneration(1, 2)).toBe(true);
+  expect(ignoreStaleClinicalGeneration(4, 4)).toBe(false);
+
+  const freeText = {
+    id: '00000000-0000-4000-8000-000000000001',
+    revision: 1,
+    key: 'name',
+    sectionId: '00000000-0000-4000-8000-000000000002',
+    order: 1,
+    type: 'text' as const,
+    required: true,
+    requiredWhenVisible: false,
+    visibility: null,
+    options: [],
+    label: 'Name',
+  };
+  expect(renderIntakeAnswer(freeText, 'UNIQUE-FREE-TEXT')).toBe(
+    'UNIQUE-FREE-TEXT',
+  );
+  const optionField = {
+    ...freeText,
+    key: 'insurance',
+    type: 'yes-no' as const,
+    options: [
+      { code: 'yes', label: 'Has insurance' },
+      { code: 'no', label: 'No insurance' },
+    ],
+  };
+  expect(renderIntakeAnswer(optionField, 'yes')).toBe('Has insurance');
+  expect(renderIntakeAnswer(optionField, 'yes')).not.toBe('yes');
+  expect(renderIntakeAnswer(optionField, 'unknown-code')).toBeUndefined();
 });

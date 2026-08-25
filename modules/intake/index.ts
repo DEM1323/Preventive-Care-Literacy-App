@@ -211,6 +211,14 @@ export type RevealedCurrentIntakeRecord = {
   freshUntil: string;
 };
 
+export type UnattributedRevealOutcome =
+  | 'denied_unauthenticated'
+  | 'denied_session_unknown'
+  | 'denied_origin'
+  | 'denied_csrf'
+  | 'denied_invalid_request'
+  | 'denied_body_too_large';
+
 export type ClinicalRevealDenialReason =
   'revoked' | 'expired' | 'disabled' | 'permission' | 'stale';
 
@@ -298,7 +306,7 @@ export type IntakeStore = {
   revealCurrent(input: {
     sessionHandleHash: string;
     studentId: string;
-    now: Date;
+    now: () => Date;
     auditId: string;
     operationId: string;
     projectForm: (
@@ -314,8 +322,8 @@ export type IntakeStore = {
     auditId: string;
     operationId: string;
     occurredAt: Date;
-    outcome: 'denied_unauthenticated' | 'denied_session_unknown';
-    studentId: string;
+    outcome: UnattributedRevealOutcome;
+    studentId?: string;
   }): Promise<void>;
 };
 
@@ -442,6 +450,14 @@ function projectField(
     options,
     label,
   };
+}
+
+export function renderIntakeAnswer(
+  field: IntakeFormField,
+  value: string,
+): string | undefined {
+  if (field.options.length === 0) return value;
+  return field.options.find((option) => option.code === value)?.label;
 }
 
 export function fieldIsVisible(
@@ -691,12 +707,15 @@ export function createIntake(dependencies: {
       };
     },
 
-    async reportUnauthenticatedReveal(command: { studentId: string }) {
+    async reportUnauthenticatedReveal(command: {
+      studentId?: string;
+      outcome: UnattributedRevealOutcome;
+    }) {
       await dependencies.store.recordUnattributedRevealAttempt({
         auditId: dependencies.ids.create(),
         operationId: dependencies.ids.create(),
         occurredAt: dependencies.clock.now(),
-        outcome: 'denied_unauthenticated',
+        outcome: command.outcome,
         studentId: command.studentId,
       });
     },
@@ -709,7 +728,7 @@ export function createIntake(dependencies: {
           command.sessionHandle,
         ),
         studentId: command.studentId,
-        now: dependencies.clock.now(),
+        now: () => dependencies.clock.now(),
         auditId,
         operationId,
         projectForm: projectStudentIntakeForm,

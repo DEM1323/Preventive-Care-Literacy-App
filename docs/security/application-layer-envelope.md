@@ -6,7 +6,7 @@ Selected adapter: `application-layer-envelope/v1` in `packages/application-keys`
 
 - A School Workspace dump, backup, replica, operator SQL session, or RLS bypass must not yield plaintext Student answers.
 - Ordinary clinical and administrative HTTP projections must not receive those answers. That includes the clinical review directory, staff session and identity listings, class administration, and Student-facing intake/learning routes.
-- The separately authorized, freshness-gated, no-store clinical reveal (`POST /api/v1/clinical/intake-records/current`) is the only HTTP seam that may return plaintext answers, and only after the current Staff Session, Clinical Permission, School Workspace, and password-plus-TOTP Authentication Freshness are locked and rechecked through ciphertext retrieval, in-process decrypt, and the append-only audit decision. The response must not be stored by caches, URLs, telemetry, or browser storage.
+- The separately authorized, freshness-gated, no-store clinical reveal (`POST /api/v1/clinical/intake-records/current`) is the only HTTP seam that may return plaintext answers, and only after `staff_identities`, `staff_permission_grants`, `staff_sessions`, and `school_workspaces` are locked in that order and the current Staff Session, Clinical Permission, School Workspace, and password-plus-TOTP Authentication Freshness are rechecked through ciphertext retrieval, in-process decrypt, and the append-only audit decision. Authentication Freshness is rechecked after decrypt and before success audit or return. The response must not be stored by caches, URLs, telemetry, or browser storage.
 - Idempotency receipts may be stored, but they must not keep an unkeyed hash of low-entropy answers that can be guessed offline.
 - A lost success response must replay the same accepted operation after wrapping-key rotation.
 
@@ -17,6 +17,8 @@ The adapter addresses those cases by encrypting each record with a random 256-bi
 `APPLICATION_WRAPPING_KEY` and `APPLICATION_IDEMPOTENCY_KEY` are **process secrets** in the API environment. Compromise of process memory, the environment, or a leaked wrapping key decrypts every record sealed under that key id. Compromise of the idempotency key lets an attacker compute bindings for guessed answers; it does not decrypt ciphertext. PostgreSQL access without those keys does not yield plaintext answers.
 
 Managed at-rest encryption and Supabase Vault are not equivalent: they protect provider disks and optional stored secrets, not application-layer ciphertext bound to a Student. A database role that can read `intake` rows still reads sealed bytes, not answers.
+
+Clinical UI clearing is fail-closed on every locally observable loss or uncertainty, including before visibility revalidation and on a 2-second authorization backstop. Literal zero-latency detection of an out-of-process database permission change is impossible without a push channel; event-driven remote revocation belongs to issue #32 permission-lifecycle integration.
 
 ## Rotation, recovery, and exposure
 

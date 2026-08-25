@@ -7,6 +7,7 @@ import type {
   IntakeFormField,
   StudentIntakeSnapshot,
 } from '../../modules/intake/index.ts';
+import { renderIntakeAnswer } from '../../modules/intake/index.ts';
 import { createEnvelopeKeyManagement } from '../../packages/application-keys/src/index.ts';
 import { createApiClient } from '../../packages/api-client/src/index.ts';
 import { migrate } from '../../packages/postgres/src/migrate.ts';
@@ -337,6 +338,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  server?.server.closeAllConnections?.();
   await server?.close();
   await postgres?.stop();
 });
@@ -386,6 +388,26 @@ describe.serial('clinical directory and current Intake Record reveal', () => {
       (field) => field.key === 'name',
     );
     expect(nameField?.label).toBeTruthy();
+    expect(
+      renderIntakeAnswer(nameField as IntakeFormField, distinctiveAnswer),
+    ).toBe(distinctiveAnswer);
+    const optionField = revealed.data?.intakeForm.fields.find(
+      (field) => field.options.length > 0,
+    );
+    expect(optionField).toBeDefined();
+    const storedCode = revealed.data?.answers[optionField?.id ?? ''];
+    expect(storedCode).toBeTruthy();
+    expect(
+      optionField?.options.some((option) => option.code === storedCode),
+    ).toBe(true);
+    const renderedOption = renderIntakeAnswer(
+      optionField as IntakeFormField,
+      storedCode as string,
+    );
+    expect(renderedOption).toBe(
+      optionField?.options.find((option) => option.code === storedCode)?.label,
+    );
+    expect(renderedOption).not.toBe(storedCode);
     expect(revealed.data?.freshUntil).toBe(
       new Date(now.getTime() + 15 * 60 * 1000).toISOString(),
     );
@@ -603,6 +625,101 @@ describe.serial('clinical directory and current Intake Record reveal', () => {
     }
   });
 
+  test('origin, CSRF, and schema failures on reveal append unattributed evidence without request content', async () => {
+    const before = new Client({ connectionString: postgres.connectionString });
+    await before.connect();
+    let startingSequence = 0;
+    try {
+      const current = await before.query<{ sequence: string }>(
+        'select coalesce(max(sequence), 0)::text as sequence from audit.security_events',
+      );
+      startingSequence = Number(current.rows[0]?.sequence ?? 0);
+    } finally {
+      await before.end();
+    }
+
+    const crossOrigin = await fetch(
+      `${baseUrl}/api/v1/clinical/intake-records/current`,
+      {
+        method: 'POST',
+        headers: {
+          origin: 'https://attacker.example',
+          'x-prevcare-csrf': '1',
+          'content-type': 'application/json',
+          cookie: clinicianCookie,
+        },
+        body: JSON.stringify({ studentId }),
+      },
+    );
+    expect(crossOrigin.status).toBe(403);
+
+    const missingCsrf = await fetch(
+      `${baseUrl}/api/v1/clinical/intake-records/current`,
+      {
+        method: 'POST',
+        headers: {
+          origin,
+          'content-type': 'application/json',
+          cookie: clinicianCookie,
+        },
+        body: JSON.stringify({ studentId }),
+      },
+    );
+    expect(missingCsrf.status).toBe(403);
+
+    const malformed = await fetch(
+      `${baseUrl}/api/v1/clinical/intake-records/current`,
+      {
+        method: 'POST',
+        headers: {
+          ...mutationHeaders,
+          cookie: clinicianCookie,
+        },
+        body: JSON.stringify({ studentId: 'not-a-student-id' }),
+      },
+    );
+    expect(malformed.status).toBe(400);
+
+    const unrelated = await fetch(`${baseUrl}/api/v1/auth/staff/sign-out`, {
+      method: 'POST',
+      headers: { origin: 'https://attacker.example', 'x-prevcare-csrf': '1' },
+    });
+    expect(unrelated.status).toBe(403);
+
+    const inspection = new Client({
+      connectionString: postgres.connectionString,
+    });
+    await inspection.connect();
+    try {
+      const events = await inspection.query<{
+        outcome: string;
+        details: Record<string, unknown>;
+      }>(
+        `select details->>'outcome' as outcome, details
+           from audit.security_events
+          where sequence > $1
+          order by sequence`,
+        [startingSequence],
+      );
+      expect(events.rows.map((row) => row.outcome)).toEqual([
+        'denied_origin',
+        'denied_csrf',
+        'denied_invalid_request',
+      ]);
+      expect(JSON.stringify(events.rows)).not.toContain(distinctiveAnswer);
+      expect(JSON.stringify(events.rows)).not.toContain(clinicianCookie);
+      expect(JSON.stringify(events.rows)).not.toContain('attacker.example');
+      expect(JSON.stringify(events.rows)).not.toContain(studentId);
+      expect(
+        events.rows.every(
+          (row) => Object.keys(row.details).join(',') === 'outcome',
+        ),
+      ).toBe(true);
+    } finally {
+      await inspection.end();
+    }
+  });
+
   test('projection and decrypt failures append safe denial evidence without answers', async () => {
     const client = createApiClient(baseUrl);
     const owner = new Client({ connectionString: postgres.connectionString });
@@ -731,7 +848,7 @@ describe.serial('clinical directory and current Intake Record reveal', () => {
     }
   });
 
-  test('revocation cannot interleave decrypt and still expose answers', async () => {
+  test('revocation, permission removal, and disablement cannot interleave decrypt and still expose answers', async () => {
     const client = createApiClient(baseUrl);
     duringDecrypt = async () => {
       const revoker = new Client({
@@ -746,6 +863,21 @@ describe.serial('clinical directory and current Intake Record reveal', () => {
                 set revoked_at = $1
               where staff_identity_id = $2 and revoked_at is null`,
             [now, clinicianId],
+          ),
+        ).rejects.toThrow(/lock timeout/);
+        await expect(
+          revoker.query(
+            `delete from identity_access.staff_permission_grants
+              where staff_identity_id = $1 and permission = 'clinical'`,
+            [clinicianId],
+          ),
+        ).rejects.toThrow(/lock timeout/);
+        await expect(
+          revoker.query(
+            `update identity_access.staff_identities
+                set status = 'disabled'
+              where staff_identity_id = $1`,
+            [clinicianId],
           ),
         ).rejects.toThrow(/lock timeout/);
       } finally {
@@ -765,6 +897,31 @@ describe.serial('clinical directory and current Intake Record reveal', () => {
       expect(JSON.stringify(revealed.data)).toContain(distinctiveAnswer);
     } finally {
       duringDecrypt = undefined;
+    }
+  });
+
+  test('freshness is rechecked after decrypt before answers are returned', async () => {
+    const client = createApiClient(baseUrl);
+    const before = now;
+    duringDecrypt = async () => {
+      now = new Date(before.getTime() + 16 * 60 * 1000);
+    };
+    try {
+      const stale = await client.POST(
+        '/api/v1/clinical/intake-records/current',
+        {
+          headers: { ...mutationHeaders, cookie: clinicianCookie },
+          body: { studentId },
+        },
+      );
+      expect(stale.response.status).toBe(403);
+      expect(stale.error).toMatchObject({
+        code: 'STAFF_AUTHENTICATION_STALE',
+      });
+      expect(JSON.stringify(stale.error)).not.toContain(distinctiveAnswer);
+    } finally {
+      duringDecrypt = undefined;
+      now = before;
     }
   });
 
@@ -893,6 +1050,7 @@ describe.serial('clinical directory and current Intake Record reveal', () => {
         'failed_projection',
         'failed_decrypt',
         'revealed',
+        'denied_stale',
         'denied_stale',
         'denied_permission',
         'denied_session_revoked',

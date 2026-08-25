@@ -459,6 +459,8 @@ export function createPostgresStaffAccessStore(options: {
           .executeTakeFirst();
         if (!session) return false;
         await setWorkspaceScope(transaction, session.workspace_id);
+        // Single-table mutation. Clinical reveal locks staff_identities,
+        // staff_permission_grants, staff_sessions, then school_workspaces.
         const revoked = await transaction
           .updateTable('identity_access.staff_sessions')
           .set({ revoked_at: request.revokedAt })

@@ -2,8 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createBrowserApiClient } from '../../../packages/api-client/src/index.ts';
 import type { paths } from '../../../packages/api-client/src/schema.ts';
+import { renderIntakeAnswer } from '../../../modules/intake/index.ts';
+import {
+  clinicalHttpFailureLocksAllState,
+  ignoreStaleClinicalGeneration,
+} from './clinical-review-fail-closed.ts';
 
 const client = createBrowserApiClient();
+const clinicalAuthorizationBackstopMs = 2000;
 
 type ClinicalDirectory =
   paths['/api/v1/clinical/review-directory']['get']['responses']['200']['content']['application/json'];
@@ -20,10 +26,6 @@ function emptyClinicalView() {
     revealed: undefined as RevealedRecord | undefined,
     error: undefined as string | undefined,
   };
-}
-
-function isAbortError(error: unknown) {
-  return error instanceof DOMException && error.name === 'AbortError';
 }
 
 export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
@@ -82,11 +84,19 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
       );
       return;
     }
-    setView((current) => ({
-      ...current,
-      revealed: undefined,
-      error: 'The Intake Record could not be revealed.',
-    }));
+    if (status === 404 && !clinicalHttpFailureLocksAllState(status, problem)) {
+      setView((current) => ({
+        ...current,
+        revealed: undefined,
+        error: 'The Intake Record could not be revealed.',
+      }));
+      return;
+    }
+    lockOutClinical(
+      status >= 500
+        ? 'Clinical access could not be confirmed. Sensitive values were cleared.'
+        : 'Clinical access could not be confirmed. Sensitive values were cleared.',
+    );
   }
 
   async function refreshDirectory(
@@ -103,7 +113,12 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
       const listing = await client.GET('/api/v1/clinical/review-directory', {
         signal,
       });
-      if (generation !== generationRef.current || clearedRef.current) return;
+      if (
+        ignoreStaleClinicalGeneration(generation, generationRef.current) ||
+        clearedRef.current
+      ) {
+        return;
+      }
       if (listing.response.status !== 200 || !listing.data) {
         handleClinicalFailure(
           listing.response.status,
@@ -128,8 +143,9 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
           error: undefined,
         };
       });
-    } catch (error) {
-      if (generation !== generationRef.current || isAbortError(error)) return;
+    } catch {
+      if (ignoreStaleClinicalGeneration(generation, generationRef.current))
+        return;
       lockOutClinical(
         'Clinical access could not be confirmed. Sensitive values were cleared.',
       );
@@ -150,7 +166,7 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
   useEffect(() => {
     const interval = window.setInterval(() => {
       void refreshDirectoryRef.current('silent');
-    }, 5000);
+    }, clinicalAuthorizationBackstopMs);
     function onVisibility() {
       if (document.visibilityState === 'visible') {
         clearSensitiveClinicalState(
@@ -205,7 +221,12 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
           signal: abortRef.current.signal,
         },
       );
-      if (generation !== generationRef.current || clearedRef.current) return;
+      if (
+        ignoreStaleClinicalGeneration(generation, generationRef.current) ||
+        clearedRef.current
+      ) {
+        return;
+      }
       if (result.response.status !== 200 || !result.data) {
         handleClinicalFailure(
           result.response.status,
@@ -219,8 +240,9 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
         revealed: result.data,
         error: undefined,
       }));
-    } catch (error) {
-      if (generation !== generationRef.current || isAbortError(error)) return;
+    } catch {
+      if (ignoreStaleClinicalGeneration(generation, generationRef.current))
+        return;
       lockOutClinical(
         'Clinical access could not be confirmed. Sensitive values were cleared.',
       );
@@ -296,10 +318,12 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
             {view.revealed.intakeForm.fields.map((field) => {
               const value = view.revealed?.answers[field.id];
               if (value === undefined) return null;
+              const displayed = renderIntakeAnswer(field, value);
+              if (displayed === undefined) return null;
               return (
                 <div key={field.id}>
                   <dt className="text-sm text-slate-400">{field.label}</dt>
-                  <dd className="font-bold">{value}</dd>
+                  <dd className="font-bold">{displayed}</dd>
                 </div>
               );
             })}

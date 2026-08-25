@@ -130,6 +130,10 @@ try {
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
+    `grant execute on function identity_access.lock_clinical_reveal_authority(text)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
     `grant select, usage on all sequences in schema infrastructure
        to ${runtimeRoleIdentifier}`,
   );

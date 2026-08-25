@@ -1,7 +1,11 @@
 import swagger from '@fastify/swagger';
 import fastifyStatic from '@fastify/static';
 import { Type, type Static } from '@sinclair/typebox';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, {
+  type FastifyInstance,
+  type FastifyReply,
+  type FastifyRequest,
+} from 'fastify';
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { resolve } from 'node:path';
 import { Pool } from 'pg';
@@ -24,7 +28,10 @@ import {
   StepUpRejectedError,
   AdministrativePermissionRequiredError,
 } from '../../../modules/identity-access/index.ts';
-import type { Intake } from '../../../modules/intake/index.ts';
+import type {
+  Intake,
+  UnattributedRevealOutcome,
+} from '../../../modules/intake/index.ts';
 import {
   IntakeAlreadyAcceptedError,
   IntakeIncompleteError,
@@ -111,6 +118,7 @@ const securityHeaders = {
 } as const;
 
 class UntrustedRequestOriginError extends Error {}
+class UntrustedRequestCsrfError extends Error {}
 
 const CreateSchoolWorkspaceBody = Type.Object(
   {
@@ -650,6 +658,35 @@ export async function buildApp(
     logger: false,
   });
   if (options.onClose) app.addHook('onClose', options.onClose);
+
+  async function recordClinicalRevealBoundaryDenial(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    outcome: UnattributedRevealOutcome,
+  ): Promise<boolean> {
+    if (
+      request.method !== 'POST' ||
+      request.routeOptions.url !== '/api/v1/clinical/intake-records/current'
+    ) {
+      return true;
+    }
+    try {
+      if (!options.intake) {
+        throw new Error('clinical reveal boundary audit requires intake');
+      }
+      await options.intake.reportUnauthenticatedReveal({ outcome });
+      return true;
+    } catch {
+      reply.type('application/problem+json').code(500).send({
+        type: 'https://preventive-care-literacy.example/problems/internal-error',
+        title: 'Internal server error',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+      });
+      return false;
+    }
+  }
+
   app.addHook('onRequest', async (request, reply) => {
     requestStartedAt.set(request, performance.now());
     for (const [name, value] of Object.entries(securityHeaders)) {
@@ -659,11 +696,13 @@ export async function buildApp(
     if (!['DELETE', 'PATCH', 'POST', 'PUT'].includes(request.method)) return;
     if (
       request.headers.origin !== publicOrigin ||
-      request.headers['x-prevcare-csrf'] !== '1' ||
       (request.headers['sec-fetch-site'] !== undefined &&
         request.headers['sec-fetch-site'] !== 'same-origin')
     ) {
       throw new UntrustedRequestOriginError();
+    }
+    if (request.headers['x-prevcare-csrf'] !== '1') {
+      throw new UntrustedRequestCsrfError();
     }
   });
   if (telemetry) {
@@ -723,8 +762,34 @@ export async function buildApp(
       });
     });
   }
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler(async (error, request, reply) => {
     if (error instanceof UntrustedRequestOriginError) {
+      if (
+        !(await recordClinicalRevealBoundaryDenial(
+          request,
+          reply,
+          'denied_origin',
+        ))
+      ) {
+        return;
+      }
+      return reply.type('application/problem+json').code(403).send({
+        type: 'https://preventive-care-literacy.example/problems/request-origin',
+        title: 'Trusted request origin required',
+        status: 403,
+        code: 'TRUSTED_ORIGIN_REQUIRED',
+      });
+    }
+    if (error instanceof UntrustedRequestCsrfError) {
+      if (
+        !(await recordClinicalRevealBoundaryDenial(
+          request,
+          reply,
+          'denied_csrf',
+        ))
+      ) {
+        return;
+      }
       return reply.type('application/problem+json').code(403).send({
         type: 'https://preventive-care-literacy.example/problems/request-origin',
         title: 'Trusted request origin required',
@@ -927,11 +992,26 @@ export async function buildApp(
       });
     }
     if (
-      typeof error === 'object' &&
-      error !== null &&
-      'validation' in error &&
-      error.validation
+      (typeof error === 'object' &&
+        error !== null &&
+        'validation' in error &&
+        error.validation) ||
+      (typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error.code === 'FST_ERR_CTP_INVALID_JSON_BODY' ||
+          error.code === 'FST_ERR_CTP_EMPTY_JSON_BODY' ||
+          error.code === 'FST_ERR_CTP_INVALID_MEDIA_TYPE'))
     ) {
+      if (
+        !(await recordClinicalRevealBoundaryDenial(
+          request,
+          reply,
+          'denied_invalid_request',
+        ))
+      ) {
+        return;
+      }
       return reply.type('application/problem+json').code(400).send({
         type: 'https://preventive-care-literacy.example/problems/invalid-request',
         title: 'Request validation failed',
@@ -945,6 +1025,15 @@ export async function buildApp(
       'code' in error &&
       error.code === 'FST_ERR_CTP_BODY_TOO_LARGE'
     ) {
+      if (
+        !(await recordClinicalRevealBoundaryDenial(
+          request,
+          reply,
+          'denied_body_too_large',
+        ))
+      ) {
+        return;
+      }
       return reply.type('application/problem+json').code(413).send({
         type: 'https://preventive-care-literacy.example/problems/request-too-large',
         title: 'Request body is too large',
@@ -1330,6 +1419,7 @@ export async function buildApp(
           });
         }
         await options.intake.reportUnauthenticatedReveal({
+          outcome: 'denied_unauthenticated',
           studentId: request.body.studentId,
         });
         return reply.type('application/problem+json').code(401).send({

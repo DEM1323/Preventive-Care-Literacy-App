@@ -139,4 +139,8 @@ test('tracked envelope threat model names the selected adapter and its limits', 
   expect(doc).toContain(
     'separately authorized, freshness-gated, no-store clinical reveal',
   );
+  expect(doc).toContain('staff_identities');
+  expect(doc).toContain('staff_permission_grants');
+  expect(doc).toContain('rechecked after decrypt');
+  expect(doc).toContain('issue #32');
 });

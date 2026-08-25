@@ -84,6 +84,9 @@ export async function createRuntimeDatabaseUser(
       `grant execute on function audit.record_unattributed_reveal_attempt(uuid, uuid, timestamptz, text, jsonb) to ${role}`,
     );
     await client.query(
+      `grant execute on function identity_access.lock_clinical_reveal_authority(text) to ${role}`,
+    );
+    await client.query(
       `grant select, insert, update on identity_access.staff_sessions,
           identity_access.staff_auth_flows, identity_access.invitations,
            identity_access.invitation_challenges,
