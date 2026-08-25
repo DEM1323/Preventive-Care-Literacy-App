@@ -50,6 +50,7 @@ jobs:
           INVITATION_DELIVERY_KEY: ${{ secrets.INVITATION_DELIVERY_KEY }}
           APPLICATION_WRAPPING_KEY_ID: ${{ vars.APPLICATION_WRAPPING_KEY_ID }}
           APPLICATION_WRAPPING_KEY: ${{ secrets.APPLICATION_WRAPPING_KEY }}
+          APPLICATION_IDEMPOTENCY_KEY: ${{ secrets.APPLICATION_IDEMPOTENCY_KEY }}
         run: |
           bunx @railway/cli@5.43.2 variables set --skip-deploys \
             --project 20cf68d2-d1df-4291-9aea-61cfebfd758d \
@@ -61,7 +62,8 @@ jobs:
             "INVITATION_DELIVERY_KEY_ID=$INVITATION_DELIVERY_KEY_ID" \
             "INVITATION_DELIVERY_KEY=$INVITATION_DELIVERY_KEY" \
             "APPLICATION_WRAPPING_KEY_ID=$APPLICATION_WRAPPING_KEY_ID" \
-            "APPLICATION_WRAPPING_KEY=$APPLICATION_WRAPPING_KEY"
+            "APPLICATION_WRAPPING_KEY=$APPLICATION_WRAPPING_KEY" \
+            "APPLICATION_IDEMPOTENCY_KEY=$APPLICATION_IDEMPOTENCY_KEY"
 
       - name: Synchronize private worker variables
         env:

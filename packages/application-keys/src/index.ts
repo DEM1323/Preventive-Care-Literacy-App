@@ -13,6 +13,7 @@ import type {
 export type EnvelopeKeyMaterial = {
   wrappingKeys: Record<string, Uint8Array>;
   activeWrappingKeyId: string;
+  idempotencyKey: Uint8Array;
 };
 
 function binding(context: KeyWrappingContext): Buffer {
@@ -65,6 +66,11 @@ export function createEnvelopeKeyManagement(
   if (!activeKey || activeKey.byteLength !== 32) {
     throw new Error('Application wrapping keys must contain at least 256 bits');
   }
+  if (material.idempotencyKey.byteLength !== 32) {
+    throw new Error(
+      'Application idempotency keys must contain at least 256 bits',
+    );
+  }
   for (const key of Object.values(material.wrappingKeys)) {
     if (key.byteLength !== 32) {
       throw new Error(
@@ -109,10 +115,7 @@ export function createEnvelopeKeyManagement(
       });
     },
     bind(plaintext, context) {
-      return `v1:${material.activeWrappingKeyId}:${createHmac(
-        'sha256',
-        Buffer.from(activeKey),
-      )
+      return `v1:${createHmac('sha256', Buffer.from(material.idempotencyKey))
         .update(
           `intake-idempotency:${context.workspaceId}:${context.studentId}:`,
         )

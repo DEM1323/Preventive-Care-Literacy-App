@@ -1639,6 +1639,7 @@ export async function createServer(options: {
       options.wrappingKeys ?? {
         wrappingKeys: { ephemeral: randomBytes(32) },
         activeWrappingKeyId: 'ephemeral',
+        idempotencyKey: randomBytes(32),
       },
     ),
     clock,

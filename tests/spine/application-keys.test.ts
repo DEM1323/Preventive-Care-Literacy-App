@@ -9,11 +9,26 @@ const context = {
   studentId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf5002',
 };
 
+const bindContext = {
+  workspaceId: context.workspaceId,
+  studentId: context.studentId,
+};
+
+function envelopeMaterial(
+  wrapping: { id: string; key: number },
+  idempotency = 17,
+) {
+  return {
+    wrappingKeys: { [wrapping.id]: Buffer.alloc(32, wrapping.key) },
+    activeWrappingKeyId: wrapping.id,
+    idempotencyKey: Buffer.alloc(32, idempotency),
+  };
+}
+
 test('application-layer envelope wrapping is selected and is not equivalent to at-rest encryption', () => {
-  const keys = createEnvelopeKeyManagement({
-    wrappingKeys: { alpha: Buffer.alloc(32, 11) },
-    activeWrappingKeyId: 'alpha',
-  });
+  const keys = createEnvelopeKeyManagement(
+    envelopeMaterial({ id: 'alpha', key: 11 }),
+  );
 
   expect(keys.name).toBe('application-layer-envelope/v1');
   expect(keys.name).not.toContain('vault');
@@ -38,26 +53,17 @@ test('application-layer envelope wrapping is selected and is not equivalent to a
 });
 
 test('idempotency bindings are keyed to the Student and are not unkeyed answer hashes', () => {
-  const keys = createEnvelopeKeyManagement({
-    wrappingKeys: { alpha: Buffer.alloc(32, 11) },
-    activeWrappingKeyId: 'alpha',
-  });
+  const keys = createEnvelopeKeyManagement(
+    envelopeMaterial({ id: 'alpha', key: 11 }),
+  );
   const plaintext = Buffer.from('no', 'utf8');
-  const binding = keys.bind(plaintext, {
-    workspaceId: context.workspaceId,
-    studentId: context.studentId,
-  });
+  const binding = keys.bind(plaintext, bindContext);
 
   expect(binding).not.toBe(
     createHash('sha256').update(plaintext).digest('hex'),
   );
   expect(binding).not.toContain('no');
-  expect(
-    keys.bind(plaintext, {
-      workspaceId: context.workspaceId,
-      studentId: context.studentId,
-    }),
-  ).toBe(binding);
+  expect(keys.bind(plaintext, bindContext)).toBe(binding);
   expect(
     keys.bind(plaintext, {
       workspaceId: context.workspaceId,
@@ -66,12 +72,29 @@ test('idempotency bindings are keyed to the Student and are not unkeyed answer h
   ).not.toBe(binding);
 });
 
+test('idempotency bindings survive wrapping-key rotation', () => {
+  const plaintext = Buffer.from('no', 'utf8');
+  const original = createEnvelopeKeyManagement(
+    envelopeMaterial({ id: 'alpha', key: 11 }),
+  );
+  const rotated = createEnvelopeKeyManagement(
+    envelopeMaterial({ id: 'beta', key: 19 }),
+  );
+  const binding = original.bind(plaintext, bindContext);
+
+  expect(rotated.bind(plaintext, bindContext)).toBe(binding);
+  expect(
+    createEnvelopeKeyManagement(
+      envelopeMaterial({ id: 'beta', key: 19 }, 21),
+    ).bind(plaintext, bindContext),
+  ).not.toBe(binding);
+});
+
 test('prior wrapping keys still open records after rotation and lost keys cannot recover them', () => {
   const secret = 'synthetic-health-answer-never-store-plain';
-  const original = createEnvelopeKeyManagement({
-    wrappingKeys: { alpha: Buffer.alloc(32, 11) },
-    activeWrappingKeyId: 'alpha',
-  });
+  const original = createEnvelopeKeyManagement(
+    envelopeMaterial({ id: 'alpha', key: 11 }),
+  );
   const sealed = original.seal(Buffer.from(secret, 'utf8'), context);
   const rotated = createEnvelopeKeyManagement({
     wrappingKeys: {
@@ -79,6 +102,7 @@ test('prior wrapping keys still open records after rotation and lost keys cannot
       beta: Buffer.alloc(32, 19),
     },
     activeWrappingKeyId: 'beta',
+    idempotencyKey: Buffer.alloc(32, 17),
   });
 
   expect(rotated.open(sealed, context).toString('utf8')).toBe(secret);
@@ -86,10 +110,10 @@ test('prior wrapping keys still open records after rotation and lost keys cannot
     'beta',
   );
   expect(() =>
-    createEnvelopeKeyManagement({
-      wrappingKeys: { beta: Buffer.alloc(32, 19) },
-      activeWrappingKeyId: 'beta',
-    }).open(sealed, context),
+    createEnvelopeKeyManagement(envelopeMaterial({ id: 'beta', key: 19 })).open(
+      sealed,
+      context,
+    ),
   ).toThrow();
 });
 
@@ -103,6 +127,7 @@ test('tracked envelope threat model names the selected adapter and its limits', 
   );
   expect(doc).toContain('application-layer-envelope/v1');
   expect(doc).toContain('APPLICATION_WRAPPING_KEY');
+  expect(doc).toContain('APPLICATION_IDEMPOTENCY_KEY');
   expect(doc).toContain('Supabase Vault');
   expect(doc.toLowerCase()).toContain('rotation');
   expect(doc).toContain('unrecoverable');

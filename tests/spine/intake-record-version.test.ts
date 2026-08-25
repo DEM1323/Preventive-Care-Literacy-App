@@ -45,6 +45,7 @@ const mutationHeaders = {
 
 let now = new Date('2026-08-25T15:00:00.000Z');
 let postgres: EphemeralPostgres;
+let runtimeDatabaseUrl: string;
 let server: FastifyInstance;
 let baseUrl: string;
 let administratorCookie: string;
@@ -53,6 +54,14 @@ let studentCookie: string;
 let candidate: unknown;
 let telemetryLines: string[] = [];
 const fakeAuth = createFakeStaffAuth();
+const intakeInvitationSecrets = {
+  hmacKey: Buffer.alloc(32, 7),
+  encryptionKeys: { test: Buffer.alloc(32, 9) },
+  activeEncryptionKeyId: 'test',
+  createCode: () => invitationCode,
+};
+const intakeIdempotencyKey = Buffer.alloc(32, 17);
+const acceptedOperationId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf51aa';
 
 function completeAnswers(fields: IntakeFormField[]) {
   const answers: Record<string, string> = {};
@@ -175,7 +184,7 @@ beforeAll(async () => {
   );
   postgres = await startEphemeralPostgres();
   await migrate(postgres.connectionString);
-  const runtimeDatabaseUrl = await createRuntimeDatabaseUser(
+  runtimeDatabaseUrl = await createRuntimeDatabaseUser(
     postgres.connectionString,
   );
   server = await createServer({
@@ -187,15 +196,11 @@ beforeAll(async () => {
     },
     staffAuth: fakeAuth.provider,
     clock: { now: () => now },
-    invitationSecrets: {
-      hmacKey: Buffer.alloc(32, 7),
-      encryptionKeys: { test: Buffer.alloc(32, 9) },
-      activeEncryptionKeyId: 'test',
-      createCode: () => invitationCode,
-    },
+    invitationSecrets: intakeInvitationSecrets,
     wrappingKeys: {
       wrappingKeys: { test: Buffer.alloc(32, 13) },
       activeWrappingKeyId: 'test',
+      idempotencyKey: intakeIdempotencyKey,
     },
     telemetry: {
       record(event) {
@@ -383,7 +388,7 @@ test('Student completes an encrypted Intake Draft and receives one immutable Int
   expect(resumed.data?.draft?.answers).toEqual(answers);
   expect(JSON.stringify(resumed.data?.form)).not.toContain(distinctiveAnswer);
 
-  const operationId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf51aa';
+  const operationId = acceptedOperationId;
   const command = {
     operationId,
     expectedSchoolConfigurationReleaseId:
@@ -526,6 +531,68 @@ test('Student completes an encrypted Intake Draft and receives one immutable Int
 
   expect(telemetryLines.join('\n')).not.toContain(distinctiveAnswer);
   expect(telemetryLines.join('\n')).not.toContain(recipient);
+});
+
+test('an accepted intake operation replays after wrapping-key rotation', async () => {
+  const rotated = await createServer({
+    databaseUrl: runtimeDatabaseUrl,
+    publicOrigin: origin,
+    operatorCredentials: {
+      token: operatorHeaders.authorization.slice('Bearer '.length),
+      actorId: 'intake-test-operator',
+    },
+    staffAuth: fakeAuth.provider,
+    clock: { now: () => now },
+    invitationSecrets: intakeInvitationSecrets,
+    wrappingKeys: {
+      wrappingKeys: { rotated: Buffer.alloc(32, 23) },
+      activeWrappingKeyId: 'rotated',
+      idempotencyKey: intakeIdempotencyKey,
+    },
+    telemetry: { record() {} },
+  });
+  const rotatedUrl = await rotated.listen({ host: '127.0.0.1', port: 0 });
+  try {
+    const client = createApiClient(rotatedUrl);
+    const opened = await client.GET('/api/v1/student/intake', {
+      headers: { cookie: studentCookie },
+      params: { query: { locale: 'en-US' } },
+    });
+    expect(opened.response.status).toBe(200);
+    const snapshot = opened.data as StudentIntakeSnapshot;
+    const answers = completeAnswers(snapshot.form.intakeForm.fields);
+    const command = submissionBody(snapshot, answers, acceptedOperationId);
+
+    const replay = await client.POST('/api/v1/student/intake/submissions', {
+      headers: { ...mutationHeaders, cookie: studentCookie },
+      body: command,
+    });
+    expect(replay.response.status).toBe(201);
+    expect(replay.data).toMatchObject({
+      operationId: acceptedOperationId,
+      intakeRecordVersionId:
+        snapshot.currentIntakeRecordVersion?.intakeRecordVersionId,
+      learningUnlocked: true,
+      replayed: true,
+    });
+    expect(JSON.stringify(replay.data)).not.toContain(distinctiveAnswer);
+
+    const nameFieldId =
+      snapshot.form.intakeForm.fields.find((field) => field.key === 'name')
+        ?.id ?? '';
+    const reused = await client.POST('/api/v1/student/intake/submissions', {
+      headers: { ...mutationHeaders, cookie: studentCookie },
+      body: {
+        ...command,
+        answers: { ...answers, [nameFieldId]: 'Synthetic Student Retry' },
+      },
+    });
+    expect(reused.response.status).toBe(409);
+    expect(reused.error).toMatchObject({ code: 'OPERATION_ID_REUSED' });
+    expect(JSON.stringify(reused.error)).not.toContain(distinctiveAnswer);
+  } finally {
+    await rotated.close();
+  }
 });
 
 test('retries, staff projections, and failures cannot expose or duplicate protected answers', async () => {

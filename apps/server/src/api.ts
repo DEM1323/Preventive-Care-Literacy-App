@@ -28,6 +28,9 @@ if (!applicationWrappingKey)
 const applicationWrappingKeyId = process.env.APPLICATION_WRAPPING_KEY_ID;
 if (!applicationWrappingKeyId)
   throw new Error('APPLICATION_WRAPPING_KEY_ID is required');
+const applicationIdempotencyKey = process.env.APPLICATION_IDEMPOTENCY_KEY;
+if (!applicationIdempotencyKey)
+  throw new Error('APPLICATION_IDEMPOTENCY_KEY is required');
 
 const server = await createServer({
   databaseUrl,
@@ -54,6 +57,7 @@ const server = await createServer({
       [applicationWrappingKeyId]: Buffer.from(applicationWrappingKey, 'base64'),
     },
     activeWrappingKeyId: applicationWrappingKeyId,
+    idempotencyKey: Buffer.from(applicationIdempotencyKey, 'base64'),
   },
   webRoot: process.env.WEB_ROOT ?? 'dist',
 });
