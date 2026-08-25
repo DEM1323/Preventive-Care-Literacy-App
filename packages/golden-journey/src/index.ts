@@ -55,8 +55,11 @@ export {
 } from './mailbox.ts';
 export { parseGoldenJourneyOperatorEvidence } from './operator-evidence.ts';
 export {
+  DeployStagingPreflightError,
   GoldenJourneyPreflightError,
+  deployStagingRequiredSecretNames,
   goldenJourneyRequiredConfigurationNames,
+  reportDeployStagingPreflight,
   reportGoldenJourneyPreflight,
 } from './preflight.ts';
 export {

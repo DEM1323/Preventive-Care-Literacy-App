@@ -50,6 +50,45 @@ export type GoldenJourneyPreflightResult =
   | { ok: true; missingNames: [] }
   | { ok: false; missingNames: GoldenJourneyConfigurationName[] };
 
+export const deployStagingRequiredSecretNames = [
+  'OPERATOR_PROVISIONING_TOKEN',
+] as const;
+
+export type DeployStagingSecretName =
+  (typeof deployStagingRequiredSecretNames)[number];
+
+export class DeployStagingPreflightError extends Error {
+  readonly missingNames: readonly string[];
+
+  constructor(missingNames: readonly string[]) {
+    super(
+      `Deploy staging preflight missing configuration: ${missingNames.join(', ')}`,
+    );
+    this.name = 'DeployStagingPreflightError';
+    this.missingNames = missingNames;
+  }
+}
+
+export type DeployStagingPreflightResult =
+  | { ok: true; missingNames: [] }
+  | { ok: false; missingNames: DeployStagingSecretName[] };
+
+export function reportDeployStagingPreflight(
+  environment: Record<string, string | undefined>,
+  options: { failClosed?: boolean } = {},
+): DeployStagingPreflightResult {
+  const missingNames = deployStagingRequiredSecretNames.filter(
+    (name) => !environment[name]?.trim(),
+  );
+  if (missingNames.length === 0) {
+    return { ok: true, missingNames: [] };
+  }
+  if (options.failClosed) {
+    throw new DeployStagingPreflightError(missingNames);
+  }
+  return { ok: false, missingNames: [...missingNames] };
+}
+
 function httpsUrl(value: string | undefined): URL | undefined {
   if (!value) return undefined;
   try {
