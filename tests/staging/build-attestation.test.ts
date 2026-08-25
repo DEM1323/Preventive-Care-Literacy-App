@@ -56,6 +56,10 @@ async function fixtureRoot() {
   await writeFile(join(root, 'apps', 'api.ts'), 'export const runtime = 1;\n');
   await writeFile(join(root, 'dist', 'index.js'), 'console.log("browser");\n');
   await writeFile(join(root, 'node_modules', 'left-pad', 'index.js'), 'prod\n');
+  await writeFile(
+    join(root, 'node_modules', 'left-pad', 'package.json'),
+    '{"name":"left-pad","version":"1.0.0"}\n',
+  );
   await writeFile(join(root, 'node_modules', 'prettier', 'index.js'), 'dev\n');
   return root;
 }
@@ -96,7 +100,7 @@ test('attestation hashes on-disk source, browser, lock, bun version, and product
   expect(tamperedBrowser.browserDigest).not.toBe(first.browserDigest);
 });
 
-test('production dependency digest hashes the installed tree and ignores only known non-runtime noise', async () => {
+test('production dependency digest hashes production packages and ignores install noise and development packages', async () => {
   const root = await fixtureRoot();
   await mkdir(join(root, 'node_modules', '.bin'), { recursive: true });
   await writeFile(join(root, 'node_modules', '.bin', 'left-pad'), 'bin\n');
@@ -111,7 +115,7 @@ test('production dependency digest hashes the installed tree and ignores only kn
     'tampered-extra\n',
   );
   const afterExtra = await hashProductionDependencies(root);
-  expect(afterExtra).not.toBe(first);
+  expect(afterExtra).toBe(first);
   await writeFile(
     join(root, 'node_modules', 'left-pad', 'index.js'),
     'tampered-prod\n',
@@ -144,7 +148,7 @@ async function nestedProductionFixture() {
   await writeFile(join(root, 'bun.lock'), nestedProductionLockfile());
   await writeFile(
     join(root, 'node_modules', 'parent-runtime', 'package.json'),
-    '{"name":"parent-runtime"}\n',
+    '{"name":"parent-runtime","version":"1.0.0"}\n',
   );
   await writeFile(
     join(root, 'node_modules', 'parent-runtime', 'index.js'),
@@ -169,7 +173,7 @@ async function nestedProductionFixture() {
       'nested-runtime',
       'package.json',
     ),
-    '{"name":"nested-runtime"}\n',
+    '{"name":"nested-runtime","version":"1.0.0"}\n',
   );
   await writeFile(
     join(
@@ -254,16 +258,16 @@ test('production dependency digest attests a symlinked isolated .bun production 
   );
   await writeFile(
     join(parentReal, 'package.json'),
-    '{"name":"parent-runtime"}\n',
+    '{"name":"parent-runtime","version":"1.0.0"}\n',
   );
   await writeFile(join(parentReal, 'index.js'), 'parent\n');
   await writeFile(
     join(nestedReal, 'package.json'),
-    '{"name":"nested-runtime"}\n',
+    '{"name":"nested-runtime","version":"1.0.0"}\n',
   );
   await writeFile(join(nestedReal, 'index.js'), 'nested\n');
   await symlink(
-    '../../../nested-runtime@1.0.0/node_modules/nested-runtime',
+    '../../nested-runtime@1.0.0/node_modules/nested-runtime',
     join(
       root,
       'node_modules',
@@ -302,6 +306,221 @@ test('production dependency digest fails closed for an empty production install 
   const digest = await hashProductionDependencies(root);
   expect(digest).toMatch(/^[0-9a-f]{64}$/);
   expect(await hashProductionDependencies(root)).toBe(digest);
+});
+
+test('production dependency digest fails closed on a dangling required symlink', async () => {
+  const root = await nestedProductionFixture();
+  const nested = join(
+    root,
+    'node_modules',
+    'parent-runtime',
+    'node_modules',
+    'nested-runtime',
+  );
+  await rm(nested, { recursive: true, force: true });
+  await symlink('missing-nested-runtime', nested);
+  await expect(hashProductionDependencies(root)).rejects.toBeInstanceOf(
+    BuildAttestationError,
+  );
+});
+
+test('production dependency digest hashes in-root symlink targets and fails closed when they escape', async () => {
+  const root = await nestedProductionFixture();
+  const nested = join(
+    root,
+    'node_modules',
+    'parent-runtime',
+    'node_modules',
+    'nested-runtime',
+  );
+  const store = join(root, 'node_modules', '.store', 'nested-runtime');
+  await mkdir(store, { recursive: true });
+  await writeFile(
+    join(store, 'package.json'),
+    '{"name":"nested-runtime","version":"1.0.0"}\n',
+  );
+  await writeFile(join(store, 'index.js'), 'stored-nested\n');
+  await rm(nested, { recursive: true, force: true });
+  await symlink('../../.store/nested-runtime', nested);
+
+  const first = await hashProductionDependencies(root);
+  await writeFile(join(store, 'index.js'), 'tampered-store\n');
+  expect(await hashProductionDependencies(root)).not.toBe(first);
+
+  const escaped = await nestedProductionFixture();
+  const escapedNested = join(
+    escaped,
+    'node_modules',
+    'parent-runtime',
+    'node_modules',
+    'nested-runtime',
+  );
+  const outside = join(escaped, 'outside-nested-runtime');
+  await mkdir(outside, { recursive: true });
+  await writeFile(
+    join(outside, 'package.json'),
+    '{"name":"nested-runtime","version":"1.0.0"}\n',
+  );
+  await writeFile(join(outside, 'index.js'), 'escaped\n');
+  await rm(escapedNested, { recursive: true, force: true });
+  await symlink('../../../outside-nested-runtime', escapedNested);
+  await expect(hashProductionDependencies(escaped)).rejects.toBeInstanceOf(
+    BuildAttestationError,
+  );
+});
+
+test('production dependency digest is independent of duplicate in-root aliases', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'build-attestation-alias-'));
+  await writeFile(join(root, 'package.json'), '{"name":"fixture"}\n');
+  await writeFile(
+    join(root, 'bun.lock'),
+    `{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "dependencies": { "left-pad": "1.0.0", },
+    },
+  },
+  "packages": {
+    "left-pad": ["left-pad@1.0.0", "", { "dependencies": {}, }, "sha512-prod"],
+  },
+}
+`,
+  );
+  const real = join(
+    root,
+    'node_modules',
+    '.bun',
+    'left-pad@1.0.0',
+    'node_modules',
+    'left-pad',
+  );
+  await mkdir(real, { recursive: true });
+  await writeFile(
+    join(real, 'package.json'),
+    '{"name":"left-pad","version":"1.0.0"}\n',
+  );
+  await writeFile(join(real, 'index.js'), 'prod\n');
+  await symlink(
+    '.bun/left-pad@1.0.0/node_modules/left-pad',
+    join(root, 'node_modules', 'left-pad'),
+  );
+  const oneAlias = await hashProductionDependencies(root);
+  await symlink(
+    '.bun/left-pad@1.0.0/node_modules/left-pad',
+    join(root, 'node_modules', 'left-pad-alias'),
+  );
+  const twoAliases = await hashProductionDependencies(root);
+  expect(twoAliases).toMatch(/^[0-9a-f]{64}$/);
+  expect(twoAliases).toBe(oneAlias);
+  expect(await hashProductionDependencies(root)).toBe(twoAliases);
+  await writeFile(join(real, 'index.js'), 'tampered-alias-target\n');
+  expect(await hashProductionDependencies(root)).not.toBe(twoAliases);
+});
+
+function twoVersionProductionLockfile() {
+  return `{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "dependencies": { "shared-runtime": "1.0.0", "parent-runtime": "1.0.0", },
+    },
+  },
+  "packages": {
+    "shared-runtime": ["shared-runtime@1.0.0", "", { "dependencies": {}, }, "sha512-v1"],
+    "parent-runtime": ["parent-runtime@1.0.0", "", { "dependencies": { "shared-runtime": "2.0.0", }, }, "sha512-parent"],
+    "parent-runtime/shared-runtime": ["shared-runtime@2.0.0", "", { "dependencies": {}, }, "sha512-v2"],
+  },
+}
+`;
+}
+
+async function twoVersionProductionFixture() {
+  const root = await mkdtemp(join(tmpdir(), 'build-attestation-versions-'));
+  await writeFile(join(root, 'package.json'), '{"name":"fixture"}\n');
+  await writeFile(join(root, 'bun.lock'), twoVersionProductionLockfile());
+  await mkdir(join(root, 'node_modules', 'shared-runtime'), {
+    recursive: true,
+  });
+  await writeFile(
+    join(root, 'node_modules', 'shared-runtime', 'package.json'),
+    '{"name":"shared-runtime","version":"1.0.0"}\n',
+  );
+  await writeFile(
+    join(root, 'node_modules', 'shared-runtime', 'index.js'),
+    'shared-v1\n',
+  );
+  await mkdir(
+    join(
+      root,
+      'node_modules',
+      'parent-runtime',
+      'node_modules',
+      'shared-runtime',
+    ),
+    { recursive: true },
+  );
+  await writeFile(
+    join(root, 'node_modules', 'parent-runtime', 'package.json'),
+    '{"name":"parent-runtime","version":"1.0.0"}\n',
+  );
+  await writeFile(
+    join(root, 'node_modules', 'parent-runtime', 'index.js'),
+    'parent\n',
+  );
+  await writeFile(
+    join(
+      root,
+      'node_modules',
+      'parent-runtime',
+      'node_modules',
+      'shared-runtime',
+      'package.json',
+    ),
+    '{"name":"shared-runtime","version":"2.0.0"}\n',
+  );
+  await writeFile(
+    join(
+      root,
+      'node_modules',
+      'parent-runtime',
+      'node_modules',
+      'shared-runtime',
+      'index.js',
+    ),
+    'shared-v2\n',
+  );
+  return root;
+}
+
+test('production dependency digest requires every lockfile package instance, not just a name', async () => {
+  const complete = await twoVersionProductionFixture();
+  const digest = await hashProductionDependencies(complete);
+  expect(digest).toMatch(/^[0-9a-f]{64}$/);
+
+  const missingV1 = await twoVersionProductionFixture();
+  await rm(join(missingV1, 'node_modules', 'shared-runtime'), {
+    recursive: true,
+    force: true,
+  });
+  await expect(hashProductionDependencies(missingV1)).rejects.toBeInstanceOf(
+    BuildAttestationError,
+  );
+
+  const missingV2 = await twoVersionProductionFixture();
+  await rm(
+    join(
+      missingV2,
+      'node_modules',
+      'parent-runtime',
+      'node_modules',
+      'shared-runtime',
+    ),
+    { recursive: true, force: true },
+  );
+  await expect(hashProductionDependencies(missingV2)).rejects.toBeInstanceOf(
+    BuildAttestationError,
+  );
 });
 
 test('runtime verification accepts a baked attestation and fails closed on source tampering', async () => {
