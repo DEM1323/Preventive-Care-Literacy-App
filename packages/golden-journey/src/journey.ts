@@ -137,6 +137,22 @@ function requireUuidField(value: unknown, label: string): string {
   return text;
 }
 
+function candidateForWorkspace(
+  candidate: unknown,
+  workspaceId: string,
+): unknown {
+  if (!isRecord(candidate) || !isRecord(candidate.workspace)) {
+    throw new NonRetryableGoldenJourneyError(
+      'School Configuration fixture is malformed',
+      'RELEASE_PUBLISH_FAILED',
+    );
+  }
+  return {
+    ...candidate,
+    workspace: { ...candidate.workspace, id: workspaceId },
+  };
+}
+
 function totpSecretFromOtpauth(uri: string): string {
   let parsed: URL;
   try {
@@ -483,7 +499,10 @@ export async function runGoldenJourney(
         body: JSON.stringify({
           operationId: input.ids.operationIds.importDraft,
           expectedDraftVersion: 0,
-          candidate: input.fixtureCandidate,
+          candidate: candidateForWorkspace(
+            input.fixtureCandidate,
+            input.ids.workspaceId,
+          ),
         }),
       },
       [201],

@@ -28,7 +28,10 @@ const itemId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf8105';
 const fingerprint = 'a'.repeat(64);
 
 const fixtureCandidate = {
-  workspace: { branding: { displayName: { 'en-US': { value: 'Synthetic' } } } },
+  workspace: {
+    id: 'beb4193a-1e8f-4096-a449-6d77628fd275',
+    branding: { displayName: { 'en-US': { value: 'Synthetic' } } },
+  },
   release: {
     modules: [
       {
@@ -200,6 +203,16 @@ function createFetch() {
       });
     }
     if (path === '/api/v1/administration/school-configuration/draft-imports') {
+      const body = JSON.parse(String(init?.body ?? '{}')) as {
+        candidate?: { workspace?: { id?: string } };
+      };
+      if (
+        body.candidate?.workspace?.id !== '018f1f5e-7b76-7f70-8f4d-9dc17ecf8001'
+      ) {
+        return jsonResponse(422, {
+          code: 'INVALID_SCHOOL_CONFIGURATION',
+        });
+      }
       return jsonResponse(201, {
         draftVersion: 1,
         candidateFingerprint: fingerprint,
