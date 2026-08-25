@@ -19,6 +19,7 @@ import {
   StaffAuthenticationFailedError,
   staffAuthenticationFreshnessMs,
 } from '../../../modules/identity-access/index.ts';
+import { schoolConfigurationWorkspaceLockKey } from './workspace-locks.ts';
 
 async function setScope(
   client: PoolClient,
@@ -467,6 +468,10 @@ export function createPostgresSchoolConfigurationStore(options: {
         ) {
           throw new AuthenticationFreshnessRequiredError();
         }
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [schoolConfigurationWorkspaceLockKey(input.session.workspaceId)],
+        );
         const stateResult = await client.query<{
           draft_version: string;
           active_release_id: string | null;

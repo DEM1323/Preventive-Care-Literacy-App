@@ -22,6 +22,15 @@ if (!invitationDeliveryKey)
 const invitationDeliveryKeyId = process.env.INVITATION_DELIVERY_KEY_ID;
 if (!invitationDeliveryKeyId)
   throw new Error('INVITATION_DELIVERY_KEY_ID is required');
+const applicationWrappingKey = process.env.APPLICATION_WRAPPING_KEY;
+if (!applicationWrappingKey)
+  throw new Error('APPLICATION_WRAPPING_KEY is required');
+const applicationWrappingKeyId = process.env.APPLICATION_WRAPPING_KEY_ID;
+if (!applicationWrappingKeyId)
+  throw new Error('APPLICATION_WRAPPING_KEY_ID is required');
+const applicationIdempotencyKey = process.env.APPLICATION_IDEMPOTENCY_KEY;
+if (!applicationIdempotencyKey)
+  throw new Error('APPLICATION_IDEMPOTENCY_KEY is required');
 
 const server = await createServer({
   databaseUrl,
@@ -42,6 +51,13 @@ const server = await createServer({
       [invitationDeliveryKeyId]: Buffer.from(invitationDeliveryKey, 'base64'),
     },
     activeEncryptionKeyId: invitationDeliveryKeyId,
+  },
+  wrappingKeys: {
+    wrappingKeys: {
+      [applicationWrappingKeyId]: Buffer.from(applicationWrappingKey, 'base64'),
+    },
+    activeWrappingKeyId: applicationWrappingKeyId,
+    idempotencyKey: Buffer.from(applicationIdempotencyKey, 'base64'),
   },
   webRoot: process.env.WEB_ROOT ?? 'dist',
 });

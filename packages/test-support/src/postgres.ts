@@ -68,7 +68,7 @@ export async function createRuntimeDatabaseUser(
       `grant connect on database ${database.rows[0]?.name} to ${role}`,
     );
     await client.query(
-      `grant usage on schema identity_access, school_configuration, audit, infrastructure to ${role}`,
+      `grant usage on schema identity_access, school_configuration, intake, audit, infrastructure to ${role}`,
     );
     await client.query(
       `grant select, insert on identity_access.school_workspaces,
@@ -92,6 +92,15 @@ export async function createRuntimeDatabaseUser(
     );
     await client.query(
       'grant select, insert, update on infrastructure.outbox to ' + role,
+    );
+    await client.query(
+      `grant select, insert, update, delete on intake.intake_drafts to ${role}`,
+    );
+    await client.query(
+      `grant select, insert on intake.intake_record_versions to ${role}`,
+    );
+    await client.query(
+      `grant select, insert on intake.intake_operation_receipts to ${role}`,
     );
     await client.query(
       `grant select, insert, update, delete on all tables in schema school_configuration to ${role}`,
