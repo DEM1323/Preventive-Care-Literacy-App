@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename } from 'node:path';
-import { renderIntakeAnswer } from '../modules/intake/index.ts';
+import { renderIntakeAnswer } from '../modules/intake-answers/index.ts';
 import {
   clinicalHttpFailureLocksAllState,
   ignoreStaleClinicalGeneration,
@@ -102,6 +102,9 @@ test('clinical Intake Record reveal stays memory-only and suppresses application
   expect(clinicalSource).toContain('generationRef');
   expect(clinicalSource).toContain('clinicalAuthorizationBackstopMs');
   expect(clinicalSource).toContain('renderIntakeAnswer');
+  expect(clinicalSource).toContain('modules/intake-answers');
+  expect(clinicalSource).not.toContain('modules/intake/index');
+  expect(clinicalSource).not.toContain('school-configuration');
   expect(clinicalSource).toContain('status >= 500');
   expect(clinicalSource).not.toContain("mode === 'silent' && busyRef");
   expect(clinicalSource).not.toContain(

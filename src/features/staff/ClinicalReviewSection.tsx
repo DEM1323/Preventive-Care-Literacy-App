@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createBrowserApiClient } from '../../../packages/api-client/src/index.ts';
 import type { paths } from '../../../packages/api-client/src/schema.ts';
-import { renderIntakeAnswer } from '../../../modules/intake/index.ts';
+import { renderIntakeAnswer } from '../../../modules/intake-answers/index.ts';
 import {
   clinicalHttpFailureLocksAllState,
   ignoreStaleClinicalGeneration,

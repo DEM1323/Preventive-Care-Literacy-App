@@ -15,6 +15,9 @@ import {
   supportedLocales,
 } from '../school-configuration/index.ts';
 
+export { renderIntakeAnswer } from '../intake-answers/index.ts';
+export type { LocalizedIntakeAnswerField } from '../intake-answers/index.ts';
+
 export const intakeKeyManagementName = 'application-layer-envelope/v1' as const;
 export const supportedIntakeLocales = supportedLocales;
 
@@ -450,14 +453,6 @@ function projectField(
     options,
     label,
   };
-}
-
-export function renderIntakeAnswer(
-  field: IntakeFormField,
-  value: string,
-): string | undefined {
-  if (field.options.length === 0) return value;
-  return field.options.find((option) => option.code === value)?.label;
 }
 
 export function fieldIsVisible(

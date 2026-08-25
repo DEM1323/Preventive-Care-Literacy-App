@@ -15,7 +15,7 @@
     "typecheck": "tsc -b --pretty false",
     "format": "prettier --write \"apps/**/*.ts\" \"modules/**/*.ts\" \"packages/**/*.{ts,json}\" \"scripts/*.ts\" \"tests/{spine,staging}/**/*.ts\" \".github/workflows/*.yml\" \"docs/operations/*.md\" \".dependency-cruiser.cjs\" \".prettierrc.json\" \"package.json\" \"railway.json\" \"railway.worker.json\" \"README.md\" \"index.html\" \"vite.config.ts\" \"tsconfig.server.json\"",
     "format:check": "prettier --check \"apps/**/*.ts\" \"modules/**/*.ts\" \"packages/**/*.{ts,json}\" \"scripts/*.ts\" \"tests/{spine,staging}/**/*.ts\" \".github/workflows/*.yml\" \"docs/operations/*.md\" \".dependency-cruiser.cjs\" \".prettierrc.json\" \"package.json\" \"railway.json\" \"railway.worker.json\" \"README.md\" \"index.html\" \"vite.config.ts\" \"tsconfig.server.json\"",
-    "check:boundaries": "dependency-cruiser apps modules packages --config .dependency-cruiser.cjs",
+    "check:boundaries": "dependency-cruiser apps modules packages src --config .dependency-cruiser.cjs",
     "generate:contracts": "bun scripts/generate-contracts.ts",
     "check:contracts": "bun scripts/generate-contracts.ts --check",
     "migrate": "bun scripts/migrate.ts",
