@@ -61,7 +61,6 @@ import {
   ResourceRevisionConflictError,
 } from '../../../modules/school-configuration/index.ts';
 import {
-  APPLICATION_LAYER_ENVELOPE_V1,
   createEnvelopeKeyManagement,
   type EnvelopeKeyMaterial,
 } from '../../../packages/application-keys/src/index.ts';
@@ -92,6 +91,11 @@ import { createMemoryReleasePackageStorage } from '../../../packages/release-pac
 import type { ReleasePackageStorage } from '../../../modules/school-configuration/index.ts';
 import { createPostgresIntakeStore } from '../../../packages/postgres/src/intake.ts';
 import { createPostgresLearningProgressStore } from '../../../packages/postgres/src/learning-progress.ts';
+import { queryGoldenJourneyOperatorEvidence } from '../../../packages/postgres/src/golden-journey-evidence.ts';
+import {
+  readAndVerifyBuildAttestation,
+  type BuildAttestation,
+} from '../../../packages/build-attestation/src/index.ts';
 
 const staffSessionCookie = '__Host-prevcare-staff-session' as const;
 const studentSessionCookie = '__Host-prevcare-student-session' as const;
@@ -608,9 +612,44 @@ const NotReadyHealthResponse = Type.Object({
 });
 const BuildHealthResponse = Type.Object({
   commit: Type.String({ pattern: '^[0-9a-f]{40}$' }),
+  tree: Type.String({ pattern: '^[0-9a-f]{40}$' }),
+  sourceDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  browserDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
   artifactDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
   envelopeAdapter: Type.Literal('application-layer-envelope/v1'),
 });
+const GoldenJourneyOperatorEvidenceQuery = Type.Object({
+  workspaceId: Type.String({ format: 'uuid' }),
+  invitationId: Type.String({ format: 'uuid' }),
+  publishOperationId: Type.String({ format: 'uuid' }),
+  intakeOperationId: Type.String({ format: 'uuid' }),
+  learningOperationId: Type.String({ format: 'uuid' }),
+});
+const GoldenJourneyOperatorEvidenceResponse = Type.Object(
+  {
+    auditRowCount: Type.Integer({ minimum: 0 }),
+    outboxCompletedCount: Type.Integer({ minimum: 0 }),
+    invitationStatus: Type.Union([Type.String(), Type.Null()]),
+    workerArtifactDigest: Type.Union([
+      Type.String({ pattern: '^[0-9a-f]{64}$' }),
+      Type.Null(),
+    ]),
+    workerEnvelopeAdapter: Type.Union([
+      Type.Literal('application-layer-envelope/v1'),
+      Type.Null(),
+    ]),
+    workerRecordedAt: Type.Union([Type.String(), Type.Null()]),
+    releaseId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
+    packageDigest: Type.Union([
+      Type.String({ pattern: '^[0-9a-f]{64}$' }),
+      Type.Null(),
+    ]),
+    releaseNumber: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
+    intakeReceiptPresent: Type.Boolean(),
+    learningReceiptPresent: Type.Boolean(),
+  },
+  { additionalProperties: false },
+);
 const BuildUnavailableResponse = Type.Object({
   status: Type.Literal('unavailable'),
 });
@@ -658,11 +697,15 @@ export async function buildApp(
     schoolConfiguration?: SchoolConfiguration;
     intake?: Intake;
     learningProgress?: LearningProgress;
-    buildIdentity?: {
-      commit: string;
-      artifactDigest: string;
-      envelopeAdapter: 'application-layer-envelope/v1';
-    };
+    buildIdentity?: BuildAttestation;
+    verifyBuildAttestation?: () => Promise<BuildAttestation | undefined>;
+    queryGoldenJourneyEvidence?: (input: {
+      workspaceId: string;
+      invitationId: string;
+      publishOperationId: string;
+      intakeOperationId: string;
+      learningOperationId: string;
+    }) => Promise<unknown>;
   },
 ): Promise<FastifyInstance> {
   const publicOrigin = new URL(options.publicOrigin).origin;
@@ -1135,16 +1178,29 @@ export async function buildApp(
       },
     },
     async (_request, reply) => {
-      const identity = options.buildIdentity;
+      const identity = options.verifyBuildAttestation
+        ? await options.verifyBuildAttestation()
+        : options.buildIdentity;
       if (
         !identity ||
+        identity.schemaVersion !== 1 ||
         !/^[0-9a-f]{40}$/.test(identity.commit) ||
+        !/^[0-9a-f]{40}$/.test(identity.tree) ||
+        !/^[0-9a-f]{64}$/.test(identity.sourceDigest) ||
+        !/^[0-9a-f]{64}$/.test(identity.browserDigest) ||
         !/^[0-9a-f]{64}$/.test(identity.artifactDigest) ||
         identity.envelopeAdapter !== 'application-layer-envelope/v1'
       ) {
         return reply.code(503).send({ status: 'unavailable' });
       }
-      return identity;
+      return {
+        commit: identity.commit,
+        tree: identity.tree,
+        sourceDigest: identity.sourceDigest,
+        browserDigest: identity.browserDigest,
+        artifactDigest: identity.artifactDigest,
+        envelopeAdapter: identity.envelopeAdapter,
+      };
     },
   );
 
@@ -1229,6 +1285,49 @@ export async function buildApp(
         actor,
       });
       return reply.code(201).send(result);
+    },
+  );
+
+  app.get<{
+    Querystring: Static<typeof GoldenJourneyOperatorEvidenceQuery>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/golden-journey-evidence',
+    {
+      schema: {
+        operationId: 'goldenJourneyOperatorEvidence',
+        security: [{ bearerAuth: [] }],
+        headers: OperatorHeaders,
+        querystring: GoldenJourneyOperatorEvidenceQuery,
+        response: {
+          200: GoldenJourneyOperatorEvidenceResponse,
+          401: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = options.operatorAuthenticator.authenticate(
+        request.headers.authorization,
+      );
+      if (!actor) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/operator-authentication',
+          title: 'Operator authentication required',
+          status: 401,
+          code: 'OPERATOR_AUTHENTICATION_REQUIRED',
+        });
+      }
+      if (!options.queryGoldenJourneyEvidence) {
+        return reply.type('application/problem+json').code(503).send({
+          type: 'https://preventive-care-literacy.example/problems/operator-evidence',
+          title: 'Operator evidence is unavailable',
+          status: 503,
+          code: 'OPERATOR_EVIDENCE_UNAVAILABLE',
+        });
+      }
+      const evidence = await options.queryGoldenJourneyEvidence(request.query);
+      return evidence;
     },
   );
 
@@ -1980,11 +2079,7 @@ export async function createServer(options: {
   wrappingKeys?: EnvelopeKeyMaterial;
   applicationKeys?: ApplicationKeyManagement;
   releasePackages?: ReleasePackageStorage;
-  buildIdentity?: {
-    commit: string;
-    artifactDigest: string;
-    envelopeAdapter: 'application-layer-envelope/v1';
-  };
+  buildIdentity?: BuildAttestation;
 }): Promise<FastifyInstance> {
   const connectionUrl = new URL(options.databaseUrl);
   if (options.databaseCaCertificate) {
@@ -2076,15 +2171,15 @@ export async function createServer(options: {
     schoolConfiguration,
     intake,
     learningProgress,
-    buildIdentity:
-      options.buildIdentity ??
-      (process.env.SOURCE_COMMIT && process.env.SOURCE_ARTIFACT_DIGEST
-        ? {
-            commit: process.env.SOURCE_COMMIT,
-            artifactDigest: process.env.SOURCE_ARTIFACT_DIGEST,
-            envelopeAdapter: APPLICATION_LAYER_ENVELOPE_V1,
-          }
-        : undefined),
+    verifyBuildAttestation: async () => {
+      try {
+        return await readAndVerifyBuildAttestation(process.cwd());
+      } catch {
+        return undefined;
+      }
+    },
+    queryGoldenJourneyEvidence: (input) =>
+      queryGoldenJourneyOperatorEvidence(pool, input),
     onClose: () => pool.end(),
   });
 }

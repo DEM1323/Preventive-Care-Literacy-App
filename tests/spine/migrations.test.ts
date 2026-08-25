@@ -28,6 +28,7 @@ test('migrations apply in order and are repeatable', async () => {
         { name: '010_unattributed_reveal_attempts.sql' },
         { name: '011_clinical_reveal_boundary_audit.sql' },
         { name: '012_clinical_reveal_authority_locks.sql' },
+        { name: '013_golden_journey_operator_evidence.sql' },
       ]);
     } finally {
       await client.end();

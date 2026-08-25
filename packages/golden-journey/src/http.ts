@@ -45,6 +45,8 @@ export function createOriginFetch(options: {
     if (cookie) headers.set('cookie', cookie);
     if (options.authorization) {
       headers.set('authorization', options.authorization);
+      headers.set('origin', options.origin);
+      headers.set('x-prevcare-csrf', '1');
     }
     const method = (init?.method ?? 'GET').toUpperCase();
     if (['DELETE', 'PATCH', 'POST', 'PUT'].includes(method)) {

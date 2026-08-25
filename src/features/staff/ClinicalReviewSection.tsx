@@ -272,7 +272,7 @@ export function ClinicalReviewSection(props: { onSessionLost: () => void }) {
           onChange={(event) =>
             setView((current) => ({ ...current, filter: event.target.value }))
           }
-          className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal"
+          className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         />
       </label>
       {busy === 'directory' ? (

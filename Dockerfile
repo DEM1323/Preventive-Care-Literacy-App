@@ -7,7 +7,9 @@ RUN bun install --frozen-lockfile
 
 FROM dependencies AS build
 COPY . .
+RUN test -n "$SOURCE_COMMIT" && test -n "$SOURCE_TREE"
 RUN bun run check:contracts && bun run build
+RUN bun scripts/write-build-attestation.ts
 
 FROM oven/bun:1.3.14-alpine AS production-dependencies
 WORKDIR /app
@@ -27,6 +29,7 @@ COPY --from=build --chown=bun:bun /app/modules ./modules
 COPY --from=build --chown=bun:bun /app/packages ./packages
 COPY --from=build --chown=bun:bun /app/scripts ./scripts
 COPY --from=build --chown=bun:bun /app/package.json ./package.json
+COPY --from=build --chown=bun:bun /app/build-attestation.json ./build-attestation.json
 USER bun
 EXPOSE 8080
 CMD ["bun", "apps/server/src/api.ts"]

@@ -12,8 +12,13 @@ export type InvitationMailboxBody = {
   to: string[];
 };
 
+export type InvitationMailboxPage = {
+  messages: readonly InvitationMailboxMessage[];
+  nextCursor?: string;
+};
+
 export type InvitationMailbox = {
-  list(): Promise<readonly InvitationMailboxMessage[]>;
+  list(cursor?: string): Promise<InvitationMailboxPage>;
   read(id: string): Promise<InvitationMailboxBody>;
 };
 
@@ -30,33 +35,76 @@ export function extractInvitationCode(text: string): string {
   return match[1];
 }
 
+export function normalizeMailboxRecipient(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+async function listAllMessages(
+  mailbox: InvitationMailbox,
+  maxPages = 50,
+): Promise<InvitationMailboxMessage[]> {
+  const messages: InvitationMailboxMessage[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < maxPages; page += 1) {
+    const result = await mailbox.list(cursor);
+    messages.push(...result.messages);
+    if (!result.nextCursor) break;
+    cursor = result.nextCursor;
+  }
+  return messages;
+}
+
 export async function waitForInvitationCode(
   mailbox: InvitationMailbox,
   options: {
+    expectedRecipient: string;
     since: Date;
     attempts: number;
     sleep: (ms: number) => Promise<void>;
     delayMs?: number;
+    backoffFactor?: number;
+    maxDelayMs?: number;
+    clockSkewMs?: number;
+    now?: () => Date;
   },
 ): Promise<string> {
+  const expectedRecipient = normalizeMailboxRecipient(
+    options.expectedRecipient,
+  );
+  const skewMs = options.clockSkewMs ?? 30_000;
+  const now = options.now ?? (() => new Date());
   try {
     return await retryTransient(
       async () => {
-        const messages = await mailbox.list();
-        const match = messages.find(
-          (message) =>
-            message.subject === 'Your Invitation Code' &&
-            Date.parse(message.createdAt) >= options.since.getTime(),
-        );
-        if (!match) {
+        const messages = await listAllMessages(mailbox);
+        const earliest = options.since.getTime() - skewMs;
+        const latest = now().getTime() + skewMs;
+        const candidates = messages.filter((message) => {
+          if (message.subject !== 'Your Invitation Code') return false;
+          const createdAt = Date.parse(message.createdAt);
+          if (Number.isNaN(createdAt)) return false;
+          return createdAt >= earliest && createdAt <= latest;
+        });
+        if (candidates.length === 0) {
           throw new Error('Invitation delivery has not completed');
         }
-        const body = await mailbox.read(match.id);
-        return extractInvitationCode(body.text);
+        const ordered = [...candidates].sort(
+          (left, right) =>
+            Date.parse(right.createdAt) - Date.parse(left.createdAt),
+        );
+        for (const candidate of ordered) {
+          const body = await mailbox.read(candidate.id);
+          const recipients = body.to.map(normalizeMailboxRecipient);
+          if (!recipients.includes(expectedRecipient)) continue;
+          return extractInvitationCode(body.text);
+        }
+        throw new Error('Invitation delivery has not completed');
       },
       {
         attempts: options.attempts,
-        delayMs: options.delayMs ?? 0,
+        delayMs: options.delayMs ?? 500,
+        backoffFactor: options.backoffFactor ?? 2,
+        maxDelayMs: options.maxDelayMs ?? 8_000,
         sleep: options.sleep,
       },
     );
@@ -71,19 +119,22 @@ export function createResendInvitationMailbox(options: {
 }): InvitationMailbox {
   const request = options.request ?? fetch;
   return {
-    async list() {
-      const response = await request('https://api.resend.com/emails?limit=20', {
+    async list(cursor) {
+      const url = new URL('https://api.resend.com/emails');
+      url.searchParams.set('limit', '100');
+      if (cursor) url.searchParams.set('after', cursor);
+      const response = await request(url.toString(), {
         headers: { authorization: `Bearer ${options.apiKey}` },
         signal: AbortSignal.timeout(10_000),
       });
       if (!response.ok) throw new Error('Invitation delivery listing failed');
       const body: unknown = await response.json();
-      const data =
-        body && typeof body === 'object' && 'data' in body
-          ? (body as { data: unknown }).data
-          : body;
-      if (!Array.isArray(data)) return [];
-      return data.flatMap((entry) => {
+      const record =
+        body && typeof body === 'object'
+          ? (body as Record<string, unknown>)
+          : {};
+      const data = Array.isArray(record.data) ? record.data : [];
+      const messages = data.flatMap((entry) => {
         if (
           !entry ||
           typeof entry !== 'object' ||
@@ -104,6 +155,14 @@ export function createResendInvitationMailbox(options: {
           },
         ];
       });
+      const last = messages.at(-1);
+      const hasMore =
+        (typeof record.has_more === 'boolean' && record.has_more) ||
+        messages.length === 100;
+      return {
+        messages,
+        nextCursor: hasMore && last ? last.id : undefined,
+      };
     },
     async read(id) {
       const response = await request(

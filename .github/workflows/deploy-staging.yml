@@ -28,9 +28,8 @@ jobs:
         id: source
         run: |
           TREE=$(git rev-parse 'HEAD^{tree}')
-          DIGEST=$(printf 'git-tree:%s' "$TREE" | sha256sum | awk '{print $1}')
           echo "commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "tree=$TREE" >> "$GITHUB_OUTPUT"
 
       - name: Apply forward migrations and runtime grants
         env:
@@ -60,7 +59,7 @@ jobs:
           APPLICATION_WRAPPING_KEY: ${{ secrets.APPLICATION_WRAPPING_KEY }}
           APPLICATION_IDEMPOTENCY_KEY: ${{ secrets.APPLICATION_IDEMPOTENCY_KEY }}
           SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
-          SOURCE_ARTIFACT_DIGEST: ${{ steps.source.outputs.digest }}
+          SOURCE_TREE: ${{ steps.source.outputs.tree }}
         run: |
           bunx @railway/cli@5.43.2 variables set --skip-deploys \
             --project 20cf68d2-d1df-4291-9aea-61cfebfd758d \
@@ -75,7 +74,7 @@ jobs:
             "APPLICATION_WRAPPING_KEY=$APPLICATION_WRAPPING_KEY" \
             "APPLICATION_IDEMPOTENCY_KEY=$APPLICATION_IDEMPOTENCY_KEY" \
             "SOURCE_COMMIT=$SOURCE_COMMIT" \
-            "SOURCE_ARTIFACT_DIGEST=$SOURCE_ARTIFACT_DIGEST"
+            "SOURCE_TREE=$SOURCE_TREE"
 
       - name: Synchronize private worker variables
         env:
@@ -87,6 +86,8 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           INVITATION_EMAIL_FROM: ${{ secrets.INVITATION_EMAIL_FROM }}
           INVITATION_CONTROLLED_MAILBOX: ${{ secrets.INVITATION_CONTROLLED_MAILBOX }}
+          SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
+          SOURCE_TREE: ${{ steps.source.outputs.tree }}
         run: |
           bunx @railway/cli@5.43.2 variables set --skip-deploys \
             --project 20cf68d2-d1df-4291-9aea-61cfebfd758d \
@@ -98,7 +99,9 @@ jobs:
             "INVITATION_DELIVERY_KEY=$INVITATION_DELIVERY_KEY" \
             "RESEND_API_KEY=$RESEND_API_KEY" \
             "INVITATION_EMAIL_FROM=$INVITATION_EMAIL_FROM" \
-            "INVITATION_CONTROLLED_MAILBOX=$INVITATION_CONTROLLED_MAILBOX"
+            "INVITATION_CONTROLLED_MAILBOX=$INVITATION_CONTROLLED_MAILBOX" \
+            "SOURCE_COMMIT=$SOURCE_COMMIT" \
+            "SOURCE_TREE=$SOURCE_TREE"
 
       - name: Deploy merged source to Railway
         run: |

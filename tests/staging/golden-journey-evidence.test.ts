@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 import {
   GOLDEN_JOURNEY_EVIDENCE_SCHEMA_VERSION,
   assertSafeGoldenJourneyEvidence,
+  createFailedGoldenJourneyEvidence,
   createGoldenJourneyEvidence,
 } from '../../packages/golden-journey/src/index.ts';
 
@@ -11,10 +12,13 @@ const opaqueIds = {
   classId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8003',
   invitationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8004',
   restorationInvitationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8005',
+  isolationWorkspaceId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8014',
   releaseId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8006',
   studentId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8007',
   intakeRecordVersionId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8008',
   itemCompletionId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8009',
+  packageDigest:
+    'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
 };
 
 const passCoverage = {
@@ -29,6 +33,10 @@ const passCoverage = {
   learningAcknowledgement: 'pass',
   clinicalDirectory: 'pass',
   clinicalReveal: 'pass',
+  workspaceIsolation: 'pass',
+  authorizationDenial: 'pass',
+  auditEvidence: 'pass',
+  outboxDelivery: 'pass',
   freshBrowserRestoration: 'pass',
   keyboard: 'pass',
   focus: 'pass',
@@ -51,6 +59,7 @@ function validInput() {
     startedAt: '2026-08-25T16:00:00.000Z',
     completedAt: '2026-08-25T16:12:00.000Z',
     syntheticIdentifiers: opaqueIds,
+    authCleanup: 'completed' as const,
     coverage: passCoverage,
     providerContracts: [
       { name: 'postgres', status: 'ok' as const },
@@ -79,9 +88,11 @@ test('evidence records only allowlisted operational fields', () => {
   expect(evidence.cleanupBoundary).toEqual({
     marker: 'golden-journey/018f1f5e-7b76-7f70-8f4d-9dc17ecf8000',
     disposition: 'operator-cleanup-required',
+    authCleanup: 'completed',
   });
   expect(Object.keys(evidence)).toEqual([
     'schemaVersion',
+    'outcome',
     'environment',
     'environmentHost',
     'commit',
@@ -157,4 +168,24 @@ test('evidence fails closed when required coverage or provider contracts are mis
       providerContracts: [{ name: 'postgres', status: 'ok' }],
     }),
   ).toThrow('Golden journey evidence provider contracts are incomplete');
+});
+
+test('failed evidence records a fixed error code and last step without exception text', () => {
+  const failed = createFailedGoldenJourneyEvidence({
+    environmentHost: 'staging.up.railway.app',
+    commit: validInput().commit,
+    artifactDigest: validInput().artifactDigest,
+    runId: validInput().runId,
+    startedAt: validInput().startedAt,
+    completedAt: validInput().completedAt,
+    lastCompletedStep: 'gated',
+    errorCode: 'DIGEST_MISMATCH',
+    authCleanup: 'completed',
+  });
+  expect(failed.outcome).toBe('failed');
+  expect(failed.errorCode).toBe('DIGEST_MISMATCH');
+  expect(failed.lastCompletedStep).toBe('gated');
+  expect(JSON.stringify(failed)).not.toContain('Error');
+  expect(JSON.stringify(failed)).not.toContain('stack');
+  expect(() => assertSafeGoldenJourneyEvidence(failed)).not.toThrow();
 });

@@ -1,5 +1,6 @@
 export const goldenJourneyRequiredConfigurationNames = [
   'STAGING_WEB_URL',
+  'RAILWAY_STAGING_ORIGIN',
   'EXPECTED_COMMIT',
   'EXPECTED_GIT_TREE',
   'OPERATOR_PROVISIONING_TOKEN',
@@ -25,19 +26,54 @@ export type GoldenJourneyConfigurationName =
 
 export class GoldenJourneyPreflightError extends Error {
   readonly missingNames: readonly string[];
+  readonly code: 'PREFLIGHT_MISSING' | 'PREFLIGHT_REF' | 'PREFLIGHT_ORIGIN';
 
-  constructor(missingNames: readonly string[]) {
+  constructor(
+    missingNames: readonly string[],
+    code:
+      | 'PREFLIGHT_MISSING'
+      | 'PREFLIGHT_REF'
+      | 'PREFLIGHT_ORIGIN' = 'PREFLIGHT_MISSING',
+  ) {
     super(
-      `Golden journey preflight missing configuration: ${missingNames.join(', ')}`,
+      code === 'PREFLIGHT_MISSING'
+        ? `Golden journey preflight missing configuration: ${missingNames.join(', ')}`
+        : 'Golden journey preflight rejected the launch gate',
     );
     this.name = 'GoldenJourneyPreflightError';
     this.missingNames = missingNames;
+    this.code = code;
   }
 }
 
 export type GoldenJourneyPreflightResult =
   | { ok: true; missingNames: [] }
   | { ok: false; missingNames: GoldenJourneyConfigurationName[] };
+
+function httpsUrl(value: string | undefined): URL | undefined {
+  if (!value) return undefined;
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== 'https:') return undefined;
+    return parsed;
+  } catch {
+    return undefined;
+  }
+}
+
+export function assertGoldenJourneyLaunchGate(
+  environment: Record<string, string | undefined>,
+): void {
+  const ref = environment.GOLDEN_JOURNEY_REF ?? environment.GITHUB_REF;
+  if (ref !== 'refs/heads/main') {
+    throw new GoldenJourneyPreflightError([], 'PREFLIGHT_REF');
+  }
+  const staging = httpsUrl(environment.STAGING_WEB_URL);
+  const railway = httpsUrl(environment.RAILWAY_STAGING_ORIGIN);
+  if (!staging || !railway || staging.host !== railway.host) {
+    throw new GoldenJourneyPreflightError([], 'PREFLIGHT_ORIGIN');
+  }
+}
 
 export function reportGoldenJourneyPreflight(
   environment: Record<string, string | undefined>,
@@ -47,6 +83,7 @@ export function reportGoldenJourneyPreflight(
     (name) => !environment[name]?.trim(),
   );
   if (missingNames.length === 0) {
+    if (options.failClosed) assertGoldenJourneyLaunchGate(environment);
     return { ok: true, missingNames: [] };
   }
   if (options.failClosed) {

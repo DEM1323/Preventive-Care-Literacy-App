@@ -1,12 +1,20 @@
 import { APPLICATION_LAYER_ENVELOPE_V1 } from '../../application-keys/src/index.ts';
 import { totpCode } from '../../supabase-auth/src/index.ts';
 import type { BrowserAssertionOutcomes } from './browser-assertions.ts';
+import { cleanupEphemeralAuthUsers } from './cleanup.ts';
+import {
+  assertExactSubmittedAnswers,
+  discardClinicalRevealAnswers,
+} from './clinical-answers.ts';
 import { environmentHostFromOrigin } from './configuration.ts';
 import {
   assertDeployedSourceIdentity,
-  artifactDigestForGitTree,
+  assertWorkerArtifactDigest,
+  GoldenJourneyDigestMismatchError,
   type ExpectedSourceIdentity,
 } from './digest.ts';
+import type { GoldenJourneyErrorCode } from './error-codes.ts';
+import { isGoldenJourneyErrorCode } from './error-codes.ts';
 import {
   createGoldenJourneyEvidence,
   type GoldenJourneyEvidence,
@@ -20,12 +28,28 @@ import {
 } from './http.ts';
 import { completeSyntheticIntakeAnswers } from './intake-answers.ts';
 import { waitForInvitationCode, type InvitationMailbox } from './mailbox.ts';
+import { parseGoldenJourneyOperatorEvidence } from './operator-evidence.ts';
 import {
   GoldenJourneyPreflightError,
   reportGoldenJourneyPreflight,
 } from './preflight.ts';
 import { NonRetryableGoldenJourneyError, retryTransient } from './retry.ts';
-import { createGoldenJourneyState } from './state.ts';
+import { createGoldenJourneyState, type GoldenJourneyStep } from './state.ts';
+
+export class GoldenJourneyRunError extends Error {
+  readonly code: GoldenJourneyErrorCode;
+  readonly lastCompletedStep: GoldenJourneyStep;
+
+  constructor(
+    code: GoldenJourneyErrorCode,
+    lastCompletedStep: GoldenJourneyStep,
+  ) {
+    super('Golden journey failed');
+    this.name = 'GoldenJourneyRunError';
+    this.code = code;
+    this.lastCompletedStep = lastCompletedStep;
+  }
+}
 
 export type GoldenJourneyIds = {
   runId: string;
@@ -35,6 +59,8 @@ export type GoldenJourneyIds = {
   invitationId: string;
   restorationClassId: string;
   restorationInvitationId: string;
+  isolationWorkspaceId: string;
+  isolationStaffIdentityId: string;
   operationIds: {
     workspace: string;
     staff: string;
@@ -44,6 +70,8 @@ export type GoldenJourneyIds = {
     restorationInvitation: string;
     intake: string;
     learning: string;
+    isolationWorkspace: string;
+    isolationStaff: string;
   };
 };
 
@@ -66,6 +94,8 @@ export type GoldenJourneyRunInput = {
   }) => Promise<BrowserAssertionOutcomes>;
   ids: GoldenJourneyIds;
   staffPassword: string;
+  isolationStaffPassword: string;
+  cleanupAuthUsers?: typeof cleanupEphemeralAuthUsers;
 };
 
 function requireString(value: unknown, label: string): string {
@@ -98,6 +128,23 @@ function totpSecretFromOtpauth(uri: string): string {
   if (!secret)
     throw new NonRetryableGoldenJourneyError('TOTP enrollment failed');
   return secret;
+}
+
+function mapJourneyError(error: unknown): GoldenJourneyErrorCode {
+  if (error instanceof GoldenJourneyPreflightError) return error.code;
+  if (error instanceof GoldenJourneyDigestMismatchError) return error.code;
+  if (error instanceof NonRetryableGoldenJourneyError) {
+    return isGoldenJourneyErrorCode(error.code)
+      ? error.code
+      : 'UNEXPECTED_FAILURE';
+  }
+  if (
+    error instanceof Error &&
+    error.message === 'Invitation delivery was not observed'
+  ) {
+    return 'MAILBOX_UNOBSERVED';
+  }
+  return 'UNEXPECTED_FAILURE';
 }
 
 function problemCode(body: unknown): string | undefined {
@@ -179,6 +226,9 @@ export async function runGoldenJourney(
 ): Promise<GoldenJourneyEvidence> {
   const state = createGoldenJourneyState();
   const startedAt = input.clock.now();
+  const ephemeralEmails: string[] = [];
+  let authCleanup: 'completed' | 'not-attempted' | 'failed' = 'not-attempted';
+  const cleanupAuth = input.cleanupAuthUsers ?? cleanupEphemeralAuthUsers;
   try {
     const preflight = reportGoldenJourneyPreflight(input.environment, {
       failClosed: true,
@@ -198,16 +248,7 @@ export async function runGoldenJourney(
       input.environment.OPERATOR_PROVISIONING_TOKEN,
       'OPERATOR_PROVISIONING_TOKEN',
     );
-    const expectedTree = requireString(
-      input.environment.EXPECTED_GIT_TREE,
-      'EXPECTED_GIT_TREE',
-    );
-    const expectedSource = {
-      commit: input.expectedSource.commit,
-      artifactDigest:
-        input.expectedSource.artifactDigest ||
-        artifactDigestForGitTree(expectedTree),
-    };
+    const expectedSource = input.expectedSource;
 
     const anonymous = new CookieJar();
     const staffJar = new CookieJar();
@@ -260,16 +301,23 @@ export async function runGoldenJourney(
     if (
       !isRecord(build.body) ||
       typeof build.body.commit !== 'string' ||
+      typeof build.body.tree !== 'string' ||
+      typeof build.body.sourceDigest !== 'string' ||
+      typeof build.body.browserDigest !== 'string' ||
       typeof build.body.artifactDigest !== 'string' ||
       typeof build.body.envelopeAdapter !== 'string'
     ) {
       throw new NonRetryableGoldenJourneyError(
         'Deployed build identity is unavailable',
+        'DIGEST_MISMATCH',
       );
     }
     assertDeployedSourceIdentity(
       {
         commit: build.body.commit,
+        tree: build.body.tree,
+        sourceDigest: build.body.sourceDigest,
+        browserDigest: build.body.browserDigest,
         artifactDigest: build.body.artifactDigest,
         envelopeAdapter: build.body.envelopeAdapter,
       },
@@ -288,12 +336,17 @@ export async function runGoldenJourney(
         providers.some((entry) => entry.name === name && entry.status === 'ok'),
       )
     ) {
-      throw new NonRetryableGoldenJourneyError('Provider smoke checks failed');
+      throw new NonRetryableGoldenJourneyError(
+        'Provider smoke checks failed',
+        'PROVIDER_SMOKE_FAILED',
+      );
     }
     state.advance('gated');
 
     const marker = `golden-journey/${input.ids.runId}`;
     const staffEmail = `g${input.ids.runId.replaceAll('-', '')}@example.test`;
+    const isolationStaffEmail = `i${input.ids.runId.replaceAll('-', '')}@example.test`;
+    ephemeralEmails.push(staffEmail, isolationStaffEmail);
     await requestJson(
       operatorFetch,
       `${origin}/api/v1/administration/school-workspaces`,
@@ -429,6 +482,33 @@ export async function runGoldenJourney(
       isRecord(published.body) ? published.body.releaseId : undefined,
       'releaseId',
     );
+    const packageDigest = requireString(
+      isRecord(published.body) && isRecord(published.body.package)
+        ? published.body.package.digest
+        : undefined,
+      'packageDigest',
+    );
+    if (!/^[0-9a-f]{64}$/.test(packageDigest)) {
+      throw new NonRetryableGoldenJourneyError(
+        'Published package digest is malformed',
+        'RELEASE_PUBLISH_FAILED',
+      );
+    }
+    await requestJson(
+      staffFetch,
+      `${origin}/api/v1/administration/school-configuration/releases`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          operationId: input.ids.operationIds.publish,
+          expectedActiveReleaseId: null,
+          expectedDraftVersion: draftVersion,
+          candidateFingerprint,
+          changeDescription: marker,
+        }),
+      },
+      [201],
+    );
     state.advance('release_published');
 
     const created = await requestJson(
@@ -447,8 +527,26 @@ export async function runGoldenJourney(
       [201],
     );
     if (!isRecord(created.body) || created.body.outcome !== 'created') {
-      throw new NonRetryableGoldenJourneyError('Class invitation failed');
+      throw new NonRetryableGoldenJourneyError(
+        'Class invitation failed',
+        'INVITATION_FAILED',
+      );
     }
+    await requestJson(
+      staffFetch,
+      `${origin}/api/v1/administration/classes`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          operationId: input.ids.operationIds.invitation,
+          classId: input.ids.classId,
+          invitationId: input.ids.invitationId,
+          name: marker,
+          recipient: mailbox,
+        }),
+      },
+      [201],
+    );
     state.advance('invitation_created');
 
     const invitationSentAt = input.clock.now();
@@ -461,10 +559,13 @@ export async function runGoldenJourney(
     const readInvitationCode =
       input.waitForInvitationCode ?? waitForInvitationCode;
     const invitationCode = await readInvitationCode(input.mailbox, {
+      expectedRecipient: mailbox,
       since: invitationSentAt,
-      attempts: 20,
+      attempts: 12,
       sleep: input.sleep,
-      delayMs: 1_000,
+      delayMs: 500,
+      backoffFactor: 2,
+      maxDelayMs: 8_000,
     });
     state.advance('invitation_delivered');
 
@@ -638,15 +739,139 @@ export async function runGoldenJourney(
     if (
       !isRecord(revealed.body) ||
       revealed.body.studentId !== studentId ||
-      revealed.body.intakeRecordVersionId !== intakeRecordVersionId ||
-      !isRecord(revealed.body.answers) ||
-      Object.keys(revealed.body.answers).length === 0
+      revealed.body.intakeRecordVersionId !== intakeRecordVersionId
     ) {
-      throw new NonRetryableGoldenJourneyError('Clinical reveal failed');
+      throw new NonRetryableGoldenJourneyError(
+        'Clinical reveal failed',
+        'CLINICAL_REVEAL_FAILED',
+      );
     }
-    delete revealed.body.answers;
-    delete revealed.body.intakeForm;
+    assertExactSubmittedAnswers(revealed.body.answers, answers);
+    discardClinicalRevealAnswers(revealed.body);
     state.advance('clinical_revealed');
+
+    await requestJson(
+      operatorFetch,
+      `${origin}/api/v1/administration/school-workspaces`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          operationId: input.ids.operationIds.isolationWorkspace,
+          workspaceId: input.ids.isolationWorkspaceId,
+          displayName: `${marker}-isolation`,
+        }),
+      },
+      [201],
+    );
+    await requestJson(
+      operatorFetch,
+      `${origin}/api/v1/administration/staff-identities`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          operationId: input.ids.operationIds.isolationStaff,
+          workspaceId: input.ids.isolationWorkspaceId,
+          staffIdentityId: input.ids.isolationStaffIdentityId,
+          displayName: `${marker}-isolation`,
+          email: isolationStaffEmail,
+          permissions: ['administrative', 'clinical'],
+          schoolApprover: 'golden-journey-operator',
+          reason: marker,
+          initialPassword: input.isolationStaffPassword,
+        }),
+      },
+      [201],
+    );
+    const isolationJar = new CookieJar();
+    const isolationFetch = createOriginFetch({
+      origin,
+      fetch: input.fetch,
+      jar: isolationJar,
+    });
+    const isolationStarted = await requestJson(
+      anonymousFetch,
+      `${origin}/api/v1/auth/staff/sign-in`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          email: isolationStaffEmail,
+          password: input.isolationStaffPassword,
+        }),
+      },
+      [200],
+    );
+    if (
+      !isRecord(isolationStarted.body) ||
+      typeof isolationStarted.body.flowHandle !== 'string' ||
+      typeof isolationStarted.body.otpauthUri !== 'string'
+    ) {
+      throw new NonRetryableGoldenJourneyError(
+        'Staff authentication failed',
+        'AUTHENTICATION_FAILED',
+      );
+    }
+    await requestJson(
+      isolationFetch,
+      `${origin}/api/v1/auth/staff/totp`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          flowHandle: isolationStarted.body.flowHandle,
+          code: totpCode(
+            totpSecretFromOtpauth(isolationStarted.body.otpauthUri),
+          ),
+        }),
+      },
+      [200],
+    );
+    const isolationDirectory = await requestJson(
+      isolationFetch,
+      `${origin}/api/v1/clinical/review-directory`,
+      { method: 'GET' },
+      [200],
+    );
+    if (
+      !isRecord(isolationDirectory.body) ||
+      !Array.isArray(isolationDirectory.body.students) ||
+      isolationDirectory.body.students.some(
+        (entry) => isRecord(entry) && entry.studentId === studentId,
+      )
+    ) {
+      throw new NonRetryableGoldenJourneyError(
+        'Workspace isolation failed',
+        'AUTHORIZATION_DENIED',
+      );
+    }
+    const isolationReveal = await requestJson(
+      isolationFetch,
+      `${origin}/api/v1/clinical/intake-records/current`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ studentId }),
+      },
+      [401, 403, 404],
+    );
+    if (isolationReveal.status === 200) {
+      throw new NonRetryableGoldenJourneyError(
+        'Workspace isolation failed',
+        'AUTHORIZATION_DENIED',
+      );
+    }
+    const anonymousReveal = await requestJson(
+      anonymousFetch,
+      `${origin}/api/v1/clinical/intake-records/current`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ studentId }),
+      },
+      [401, 403],
+    );
+    if (anonymousReveal.status === 200) {
+      throw new NonRetryableGoldenJourneyError(
+        'Workspace isolation failed',
+        'AUTHORIZATION_DENIED',
+      );
+    }
 
     await requestJson(
       staffFetch,
@@ -671,10 +896,13 @@ export async function runGoldenJourney(
       sleep: input.sleep,
     });
     const restorationCode = await readInvitationCode(input.mailbox, {
+      expectedRecipient: mailbox,
       since: restorationSentAt,
-      attempts: 20,
+      attempts: 12,
       sleep: input.sleep,
-      delayMs: 1_000,
+      delayMs: 500,
+      backoffFactor: 2,
+      maxDelayMs: 8_000,
     });
     await requestJson(
       restoredFetch,
@@ -718,6 +946,53 @@ export async function runGoldenJourney(
     }
     state.advance('student_restored');
 
+    const evidenceQuery = new URL(
+      `${origin}/api/v1/operator/golden-journey-evidence`,
+    );
+    evidenceQuery.searchParams.set('workspaceId', input.ids.workspaceId);
+    evidenceQuery.searchParams.set('invitationId', input.ids.invitationId);
+    evidenceQuery.searchParams.set(
+      'publishOperationId',
+      input.ids.operationIds.publish,
+    );
+    evidenceQuery.searchParams.set(
+      'intakeOperationId',
+      input.ids.operationIds.intake,
+    );
+    evidenceQuery.searchParams.set(
+      'learningOperationId',
+      input.ids.operationIds.learning,
+    );
+    const operatorEvidenceResponse = await requestJson(
+      operatorFetch,
+      evidenceQuery.toString(),
+      { method: 'GET' },
+      [200],
+    );
+    const operatorEvidence = parseGoldenJourneyOperatorEvidence(
+      operatorEvidenceResponse.body,
+    );
+    if (
+      operatorEvidence.auditRowCount < 1 ||
+      operatorEvidence.outboxCompletedCount < 1 ||
+      operatorEvidence.releaseId !== releaseId ||
+      operatorEvidence.packageDigest !== packageDigest ||
+      operatorEvidence.intakeReceiptPresent !== true ||
+      operatorEvidence.learningReceiptPresent !== true ||
+      (operatorEvidence.invitationStatus !== 'delivered' &&
+        operatorEvidence.invitationStatus !== 'completed')
+    ) {
+      throw new NonRetryableGoldenJourneyError(
+        'Operator evidence is unavailable',
+        'OPERATOR_EVIDENCE_FAILED',
+      );
+    }
+    assertWorkerArtifactDigest({
+      publicDigest: expectedSource.artifactDigest,
+      workerDigest: operatorEvidence.workerArtifactDigest ?? undefined,
+      expectedDigest: expectedSource.artifactDigest,
+    });
+
     const browser = await input.runBrowser({
       origin,
       staffCookie: staffJar.header(),
@@ -732,10 +1007,18 @@ export async function runGoldenJourney(
       browser.responsive !== 'pass' ||
       browser.multilingualLayout !== 'pass'
     ) {
-      throw new NonRetryableGoldenJourneyError('Browser assertions failed');
+      throw new NonRetryableGoldenJourneyError(
+        'Browser assertions failed',
+        'BROWSER_ASSERTION_FAILED',
+      );
     }
     state.advance('browser_checked');
     state.advance('completed');
+    authCleanup = await cleanupAuth({
+      supabaseUrl: input.environment.SUPABASE_URL ?? '',
+      secretKey: input.environment.SUPABASE_SECRET_KEY ?? '',
+      emails: ephemeralEmails,
+    });
 
     return createGoldenJourneyEvidence({
       environment: 'staging',
@@ -752,11 +1035,14 @@ export async function runGoldenJourney(
         classId: input.ids.classId,
         invitationId: input.ids.invitationId,
         restorationInvitationId: input.ids.restorationInvitationId,
+        isolationWorkspaceId: input.ids.isolationWorkspaceId,
         releaseId,
         studentId,
         intakeRecordVersionId,
         itemCompletionId,
+        packageDigest,
       },
+      authCleanup,
       coverage: {
         staffAuth: 'pass',
         staffFreshness: 'pass',
@@ -769,6 +1055,10 @@ export async function runGoldenJourney(
         learningAcknowledgement: 'pass',
         clinicalDirectory: 'pass',
         clinicalReveal: 'pass',
+        workspaceIsolation: 'pass',
+        authorizationDenial: 'pass',
+        auditEvidence: 'pass',
+        outboxDelivery: 'pass',
         freshBrowserRestoration: 'pass',
         ...browser,
       },
@@ -784,9 +1074,19 @@ export async function runGoldenJourney(
       ],
     });
   } catch (error) {
+    if (error instanceof GoldenJourneyRunError) throw error;
+    const lastCompletedStep = state.step();
     if (state.step() !== 'failed' && state.step() !== 'completed') {
       state.fail();
     }
-    throw error;
+    await cleanupAuth({
+      supabaseUrl: input.environment.SUPABASE_URL ?? '',
+      secretKey: input.environment.SUPABASE_SECRET_KEY ?? '',
+      emails: ephemeralEmails,
+    });
+    throw new GoldenJourneyRunError(
+      mapJourneyError(error),
+      lastCompletedStep === 'failed' ? 'idle' : lastCompletedStep,
+    );
   }
 }

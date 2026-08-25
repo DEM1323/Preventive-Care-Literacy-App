@@ -3,37 +3,48 @@ export { runGoldenJourneyBrowser } from './browser.ts';
 export {
   assertBrowserAccessibility,
   contrastRatio,
+  fixtureModuleTitles,
   type AccessibilitySnapshot,
   type BrowserAssertionOutcomes,
   type BrowserLocale,
 } from './browser-assertions.ts';
+export { sessionCookiesForOrigin } from './browser-cookies.ts';
+export { cleanupEphemeralAuthUsers } from './cleanup.ts';
 export {
   environmentHostFromOrigin,
   normalizeGoldenJourneyEnvironment,
 } from './configuration.ts';
 export {
   GoldenJourneyDigestMismatchError,
-  artifactDigestForGitTree,
   assertDeployedSourceIdentity,
+  assertWorkerArtifactDigest,
   type DeployedSourceIdentity,
   type ExpectedSourceIdentity,
 } from './digest.ts';
 export {
   GOLDEN_JOURNEY_EVIDENCE_SCHEMA_VERSION,
   assertSafeGoldenJourneyEvidence,
+  createFailedGoldenJourneyEvidence,
   createGoldenJourneyEvidence,
   goldenJourneyCoverageKeys,
   goldenJourneyProviderContractNames,
   type GoldenJourneyEvidence,
+  type GoldenJourneyFailureEvidence,
 } from './evidence.ts';
+export { goldenJourneyErrorCodes } from './error-codes.ts';
 export { completeSyntheticIntakeAnswers } from './intake-answers.ts';
-export { runGoldenJourney, type GoldenJourneyIds } from './journey.ts';
+export {
+  runGoldenJourney,
+  GoldenJourneyRunError,
+  type GoldenJourneyIds,
+} from './journey.ts';
 export {
   createResendInvitationMailbox,
   extractInvitationCode,
   waitForInvitationCode,
   type InvitationMailbox,
 } from './mailbox.ts';
+export { parseGoldenJourneyOperatorEvidence } from './operator-evidence.ts';
 export {
   GoldenJourneyPreflightError,
   goldenJourneyRequiredConfigurationNames,
@@ -41,3 +52,4 @@ export {
 } from './preflight.ts';
 export { retryTransient } from './retry.ts';
 export { GoldenJourneyStateError, createGoldenJourneyState } from './state.ts';
+export type { GoldenJourneyStep } from './state.ts';

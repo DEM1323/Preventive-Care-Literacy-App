@@ -1,11 +1,15 @@
 import { expect, test } from 'bun:test';
 import {
-  GoldenJourneyDigestMismatchError,
-  GoldenJourneyPreflightError,
+  GoldenJourneyRunError,
   runGoldenJourney,
 } from '../../packages/golden-journey/src/index.ts';
 
 const commit = 'beda69fca3f7954a0200a3209cb44aac7ade4a72';
+const tree = '89abcdef0123456789abcdef0123456789abcdef';
+const sourceDigest =
+  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const browserDigest =
+  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 const artifactDigest =
   '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 const origin = 'https://staging.up.railway.app';
@@ -110,10 +114,12 @@ function intakeSnapshot(overrides: Record<string, unknown> = {}) {
 function createFetch() {
   const invitationStatus = new Map<string, string>();
   let studentSessions = 0;
+  let staffTotp = 0;
   return async (input: string | URL | Request, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : input.toString();
     const method = (init?.method ?? 'GET').toUpperCase();
     const path = new URL(url, origin).pathname;
+    const cookie = new Headers(init?.headers).get('cookie') ?? '';
 
     if (path === '/health/ready' && method === 'GET') {
       return jsonResponse(200, { status: 'ready' });
@@ -121,6 +127,9 @@ function createFetch() {
     if (path === '/health/build' && method === 'GET') {
       return jsonResponse(200, {
         commit,
+        tree,
+        sourceDigest,
+        browserDigest,
         artifactDigest,
         envelopeAdapter: 'application-layer-envelope/v1',
       });
@@ -158,10 +167,12 @@ function createFetch() {
       });
     }
     if (path === '/api/v1/auth/staff/totp') {
+      staffTotp += 1;
+      const handle = staffTotp === 1 ? 'staff-handle' : 'isolation-handle';
       return cookieResponse(
         200,
         { outcome: 'authenticated' },
-        '__Host-prevcare-staff-session=staff-handle; Path=/; HttpOnly; Secure; SameSite=Strict',
+        `__Host-prevcare-staff-session=${handle}; Path=/; HttpOnly; Secure; SameSite=Strict`,
       );
     }
     if (path === '/api/v1/staff/session') {
@@ -309,6 +320,12 @@ function createFetch() {
       });
     }
     if (path === '/api/v1/clinical/review-directory') {
+      if (cookie.includes('isolation-handle')) {
+        return jsonResponse(200, {
+          freshUntil: '2026-08-25T16:15:00.000Z',
+          students: [],
+        });
+      }
       return jsonResponse(200, {
         freshUntil: '2026-08-25T16:15:00.000Z',
         students: [
@@ -325,6 +342,12 @@ function createFetch() {
       });
     }
     if (path === '/api/v1/clinical/intake-records/current') {
+      if (!cookie.includes('__Host-prevcare-staff-session=')) {
+        return jsonResponse(401, { code: 'STAFF_AUTHENTICATION_REQUIRED' });
+      }
+      if (cookie.includes('isolation-handle')) {
+        return jsonResponse(403, { code: 'STAFF_PERMISSION_REQUIRED' });
+      }
       return jsonResponse(200, {
         studentId,
         intakeRecordVersionId,
@@ -332,8 +355,23 @@ function createFetch() {
         schoolConfigurationReleaseId: releaseId,
         locale: 'en-US',
         intakeForm: intakeSnapshot().form.intakeForm,
-        answers: { 'field-name': 'UNIQUE-ANSWER-TOKEN' },
+        answers: { 'field-name': 'Synthetic Student' },
         freshUntil: '2026-08-25T16:15:00.000Z',
+      });
+    }
+    if (path === '/api/v1/operator/golden-journey-evidence') {
+      return jsonResponse(200, {
+        auditRowCount: 4,
+        outboxCompletedCount: 2,
+        invitationStatus: 'delivered',
+        workerArtifactDigest: artifactDigest,
+        workerEnvelopeAdapter: 'application-layer-envelope/v1',
+        workerRecordedAt: '2026-08-25T16:01:00.000Z',
+        releaseId,
+        packageDigest: 'd'.repeat(64),
+        releaseNumber: 1,
+        intakeReceiptPresent: true,
+        learningReceiptPresent: true,
       });
     }
     return jsonResponse(404, { code: 'NOT_FOUND' });
@@ -345,6 +383,8 @@ function journeyInput(overrides: Record<string, unknown> = {}) {
   return {
     environment: {
       STAGING_WEB_URL: origin,
+      RAILWAY_STAGING_ORIGIN: origin,
+      GOLDEN_JOURNEY_REF: 'refs/heads/main',
       EXPECTED_COMMIT: commit,
       EXPECTED_GIT_TREE: '89abcdef0123456789abcdef0123456789abcdef',
       OPERATOR_PROVISIONING_TOKEN: operatorToken,
@@ -366,7 +406,13 @@ function journeyInput(overrides: Record<string, unknown> = {}) {
       PROVIDER_SMOKE_AUTH_PASSWORD: 'auth-smoke-password',
       PROVIDER_SMOKE_AUTH_TOTP_SECRET: 'JBSWY3DPEHPK3PXP',
     },
-    expectedSource: { commit, artifactDigest },
+    expectedSource: {
+      commit,
+      tree,
+      sourceDigest,
+      browserDigest,
+      artifactDigest,
+    },
     fixtureCandidate,
     clock: { now: () => new Date('2026-08-25T16:00:00.000Z') },
     sleep: async () => undefined,
@@ -406,6 +452,8 @@ function journeyInput(overrides: Record<string, unknown> = {}) {
       invitationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8004',
       restorationClassId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8013',
       restorationInvitationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8005',
+      isolationWorkspaceId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8014',
+      isolationStaffIdentityId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8015',
       operationIds: {
         workspace: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8301',
         staff: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8302',
@@ -415,9 +463,13 @@ function journeyInput(overrides: Record<string, unknown> = {}) {
         restorationInvitation: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8306',
         intake: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8307',
         learning: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8308',
+        isolationWorkspace: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8309',
+        isolationStaff: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8310',
       },
     },
     staffPassword: 'generated-staff-password-32-chars',
+    isolationStaffPassword: 'generated-isolation-password-32-chars',
+    cleanupAuthUsers: async () => 'completed' as const,
     ...overrides,
   };
 }
@@ -446,6 +498,7 @@ test('synthetic journey covers the HTTP golden path and redacts clinical content
   );
   expect(evidence.syntheticIdentifiers.itemCompletionId).toBe(itemCompletionId);
   expect(JSON.stringify(evidence)).not.toContain('UNIQUE-ANSWER-TOKEN');
+  expect(JSON.stringify(evidence)).not.toContain('Synthetic Student');
   expect(JSON.stringify(evidence)).not.toContain('729104');
   expect(JSON.stringify(evidence)).not.toContain('staff-handle');
   expect(JSON.stringify(evidence)).not.toContain(mailbox);
@@ -466,7 +519,7 @@ test('journey fails closed on preflight before touching HTTP', async () => {
         },
       }),
     ),
-  ).rejects.toThrow(GoldenJourneyPreflightError);
+  ).rejects.toThrow(GoldenJourneyRunError);
   expect(fetchCalls).toEqual([]);
 });
 
@@ -482,6 +535,9 @@ test('journey fails closed when the deployed digest differs', async () => {
           if (path === '/health/build') {
             return jsonResponse(200, {
               commit: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+              tree,
+              sourceDigest,
+              browserDigest,
               artifactDigest,
               envelopeAdapter: 'application-layer-envelope/v1',
             });
@@ -491,5 +547,5 @@ test('journey fails closed when the deployed digest differs', async () => {
         checkProviders: async () => [],
       }),
     ),
-  ).rejects.toThrow(GoldenJourneyDigestMismatchError);
+  ).rejects.toThrow(GoldenJourneyRunError);
 });

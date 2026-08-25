@@ -2961,6 +2961,173 @@
         "security": [{ "staffSession": [] }]
       }
     },
+    "/api/v1/operator/golden-journey-evidence": {
+      "get": {
+        "operationId": "goldenJourneyOperatorEvidence",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspaceId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "invitationId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "publishOperationId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "intakeOperationId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "learningOperationId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          },
+          {
+            "in": "header",
+            "name": "x-prevcare-csrf",
+            "required": true,
+            "schema": { "enum": ["1"], "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "auditRowCount": { "minimum": 0, "type": "integer" },
+                    "intakeReceiptPresent": { "type": "boolean" },
+                    "invitationStatus": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "learningReceiptPresent": { "type": "boolean" },
+                    "outboxCompletedCount": { "minimum": 0, "type": "integer" },
+                    "packageDigest": {
+                      "anyOf": [
+                        { "pattern": "^[0-9a-f]{64}$", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "releaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "releaseNumber": {
+                      "anyOf": [
+                        { "minimum": 1, "type": "integer" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "workerArtifactDigest": {
+                      "anyOf": [
+                        { "pattern": "^[0-9a-f]{64}$", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "workerEnvelopeAdapter": {
+                      "anyOf": [
+                        {
+                          "enum": ["application-layer-envelope/v1"],
+                          "type": "string"
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "workerRecordedAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    }
+                  },
+                  "required": [
+                    "auditRowCount",
+                    "outboxCompletedCount",
+                    "invitationStatus",
+                    "workerArtifactDigest",
+                    "workerEnvelopeAdapter",
+                    "workerRecordedAt",
+                    "releaseId",
+                    "packageDigest",
+                    "releaseNumber",
+                    "intakeReceiptPresent",
+                    "learningReceiptPresent"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
     "/api/v1/staff/session": {
       "get": {
         "operationId": "readStaffSession",
@@ -4516,13 +4683,29 @@
                       "pattern": "^[0-9a-f]{64}$",
                       "type": "string"
                     },
+                    "browserDigest": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
                     "commit": { "pattern": "^[0-9a-f]{40}$", "type": "string" },
                     "envelopeAdapter": {
                       "enum": ["application-layer-envelope/v1"],
                       "type": "string"
-                    }
+                    },
+                    "sourceDigest": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "tree": { "pattern": "^[0-9a-f]{40}$", "type": "string" }
                   },
-                  "required": ["commit", "artifactDigest", "envelopeAdapter"],
+                  "required": [
+                    "commit",
+                    "tree",
+                    "sourceDigest",
+                    "browserDigest",
+                    "artifactDigest",
+                    "envelopeAdapter"
+                  ],
                   "type": "object"
                 }
               }

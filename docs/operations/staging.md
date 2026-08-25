@@ -41,7 +41,7 @@ The provider checks expose only fixed capability names, status, and duration. Th
 
 ## Golden journey evidence
 
-The **Golden journey** workflow is the repeatable staging proof for issue #31. It is manually dispatched against the GitHub `staging` environment and must run only after **Deploy staging** has published the exact `main` commit being verified. The public process exposes `/health/build` with that commit, the git-tree artifact digest, and the selected `application-layer-envelope/v1` adapter; the journey fails closed if the deployed digest differs.
+The **Golden journey** workflow is the repeatable staging proof for issue #31. It is manually dispatched against the GitHub `staging` environment and must run only after **Deploy staging** has published the exact `main` commit being verified. The public process exposes `/health/build` by reading a build-generated attestation file that hashes the copied source, runtime, and browser artifacts. The running API re-hashes on-disk content and returns 503 on mismatch. The GitHub workflow commit/tree is a comparison input, not the attestation source of truth. The private Invitation worker records the same baked artifact digest with each delivery heartbeat; the golden harness compares that digest to the public `/health/build` digest.
 
 Each run creates a unique School Workspace, Staff Identity, Class, and Invitation through the public HTTP contracts. Invitation Codes are read from Resend in process memory and never written to evidence, logs, or artifacts. Intake answers, credentials, addresses, session handles, request/response bodies, and rendered clinical content are excluded by schema. Evidence is uploaded as a workflow artifact and is not committed.
 
@@ -52,7 +52,7 @@ Operator prerequisites, as configuration _names_ only:
 - Envelope and deploy credentials already required by **Deploy staging**: `APPLICATION_WRAPPING_KEY`, `APPLICATION_IDEMPOTENCY_KEY`, `APPLICATION_WRAPPING_KEY_ID`, and the temporary human-controlled `RAILWAY_CONFIG_B64` / `DEPLOY_SETUP_GH_TOKEN`.
 - Chromium is installed by the workflow for keyboard, focus, announcement, contrast, zoom/reflow, and multilingual layout checks. Health-content correctness is out of scope.
 
-Cleanup is an operator boundary: each evidence file records `cleanupBoundary.marker` as `golden-journey/<runId>` with `operator-cleanup-required`. Full pilot disposition remains issues #49, #50, and #55.
+Cleanup is an operator boundary: each evidence file records `cleanupBoundary.marker` as `golden-journey/<runId>` with `operator-cleanup-required` for retained synthetic application fixtures. The harness best-effort deletes ephemeral Supabase Auth users it created. Full pilot disposition remains issues #49, #50, and #55. Failed runs still upload a redacted evidence file with a fixed `errorCode` and `lastCompletedStep`; they never include raw exception text.
 
 Dispatch after a matching deploy:
 

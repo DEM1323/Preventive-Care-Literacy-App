@@ -296,17 +296,19 @@ export function StudentIntakePage() {
 
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button
+                  id="save-draft"
                   type="button"
                   disabled={busy !== undefined}
                   onClick={() => void saveDraft()}
-                  className="border-2 border-[#17332d] bg-white px-5 py-3 font-black uppercase tracking-wide shadow-[4px_4px_0_#17332d] disabled:opacity-50"
+                  className="border-2 border-[#17332d] bg-white px-5 py-3 font-black uppercase tracking-wide shadow-[4px_4px_0_#17332d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
                 >
                   {busy === 'save' ? 'Saving draft...' : 'Save draft'}
                 </button>
                 <button
+                  id="submit-intake"
                   type="submit"
                   disabled={busy !== undefined || !attested}
-                  className="border-2 border-[#17332d] bg-[#e6af2e] px-5 py-3 font-black uppercase tracking-wide shadow-[4px_4px_0_#17332d] disabled:opacity-50"
+                  className="border-2 border-[#17332d] bg-[#e6af2e] px-5 py-3 font-black uppercase tracking-wide shadow-[4px_4px_0_#17332d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
                 >
                   {busy === 'submit' ? 'Submitting...' : 'Submit intake'}
                 </button>

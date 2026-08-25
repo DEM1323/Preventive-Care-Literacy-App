@@ -6,6 +6,8 @@ import {
 
 const present = {
   STAGING_WEB_URL: 'https://staging.up.railway.app',
+  RAILWAY_STAGING_ORIGIN: 'https://staging.up.railway.app',
+  GOLDEN_JOURNEY_REF: 'refs/heads/main',
   EXPECTED_COMMIT: 'beda69fca3f7954a0200a3209cb44aac7ade4a72',
   EXPECTED_GIT_TREE: '0123456789abcdef0123456789abcdef01234567',
   OPERATOR_PROVISIONING_TOKEN: 'operator-token-with-more-than-32-chars',
@@ -77,4 +79,33 @@ test('preflight accepts a complete configuration by name without returning secre
   expect(JSON.stringify(result)).not.toContain('re-secret');
   expect(JSON.stringify(result)).not.toContain('auth-smoke-password');
   expect(JSON.stringify(result)).not.toContain('JBSWY3DPEHPK3PXP');
+});
+
+test('preflight rejects a non-main ref or a non-https Railway origin before mutation', () => {
+  expect(() =>
+    reportGoldenJourneyPreflight(
+      {
+        ...present,
+        GOLDEN_JOURNEY_REF: 'refs/heads/verify/golden-staging-journey',
+      },
+      { failClosed: true },
+    ),
+  ).toThrow('launch gate');
+
+  expect(() =>
+    reportGoldenJourneyPreflight(
+      { ...present, STAGING_WEB_URL: 'http://staging.up.railway.app' },
+      { failClosed: true },
+    ),
+  ).toThrow('launch gate');
+
+  expect(() =>
+    reportGoldenJourneyPreflight(
+      {
+        ...present,
+        RAILWAY_STAGING_ORIGIN: 'https://other.up.railway.app',
+      },
+      { failClosed: true },
+    ),
+  ).toThrow('launch gate');
 });

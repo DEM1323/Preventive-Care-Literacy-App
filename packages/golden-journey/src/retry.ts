@@ -1,9 +1,11 @@
 export class NonRetryableGoldenJourneyError extends Error {
   readonly retryable = false;
+  readonly code: string;
 
-  constructor(message: string) {
+  constructor(message: string, code = 'UNEXPECTED_FAILURE') {
     super(message);
     this.name = 'NonRetryableGoldenJourneyError';
+    this.code = code;
   }
 }
 
@@ -12,6 +14,8 @@ export async function retryTransient<T>(
   options: {
     attempts: number;
     delayMs: number;
+    backoffFactor?: number;
+    maxDelayMs?: number;
     sleep?: (ms: number) => Promise<void>;
   },
 ): Promise<T> {
@@ -32,7 +36,15 @@ export async function retryTransient<T>(
           ? false
           : true;
       if (!retryable || attempt === options.attempts) throw error;
-      if (options.delayMs > 0) await sleep(options.delayMs);
+      if (options.delayMs > 0) {
+        const factor = options.backoffFactor ?? 1;
+        const uncapped = options.delayMs * factor ** (attempt - 1);
+        const delay =
+          options.maxDelayMs === undefined
+            ? uncapped
+            : Math.min(uncapped, options.maxDelayMs);
+        await sleep(delay);
+      }
     }
   }
   throw lastError;

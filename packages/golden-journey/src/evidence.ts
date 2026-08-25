@@ -1,3 +1,7 @@
+import type { GoldenJourneyErrorCode } from './error-codes.ts';
+import { isGoldenJourneyErrorCode } from './error-codes.ts';
+import type { GoldenJourneyStep } from './state.ts';
+
 export const GOLDEN_JOURNEY_EVIDENCE_SCHEMA_VERSION = 1 as const;
 
 export const goldenJourneyCoverageKeys = [
@@ -12,6 +16,10 @@ export const goldenJourneyCoverageKeys = [
   'learningAcknowledgement',
   'clinicalDirectory',
   'clinicalReveal',
+  'workspaceIsolation',
+  'authorizationDenial',
+  'auditEvidence',
+  'outboxDelivery',
   'freshBrowserRestoration',
   'keyboard',
   'focus',
@@ -47,14 +55,17 @@ export type GoldenJourneySyntheticIdentifiers = {
   classId: string;
   invitationId: string;
   restorationInvitationId: string;
+  isolationWorkspaceId: string;
   releaseId: string;
   studentId: string;
   intakeRecordVersionId: string;
   itemCompletionId: string;
+  packageDigest: string;
 };
 
 export type GoldenJourneyEvidence = {
   schemaVersion: typeof GOLDEN_JOURNEY_EVIDENCE_SCHEMA_VERSION;
+  outcome: 'completed';
   environment: 'staging';
   environmentHost: string;
   commit: string;
@@ -67,12 +78,34 @@ export type GoldenJourneyEvidence = {
   cleanupBoundary: {
     marker: string;
     disposition: 'operator-cleanup-required';
+    authCleanup: 'completed' | 'not-attempted' | 'failed';
   };
   coverage: Record<GoldenJourneyCoverageKey, CoverageOutcome>;
   providerContracts: {
     name: GoldenJourneyProviderContractName;
     status: ProviderContractStatus;
   }[];
+};
+
+export type GoldenJourneyFailureEvidence = {
+  schemaVersion: typeof GOLDEN_JOURNEY_EVIDENCE_SCHEMA_VERSION;
+  outcome: 'failed';
+  environment: 'staging';
+  environmentHost?: string;
+  commit?: string;
+  artifactDigest?: string;
+  envelopeAdapter?: 'application-layer-envelope/v1';
+  runId: string;
+  startedAt: string;
+  completedAt: string;
+  lastCompletedStep: GoldenJourneyStep;
+  errorCode: GoldenJourneyErrorCode;
+  syntheticIdentifiers?: Partial<GoldenJourneySyntheticIdentifiers>;
+  cleanupBoundary: {
+    marker: string;
+    disposition: 'operator-cleanup-required';
+    authCleanup: 'completed' | 'not-attempted' | 'failed';
+  };
 };
 
 export type GoldenJourneyEvidenceInput = {
@@ -85,6 +118,7 @@ export type GoldenJourneyEvidenceInput = {
   startedAt: string;
   completedAt: string;
   syntheticIdentifiers: GoldenJourneySyntheticIdentifiers;
+  authCleanup: 'completed' | 'not-attempted' | 'failed';
   coverage: Record<GoldenJourneyCoverageKey, CoverageOutcome>;
   providerContracts: {
     name: GoldenJourneyProviderContractName;
@@ -102,12 +136,46 @@ const isoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 const prohibitedEvidencePatterns = [
   /[\w.+-]+@[\w.-]+\.[a-z]{2,}/i,
-  /"(?:address|answers|generatedContent|invitationCode|requestBody|responseBody|sessionHandle|signInCode|password|totpSecret|renderedClinicalContent)"/i,
+  /"(?:address|answers|generatedContent|invitationCode|requestBody|responseBody|sessionHandle|signInCode|password|totpSecret|renderedClinicalContent|exception|stack|message)"/i,
   /\b\d{6}\b/,
   /otpauth:/i,
   /Bearer\s+/i,
   /UNIQUE-ANSWER/i,
 ];
+
+const completedKeys = [
+  'schemaVersion',
+  'outcome',
+  'environment',
+  'environmentHost',
+  'commit',
+  'artifactDigest',
+  'envelopeAdapter',
+  'runId',
+  'startedAt',
+  'completedAt',
+  'syntheticIdentifiers',
+  'cleanupBoundary',
+  'coverage',
+  'providerContracts',
+] as const;
+
+const failedKeys = [
+  'schemaVersion',
+  'outcome',
+  'environment',
+  'environmentHost',
+  'commit',
+  'artifactDigest',
+  'envelopeAdapter',
+  'runId',
+  'startedAt',
+  'completedAt',
+  'lastCompletedStep',
+  'errorCode',
+  'syntheticIdentifiers',
+  'cleanupBoundary',
+] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -115,7 +183,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function assertSafeGoldenJourneyEvidence(
   value: unknown,
-): asserts value is GoldenJourneyEvidence {
+): asserts value is GoldenJourneyEvidence | GoldenJourneyFailureEvidence {
   const serialized = JSON.stringify(value);
   if (prohibitedEvidencePatterns.some((pattern) => pattern.test(serialized))) {
     throw new Error(
@@ -125,23 +193,9 @@ export function assertSafeGoldenJourneyEvidence(
   if (!isRecord(value)) {
     throw new Error('Golden journey evidence is malformed');
   }
-  const allowedKeys = [
-    'schemaVersion',
-    'environment',
-    'environmentHost',
-    'commit',
-    'artifactDigest',
-    'envelopeAdapter',
-    'runId',
-    'startedAt',
-    'completedAt',
-    'syntheticIdentifiers',
-    'cleanupBoundary',
-    'coverage',
-    'providerContracts',
-  ];
+  const allowed = value.outcome === 'failed' ? failedKeys : completedKeys;
   for (const key of Object.keys(value)) {
-    if (!allowedKeys.includes(key)) {
+    if (!(allowed as readonly string[]).includes(key)) {
       throw new Error(
         'Golden journey evidence contained a prohibited data class',
       );
@@ -152,6 +206,13 @@ export function assertSafeGoldenJourneyEvidence(
 function requireUuid(value: string, label: string): string {
   if (!uuidPattern.test(value)) {
     throw new Error(`Golden journey evidence ${label} must be an opaque uuid`);
+  }
+  return value;
+}
+
+function requireDigest(value: string, label: string): string {
+  if (!digestPattern.test(value)) {
+    throw new Error(`Golden journey evidence ${label} is malformed`);
   }
   return value;
 }
@@ -199,6 +260,7 @@ export function createGoldenJourneyEvidence(
 
   const evidence: GoldenJourneyEvidence = {
     schemaVersion: GOLDEN_JOURNEY_EVIDENCE_SCHEMA_VERSION,
+    outcome: 'completed',
     environment: 'staging',
     environmentHost: input.environmentHost,
     commit: input.commit,
@@ -225,6 +287,10 @@ export function createGoldenJourneyEvidence(
         input.syntheticIdentifiers.restorationInvitationId,
         'restorationInvitationId',
       ),
+      isolationWorkspaceId: requireUuid(
+        input.syntheticIdentifiers.isolationWorkspaceId,
+        'isolationWorkspaceId',
+      ),
       releaseId: requireUuid(input.syntheticIdentifiers.releaseId, 'releaseId'),
       studentId: requireUuid(input.syntheticIdentifiers.studentId, 'studentId'),
       intakeRecordVersionId: requireUuid(
@@ -235,10 +301,15 @@ export function createGoldenJourneyEvidence(
         input.syntheticIdentifiers.itemCompletionId,
         'itemCompletionId',
       ),
+      packageDigest: requireDigest(
+        input.syntheticIdentifiers.packageDigest,
+        'packageDigest',
+      ),
     },
     cleanupBoundary: {
       marker: `golden-journey/${input.runId}`,
       disposition: 'operator-cleanup-required',
+      authCleanup: input.authCleanup,
     },
     coverage: { ...input.coverage },
     providerContracts: goldenJourneyProviderContractNames.map((name) => {
@@ -252,6 +323,62 @@ export function createGoldenJourneyEvidence(
       }
       return { name, status: 'ok' as const };
     }),
+  };
+  assertSafeGoldenJourneyEvidence(evidence);
+  return evidence;
+}
+
+export function createFailedGoldenJourneyEvidence(input: {
+  environmentHost?: string;
+  commit?: string;
+  artifactDigest?: string;
+  runId: string;
+  startedAt: string;
+  completedAt: string;
+  lastCompletedStep: GoldenJourneyStep;
+  errorCode: GoldenJourneyErrorCode;
+  syntheticIdentifiers?: Partial<GoldenJourneySyntheticIdentifiers>;
+  authCleanup: 'completed' | 'not-attempted' | 'failed';
+}): GoldenJourneyFailureEvidence {
+  if (!isGoldenJourneyErrorCode(input.errorCode)) {
+    throw new Error('Golden journey evidence error code is unexpected');
+  }
+  if (input.environmentHost && !hostPattern.test(input.environmentHost)) {
+    throw new Error(
+      'Golden journey evidence contained a prohibited data class',
+    );
+  }
+  if (input.commit && !commitPattern.test(input.commit)) {
+    throw new Error('Golden journey evidence commit is malformed');
+  }
+  if (input.artifactDigest && !digestPattern.test(input.artifactDigest)) {
+    throw new Error('Golden journey evidence artifact digest is malformed');
+  }
+  const evidence: GoldenJourneyFailureEvidence = {
+    schemaVersion: GOLDEN_JOURNEY_EVIDENCE_SCHEMA_VERSION,
+    outcome: 'failed',
+    environment: 'staging',
+    ...(input.environmentHost
+      ? { environmentHost: input.environmentHost }
+      : {}),
+    ...(input.commit ? { commit: input.commit } : {}),
+    ...(input.artifactDigest ? { artifactDigest: input.artifactDigest } : {}),
+    ...(input.commit && input.artifactDigest
+      ? { envelopeAdapter: 'application-layer-envelope/v1' as const }
+      : {}),
+    runId: requireUuid(input.runId, 'runId'),
+    startedAt: input.startedAt,
+    completedAt: input.completedAt,
+    lastCompletedStep: input.lastCompletedStep,
+    errorCode: input.errorCode,
+    ...(input.syntheticIdentifiers
+      ? { syntheticIdentifiers: input.syntheticIdentifiers }
+      : {}),
+    cleanupBoundary: {
+      marker: `golden-journey/${input.runId}`,
+      disposition: 'operator-cleanup-required',
+      authCleanup: input.authCleanup,
+    },
   };
   assertSafeGoldenJourneyEvidence(evidence);
   return evidence;

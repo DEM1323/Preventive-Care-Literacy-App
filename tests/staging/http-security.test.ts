@@ -203,10 +203,16 @@ describe.serial('staging HTTP security boundary', () => {
         }),
       },
       buildIdentity: {
+        schemaVersion: 1 as const,
         commit: 'beda69fca3f7954a0200a3209cb44aac7ade4a72',
+        tree: '89abcdef0123456789abcdef0123456789abcdef',
+        sourceDigest:
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        browserDigest:
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         artifactDigest:
           '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-        envelopeAdapter: 'application-layer-envelope/v1',
+        envelopeAdapter: 'application-layer-envelope/v1' as const,
       },
     });
     const response = await app.inject({ method: 'GET', url: '/health/build' });
@@ -214,6 +220,11 @@ describe.serial('staging HTTP security boundary', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({
       commit: 'beda69fca3f7954a0200a3209cb44aac7ade4a72',
+      tree: '89abcdef0123456789abcdef0123456789abcdef',
+      sourceDigest:
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      browserDigest:
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
       artifactDigest:
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       envelopeAdapter: 'application-layer-envelope/v1',

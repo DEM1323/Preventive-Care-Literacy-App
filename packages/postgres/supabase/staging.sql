@@ -134,3 +134,4 @@ grant execute on function infrastructure.enqueue_invitation_delivery(uuid) to __
 grant execute on function infrastructure.read_invitation_delivery() to __WORKER_ROLE__;
 grant execute on function infrastructure.complete_invitation_delivery_message(bigint) to __WORKER_ROLE__;
 grant execute on function infrastructure.retry_invitation_delivery_message(bigint, integer) to __WORKER_ROLE__;
+grant execute on function infrastructure.record_worker_artifact_heartbeat(text, text, uuid, timestamptz) to __WORKER_ROLE__;

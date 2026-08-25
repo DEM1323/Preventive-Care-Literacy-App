@@ -1,9 +1,20 @@
 export type BrowserLocale = 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
 
+export const fixtureModuleTitles: Record<BrowserLocale, string> = {
+  'en-US': 'Primary & Preventive Care',
+  'es-US': 'Atención Primaria y Preventiva',
+  'pt-BR': 'Cuidados Primários e Preventivos',
+  'fr-CA': 'Soins Primaires et Préventifs',
+  'ht-HT': 'Swen Prensipal ak Prevantif',
+};
+
+export const fixtureWorkspaceName = 'UMass Boston Demo Workspace';
+
 export type AccessibilitySnapshot = {
   route: string;
   locale: BrowserLocale;
   viewport: { width: number; height: number; zoom: number };
+  expectedFocusOrder: string[];
   keyboard: {
     focusedSequence: string[];
     reachedSubmitWithoutPointer: boolean;
@@ -13,8 +24,19 @@ export type AccessibilitySnapshot = {
     trappedInDialog: boolean;
   };
   announcements: { role: string; polite: boolean; text: string }[];
+  expectedAnnouncementText?: string[];
+  observedText: string;
+  expectedTranslatedText: string[];
   colors: { foreground: string; background: string; name: string }[];
   reflow: { horizontalOverflowPx: number; contentFitsViewport: boolean };
+  axeViolations: number;
+  clinicalClearing?: {
+    revealedPresentBeforeClear: boolean;
+    revealedPresentAfterClear: boolean;
+    filterValueAfterClear: string;
+    selectedAfterClear: boolean;
+    announcementText: string;
+  };
 };
 
 export type BrowserAssertionOutcomes = {
@@ -60,21 +82,33 @@ export function contrastRatio(foreground: string, background: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+function sequencesEqual(observed: string[], expected: string[]): boolean {
+  return (
+    observed.length === expected.length &&
+    observed.every((identity, index) => identity === expected[index])
+  );
+}
+
 export function assertBrowserAccessibility(input: {
   snapshots: AccessibilitySnapshot[];
   requiredLocales: readonly BrowserLocale[];
-  localesObserved: readonly BrowserLocale[];
 }): BrowserAssertionOutcomes {
   if (input.snapshots.length === 0) {
     throw new Error('browser snapshots are required');
   }
 
   for (const snapshot of input.snapshots) {
+    if (snapshot.expectedFocusOrder.length < 1) {
+      throw new Error('expected keyboard controls are incomplete');
+    }
     if (
-      snapshot.keyboard.focusedSequence.length < 2 ||
+      !sequencesEqual(
+        snapshot.keyboard.focusedSequence,
+        snapshot.expectedFocusOrder,
+      ) ||
       !snapshot.keyboard.reachedSubmitWithoutPointer
     ) {
-      throw new Error('keyboard path did not reach the primary action');
+      throw new Error('keyboard path did not match the expected controls');
     }
     if (!snapshot.focus.visibleOnActiveElement) {
       throw new Error('focus indicator is missing');
@@ -90,6 +124,44 @@ export function assertBrowserAccessibility(input: {
     ) {
       throw new Error('reflow overflowed the viewport');
     }
+    if (snapshot.axeViolations !== 0) {
+      throw new Error('axe violations were observed');
+    }
+    for (const expected of snapshot.expectedTranslatedText) {
+      if (!snapshot.observedText.includes(expected)) {
+        throw new Error(`locale ${snapshot.locale} is missing expected text`);
+      }
+    }
+    if (
+      snapshot.announcements.some(
+        (announcement) =>
+          announcement.text.length === 0 || announcement.text === 'present',
+      )
+    ) {
+      throw new Error('announcement text is missing');
+    }
+    for (const expected of snapshot.expectedAnnouncementText ?? []) {
+      if (
+        !snapshot.announcements.some(
+          (announcement) => announcement.text === expected,
+        )
+      ) {
+        throw new Error('announcements are missing');
+      }
+    }
+    if (snapshot.clinicalClearing) {
+      const clearing = snapshot.clinicalClearing;
+      if (
+        !clearing.revealedPresentBeforeClear ||
+        clearing.revealedPresentAfterClear ||
+        clearing.filterValueAfterClear !== '' ||
+        clearing.selectedAfterClear ||
+        clearing.announcementText !==
+          'Clinical access is being rechecked. Sensitive values were cleared.'
+      ) {
+        throw new Error('clinical clearing did not complete');
+      }
+    }
   }
 
   const hasDesktop = input.snapshots.some(
@@ -101,37 +173,65 @@ export function assertBrowserAccessibility(input: {
       snapshot.viewport.width <= 400 && snapshot.viewport.zoom === 1,
   );
   if (!hasDesktop || !hasMobile) {
-    if (input.snapshots.length >= 2) {
-      // A passing suite may use a 320px zoomed viewport as the small layout.
-    } else if (!hasDesktop && !hasMobile) {
-      throw new Error('responsive viewports are incomplete');
-    }
+    throw new Error('responsive viewports are incomplete');
   }
 
   const zoomed = input.snapshots.some(
     (snapshot) => snapshot.viewport.zoom >= 2,
   );
-  if (
-    !zoomed &&
-    input.snapshots.some((snapshot) => snapshot.viewport.width <= 320)
-  ) {
-    // 320px at 2x is the zoom/reflow probe used by the staging browser pass.
+  if (!zoomed) {
+    throw new Error('zoom reflow viewport is missing');
   }
 
   for (const locale of input.requiredLocales) {
-    if (!input.localesObserved.includes(locale)) {
+    const localeSnapshots = input.snapshots.filter(
+      (snapshot) => snapshot.locale === locale,
+    );
+    if (localeSnapshots.length === 0) {
       throw new Error(`locale ${locale} was not observed`);
+    }
+    const expectedTitle = fixtureModuleTitles[locale];
+    if (
+      !localeSnapshots.some(
+        (snapshot) =>
+          snapshot.expectedTranslatedText.includes(expectedTitle) &&
+          snapshot.observedText.includes(expectedTitle),
+      )
+    ) {
+      throw new Error(`locale ${locale} is missing expected text`);
+    }
+    const hasDesktopLocale = localeSnapshots.some(
+      (snapshot) =>
+        snapshot.viewport.width >= 1024 && snapshot.viewport.zoom === 1,
+    );
+    const hasMobileLocale = localeSnapshots.some(
+      (snapshot) =>
+        snapshot.viewport.width <= 400 && snapshot.viewport.zoom === 1,
+    );
+    const hasZoomLocale = localeSnapshots.some(
+      (snapshot) => snapshot.viewport.zoom >= 2,
+    );
+    if (!hasDesktopLocale || !hasMobileLocale || !hasZoomLocale) {
+      throw new Error(`locale ${locale} is missing expected text`);
     }
   }
 
   const hasAlertOrStatus = input.snapshots.some((snapshot) =>
     snapshot.announcements.some(
       (announcement) =>
-        announcement.role === 'alert' || announcement.role === 'status',
+        (announcement.role === 'alert' || announcement.role === 'status') &&
+        announcement.text.length > 0 &&
+        announcement.text !== 'present',
     ),
   );
   if (!hasAlertOrStatus) {
     throw new Error('announcements are missing');
+  }
+
+  if (
+    !input.snapshots.some((snapshot) => snapshot.clinicalClearing !== undefined)
+  ) {
+    throw new Error('clinical clearing did not complete');
   }
 
   return {

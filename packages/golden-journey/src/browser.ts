@@ -1,13 +1,17 @@
 /// <reference lib="dom" />
-import type { Browser, Page } from 'playwright';
+import { createRequire } from 'node:module';
+import type { Browser, BrowserContext, Page } from 'playwright';
 import {
   assertBrowserAccessibility,
+  fixtureModuleTitles,
   type AccessibilitySnapshot,
   type BrowserAssertionOutcomes,
   type BrowserLocale,
 } from './browser-assertions.ts';
+import { sessionCookiesForOrigin } from './browser-cookies.ts';
 
 const locales: BrowserLocale[] = ['en-US', 'es-US', 'pt-BR', 'fr-CA', 'ht-HT'];
+const require = createRequire(import.meta.url);
 
 function rgbToHex(color: string): string | undefined {
   const match = color.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
@@ -34,14 +38,31 @@ async function contrastPair(
   return { foreground, background, name };
 }
 
+async function focusControl(page: Page, identity: string): Promise<void> {
+  const byId = page.locator(`[id="${identity}"]`);
+  if ((await byId.count()) > 0) {
+    await byId.first().focus();
+    return;
+  }
+  const byType = page.locator(
+    `input[type="${identity}"], button[type="${identity}"]`,
+  );
+  if ((await byType.count()) > 0) {
+    await byType.first().focus();
+    return;
+  }
+  throw new Error('expected keyboard control is missing');
+}
+
 async function keyboardSequence(
   page: Page,
   expected: string[],
 ): Promise<string[]> {
+  if (expected.length === 0) return [];
+  await focusControl(page, expected[0]!);
   const focused: string[] = [];
-  for (let index = 0; index < expected.length + 2; index += 1) {
-    await page.keyboard.press('Tab');
-    const identity = await page.evaluate(() => {
+  const identity = async () =>
+    page.evaluate(() => {
       const element = document.activeElement;
       if (!(element instanceof HTMLElement)) return 'unknown';
       return (
@@ -50,8 +71,10 @@ async function keyboardSequence(
         element.tagName.toLowerCase()
       );
     });
-    if (!focused.includes(identity)) focused.push(identity);
-    if (focused.length >= expected.length) break;
+  focused.push(await identity());
+  for (let index = 1; index < expected.length; index += 1) {
+    await page.keyboard.press('Tab');
+    focused.push(await identity());
   }
   return focused;
 }
@@ -82,6 +105,35 @@ async function reflow(page: Page): Promise<{
   });
 }
 
+async function axeViolationCount(page: Page): Promise<number> {
+  const axePath = require.resolve('axe-core/axe.min.js');
+  await page.addScriptTag({ path: axePath });
+  return page.evaluate(async () => {
+    const axe = (
+      window as unknown as {
+        axe: {
+          run: (options?: {
+            rules: Record<string, { enabled: boolean }>;
+          }) => Promise<{ violations: { id: string }[] }>;
+        };
+      }
+    ).axe;
+    const results = await axe.run({
+      rules: { 'color-contrast': { enabled: false } },
+    });
+    return results.violations.length;
+  });
+}
+
+async function applyCookies(
+  context: BrowserContext,
+  origin: string,
+  cookieHeader: string | undefined,
+): Promise<void> {
+  const cookies = sessionCookiesForOrigin(cookieHeader, origin);
+  if (cookies.length > 0) await context.addCookies(cookies);
+}
+
 async function snapshotPage(options: {
   page: Page;
   origin: string;
@@ -89,7 +141,10 @@ async function snapshotPage(options: {
   locale: BrowserLocale;
   viewport: { width: number; height: number; zoom: number };
   expectedFocus: string[];
+  expectedTranslatedText: string[];
+  expectedAnnouncementText?: string[];
   prepare?: (page: Page) => Promise<void>;
+  runAxe?: boolean;
 }): Promise<AccessibilitySnapshot> {
   await options.page.setViewportSize({
     width: options.viewport.width,
@@ -103,37 +158,159 @@ async function snapshotPage(options: {
       document.documentElement.style.zoom = String(zoom);
     }, options.viewport.zoom);
   }
+  if (options.prepare) await options.prepare(options.page);
   const focusedSequence = await keyboardSequence(
     options.page,
     options.expectedFocus,
   );
   const visibleOnActiveElement = await focusVisible(options.page);
-  if (options.prepare) await options.prepare(options.page);
+  const announcements = await options.page
+    .locator('[role="alert"], [aria-live]')
+    .evaluateAll((elements) =>
+      elements.flatMap((element) => {
+        const text = (element.textContent ?? '').trim();
+        if (!text) return [];
+        return [
+          {
+            role: element.getAttribute('role') ?? 'status',
+            polite: element.getAttribute('aria-live') === 'polite',
+            text,
+          },
+        ];
+      }),
+    );
+  const observedText = await options.page.locator('main').innerText();
   const body = await contrastPair(options.page, 'main', 'body');
   const button = await contrastPair(options.page, 'button', 'button').catch(
     () => body,
   );
-  const announcements = await options.page
-    .locator('[role="alert"], [aria-live]')
-    .evaluateAll((elements) =>
-      elements.map((element) => ({
-        role: element.getAttribute('role') ?? 'status',
-        polite: element.getAttribute('aria-live') === 'polite',
-        text: 'present',
-      })),
-    );
   return {
     route: options.route,
     locale: options.locale,
     viewport: options.viewport,
+    expectedFocusOrder: options.expectedFocus,
     keyboard: {
       focusedSequence,
-      reachedSubmitWithoutPointer: focusedSequence.length >= 2,
+      reachedSubmitWithoutPointer: focusedSequence.length >= 1,
     },
     focus: { visibleOnActiveElement, trappedInDialog: false },
     announcements,
+    expectedAnnouncementText: options.expectedAnnouncementText,
+    observedText,
+    expectedTranslatedText: options.expectedTranslatedText,
     colors: [body, button],
     reflow: await reflow(options.page),
+    axeViolations:
+      options.runAxe === false ? 0 : await axeViolationCount(options.page),
+  };
+}
+
+async function collectLocaleSnapshots(
+  page: Page,
+  origin: string,
+): Promise<AccessibilitySnapshot[]> {
+  const snapshots: AccessibilitySnapshot[] = [];
+  const viewports = [
+    { width: 1280, height: 800, zoom: 1 },
+    { width: 375, height: 812, zoom: 1 },
+    { width: 320, height: 640, zoom: 2 },
+  ] as const;
+  for (const locale of locales) {
+    for (const viewport of viewports) {
+      snapshots.push(
+        await snapshotPage({
+          page,
+          origin,
+          route: '/staff/configuration',
+          locale,
+          viewport,
+          expectedFocus: ['preview-locale', 'preview-width'],
+          expectedTranslatedText: [
+            'UMass Boston Demo Workspace',
+            fixtureModuleTitles[locale],
+          ],
+          prepare: async (current) => {
+            await current.locator('#preview-locale').selectOption(locale);
+            await current
+              .getByText(fixtureModuleTitles[locale], { exact: true })
+              .first()
+              .waitFor();
+          },
+        }),
+      );
+    }
+  }
+  return snapshots;
+}
+
+async function collectClinicalClearing(
+  page: Page,
+  origin: string,
+): Promise<AccessibilitySnapshot> {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`${origin}/staff`, { waitUntil: 'networkidle' });
+  await page.getByRole('heading', { name: 'Intake review' }).waitFor();
+  const reveal = page.getByRole('button', { name: 'Reveal current record' });
+  await reveal.first().waitFor({ timeout: 15_000 });
+  await page.locator('#student-filter').fill('synthetic');
+  await reveal.first().click();
+  const record = page.locator('article').filter({
+    has: page.getByRole('heading', { name: 'Current Intake Record' }),
+  });
+  await record.waitFor();
+  const revealedCount = await record.locator('dd').count();
+  if (revealedCount < 1) {
+    throw new Error('clinical reveal did not render through the UI');
+  }
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible',
+    });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  const announcement = page.getByRole('alert').first();
+  await announcement.waitFor();
+  const announcementText = ((await announcement.textContent()) ?? '').trim();
+  const revealedPresentAfterClear = await record
+    .count()
+    .then((count) => count > 0);
+  const filterValueAfterClear = await page
+    .locator('#student-filter')
+    .inputValue();
+  const selectedAfterClear = await page
+    .locator('li.border-sky-400')
+    .count()
+    .then((count) => count > 0);
+  const snapshot = await snapshotPage({
+    page,
+    origin,
+    route: '/staff',
+    locale: 'en-US',
+    viewport: { width: 1280, height: 800, zoom: 1 },
+    expectedFocus: ['class-name', 'invitation-recipient'],
+    expectedTranslatedText: ['Intake review'],
+    expectedAnnouncementText: [
+      'Clinical access is being rechecked. Sensitive values were cleared.',
+    ],
+    runAxe: true,
+  });
+  return {
+    ...snapshot,
+    announcements: [
+      { role: 'alert', polite: false, text: announcementText },
+      ...snapshot.announcements,
+    ],
+    expectedAnnouncementText: [
+      'Clinical access is being rechecked. Sensitive values were cleared.',
+    ],
+    clinicalClearing: {
+      revealedPresentBeforeClear: revealedCount > 0,
+      revealedPresentAfterClear,
+      filterValueAfterClear,
+      selectedAfterClear,
+      announcementText,
+    },
   };
 }
 
@@ -148,39 +325,27 @@ export async function runGoldenJourneyBrowser(input: {
     browser = await playwright.chromium.launch({
       headless: true,
     });
-    const context = await browser.newContext({
+    const snapshots: AccessibilitySnapshot[] = [];
+
+    const anonymous = await browser.newContext({
       ignoreHTTPSErrors: false,
       locale: 'en-US',
       serviceWorkers: 'block',
     });
-    context.setDefaultTimeout(15_000);
-    if (input.staffCookie) {
-      for (const pair of input.staffCookie.split('; ')) {
-        const separator = pair.indexOf('=');
-        if (separator === -1) continue;
-        await context.addCookies([
-          {
-            name: pair.slice(0, separator),
-            value: pair.slice(separator + 1),
-            url: input.origin,
-            path: '/',
-            httpOnly: true,
-            secure: true,
-            sameSite: 'Strict',
-          },
-        ]);
-      }
-    }
-    const page = await context.newPage();
-    const snapshots: AccessibilitySnapshot[] = [];
+    anonymous.setDefaultTimeout(15_000);
+    const anonymousPage = await anonymous.newPage();
     snapshots.push(
       await snapshotPage({
-        page,
+        page: anonymousPage,
         origin: input.origin,
         route: '/staff/sign-in',
         locale: 'en-US',
         viewport: { width: 1280, height: 800, zoom: 1 },
         expectedFocus: ['email', 'password', 'submit'],
+        expectedTranslatedText: ['Sign in'],
+        expectedAnnouncementText: [
+          'Sign-in failed. Check your email address and password.',
+        ],
         prepare: async (current) => {
           await current
             .locator('input[type="email"]')
@@ -189,69 +354,85 @@ export async function runGoldenJourneyBrowser(input: {
             .locator('input[type="password"]')
             .fill('not-a-real-password');
           await current.locator('button[type="submit"]').click();
-          await current
-            .locator('[role="alert"]')
-            .first()
-            .waitFor({ timeout: 5_000 })
-            .catch(() => undefined);
+          await current.getByRole('alert').first().waitFor({ timeout: 5_000 });
         },
       }),
     );
-
     snapshots.push(
       await snapshotPage({
-        page,
+        page: anonymousPage,
         origin: input.origin,
         route: '/student/invitation',
-        locale: 'es-US',
+        locale: 'en-US',
         viewport: { width: 375, height: 812, zoom: 1 },
         expectedFocus: ['email', 'text', 'submit'],
+        expectedTranslatedText: ['Join your class.'],
       }),
     );
+    await anonymous.close();
 
+    if (!input.staffCookie || !input.studentCookie) {
+      throw new Error('authenticated browser cookies are required');
+    }
+
+    const staff = await browser.newContext({
+      ignoreHTTPSErrors: false,
+      locale: 'en-US',
+      serviceWorkers: 'block',
+    });
+    staff.setDefaultTimeout(15_000);
+    await applyCookies(staff, input.origin, input.staffCookie);
+    const staffPage = await staff.newPage();
+    snapshots.push(...(await collectLocaleSnapshots(staffPage, input.origin)));
+    snapshots.push(await collectClinicalClearing(staffPage, input.origin));
+    await staff.close();
+
+    const student = await browser.newContext({
+      ignoreHTTPSErrors: false,
+      locale: 'en-US',
+      serviceWorkers: 'block',
+    });
+    student.setDefaultTimeout(15_000);
+    await applyCookies(student, input.origin, input.studentCookie);
+    const studentPage = await student.newPage();
     snapshots.push(
       await snapshotPage({
-        page,
+        page: studentPage,
         origin: input.origin,
-        route: '/staff/sign-in',
+        route: '/student',
         locale: 'en-US',
-        viewport: { width: 320, height: 640, zoom: 2 },
-        expectedFocus: ['email', 'password', 'submit'],
+        viewport: { width: 1280, height: 800, zoom: 1 },
+        expectedFocus: ['open-learning'],
+        expectedTranslatedText: ['Your learning space'],
       }),
     );
-
-    const localesObserved: BrowserLocale[] = ['en-US', 'es-US'];
-    if (input.staffCookie) {
-      await page.goto(`${input.origin}/staff/configuration`, {
-        waitUntil: 'networkidle',
-      });
-      const localeSelect = page.locator('select').first();
-      if (await localeSelect.count()) {
-        for (const locale of locales) {
-          await localeSelect.selectOption(locale);
-          localesObserved.push(locale);
-        }
-      }
-    }
-    const uniqueLocales = [...new Set(localesObserved)];
-
-    if (input.staffCookie) {
-      await page.goto(`${input.origin}/staff`, { waitUntil: 'networkidle' });
-      await page.getByRole('heading', { name: 'Intake review' }).waitFor();
-      await page.evaluate(() => {
-        document.dispatchEvent(new Event('visibilitychange'));
-      });
-      await page
-        .getByRole('alert')
-        .first()
-        .waitFor({ timeout: 5_000 })
-        .catch(() => undefined);
-    }
+    snapshots.push(
+      await snapshotPage({
+        page: studentPage,
+        origin: input.origin,
+        route: '/student/intake',
+        locale: 'en-US',
+        viewport: { width: 375, height: 812, zoom: 1 },
+        expectedFocus: ['save-draft', 'submit-intake'],
+        expectedTranslatedText: [],
+      }),
+    );
+    snapshots.push(
+      await snapshotPage({
+        page: studentPage,
+        origin: input.origin,
+        route: '/student/learning',
+        locale: 'en-US',
+        viewport: { width: 320, height: 640, zoom: 2 },
+        expectedFocus: ['back-to-student'],
+        expectedTranslatedText: [],
+      }),
+    );
+    await student.close();
 
     return assertBrowserAccessibility({
       snapshots,
       requiredLocales: locales,
-      localesObserved: uniqueLocales,
     });
   } finally {
     await browser?.close();

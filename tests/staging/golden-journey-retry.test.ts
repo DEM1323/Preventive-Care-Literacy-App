@@ -32,6 +32,26 @@ test('retry helper does not retry a closed 4xx failure', async () => {
   expect(calls).toBe(1);
 });
 
+test('retry helper uses bounded exponential backoff', async () => {
+  const delays: number[] = [];
+  await retryTransient(
+    async (attempt) => {
+      if (attempt < 3) throw new Error('temporarily unavailable');
+      return 'ok';
+    },
+    {
+      attempts: 3,
+      delayMs: 100,
+      backoffFactor: 2,
+      maxDelayMs: 250,
+      sleep: async (ms) => {
+        delays.push(ms);
+      },
+    },
+  );
+  expect(delays).toEqual([100, 200]);
+});
+
 test('retry helper fails closed after the last transient attempt', async () => {
   let calls = 0;
   await expect(

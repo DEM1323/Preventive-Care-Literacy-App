@@ -1,84 +1,106 @@
 import { expect, test } from 'bun:test';
 import {
   GoldenJourneyDigestMismatchError,
-  artifactDigestForGitTree,
   assertDeployedSourceIdentity,
+  assertWorkerArtifactDigest,
 } from '../../packages/golden-journey/src/index.ts';
 
 const commit = 'beda69fca3f7954a0200a3209cb44aac7ade4a72';
 const tree = '89abcdef0123456789abcdef0123456789abcdef';
-const artifactDigest = artifactDigestForGitTree(tree);
+const sourceDigest =
+  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const browserDigest =
+  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const artifactDigest =
+  '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
-test('artifact digest is a 64-character hex identity of the git tree', () => {
-  expect(artifactDigest).toMatch(/^[0-9a-f]{64}$/);
-  expect(artifactDigestForGitTree(tree)).toBe(artifactDigest);
-  expect(artifactDigestForGitTree('0'.repeat(40))).not.toBe(artifactDigest);
+const expected = {
+  commit,
+  tree,
+  sourceDigest,
+  browserDigest,
+  artifactDigest,
+};
+
+const deployed = {
+  ...expected,
+  envelopeAdapter: 'application-layer-envelope/v1',
+};
+
+test('digest gate accepts an exact baked commit, tree, and content digests', () => {
+  expect(() => assertDeployedSourceIdentity(deployed, expected)).not.toThrow();
 });
 
-test('digest gate accepts an exact deployed commit and artifact digest', () => {
+test('digest gate fails closed when any baked content digest differs from the checkout', () => {
   expect(() =>
     assertDeployedSourceIdentity(
-      {
-        commit,
-        artifactDigest,
-        envelopeAdapter: 'application-layer-envelope/v1',
-      },
-      { commit, artifactDigest },
-    ),
-  ).not.toThrow();
-});
-
-test('digest gate fails closed when the deployed commit or artifact digest differs', () => {
-  expect(() =>
-    assertDeployedSourceIdentity(
-      {
-        commit: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        artifactDigest,
-        envelopeAdapter: 'application-layer-envelope/v1',
-      },
-      { commit, artifactDigest },
+      { ...deployed, commit: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' },
+      expected,
     ),
   ).toThrow(GoldenJourneyDigestMismatchError);
 
   expect(() =>
     assertDeployedSourceIdentity(
-      {
-        commit,
-        artifactDigest: 'f'.repeat(64),
-        envelopeAdapter: 'application-layer-envelope/v1',
-      },
-      { commit, artifactDigest },
+      { ...deployed, artifactDigest: 'f'.repeat(64) },
+      expected,
     ),
   ).toThrow(GoldenJourneyDigestMismatchError);
 
-  try {
+  expect(() =>
     assertDeployedSourceIdentity(
-      {
-        commit: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-        artifactDigest: 'c'.repeat(64),
-        envelopeAdapter: 'application-layer-envelope/v1',
-      },
-      { commit, artifactDigest },
-    );
-  } catch (error) {
-    const message = String(error);
-    expect(message).toContain('Deployed digest differs');
-    expect(message).toContain('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
-    expect(message).toContain(commit);
-    return;
-  }
-  throw new Error('expected digest mismatch to throw');
+      { ...deployed, sourceDigest: 'c'.repeat(64) },
+      expected,
+    ),
+  ).toThrow(GoldenJourneyDigestMismatchError);
+
+  expect(() =>
+    assertDeployedSourceIdentity(
+      { ...deployed, tree: 'c'.repeat(40) },
+      expected,
+    ),
+  ).toThrow(GoldenJourneyDigestMismatchError);
 });
 
 test('digest gate rejects an unexpected envelope adapter without recording key material', () => {
   expect(() =>
     assertDeployedSourceIdentity(
-      {
-        commit,
-        artifactDigest,
-        envelopeAdapter: 'supabase-vault',
-      },
-      { commit, artifactDigest },
+      { ...deployed, envelopeAdapter: 'supabase-vault' },
+      expected,
     ),
   ).toThrow('selected envelope adapter');
+});
+
+test('worker digest comparison fails closed for a missing or stale worker attestation', () => {
+  expect(() =>
+    assertWorkerArtifactDigest({
+      publicDigest: artifactDigest,
+      workerDigest: undefined,
+      expectedDigest: artifactDigest,
+    }),
+  ).toThrow('Invitation worker attestation was not observed');
+
+  try {
+    assertWorkerArtifactDigest({
+      publicDigest: artifactDigest,
+      workerDigest: 'd'.repeat(64),
+      expectedDigest: artifactDigest,
+    });
+  } catch (error) {
+    expect(error).toBeInstanceOf(GoldenJourneyDigestMismatchError);
+    expect((error as GoldenJourneyDigestMismatchError).code).toBe(
+      'WORKER_DIGEST_MISMATCH',
+    );
+    return;
+  }
+  throw new Error('expected worker digest mismatch');
+});
+
+test('worker digest comparison requires the public, worker, and expected digests to match', () => {
+  expect(() =>
+    assertWorkerArtifactDigest({
+      publicDigest: artifactDigest,
+      workerDigest: artifactDigest,
+      expectedDigest: artifactDigest,
+    }),
+  ).not.toThrow();
 });
