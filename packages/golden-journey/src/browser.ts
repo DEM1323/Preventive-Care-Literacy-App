@@ -15,14 +15,6 @@ import { sessionCookiesForOrigin } from './browser-cookies.ts';
 const locales: BrowserLocale[] = ['en-US', 'es-US', 'pt-BR', 'fr-CA', 'ht-HT'];
 const require = createRequire(import.meta.url);
 
-function rgbToHex(color: string): string | undefined {
-  const match = color.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
-  if (!match) return undefined;
-  return `#${[match[1], match[2], match[3]]
-    .map((part) => Number(part).toString(16).padStart(2, '0'))
-    .join('')}`;
-}
-
 async function contrastPair(
   page: Page,
   selector: string,
@@ -30,10 +22,33 @@ async function contrastPair(
 ): Promise<{ foreground: string; background: string; name: string }> {
   const colors = await page.locator(selector).evaluate((element) => {
     const style = getComputedStyle(element);
-    return { color: style.color, background: style.backgroundColor };
+    const toHex = (color: string) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      const context = canvas.getContext('2d');
+      if (!context) return undefined;
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+      const [red, green, blue, alpha] = context.getImageData(0, 0, 1, 1).data;
+      if (
+        red === undefined ||
+        green === undefined ||
+        blue === undefined ||
+        alpha !== 255
+      ) {
+        return undefined;
+      }
+      return `#${[red, green, blue]
+        .map((channel) => channel.toString(16).padStart(2, '0'))
+        .join('')}`;
+    };
+    return {
+      foreground: toHex(style.color),
+      background: toHex(style.backgroundColor),
+    };
   });
-  const foreground = rgbToHex(colors.color);
-  const background = rgbToHex(colors.background);
+  const { foreground, background } = colors;
   if (!foreground || !background) {
     throw new Error(`contrast colors unavailable for ${name}`);
   }
