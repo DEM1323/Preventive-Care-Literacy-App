@@ -68,7 +68,7 @@ export async function createRuntimeDatabaseUser(
       `grant connect on database ${database.rows[0]?.name} to ${role}`,
     );
     await client.query(
-      `grant usage on schema identity_access, audit, infrastructure to ${role}`,
+      `grant usage on schema identity_access, school_configuration, audit, infrastructure to ${role}`,
     );
     await client.query(
       `grant select, insert on identity_access.school_workspaces,
@@ -76,20 +76,25 @@ export async function createRuntimeDatabaseUser(
           identity_access.classes, identity_access.invitations,
           identity_access.invitation_challenges, identity_access.invitation_deliveries,
           identity_access.students, identity_access.verified_email_addresses,
-          identity_access.class_memberships, identity_access.student_sessions,
-          infrastructure.operation_receipts, audit.evidence to ${role}`,
+           identity_access.class_memberships, identity_access.student_sessions,
+           identity_access.staff_session_freshness,
+           infrastructure.operation_receipts, audit.evidence to ${role}`,
     );
     await client.query(
       `grant select, insert, update on identity_access.staff_sessions,
           identity_access.staff_auth_flows, identity_access.invitations,
-          identity_access.invitation_challenges,
-          identity_access.class_memberships, identity_access.student_sessions to ${role}`,
+           identity_access.invitation_challenges,
+           identity_access.class_memberships, identity_access.student_sessions,
+           identity_access.staff_session_freshness to ${role}`,
     );
     await client.query(
       `grant execute on function identity_access.current_staff_has_permission(text) to ${role}`,
     );
     await client.query(
       'grant select, insert, update on infrastructure.outbox to ' + role,
+    );
+    await client.query(
+      `grant select, insert, update, delete on all tables in schema school_configuration to ${role}`,
     );
     await client.query(
       `grant usage, select on all sequences in schema audit, infrastructure to ${role}`,

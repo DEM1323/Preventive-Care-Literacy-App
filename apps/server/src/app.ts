@@ -23,7 +23,22 @@ import {
   StaffIdentityAlreadyExistsError,
   StaffPermissionRequiredError,
   StudentAuthenticationFailedError,
+  StaffSessionExpiredError,
+  StaffSessionRevokedError,
+  StepUpIncompleteError,
+  StepUpRejectedError,
+  AdministrativePermissionRequiredError,
 } from '../../../modules/identity-access/index.ts';
+import type { SchoolConfiguration } from '../../../modules/school-configuration/index.ts';
+import {
+  ActiveReleaseConflictError,
+  AuthenticationFreshnessRequiredError,
+  CandidateFingerprintConflictError,
+  DraftVersionConflictError,
+  InvalidSchoolConfigurationError,
+  OperationIdReusedError,
+  ResourceRevisionConflictError,
+} from '../../../modules/school-configuration/index.ts';
 import {
   createTelemetry,
   type Telemetry,
@@ -42,6 +57,13 @@ import {
   createInvitationSecretProtector,
   type InvitationSecretKeys,
 } from '../../../packages/invitation-secrets/src/index.ts';
+import { createSchoolConfiguration } from '../../../modules/school-configuration/index.ts';
+import {
+  createPostgresSchoolConfigurationStore,
+  sha256SessionHandle,
+} from '../../../packages/postgres/src/school-configuration.ts';
+import { createMemoryReleasePackageStorage } from '../../../packages/release-package-storage/src/index.ts';
+import type { ReleasePackageStorage } from '../../../modules/school-configuration/index.ts';
 
 const staffSessionCookie = '__Host-prevcare-staff-session' as const;
 const studentSessionCookie = '__Host-prevcare-student-session' as const;
@@ -255,11 +277,80 @@ const StudentSessionResponse = Type.Object({
   ),
 });
 
+const StepUpBody = Type.Object(
+  {
+    password: Type.Optional(Type.String({ maxLength: 200 })),
+    totp: Type.Optional(Type.String({ maxLength: 20 })),
+  },
+  { additionalProperties: false },
+);
+const StepUpResponse = Type.Object({
+  freshUntil: Type.String({ format: 'date-time' }),
+});
+const ImportSchoolConfigurationDraftBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    expectedDraftVersion: Type.Integer({ minimum: 0 }),
+    candidate: Type.Unknown(),
+  },
+  { additionalProperties: false },
+);
+const ExactResourceResponse = Type.Object({
+  resourceId: Type.String({ format: 'uuid' }),
+  revisionNumber: Type.Integer({ minimum: 1 }),
+});
+const ImportSchoolConfigurationDraftResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  draftVersion: Type.Integer({ minimum: 1 }),
+  candidateFingerprint: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  affectedResources: Type.Array(ExactResourceResponse),
+});
+const SchoolConfigurationDraftResponse = Type.Object({
+  workspaceId: Type.String({ format: 'uuid' }),
+  draftVersion: Type.Integer({ minimum: 0 }),
+  activeReleaseId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
+  candidateFingerprint: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  candidate: Type.Unknown(),
+});
+const PublishSchoolConfigurationReleaseBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    expectedActiveReleaseId: Type.Union([
+      Type.String({ format: 'uuid' }),
+      Type.Null(),
+    ]),
+    expectedDraftVersion: Type.Integer({ minimum: 0 }),
+    candidateFingerprint: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+    changeDescription: Type.String({ maxLength: 2000 }),
+  },
+  { additionalProperties: false },
+);
+const PublishSchoolConfigurationReleaseResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  releaseId: Type.String({ format: 'uuid' }),
+  releaseNumber: Type.Integer({ minimum: 1 }),
+  candidateFingerprint: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  activeReleaseId: Type.String({ format: 'uuid' }),
+  draftVersion: Type.Integer({ minimum: 1 }),
+  package: Type.Object({
+    format: Type.Literal('school-configuration-package/v1'),
+    digest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+    byteLength: Type.Integer({ minimum: 1 }),
+  }),
+  replayed: Type.Boolean(),
+});
+
 const ProblemDetails = Type.Object({
   type: Type.String(),
   title: Type.String(),
   status: Type.Integer(),
   code: Type.String(),
+  draftVersion: Type.Optional(Type.Integer({ minimum: 0 })),
+  activeReleaseId: Type.Optional(
+    Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
+  ),
+  candidateFingerprint: Type.Optional(Type.String()),
+  affectedValue: Type.Optional(Type.String()),
 });
 
 const ProblemResponse = {
@@ -314,6 +405,7 @@ export async function buildApp(
     telemetry?: Telemetry;
     webRoot?: string;
     onClose?: () => Promise<void>;
+    schoolConfiguration?: SchoolConfiguration;
   },
 ): Promise<FastifyInstance> {
   const publicOrigin = new URL(options.publicOrigin).origin;
@@ -426,6 +518,14 @@ export async function buildApp(
         code: error.code,
       });
     }
+    if (error instanceof AdministrativePermissionRequiredError) {
+      return reply.type('application/problem+json').code(403).send({
+        type: 'https://preventive-care-literacy.example/problems/administrative-permission',
+        title: error.message,
+        status: 403,
+        code: error.code,
+      });
+    }
     if (error instanceof StaffAuthenticationStaleError) {
       return reply.type('application/problem+json').code(403).send({
         type: 'https://preventive-care-literacy.example/problems/staff-authentication-stale',
@@ -433,6 +533,81 @@ export async function buildApp(
         status: 403,
         code: error.code,
       });
+    }
+    if (error instanceof StepUpIncompleteError) {
+      return reply.type('application/problem+json').code(422).send({
+        type: 'https://preventive-care-literacy.example/problems/step-up-incomplete',
+        title: error.message,
+        status: 422,
+        code: error.code,
+      });
+    }
+    if (error instanceof StepUpRejectedError) {
+      return reply.type('application/problem+json').code(401).send({
+        type: 'https://preventive-care-literacy.example/problems/step-up-rejected',
+        title: error.message,
+        status: 401,
+        code: error.code,
+      });
+    }
+    if (
+      error instanceof StaffSessionExpiredError ||
+      error instanceof StaffSessionRevokedError
+    ) {
+      return reply.type('application/problem+json').code(401).send({
+        type: 'https://preventive-care-literacy.example/problems/staff-session',
+        title: error.message,
+        status: 401,
+        code: error.code,
+      });
+    }
+    if (error instanceof AuthenticationFreshnessRequiredError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/authentication-freshness',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (
+      error instanceof DraftVersionConflictError ||
+      error instanceof ActiveReleaseConflictError ||
+      error instanceof CandidateFingerprintConflictError ||
+      error instanceof ResourceRevisionConflictError ||
+      error instanceof OperationIdReusedError
+    ) {
+      return reply
+        .type('application/problem+json')
+        .code(409)
+        .send({
+          type: 'https://preventive-care-literacy.example/problems/school-configuration-conflict',
+          title: error.message,
+          status: 409,
+          code: error.code,
+          ...(error instanceof DraftVersionConflictError
+            ? { draftVersion: error.draftVersion }
+            : {}),
+          ...(error instanceof ActiveReleaseConflictError
+            ? { activeReleaseId: error.activeReleaseId }
+            : {}),
+          ...(error instanceof CandidateFingerprintConflictError
+            ? { candidateFingerprint: error.candidateFingerprint }
+            : {}),
+        });
+    }
+    if (error instanceof InvalidSchoolConfigurationError) {
+      return reply
+        .type('application/problem+json')
+        .code(422)
+        .send({
+          type: 'https://preventive-care-literacy.example/problems/school-configuration-invalid',
+          title: error.message,
+          status: 422,
+          code: error.code,
+          ...(error.affectedValue
+            ? { affectedValue: error.affectedValue }
+            : {}),
+        });
     }
     if (error instanceof StudentAuthenticationFailedError) {
       return reply.type('application/problem+json').code(401).send({
@@ -870,6 +1045,153 @@ export async function buildApp(
     },
   );
 
+  if (options.schoolConfiguration) {
+    const schoolConfiguration = options.schoolConfiguration;
+    app.post<{ Body: Static<typeof StepUpBody> }>(
+      '/api/v1/auth/staff/step-up',
+      {
+        schema: {
+          operationId: 'stepUpStaffSession',
+          security: [{ staffSession: [] }],
+          body: StepUpBody,
+          response: {
+            200: StepUpResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            413: ProblemResponse,
+            422: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = readSecureOpaqueCookie(
+          request.headers.cookie,
+          staffSessionCookie,
+        );
+        if (!sessionHandle) throw new StaffAuthenticationFailedError();
+        if (
+          !request.body.password ||
+          !request.body.totp ||
+          !/^[0-9]{6}$/.test(request.body.totp)
+        ) {
+          throw new StepUpIncompleteError();
+        }
+        const result = await schoolConfiguration.stepUp({
+          sessionHandle,
+          password: request.body.password,
+          totp: request.body.totp,
+        });
+        reply.header('cache-control', 'no-store');
+        return { freshUntil: result.freshUntil.toISOString() };
+      },
+    );
+
+    app.get(
+      '/api/v1/administration/school-configuration',
+      {
+        schema: {
+          operationId: 'readSchoolConfigurationDraft',
+          security: [{ staffSession: [] }],
+          response: {
+            200: SchoolConfigurationDraftResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = readSecureOpaqueCookie(
+          request.headers.cookie,
+          staffSessionCookie,
+        );
+        if (!sessionHandle) throw new StaffAuthenticationFailedError();
+        const draft = await schoolConfiguration.readDraft({ sessionHandle });
+        if (!draft) {
+          return reply.type('application/problem+json').code(404).send({
+            type: 'https://preventive-care-literacy.example/problems/school-configuration-draft',
+            title: 'School Configuration Draft not found',
+            status: 404,
+            code: 'SCHOOL_CONFIGURATION_DRAFT_NOT_FOUND',
+          });
+        }
+        return draft;
+      },
+    );
+
+    app.post<{ Body: Static<typeof ImportSchoolConfigurationDraftBody> }>(
+      '/api/v1/administration/school-configuration/draft-imports',
+      {
+        bodyLimit: 2 * 1024 * 1024,
+        schema: {
+          operationId: 'importSchoolConfigurationDraft',
+          security: [{ staffSession: [] }],
+          body: ImportSchoolConfigurationDraftBody,
+          response: {
+            201: ImportSchoolConfigurationDraftResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            422: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = readSecureOpaqueCookie(
+          request.headers.cookie,
+          staffSessionCookie,
+        );
+        if (!sessionHandle) throw new StaffAuthenticationFailedError();
+        const result = await schoolConfiguration.importDraft({
+          ...request.body,
+          sessionHandle,
+        });
+        return reply.code(201).send(result);
+      },
+    );
+
+    app.post<{
+      Body: Static<typeof PublishSchoolConfigurationReleaseBody>;
+    }>(
+      '/api/v1/administration/school-configuration/releases',
+      {
+        schema: {
+          operationId: 'publishSchoolConfigurationRelease',
+          security: [{ staffSession: [] }],
+          body: PublishSchoolConfigurationReleaseBody,
+          response: {
+            201: PublishSchoolConfigurationReleaseResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            422: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = readSecureOpaqueCookie(
+          request.headers.cookie,
+          staffSessionCookie,
+        );
+        if (!sessionHandle) throw new StaffAuthenticationFailedError();
+        const result = await schoolConfiguration.publish({
+          ...request.body,
+          sessionHandle,
+        });
+        return reply.code(201).send(result);
+      },
+    );
+  }
+
   app.post<{ Body: Static<typeof RedeemInvitationBody> }>(
     '/api/v1/auth/student/invitations/redeem',
     {
@@ -961,6 +1283,7 @@ export async function createServer(options: {
   clock?: Clock;
   ids?: IdGenerator;
   invitationSecrets?: InvitationSecretKeys;
+  releasePackages?: ReleasePackageStorage;
 }): Promise<FastifyInstance> {
   const connectionUrl = new URL(options.databaseUrl);
   if (options.databaseCaCertificate) {
@@ -985,36 +1308,47 @@ export async function createServer(options: {
     await pool.end();
     throw error;
   }
-  return buildApp(
-    createPostgresIdentityAndAccess({
-      pool,
-      staffAuth: options.staffAuth,
-      clock: options.clock ?? { now: () => new Date() },
-      ids: options.ids ?? { create: randomUUID },
-      handles: {
-        create: () => randomBytes(32).toString('base64url'),
-        hash: (handle) => createHash('sha256').update(handle).digest('hex'),
-      },
-      invitationSecrets: createInvitationSecretProtector(
-        options.invitationSecrets ?? {
-          hmacKey: randomBytes(32),
-          encryptionKeys: { ephemeral: randomBytes(32) },
-          activeEncryptionKeyId: 'ephemeral',
-        },
-      ),
-    }),
-    {
-      operatorAuthenticator: createOperatorAuthenticator(
-        options.operatorCredentials,
-      ),
-      publicOrigin: options.publicOrigin,
-      readiness: async () => {
-        await pool.query('select 1');
-      },
-      telemetry:
-        options.telemetry ?? createTelemetry((line) => console.log(line)),
-      webRoot: options.webRoot,
-      onClose: () => pool.end(),
+  const clock = options.clock ?? { now: () => new Date() };
+  const ids = options.ids ?? { create: randomUUID };
+  const identityAndAccess = createPostgresIdentityAndAccess({
+    pool,
+    staffAuth: options.staffAuth,
+    clock,
+    ids,
+    handles: {
+      create: () => randomBytes(32).toString('base64url'),
+      hash: (handle) => createHash('sha256').update(handle).digest('hex'),
     },
-  );
+    invitationSecrets: createInvitationSecretProtector(
+      options.invitationSecrets ?? {
+        hmacKey: randomBytes(32),
+        encryptionKeys: { ephemeral: randomBytes(32) },
+        activeEncryptionKeyId: 'ephemeral',
+      },
+    ),
+  });
+  const schoolConfiguration = createSchoolConfiguration({
+    identityAndAccess,
+    store: createPostgresSchoolConfigurationStore({
+      pool,
+      hashSessionHandle: sha256SessionHandle,
+    }),
+    packages: options.releasePackages ?? createMemoryReleasePackageStorage(),
+    clock,
+    ids,
+  });
+  return buildApp(identityAndAccess, {
+    operatorAuthenticator: createOperatorAuthenticator(
+      options.operatorCredentials,
+    ),
+    publicOrigin: options.publicOrigin,
+    readiness: async () => {
+      await pool.query('select 1');
+    },
+    telemetry:
+      options.telemetry ?? createTelemetry((line) => console.log(line)),
+    webRoot: options.webRoot,
+    schoolConfiguration,
+    onClose: () => pool.end(),
+  });
 }

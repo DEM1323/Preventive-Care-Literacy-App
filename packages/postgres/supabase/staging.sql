@@ -35,6 +35,10 @@ insert into storage.buckets (id, name, public)
 values ('private-records', 'private-records', false)
 on conflict (id) do update set public = false;
 
+insert into storage.buckets (id, name, public)
+values ('school-configuration-releases', 'school-configuration-releases', false)
+on conflict (id) do update set public = false;
+
 create or replace function infrastructure.provider_cron_healthy(expected_name text)
 returns boolean
 language sql

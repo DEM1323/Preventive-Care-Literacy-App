@@ -34,7 +34,7 @@ test('browser exposes only the server-authoritative Student access routes', () =
     '/staff',
     '/student/invitation',
     '/student',
-    '/prototype/school-configuration',
+    '/staff/configuration',
     '*',
   ]);
 });

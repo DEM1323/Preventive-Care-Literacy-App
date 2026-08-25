@@ -20,6 +20,54 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/administration/school-configuration': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['readSchoolConfigurationDraft'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/school-configuration/draft-imports': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['importSchoolConfigurationDraft'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/school-configuration/releases': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['publishSchoolConfigurationRelease'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/administration/school-workspaces': {
     parameters: {
       query?: never;
@@ -78,6 +126,22 @@ export interface paths {
     get?: never;
     put?: never;
     post: operations['endStaffSession'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/auth/staff/step-up': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['stepUpStaffSession'];
     delete?: never;
     options?: never;
     head?: never;
@@ -352,7 +416,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -366,7 +434,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -380,7 +452,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -436,7 +512,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -450,7 +530,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -464,7 +548,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -478,7 +566,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -492,7 +584,449 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  readSchoolConfigurationDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            activeReleaseId: string | null;
+            candidate: unknown;
+            candidateFingerprint: string;
+            draftVersion: number;
+            /** Format: uuid */
+            workspaceId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  importSchoolConfigurationDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          candidate: unknown;
+          expectedDraftVersion: number;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            affectedResources: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            }[];
+            candidateFingerprint: string;
+            draftVersion: number;
+            /** Format: uuid */
+            operationId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  publishSchoolConfigurationRelease: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          candidateFingerprint: string;
+          changeDescription: string;
+          expectedActiveReleaseId: string | null;
+          expectedDraftVersion: number;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            activeReleaseId: string;
+            candidateFingerprint: string;
+            draftVersion: number;
+            /** Format: uuid */
+            operationId: string;
+            package: {
+              byteLength: number;
+              digest: string;
+              /** @enum {string} */
+              format: 'school-configuration-package/v1';
+            };
+            /** Format: uuid */
+            releaseId: string;
+            releaseNumber: number;
+            replayed: boolean;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -545,7 +1079,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -559,7 +1097,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -573,7 +1115,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -587,7 +1133,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -601,7 +1151,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -615,7 +1169,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -660,7 +1218,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -674,7 +1236,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -688,7 +1254,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -749,7 +1319,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -763,7 +1337,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -777,7 +1355,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -791,7 +1373,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -805,7 +1391,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -819,7 +1409,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -867,7 +1461,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -881,7 +1479,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -895,7 +1497,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -909,7 +1515,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -923,7 +1533,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -960,7 +1574,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -974,7 +1592,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -988,7 +1610,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1002,7 +1628,149 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  stepUpStaffSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          password?: string;
+          totp?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: date-time */
+            freshUntil: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1046,7 +1814,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1060,7 +1832,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1074,7 +1850,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1088,7 +1868,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1102,7 +1886,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1146,7 +1934,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1160,7 +1952,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1174,7 +1970,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1188,7 +1988,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1202,7 +2006,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1238,7 +2046,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1252,7 +2064,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1266,7 +2082,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1309,7 +2129,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1323,7 +2147,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1367,7 +2195,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;
@@ -1381,7 +2213,11 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
             code: string;
+            draftVersion?: number;
             status: number;
             title: string;
             type: string;

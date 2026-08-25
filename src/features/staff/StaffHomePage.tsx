@@ -163,6 +163,13 @@ export function StaffHomePage() {
 
         {directory ? (
           <div className="mt-10">
+            <button
+              type="button"
+              onClick={() => navigate('/staff/configuration')}
+              className="mb-6 rounded bg-emerald-400 px-4 py-2 font-black text-slate-950"
+            >
+              Manage School Configuration
+            </button>
             <h2 className="text-xl font-black tracking-tight">
               Staff identities
             </h2>
