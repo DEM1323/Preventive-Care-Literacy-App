@@ -133,8 +133,13 @@ test('tracked envelope threat model names the selected adapter and its limits', 
   expect(doc).toContain('unrecoverable');
   expect(doc).toContain('process secret');
   expect(doc).toContain('/api/v1/clinical/intake-records/current');
+  expect(doc).toContain('/api/v1/student/intake');
+  expect(doc).toContain('Student-private draft restore');
   expect(doc).toContain(
     'Ordinary clinical and administrative HTTP projections must not receive those answers',
+  );
+  expect(doc).not.toContain(
+    'is the only HTTP seam that may return plaintext answers',
   );
   expect(doc).toContain(
     'separately authorized, freshness-gated, no-store clinical reveal',
