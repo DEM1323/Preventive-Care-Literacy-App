@@ -4504,6 +4504,48 @@
         "security": [{ "studentSession": [] }]
       }
     },
+    "/health/build": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "artifactDigest": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "commit": { "pattern": "^[0-9a-f]{40}$", "type": "string" },
+                    "envelopeAdapter": {
+                      "enum": ["application-layer-envelope/v1"],
+                      "type": "string"
+                    }
+                  },
+                  "required": ["commit", "artifactDigest", "envelopeAdapter"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "status": { "enum": ["unavailable"], "type": "string" }
+                  },
+                  "required": ["status"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/health/live": {
       "get": {
         "responses": {

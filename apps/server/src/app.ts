@@ -60,8 +60,11 @@ import {
   OperationIdReusedError,
   ResourceRevisionConflictError,
 } from '../../../modules/school-configuration/index.ts';
-import { createEnvelopeKeyManagement } from '../../../packages/application-keys/src/index.ts';
-import type { EnvelopeKeyMaterial } from '../../../packages/application-keys/src/index.ts';
+import {
+  APPLICATION_LAYER_ENVELOPE_V1,
+  createEnvelopeKeyManagement,
+  type EnvelopeKeyMaterial,
+} from '../../../packages/application-keys/src/index.ts';
 import {
   createTelemetry,
   type Telemetry,
@@ -603,6 +606,14 @@ const ReadyHealthResponse = Type.Object({ status: Type.Literal('ready') });
 const NotReadyHealthResponse = Type.Object({
   status: Type.Literal('not-ready'),
 });
+const BuildHealthResponse = Type.Object({
+  commit: Type.String({ pattern: '^[0-9a-f]{40}$' }),
+  artifactDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  envelopeAdapter: Type.Literal('application-layer-envelope/v1'),
+});
+const BuildUnavailableResponse = Type.Object({
+  status: Type.Literal('unavailable'),
+});
 
 type OperatorAuthenticator = {
   authenticate(
@@ -647,6 +658,11 @@ export async function buildApp(
     schoolConfiguration?: SchoolConfiguration;
     intake?: Intake;
     learningProgress?: LearningProgress;
+    buildIdentity?: {
+      commit: string;
+      artifactDigest: string;
+      envelopeAdapter: 'application-layer-envelope/v1';
+    };
   },
 ): Promise<FastifyInstance> {
   const publicOrigin = new URL(options.publicOrigin).origin;
@@ -1106,6 +1122,29 @@ export async function buildApp(
         expireSecureOpaqueCookie('__Host-prevcare-security-check'),
       );
       return { status: 'ok' };
+    },
+  );
+  app.get(
+    '/health/build',
+    {
+      schema: {
+        response: {
+          200: BuildHealthResponse,
+          503: BuildUnavailableResponse,
+        },
+      },
+    },
+    async (_request, reply) => {
+      const identity = options.buildIdentity;
+      if (
+        !identity ||
+        !/^[0-9a-f]{40}$/.test(identity.commit) ||
+        !/^[0-9a-f]{64}$/.test(identity.artifactDigest) ||
+        identity.envelopeAdapter !== 'application-layer-envelope/v1'
+      ) {
+        return reply.code(503).send({ status: 'unavailable' });
+      }
+      return identity;
     },
   );
 
@@ -1941,6 +1980,11 @@ export async function createServer(options: {
   wrappingKeys?: EnvelopeKeyMaterial;
   applicationKeys?: ApplicationKeyManagement;
   releasePackages?: ReleasePackageStorage;
+  buildIdentity?: {
+    commit: string;
+    artifactDigest: string;
+    envelopeAdapter: 'application-layer-envelope/v1';
+  };
 }): Promise<FastifyInstance> {
   const connectionUrl = new URL(options.databaseUrl);
   if (options.databaseCaCertificate) {
@@ -2032,6 +2076,15 @@ export async function createServer(options: {
     schoolConfiguration,
     intake,
     learningProgress,
+    buildIdentity:
+      options.buildIdentity ??
+      (process.env.SOURCE_COMMIT && process.env.SOURCE_ARTIFACT_DIGEST
+        ? {
+            commit: process.env.SOURCE_COMMIT,
+            artifactDigest: process.env.SOURCE_ARTIFACT_DIGEST,
+            envelopeAdapter: APPLICATION_LAYER_ENVELOPE_V1,
+          }
+        : undefined),
     onClose: () => pool.end(),
   });
 }

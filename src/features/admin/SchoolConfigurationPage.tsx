@@ -294,7 +294,7 @@ export function SchoolConfigurationPage() {
               <select
                 value={locale}
                 onChange={(event) => setLocale(event.target.value as Locale)}
-                className="rounded-lg border bg-white px-3 py-2"
+                className="rounded-lg border bg-white px-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 {locales.map((item) => (
                   <option key={item}>{item}</option>
@@ -305,7 +305,7 @@ export function SchoolConfigurationPage() {
                 onClick={() =>
                   setWidth(width === 'desktop' ? 'mobile' : 'desktop')
                 }
-                className="rounded-lg border bg-white px-3 py-2 font-bold"
+                className="rounded-lg border bg-white px-3 py-2 font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 {width}
               </button>

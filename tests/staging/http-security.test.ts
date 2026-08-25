@@ -181,4 +181,42 @@ describe.serial('staging HTTP security boundary', () => {
       code: 'REQUEST_TOO_LARGE',
     });
   });
+
+  test('build identity is unavailable until an exact commit and artifact digest are configured', async () => {
+    const app = await createApp();
+    const unavailable = await app.inject({
+      method: 'GET',
+      url: '/health/build',
+    });
+    await app.close();
+    expect(unavailable.statusCode).toBe(503);
+    expect(unavailable.json()).toEqual({ status: 'unavailable' });
+  });
+
+  test('build identity exposes only commit, artifact digest, and selected envelope adapter', async () => {
+    const app = await buildApp(createStubIdentityAndAccess(), {
+      publicOrigin,
+      operatorAuthenticator: {
+        authenticate: () => ({
+          type: 'technical_operator',
+          id: 'operator@example.test',
+        }),
+      },
+      buildIdentity: {
+        commit: 'beda69fca3f7954a0200a3209cb44aac7ade4a72',
+        artifactDigest:
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        envelopeAdapter: 'application-layer-envelope/v1',
+      },
+    });
+    const response = await app.inject({ method: 'GET', url: '/health/build' });
+    await app.close();
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      commit: 'beda69fca3f7954a0200a3209cb44aac7ade4a72',
+      artifactDigest:
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      envelopeAdapter: 'application-layer-envelope/v1',
+    });
+  });
 });

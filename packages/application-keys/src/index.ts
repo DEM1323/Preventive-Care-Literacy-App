@@ -10,6 +10,9 @@ import type {
   SealedRecord,
 } from '../../../modules/intake/index.ts';
 
+export const APPLICATION_LAYER_ENVELOPE_V1 =
+  'application-layer-envelope/v1' as const;
+
 export type EnvelopeKeyMaterial = {
   wrappingKeys: Record<string, Uint8Array>;
   activeWrappingKeyId: string;
@@ -80,7 +83,7 @@ export function createEnvelopeKeyManagement(
   }
 
   return {
-    name: 'application-layer-envelope/v1',
+    name: APPLICATION_LAYER_ENVELOPE_V1,
     seal(plaintext, context) {
       const dataKey = randomBytes(32);
       const aad = binding(context);

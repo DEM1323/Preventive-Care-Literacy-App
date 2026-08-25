@@ -24,6 +24,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Record source identity
+        id: source
+        run: |
+          TREE=$(git rev-parse 'HEAD^{tree}')
+          DIGEST=$(printf 'git-tree:%s' "$TREE" | sha256sum | awk '{print $1}')
+          echo "commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+
       - name: Apply forward migrations and runtime grants
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_MIGRATION_DATABASE_URL }}
@@ -51,6 +59,8 @@ jobs:
           APPLICATION_WRAPPING_KEY_ID: ${{ vars.APPLICATION_WRAPPING_KEY_ID }}
           APPLICATION_WRAPPING_KEY: ${{ secrets.APPLICATION_WRAPPING_KEY }}
           APPLICATION_IDEMPOTENCY_KEY: ${{ secrets.APPLICATION_IDEMPOTENCY_KEY }}
+          SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
+          SOURCE_ARTIFACT_DIGEST: ${{ steps.source.outputs.digest }}
         run: |
           bunx @railway/cli@5.43.2 variables set --skip-deploys \
             --project 20cf68d2-d1df-4291-9aea-61cfebfd758d \
@@ -63,7 +73,9 @@ jobs:
             "INVITATION_DELIVERY_KEY=$INVITATION_DELIVERY_KEY" \
             "APPLICATION_WRAPPING_KEY_ID=$APPLICATION_WRAPPING_KEY_ID" \
             "APPLICATION_WRAPPING_KEY=$APPLICATION_WRAPPING_KEY" \
-            "APPLICATION_IDEMPOTENCY_KEY=$APPLICATION_IDEMPOTENCY_KEY"
+            "APPLICATION_IDEMPOTENCY_KEY=$APPLICATION_IDEMPOTENCY_KEY" \
+            "SOURCE_COMMIT=$SOURCE_COMMIT" \
+            "SOURCE_ARTIFACT_DIGEST=$SOURCE_ARTIFACT_DIGEST"
 
       - name: Synchronize private worker variables
         env:
