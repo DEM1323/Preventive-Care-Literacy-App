@@ -2682,6 +2682,915 @@
         "security": [{ "staffSession": [] }]
       }
     },
+    "/api/v1/student/intake": {
+      "get": {
+        "operationId": "readStudentIntake",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "enum": ["en-US"], "type": "string" },
+                { "enum": ["es-US"], "type": "string" },
+                { "enum": ["pt-BR"], "type": "string" },
+                { "enum": ["fr-CA"], "type": "string" },
+                { "enum": ["ht-HT"], "type": "string" }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "currentIntakeRecordVersion": {
+                      "anyOf": [
+                        { "type": "null" },
+                        {
+                          "properties": {
+                            "acceptedAt": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "intakeForm": {
+                              "properties": {
+                                "resourceId": {
+                                  "format": "uuid",
+                                  "type": "string"
+                                },
+                                "revisionNumber": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "required": ["resourceId", "revisionNumber"],
+                              "type": "object"
+                            },
+                            "intakeRecordVersionId": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "locale": {
+                              "anyOf": [
+                                { "enum": ["en-US"], "type": "string" },
+                                { "enum": ["es-US"], "type": "string" },
+                                { "enum": ["pt-BR"], "type": "string" },
+                                { "enum": ["fr-CA"], "type": "string" },
+                                { "enum": ["ht-HT"], "type": "string" }
+                              ]
+                            },
+                            "schoolConfigurationReleaseId": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "submissionAttestation": {
+                              "properties": {
+                                "resourceId": {
+                                  "format": "uuid",
+                                  "type": "string"
+                                },
+                                "revisionNumber": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "required": ["resourceId", "revisionNumber"],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "intakeRecordVersionId",
+                            "acceptedAt",
+                            "schoolConfigurationReleaseId",
+                            "intakeForm",
+                            "submissionAttestation",
+                            "locale"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "draft": {
+                      "anyOf": [
+                        { "type": "null" },
+                        {
+                          "properties": {
+                            "answers": {
+                              "additionalProperties": {
+                                "maxLength": 4000,
+                                "type": "string"
+                              },
+                              "type": "object"
+                            },
+                            "locale": {
+                              "anyOf": [
+                                { "enum": ["en-US"], "type": "string" },
+                                { "enum": ["es-US"], "type": "string" },
+                                { "enum": ["pt-BR"], "type": "string" },
+                                { "enum": ["fr-CA"], "type": "string" },
+                                { "enum": ["ht-HT"], "type": "string" }
+                              ]
+                            },
+                            "updatedAt": {
+                              "format": "date-time",
+                              "type": "string"
+                            }
+                          },
+                          "required": ["locale", "updatedAt", "answers"],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "form": {
+                      "properties": {
+                        "intakeForm": {
+                          "properties": {
+                            "fields": {
+                              "items": {
+                                "properties": {
+                                  "id": { "format": "uuid", "type": "string" },
+                                  "key": { "type": "string" },
+                                  "label": { "type": "string" },
+                                  "options": {
+                                    "items": {
+                                      "properties": {
+                                        "code": { "type": "string" },
+                                        "label": { "type": "string" }
+                                      },
+                                      "required": ["code", "label"],
+                                      "type": "object"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "order": { "minimum": 0, "type": "integer" },
+                                  "required": { "type": "boolean" },
+                                  "requiredWhenVisible": { "type": "boolean" },
+                                  "revision": {
+                                    "minimum": 1,
+                                    "type": "integer"
+                                  },
+                                  "sectionId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "anyOf": [
+                                      { "enum": ["text"], "type": "string" },
+                                      { "enum": ["date"], "type": "string" },
+                                      { "enum": ["tel"], "type": "string" },
+                                      { "enum": ["yes-no"], "type": "string" },
+                                      { "enum": ["textarea"], "type": "string" }
+                                    ]
+                                  },
+                                  "visibility": {
+                                    "anyOf": [
+                                      { "type": "null" },
+                                      {
+                                        "properties": {
+                                          "equalsOptionCode": {
+                                            "type": "string"
+                                          },
+                                          "fieldId": {
+                                            "format": "uuid",
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "fieldId",
+                                          "equalsOptionCode"
+                                        ],
+                                        "type": "object"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "revision",
+                                  "key",
+                                  "sectionId",
+                                  "order",
+                                  "type",
+                                  "required",
+                                  "requiredWhenVisible",
+                                  "visibility",
+                                  "options",
+                                  "label"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "resourceId": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "revisionNumber": {
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "sections": {
+                              "items": {
+                                "properties": {
+                                  "id": { "format": "uuid", "type": "string" },
+                                  "order": { "minimum": 0, "type": "integer" },
+                                  "revision": {
+                                    "minimum": 1,
+                                    "type": "integer"
+                                  },
+                                  "title": { "type": "string" }
+                                },
+                                "required": [
+                                  "id",
+                                  "revision",
+                                  "order",
+                                  "title"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "title": { "type": "string" }
+                          },
+                          "required": [
+                            "resourceId",
+                            "revisionNumber",
+                            "title",
+                            "sections",
+                            "fields"
+                          ],
+                          "type": "object"
+                        },
+                        "locale": {
+                          "anyOf": [
+                            { "enum": ["en-US"], "type": "string" },
+                            { "enum": ["es-US"], "type": "string" },
+                            { "enum": ["pt-BR"], "type": "string" },
+                            { "enum": ["fr-CA"], "type": "string" },
+                            { "enum": ["ht-HT"], "type": "string" }
+                          ]
+                        },
+                        "schoolConfigurationReleaseId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "submissionAttestation": {
+                          "properties": {
+                            "resourceId": {
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "revisionNumber": {
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "text": { "type": "string" }
+                          },
+                          "required": ["resourceId", "revisionNumber", "text"],
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "schoolConfigurationReleaseId",
+                        "locale",
+                        "intakeForm",
+                        "submissionAttestation"
+                      ],
+                      "type": "object"
+                    },
+                    "learningUnlocked": { "type": "boolean" }
+                  },
+                  "required": [
+                    "learningUnlocked",
+                    "currentIntakeRecordVersion",
+                    "draft",
+                    "form"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "studentSession": [] }]
+      }
+    },
+    "/api/v1/student/intake/draft": {
+      "put": {
+        "operationId": "saveIntakeDraft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "answers": {
+                    "additionalProperties": {
+                      "maxLength": 4000,
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "expectedIntakeForm": {
+                    "properties": {
+                      "resourceId": { "format": "uuid", "type": "string" },
+                      "revisionNumber": { "minimum": 1, "type": "integer" }
+                    },
+                    "required": ["resourceId", "revisionNumber"],
+                    "type": "object"
+                  },
+                  "expectedSchoolConfigurationReleaseId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "locale": {
+                    "anyOf": [
+                      { "enum": ["en-US"], "type": "string" },
+                      { "enum": ["es-US"], "type": "string" },
+                      { "enum": ["pt-BR"], "type": "string" },
+                      { "enum": ["fr-CA"], "type": "string" },
+                      { "enum": ["ht-HT"], "type": "string" }
+                    ]
+                  }
+                },
+                "required": [
+                  "expectedSchoolConfigurationReleaseId",
+                  "expectedIntakeForm",
+                  "locale",
+                  "answers"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "locale": {
+                      "anyOf": [
+                        { "enum": ["en-US"], "type": "string" },
+                        { "enum": ["es-US"], "type": "string" },
+                        { "enum": ["pt-BR"], "type": "string" },
+                        { "enum": ["fr-CA"], "type": "string" },
+                        { "enum": ["ht-HT"], "type": "string" }
+                      ]
+                    },
+                    "updatedAt": { "format": "date-time", "type": "string" }
+                  },
+                  "required": ["locale", "updatedAt"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "studentSession": [] }]
+      }
+    },
+    "/api/v1/student/intake/submissions": {
+      "post": {
+        "operationId": "submitIntakeRecordVersion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "answers": {
+                    "additionalProperties": {
+                      "maxLength": 4000,
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "attestation": {
+                    "properties": {
+                      "locale": {
+                        "anyOf": [
+                          { "enum": ["en-US"], "type": "string" },
+                          { "enum": ["es-US"], "type": "string" },
+                          { "enum": ["pt-BR"], "type": "string" },
+                          { "enum": ["fr-CA"], "type": "string" },
+                          { "enum": ["ht-HT"], "type": "string" }
+                        ]
+                      },
+                      "notice": {
+                        "properties": {
+                          "resourceId": { "format": "uuid", "type": "string" },
+                          "revisionNumber": { "minimum": 1, "type": "integer" }
+                        },
+                        "required": ["resourceId", "revisionNumber"],
+                        "type": "object"
+                      }
+                    },
+                    "required": ["locale", "notice"],
+                    "type": "object"
+                  },
+                  "expectedIntakeForm": {
+                    "properties": {
+                      "resourceId": { "format": "uuid", "type": "string" },
+                      "revisionNumber": { "minimum": 1, "type": "integer" }
+                    },
+                    "required": ["resourceId", "revisionNumber"],
+                    "type": "object"
+                  },
+                  "expectedSchoolConfigurationReleaseId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "expectedSubmissionAttestation": {
+                    "properties": {
+                      "resourceId": { "format": "uuid", "type": "string" },
+                      "revisionNumber": { "minimum": 1, "type": "integer" }
+                    },
+                    "required": ["resourceId", "revisionNumber"],
+                    "type": "object"
+                  },
+                  "locale": {
+                    "anyOf": [
+                      { "enum": ["en-US"], "type": "string" },
+                      { "enum": ["es-US"], "type": "string" },
+                      { "enum": ["pt-BR"], "type": "string" },
+                      { "enum": ["fr-CA"], "type": "string" },
+                      { "enum": ["ht-HT"], "type": "string" }
+                    ]
+                  },
+                  "operationId": { "format": "uuid", "type": "string" }
+                },
+                "required": [
+                  "operationId",
+                  "expectedSchoolConfigurationReleaseId",
+                  "expectedIntakeForm",
+                  "expectedSubmissionAttestation",
+                  "locale",
+                  "answers",
+                  "attestation"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "acceptedAt": { "format": "date-time", "type": "string" },
+                    "intakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "learningUnlocked": { "enum": [true], "type": "boolean" },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "replayed": { "type": "boolean" }
+                  },
+                  "required": [
+                    "operationId",
+                    "intakeRecordVersionId",
+                    "acceptedAt",
+                    "learningUnlocked",
+                    "replayed"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "studentSession": [] }]
+      }
+    },
     "/api/v1/student/session": {
       "get": {
         "operationId": "readStudentSession",

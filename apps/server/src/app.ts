@@ -29,6 +29,15 @@ import {
   StepUpRejectedError,
   AdministrativePermissionRequiredError,
 } from '../../../modules/identity-access/index.ts';
+import type { Intake } from '../../../modules/intake/index.ts';
+import {
+  IntakeAlreadyAcceptedError,
+  IntakeIncompleteError,
+  IntakeOperationReusedError,
+  IntakeRevisionConflictError,
+  IntakeUnavailableError,
+} from '../../../modules/intake/index.ts';
+import { createIntake } from '../../../modules/intake/index.ts';
 import type { SchoolConfiguration } from '../../../modules/school-configuration/index.ts';
 import {
   ActiveReleaseConflictError,
@@ -39,6 +48,8 @@ import {
   OperationIdReusedError,
   ResourceRevisionConflictError,
 } from '../../../modules/school-configuration/index.ts';
+import { createEnvelopeKeyManagement } from '../../../packages/application-keys/src/index.ts';
+import type { EnvelopeKeyMaterial } from '../../../packages/application-keys/src/index.ts';
 import {
   createTelemetry,
   type Telemetry,
@@ -64,6 +75,7 @@ import {
 } from '../../../packages/postgres/src/school-configuration.ts';
 import { createMemoryReleasePackageStorage } from '../../../packages/release-package-storage/src/index.ts';
 import type { ReleasePackageStorage } from '../../../modules/school-configuration/index.ts';
+import { createPostgresIntakeStore } from '../../../packages/postgres/src/intake.ts';
 
 const staffSessionCookie = '__Host-prevcare-staff-session' as const;
 const studentSessionCookie = '__Host-prevcare-student-session' as const;
@@ -276,6 +288,136 @@ const StudentSessionResponse = Type.Object({
     }),
   ),
 });
+const IntakeLocaleSchema = Type.Union([
+  Type.Literal('en-US'),
+  Type.Literal('es-US'),
+  Type.Literal('pt-BR'),
+  Type.Literal('fr-CA'),
+  Type.Literal('ht-HT'),
+]);
+const ExactResourceRevisionSchema = Type.Object({
+  resourceId: Type.String({ format: 'uuid' }),
+  revisionNumber: Type.Integer({ minimum: 1 }),
+});
+const IntakeAnswersSchema = Type.Record(
+  Type.String({ format: 'uuid' }),
+  Type.String({ maxLength: 4000 }),
+);
+const StudentIntakeQuery = Type.Object({
+  locale: Type.Optional(IntakeLocaleSchema),
+});
+const StudentIntakeFormResponse = Type.Object({
+  schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+  locale: IntakeLocaleSchema,
+  intakeForm: Type.Object({
+    resourceId: Type.String({ format: 'uuid' }),
+    revisionNumber: Type.Integer({ minimum: 1 }),
+    title: Type.String(),
+    sections: Type.Array(
+      Type.Object({
+        id: Type.String({ format: 'uuid' }),
+        revision: Type.Integer({ minimum: 1 }),
+        order: Type.Integer({ minimum: 0 }),
+        title: Type.String(),
+      }),
+    ),
+    fields: Type.Array(
+      Type.Object({
+        id: Type.String({ format: 'uuid' }),
+        revision: Type.Integer({ minimum: 1 }),
+        key: Type.String(),
+        sectionId: Type.String({ format: 'uuid' }),
+        order: Type.Integer({ minimum: 0 }),
+        type: Type.Union([
+          Type.Literal('text'),
+          Type.Literal('date'),
+          Type.Literal('tel'),
+          Type.Literal('yes-no'),
+          Type.Literal('textarea'),
+        ]),
+        required: Type.Boolean(),
+        requiredWhenVisible: Type.Boolean(),
+        visibility: Type.Union([
+          Type.Null(),
+          Type.Object({
+            fieldId: Type.String({ format: 'uuid' }),
+            equalsOptionCode: Type.String(),
+          }),
+        ]),
+        options: Type.Array(
+          Type.Object({
+            code: Type.String(),
+            label: Type.String(),
+          }),
+        ),
+        label: Type.String(),
+      }),
+    ),
+  }),
+  submissionAttestation: Type.Object({
+    resourceId: Type.String({ format: 'uuid' }),
+    revisionNumber: Type.Integer({ minimum: 1 }),
+    text: Type.String(),
+  }),
+});
+const StudentIntakeSnapshotResponse = Type.Object({
+  learningUnlocked: Type.Boolean(),
+  currentIntakeRecordVersion: Type.Union([
+    Type.Null(),
+    Type.Object({
+      intakeRecordVersionId: Type.String({ format: 'uuid' }),
+      acceptedAt: Type.String({ format: 'date-time' }),
+      schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+      intakeForm: ExactResourceRevisionSchema,
+      submissionAttestation: ExactResourceRevisionSchema,
+      locale: IntakeLocaleSchema,
+    }),
+  ]),
+  draft: Type.Union([
+    Type.Null(),
+    Type.Object({
+      locale: IntakeLocaleSchema,
+      updatedAt: Type.String({ format: 'date-time' }),
+      answers: IntakeAnswersSchema,
+    }),
+  ]),
+  form: StudentIntakeFormResponse,
+});
+const SaveIntakeDraftBody = Type.Object(
+  {
+    expectedSchoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+    expectedIntakeForm: ExactResourceRevisionSchema,
+    locale: IntakeLocaleSchema,
+    answers: IntakeAnswersSchema,
+  },
+  { additionalProperties: false },
+);
+const SaveIntakeDraftResponse = Type.Object({
+  locale: IntakeLocaleSchema,
+  updatedAt: Type.String({ format: 'date-time' }),
+});
+const SubmitIntakeRecordVersionBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    expectedSchoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+    expectedIntakeForm: ExactResourceRevisionSchema,
+    expectedSubmissionAttestation: ExactResourceRevisionSchema,
+    locale: IntakeLocaleSchema,
+    answers: IntakeAnswersSchema,
+    attestation: Type.Object({
+      locale: IntakeLocaleSchema,
+      notice: ExactResourceRevisionSchema,
+    }),
+  },
+  { additionalProperties: false },
+);
+const SubmitIntakeRecordVersionResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  intakeRecordVersionId: Type.String({ format: 'uuid' }),
+  acceptedAt: Type.String({ format: 'date-time' }),
+  learningUnlocked: Type.Literal(true),
+  replayed: Type.Boolean(),
+});
 
 const StepUpBody = Type.Object(
   {
@@ -406,6 +548,7 @@ export async function buildApp(
     webRoot?: string;
     onClose?: () => Promise<void>;
     schoolConfiguration?: SchoolConfiguration;
+    intake?: Intake;
   },
 ): Promise<FastifyInstance> {
   const publicOrigin = new URL(options.publicOrigin).origin;
@@ -457,7 +600,13 @@ export async function buildApp(
                       ? 'clinical-directory'
                       : route === '/api/v1/administration/classes'
                         ? 'classes'
-                        : 'unknown';
+                        : route === '/api/v1/student/intake'
+                          ? 'student-intake'
+                          : route === '/api/v1/student/intake/draft'
+                            ? 'student-intake-draft'
+                            : route === '/api/v1/student/intake/submissions'
+                              ? 'student-intake-submission'
+                              : 'unknown';
       telemetry.record({
         name: 'http.request.completed',
         method: ['DELETE', 'GET', 'PATCH', 'POST', 'PUT'].includes(
@@ -614,6 +763,34 @@ export async function buildApp(
         type: 'https://preventive-care-literacy.example/problems/student-authentication',
         title: error.message,
         status: 401,
+        code: error.code,
+      });
+    }
+    if (error instanceof IntakeUnavailableError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/intake-unavailable',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (
+      error instanceof IntakeRevisionConflictError ||
+      error instanceof IntakeAlreadyAcceptedError ||
+      error instanceof IntakeOperationReusedError
+    ) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/intake-conflict',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof IntakeIncompleteError) {
+      return reply.type('application/problem+json').code(422).send({
+        type: 'https://preventive-care-literacy.example/problems/intake-incomplete',
+        title: error.message,
+        status: 422,
         code: error.code,
       });
     }
@@ -1251,6 +1428,122 @@ export async function buildApp(
     },
   );
 
+  function studentSessionRequired(reply: {
+    type(value: string): {
+      code(status: number): { send(payload: unknown): unknown };
+    };
+  }) {
+    return reply.type('application/problem+json').code(401).send({
+      type: 'https://preventive-care-literacy.example/problems/student-session',
+      title: 'Student session required',
+      status: 401,
+      code: 'STUDENT_SESSION_REQUIRED',
+    });
+  }
+
+  app.get<{ Querystring: Static<typeof StudentIntakeQuery> }>(
+    '/api/v1/student/intake',
+    {
+      schema: {
+        operationId: 'readStudentIntake',
+        security: [{ studentSession: [] }],
+        querystring: StudentIntakeQuery,
+        response: {
+          200: StudentIntakeSnapshotResponse,
+          401: ProblemResponse,
+          404: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        studentSessionCookie,
+      );
+      if (!sessionHandle || !options.intake) {
+        return studentSessionRequired(reply);
+      }
+      const snapshot = await options.intake.read({
+        sessionHandle,
+        locale: request.query.locale ?? 'en-US',
+      });
+      if (!snapshot) return studentSessionRequired(reply);
+      return snapshot;
+    },
+  );
+
+  app.put<{ Body: Static<typeof SaveIntakeDraftBody> }>(
+    '/api/v1/student/intake/draft',
+    {
+      schema: {
+        operationId: 'saveIntakeDraft',
+        security: [{ studentSession: [] }],
+        body: SaveIntakeDraftBody,
+        response: {
+          200: SaveIntakeDraftResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        studentSessionCookie,
+      );
+      if (!sessionHandle || !options.intake) {
+        return studentSessionRequired(reply);
+      }
+      const result = await options.intake.saveDraft({
+        sessionHandle,
+        ...request.body,
+      });
+      if (!result) return studentSessionRequired(reply);
+      return result;
+    },
+  );
+
+  app.post<{ Body: Static<typeof SubmitIntakeRecordVersionBody> }>(
+    '/api/v1/student/intake/submissions',
+    {
+      schema: {
+        operationId: 'submitIntakeRecordVersion',
+        security: [{ studentSession: [] }],
+        body: SubmitIntakeRecordVersionBody,
+        response: {
+          201: SubmitIntakeRecordVersionResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          422: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        studentSessionCookie,
+      );
+      if (!sessionHandle || !options.intake) {
+        return studentSessionRequired(reply);
+      }
+      const result = await options.intake.submit({
+        sessionHandle,
+        ...request.body,
+      });
+      if (!result) return studentSessionRequired(reply);
+      return reply.code(201).send(result);
+    },
+  );
+
   app.setNotFoundHandler((request, reply) => {
     if (
       options.webRoot &&
@@ -1283,6 +1576,7 @@ export async function createServer(options: {
   clock?: Clock;
   ids?: IdGenerator;
   invitationSecrets?: InvitationSecretKeys;
+  wrappingKeys?: EnvelopeKeyMaterial;
   releasePackages?: ReleasePackageStorage;
 }): Promise<FastifyInstance> {
   const connectionUrl = new URL(options.databaseUrl);
@@ -1337,6 +1631,19 @@ export async function createServer(options: {
     clock,
     ids,
   });
+  const intake = createIntake({
+    resolveStudentSession: (command) =>
+      identityAndAccess.resolveStudentSession(command),
+    store: createPostgresIntakeStore({ pool }),
+    keys: createEnvelopeKeyManagement(
+      options.wrappingKeys ?? {
+        wrappingKeys: { ephemeral: randomBytes(32) },
+        activeWrappingKeyId: 'ephemeral',
+      },
+    ),
+    clock,
+    ids,
+  });
   return buildApp(identityAndAccess, {
     operatorAuthenticator: createOperatorAuthenticator(
       options.operatorCredentials,
@@ -1349,6 +1656,7 @@ export async function createServer(options: {
       options.telemetry ?? createTelemetry((line) => console.log(line)),
     webRoot: options.webRoot,
     schoolConfiguration,
+    intake,
     onClose: () => pool.end(),
   });
 }

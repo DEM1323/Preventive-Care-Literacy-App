@@ -6,6 +6,7 @@ import {
   InvitationRedemptionPage,
   StudentHomePage,
 } from './features/student-access/StudentAccessPages';
+import { StudentIntakePage } from './features/intake/StudentIntakePage';
 
 function RetiredPrototypePage() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
           element={<InvitationRedemptionPage />}
         />
         <Route path="/student" element={<StudentHomePage />} />
+        <Route path="/student/intake" element={<StudentIntakePage />} />
         <Route
           path="/staff/configuration"
           element={<SchoolConfigurationPage />}

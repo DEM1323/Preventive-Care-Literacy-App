@@ -113,16 +113,29 @@ export function InvitationRedemptionPage() {
 
 export function StudentHomePage() {
   const [access, setAccess] = useState<StudentAccess>();
+  const [learningUnlocked, setLearningUnlocked] = useState<boolean>();
   const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
     let active = true;
     void client
       .GET('/api/v1/student/session')
-      .then(({ data, response }) => {
+      .then(async ({ data, response }) => {
         if (!active) return;
-        if (response.status === 200 && data) setAccess(data);
-        else setUnavailable(true);
+        if (response.status !== 200 || !data) {
+          setUnavailable(true);
+          return;
+        }
+        setAccess(data);
+        const intake = await client.GET('/api/v1/student/intake', {
+          params: { query: { locale: 'en-US' } },
+        });
+        if (!active) return;
+        if (intake.response.status === 200 && intake.data) {
+          setLearningUnlocked(intake.data.learningUnlocked);
+        } else {
+          setLearningUnlocked(false);
+        }
       })
       .catch(() => {
         if (active) setUnavailable(true);
@@ -167,6 +180,29 @@ export function StudentHomePage() {
 
         {access ? (
           <div className="mt-10 grid gap-5 sm:grid-cols-2">
+            <article className="border border-[#fffaf0] bg-[#fffaf0] p-6 text-[#17332d] shadow-[6px_6px_0_#d86045]">
+              <p className="font-mono text-xs font-bold text-[#b43c2c]">
+                INTAKE
+              </p>
+              <h2 className="mt-3 text-2xl font-black">
+                {learningUnlocked
+                  ? 'Intake Record Version accepted'
+                  : 'Complete your intake'}
+              </h2>
+              <p className="mt-5 text-sm font-bold text-[#49645c]">
+                {learningUnlocked
+                  ? 'Learning unlocked after server confirmation'
+                  : 'Answers stay private until the school confirms your submission'}
+              </p>
+              {learningUnlocked ? null : (
+                <Link
+                  to="/student/intake"
+                  className="mt-6 inline-block bg-[#e6af2e] px-5 py-3 font-black text-[#17332d]"
+                >
+                  Open intake
+                </Link>
+              )}
+            </article>
             {access.activeClassMemberships.map((membership, index) => (
               <article
                 key={membership.classId}

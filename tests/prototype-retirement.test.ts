@@ -20,6 +20,16 @@ test('repository contains no Google Apps Script implementation', () => {
   ).toEqual([]);
 });
 
+test('Student intake does not persist answers in browser storage', () => {
+  const intakeSource = readFileSync(
+    new URL('../src/features/intake/StudentIntakePage.tsx', import.meta.url),
+    'utf8',
+  );
+  expect(intakeSource).not.toContain('localStorage');
+  expect(intakeSource).not.toContain('sessionStorage');
+  expect(intakeSource).not.toContain('searchParams');
+});
+
 test('browser exposes only the server-authoritative Student access routes', () => {
   const appSource = readFileSync(
     new URL('../src/App.tsx', import.meta.url),
@@ -34,6 +44,7 @@ test('browser exposes only the server-authoritative Student access routes', () =
     '/staff',
     '/student/invitation',
     '/student',
+    '/student/intake',
     '/staff/configuration',
     '*',
   ]);
