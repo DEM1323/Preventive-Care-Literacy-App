@@ -104,6 +104,7 @@ export function createFakeStaffAuth(): {
         ) {
           return 'invalid';
         }
+        challenges.delete(input.challengeId);
         factor.verified = true;
         return { assurance: 'aal2' };
       },

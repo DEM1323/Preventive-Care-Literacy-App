@@ -206,6 +206,7 @@ export function createPostgresStaffAccessStore(options: {
             actor_type: request.actorType,
             actor_id: request.actorId,
             occurred_at: request.occurredAt,
+            details: request.details ?? null,
             record_owner: 'school',
             record_classification: 'audit_evidence',
             disposal_class: 'workspace_audit_evidence',
@@ -351,7 +352,7 @@ export function createPostgresStaffAccessStore(options: {
         );
         const identity = await transaction
           .selectFrom('identity_access.staff_identities')
-          .select(['display_name', 'status'])
+          .select(['display_name', 'email', 'supabase_user_id', 'status'])
           .where('staff_identity_id', '=', session.staff_identity_id)
           .executeTakeFirst();
         if (!identity) return undefined;
@@ -361,20 +362,88 @@ export function createPostgresStaffAccessStore(options: {
           .where('staff_identity_id', '=', session.staff_identity_id)
           .orderBy('permission')
           .execute();
+        const freshness = await transaction
+          .selectFrom('identity_access.staff_session_freshness')
+          .select('refreshed_at')
+          .where('session_id', '=', session.session_id)
+          .executeTakeFirst();
         return {
           sessionId: session.session_id,
           staffIdentityId: session.staff_identity_id,
           workspaceId: session.workspace_id,
           displayName: identity.display_name,
+          email: identity.email,
+          supabaseUserId: identity.supabase_user_id,
           permissions: grants.map(
             (grant) => grant.permission as StaffPermission,
           ),
           authenticationAssurance: session.authentication_assurance as 'aal2',
           authenticatedAt: session.authenticated_at,
+          authenticationFreshAt:
+            freshness?.refreshed_at ?? session.authenticated_at,
           expiresAt: session.expires_at,
           revokedAt: session.revoked_at ?? undefined,
           status: identity.status as 'active' | 'disabled',
         };
+      });
+    },
+
+    async refreshStaffAuthentication(request) {
+      return database.transaction().execute(async (transaction) => {
+        await sql`select set_config('app.session_handle_hash', ${request.sessionHandleHash}, true)`.execute(
+          transaction,
+        );
+        await setWorkspaceScope(transaction, request.workspaceId);
+        await sql`select set_config('app.staff_identity_id', ${request.staffIdentityId}, true)`.execute(
+          transaction,
+        );
+        const session = await transaction
+          .selectFrom('identity_access.staff_sessions')
+          .select('session_id')
+          .where('session_id', '=', request.sessionId)
+          .where('staff_identity_id', '=', request.staffIdentityId)
+          .where('workspace_id', '=', request.workspaceId)
+          .where('revoked_at', 'is', null)
+          .where('expires_at', '>', request.refreshedAt)
+          .executeTakeFirst();
+        if (!session) return false;
+        const permission = await sql<{
+          allowed: boolean;
+        }>`select identity_access.current_staff_has_permission('administrative') as allowed`.execute(
+          transaction,
+        );
+        if (!permission.rows[0]?.allowed) return false;
+        await transaction
+          .insertInto('identity_access.staff_session_freshness')
+          .values({
+            session_id: request.sessionId,
+            workspace_id: request.workspaceId,
+            staff_identity_id: request.staffIdentityId,
+            refreshed_at: request.refreshedAt,
+          })
+          .onConflict((conflict) =>
+            conflict.column('session_id').doUpdateSet({
+              refreshed_at: request.refreshedAt,
+            }),
+          )
+          .execute();
+        await transaction
+          .insertInto('audit.evidence')
+          .values({
+            audit_id: request.audit.auditId,
+            workspace_id: request.workspaceId,
+            operation_id: request.audit.operationId,
+            event_type: request.audit.eventType,
+            actor_type: 'staff',
+            actor_id: request.staffIdentityId,
+            occurred_at: request.refreshedAt,
+            details: { purpose: 'publish_school_configuration_release' },
+            record_owner: 'school',
+            record_classification: 'audit_evidence',
+            disposal_class: 'workspace_audit_evidence',
+          })
+          .execute();
+        return true;
       });
     },
 

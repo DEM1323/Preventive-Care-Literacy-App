@@ -1,5 +1,6 @@
 import { createSupabaseStaffAuth } from '../../../packages/supabase-auth/src/index.ts';
 import { createServer } from './app.ts';
+import { createSupabaseReleasePackageStorage } from '../../../packages/release-package-storage/src/index.ts';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL is required');
@@ -27,6 +28,10 @@ const server = await createServer({
   databaseCaCertificate: process.env.DATABASE_CA_CERT,
   operatorCredentials: { token: operatorToken, actorId: operatorId },
   staffAuth: createSupabaseStaffAuth({
+    supabaseUrl,
+    secretKey: supabaseSecretKey,
+  }),
+  releasePackages: createSupabaseReleasePackageStorage({
     supabaseUrl,
     secretKey: supabaseSecretKey,
   }),

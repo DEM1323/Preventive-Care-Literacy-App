@@ -70,7 +70,7 @@ try {
     .replaceAll('__WORKER_ROLE__', workerRoleIdentifier);
   await client.query(platformSql);
   await client.query(
-    `grant usage on schema identity_access, infrastructure, audit
+    `grant usage on schema identity_access, school_configuration, infrastructure, audit
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
@@ -81,8 +81,16 @@ try {
     `grant select, insert, update on identity_access.staff_sessions,
           identity_access.staff_auth_flows, identity_access.invitations,
           identity_access.invitation_challenges,
-          identity_access.class_memberships, identity_access.student_sessions
-          to ${runtimeRoleIdentifier}`,
+           identity_access.class_memberships, identity_access.student_sessions
+           to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant select, insert, update, delete on all tables in schema school_configuration
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant select, insert, update on identity_access.staff_session_freshness
+       to ${runtimeRoleIdentifier}`,
   );
   await client.query(
     `grant execute on function identity_access.current_staff_has_permission(text)

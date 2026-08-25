@@ -108,7 +108,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -125,7 +134,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -142,7 +160,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -221,7 +248,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -238,7 +274,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -255,7 +300,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -272,7 +326,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -289,7 +352,676 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/school-configuration": {
+      "get": {
+        "operationId": "readSchoolConfigurationDraft",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "candidate": {},
+                    "candidateFingerprint": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "workspaceId": { "format": "uuid", "type": "string" }
+                  },
+                  "required": [
+                    "workspaceId",
+                    "draftVersion",
+                    "activeReleaseId",
+                    "candidateFingerprint",
+                    "candidate"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/school-configuration/draft-imports": {
+      "post": {
+        "operationId": "importSchoolConfigurationDraft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "candidate": {},
+                  "expectedDraftVersion": { "minimum": 0, "type": "integer" },
+                  "operationId": { "format": "uuid", "type": "string" }
+                },
+                "required": [
+                  "operationId",
+                  "expectedDraftVersion",
+                  "candidate"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "affectedResources": {
+                      "items": {
+                        "properties": {
+                          "resourceId": { "format": "uuid", "type": "string" },
+                          "revisionNumber": { "minimum": 1, "type": "integer" }
+                        },
+                        "required": ["resourceId", "revisionNumber"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "candidateFingerprint": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "draftVersion": { "minimum": 1, "type": "integer" },
+                    "operationId": { "format": "uuid", "type": "string" }
+                  },
+                  "required": [
+                    "operationId",
+                    "draftVersion",
+                    "candidateFingerprint",
+                    "affectedResources"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/school-configuration/releases": {
+      "post": {
+        "operationId": "publishSchoolConfigurationRelease",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "candidateFingerprint": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  "changeDescription": { "maxLength": 2000, "type": "string" },
+                  "expectedActiveReleaseId": {
+                    "anyOf": [
+                      { "format": "uuid", "type": "string" },
+                      { "type": "null" }
+                    ]
+                  },
+                  "expectedDraftVersion": { "minimum": 0, "type": "integer" },
+                  "operationId": { "format": "uuid", "type": "string" }
+                },
+                "required": [
+                  "operationId",
+                  "expectedActiveReleaseId",
+                  "expectedDraftVersion",
+                  "candidateFingerprint",
+                  "changeDescription"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": { "format": "uuid", "type": "string" },
+                    "candidateFingerprint": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "draftVersion": { "minimum": 1, "type": "integer" },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "package": {
+                      "properties": {
+                        "byteLength": { "minimum": 1, "type": "integer" },
+                        "digest": {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string"
+                        },
+                        "format": {
+                          "enum": ["school-configuration-package/v1"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["format", "digest", "byteLength"],
+                      "type": "object"
+                    },
+                    "releaseId": { "format": "uuid", "type": "string" },
+                    "releaseNumber": { "minimum": 1, "type": "integer" },
+                    "replayed": { "type": "boolean" }
+                  },
+                  "required": [
+                    "operationId",
+                    "releaseId",
+                    "releaseNumber",
+                    "candidateFingerprint",
+                    "activeReleaseId",
+                    "draftVersion",
+                    "package",
+                    "replayed"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -360,7 +1092,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -377,7 +1118,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -394,7 +1144,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -411,7 +1170,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -428,7 +1196,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -445,7 +1222,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -527,7 +1313,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -544,7 +1339,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -561,7 +1365,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -672,7 +1485,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -689,7 +1511,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -706,7 +1537,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -723,7 +1563,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -740,7 +1589,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -757,7 +1615,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -831,7 +1698,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -848,7 +1724,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -865,7 +1750,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -882,7 +1776,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -899,7 +1802,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -937,7 +1849,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -954,7 +1875,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -971,7 +1901,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -988,7 +1927,209 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/auth/staff/step-up": {
+      "post": {
+        "operationId": "stepUpStaffSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "password": { "maxLength": 200, "type": "string" },
+                  "totp": { "maxLength": 20, "type": "string" }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "freshUntil": { "format": "date-time", "type": "string" }
+                  },
+                  "required": ["freshUntil"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1047,7 +2188,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1064,7 +2214,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1081,7 +2240,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1098,7 +2266,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1115,7 +2292,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1173,7 +2359,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1190,7 +2385,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1207,7 +2411,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1224,7 +2437,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1241,7 +2463,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1279,7 +2510,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1296,7 +2536,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1313,7 +2562,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1373,7 +2631,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1390,7 +2657,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1445,7 +2721,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1462,7 +2747,16 @@
               "application/problem+json": {
                 "schema": {
                   "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }

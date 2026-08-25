@@ -40,6 +40,12 @@ async function renderContracts() {
         throw new Error('Contract generation does not execute commands');
       },
       resolveStaffSession: async () => undefined,
+      requireAdministrativeSession: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      stepUpStaffSession: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
       endStaffSession: async () => ({ outcome: 'ended' }),
       listStaffIdentities: async () => {
         throw new Error('Contract generation does not execute queries');
@@ -65,6 +71,18 @@ async function renderContracts() {
           type: 'technical_operator',
           id: 'contract-generator',
         }),
+      },
+      schoolConfiguration: {
+        readDraft: async () => undefined,
+        stepUp: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        importDraft: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        publish: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
       },
     },
   );

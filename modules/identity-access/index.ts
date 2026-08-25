@@ -40,6 +40,12 @@ export type IdentityAndAccess = {
   resolveStaffSession(
     command: ResolveStaffSessionCommand,
   ): Promise<StaffSessionContext | undefined>;
+  requireAdministrativeSession(
+    command: StaffSessionCommand,
+  ): Promise<AdministrativeSessionContext>;
+  stepUpStaffSession(
+    command: StepUpStaffSessionCommand,
+  ): Promise<StepUpStaffSessionResult>;
   endStaffSession(
     command: EndStaffSessionCommand,
   ): Promise<{ outcome: 'ended' }>;
@@ -203,12 +209,57 @@ export class StaffPermissionRequiredError extends Error {
   }
 }
 
+export class AdministrativePermissionRequiredError extends Error {
+  readonly code = 'ADMINISTRATIVE_PERMISSION_REQUIRED';
+
+  constructor() {
+    super('Administrative Permission is required');
+    this.name = 'AdministrativePermissionRequiredError';
+  }
+}
+
 export class StaffAuthenticationStaleError extends Error {
   readonly code = 'STAFF_AUTHENTICATION_STALE';
 
   constructor() {
     super('Fresh staff authentication is required');
     this.name = 'StaffAuthenticationStaleError';
+  }
+}
+
+export class StepUpRejectedError extends Error {
+  readonly code = 'STEP_UP_REJECTED';
+
+  constructor() {
+    super('Password and authenticator code were not accepted');
+    this.name = 'StepUpRejectedError';
+  }
+}
+
+export class StepUpIncompleteError extends Error {
+  readonly code = 'STEP_UP_INCOMPLETE';
+
+  constructor() {
+    super('Password and a six-digit authenticator code are required');
+    this.name = 'StepUpIncompleteError';
+  }
+}
+
+export class StaffSessionExpiredError extends Error {
+  readonly code = 'STAFF_SESSION_EXPIRED';
+
+  constructor() {
+    super('Staff Session expired');
+    this.name = 'StaffSessionExpiredError';
+  }
+}
+
+export class StaffSessionRevokedError extends Error {
+  readonly code = 'STAFF_SESSION_REVOKED';
+
+  constructor() {
+    super('Staff Session was revoked');
+    this.name = 'StaffSessionRevokedError';
   }
 }
 
@@ -276,6 +327,20 @@ export type StaffSessionContext = {
   displayName: string;
   permissions: StaffPermission[];
   authenticatedAt: Date;
+};
+
+export type AdministrativeSessionContext = StaffSessionContext & {
+  authenticationFreshAt: Date;
+};
+
+export type StepUpStaffSessionCommand = {
+  sessionHandle: string;
+  password: string;
+  totp: string;
+};
+
+export type StepUpStaffSessionResult = {
+  freshUntil: Date;
 };
 
 export type EndStaffSessionCommand = {
@@ -378,10 +443,20 @@ export type StaffAccessStore = {
     auditId: string;
     workspaceId: string;
     operationId: string;
-    eventType: 'staff_authentication.failed';
+    eventType:
+      'staff_authentication.failed' | 'staff_authentication.step_up_failed';
     actorType: 'staff';
     actorId: string;
     occurredAt: Date;
+    details?: {
+      purpose: 'publish_school_configuration_release';
+      outcome:
+        | 'rejected'
+        | 'session_expired'
+        | 'session_revoked'
+        | 'permission_required';
+      staffSessionId: string;
+    };
   }): Promise<void>;
   createStaffAuthFlow(flow: StaffAuthFlow): Promise<void>;
   withStaffAuthenticationLock<Result>(request: {
@@ -416,6 +491,9 @@ export type StaffAccessStore = {
   }): Promise<'created' | 'unavailable'>;
   resolveStaffSession(request: { sessionHandleHash: string }): Promise<
     | (StaffSessionContext & {
+        email: string;
+        supabaseUserId: string;
+        authenticationFreshAt: Date;
         authenticationAssurance: 'aal2';
         expiresAt: Date;
         revokedAt: Date | undefined;
@@ -423,6 +501,18 @@ export type StaffAccessStore = {
       })
     | undefined
   >;
+  refreshStaffAuthentication(request: {
+    sessionHandleHash: string;
+    sessionId: string;
+    workspaceId: string;
+    staffIdentityId: string;
+    refreshedAt: Date;
+    audit: {
+      auditId: string;
+      operationId: string;
+      eventType: 'staff_authentication.step_up_succeeded';
+    };
+  }): Promise<boolean>;
   revokeStaffSession(request: {
     sessionHandleHash: string;
     revokedAt: Date;
@@ -690,7 +780,44 @@ export function createIdentityAndAccess(dependencies: {
     if (!session.permissions.includes('administrative') || !current) {
       throw new StaffPermissionRequiredError('administrative');
     }
-    return session;
+    const resolved = await staffStore.resolveStaffSession({
+      sessionHandleHash: requireStaffSeams().handles.hash(sessionHandle),
+    });
+    if (!resolved) throw new StaffAuthenticationFailedError();
+    return {
+      ...session,
+      authenticationFreshAt: resolved.authenticationFreshAt,
+    };
+  }
+
+  async function requireAdministrativeContext(
+    sessionHandle: string,
+  ): Promise<AdministrativeSessionContext> {
+    const { staffStore, handles } = requireStaffSeams();
+    const resolved = await staffStore.resolveStaffSession({
+      sessionHandleHash: handles.hash(sessionHandle),
+    });
+    const now = dependencies.clock.now();
+    if (!resolved) throw new StaffAuthenticationFailedError();
+    if (resolved.revokedAt !== undefined) throw new StaffSessionRevokedError();
+    if (resolved.expiresAt <= now) throw new StaffSessionExpiredError();
+    if (resolved.status !== 'active')
+      throw new StaffAuthenticationFailedError();
+    const current = await staffStore.staffHasPermission({
+      staffIdentityId: resolved.staffIdentityId,
+      workspaceId: resolved.workspaceId,
+      permission: 'administrative',
+    });
+    if (!current) throw new AdministrativePermissionRequiredError();
+    return {
+      sessionId: resolved.sessionId,
+      staffIdentityId: resolved.staffIdentityId,
+      workspaceId: resolved.workspaceId,
+      displayName: resolved.displayName,
+      permissions: resolved.permissions,
+      authenticatedAt: resolved.authenticatedAt,
+      authenticationFreshAt: resolved.authenticationFreshAt,
+    };
   }
 
   return {
@@ -1017,6 +1144,111 @@ export function createIdentityAndAccess(dependencies: {
         displayName: resolved.displayName,
         permissions: resolved.permissions,
         authenticatedAt: resolved.authenticatedAt,
+      };
+    },
+
+    async requireAdministrativeSession(command) {
+      return requireAdministrativeContext(command.sessionHandle);
+    },
+
+    async stepUpStaffSession(command) {
+      const { staffStore, staffAuth, handles } = requireStaffSeams();
+      const sessionHandleHash = handles.hash(command.sessionHandle);
+      const resolved = await staffStore.resolveStaffSession({
+        sessionHandleHash,
+      });
+      const now = dependencies.clock.now();
+      if (!resolved) throw new StaffAuthenticationFailedError();
+      const auditStepUpFailure = async (
+        outcome:
+          | 'rejected'
+          | 'session_expired'
+          | 'session_revoked'
+          | 'permission_required',
+      ): Promise<void> => {
+        await staffStore.recordStaffAudit({
+          auditId: dependencies.ids.create(),
+          workspaceId: resolved.workspaceId,
+          operationId: dependencies.ids.create(),
+          eventType: 'staff_authentication.step_up_failed',
+          actorType: 'staff',
+          actorId: resolved.staffIdentityId,
+          occurredAt: dependencies.clock.now(),
+          details: {
+            purpose: 'publish_school_configuration_release',
+            outcome,
+            staffSessionId: resolved.sessionId,
+          },
+        });
+      };
+      if (resolved.revokedAt !== undefined) {
+        await auditStepUpFailure('session_revoked');
+        throw new StaffSessionRevokedError();
+      }
+      if (resolved.expiresAt <= now) {
+        await auditStepUpFailure('session_expired');
+        throw new StaffSessionExpiredError();
+      }
+      if (resolved.status !== 'active')
+        throw new StaffAuthenticationFailedError();
+      const hasPermission = await staffStore.staffHasPermission({
+        staffIdentityId: resolved.staffIdentityId,
+        workspaceId: resolved.workspaceId,
+        permission: 'administrative',
+      });
+      if (!hasPermission) {
+        await auditStepUpFailure('permission_required');
+        throw new AdministrativePermissionRequiredError();
+      }
+
+      const rejectStepUp = async (): Promise<never> => {
+        await auditStepUpFailure('rejected');
+        throw new StepUpRejectedError();
+      };
+
+      const password = await staffAuth.verifyPassword({
+        email: resolved.email,
+        password: command.password,
+      });
+      if (
+        password === 'invalid' ||
+        password.supabaseUserId !== resolved.supabaseUserId
+      ) {
+        return rejectStepUp();
+      }
+      const verified = await staffStore.withStaffAuthenticationLock({
+        staffIdentityId: resolved.staffIdentityId,
+        run: async () => {
+          const challenge = await staffAuth.prepareTotpChallenge(
+            password.accessToken,
+          );
+          if (challenge.stage !== 'totp') return 'invalid' as const;
+          return staffAuth.verifyTotp({
+            accessToken: password.accessToken,
+            factorId: challenge.factorId,
+            challengeId: challenge.challengeId,
+            code: command.totp,
+          });
+        },
+      });
+      if (verified === 'invalid' || verified.assurance !== 'aal2') {
+        return rejectStepUp();
+      }
+      const refreshed = await staffStore.refreshStaffAuthentication({
+        sessionHandleHash,
+        sessionId: resolved.sessionId,
+        workspaceId: resolved.workspaceId,
+        staffIdentityId: resolved.staffIdentityId,
+        refreshedAt: now,
+        audit: {
+          auditId: dependencies.ids.create(),
+          operationId: dependencies.ids.create(),
+          eventType: 'staff_authentication.step_up_succeeded',
+        },
+      });
+      if (!refreshed) throw new StaffAuthenticationFailedError();
+      return {
+        freshUntil: new Date(now.getTime() + staffAuthenticationFreshnessMs),
       };
     },
 

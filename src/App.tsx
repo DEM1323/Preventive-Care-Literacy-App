@@ -1,5 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { SchoolConfigurationEditorPrototype } from './features/admin/SchoolConfigurationEditorPrototype';
+import { SchoolConfigurationPage } from './features/admin/SchoolConfigurationPage';
 import { StaffHomePage } from './features/staff/StaffHomePage';
 import { StaffSignInPage } from './features/staff/StaffSignInPage';
 import {
@@ -41,8 +41,8 @@ export default function App() {
         />
         <Route path="/student" element={<StudentHomePage />} />
         <Route
-          path="/prototype/school-configuration"
-          element={<SchoolConfigurationEditorPrototype />}
+          path="/staff/configuration"
+          element={<SchoolConfigurationPage />}
         />
         <Route path="*" element={<RetiredPrototypePage />} />
       </Routes>
