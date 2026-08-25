@@ -30,6 +30,21 @@ test('Student intake does not persist answers in browser storage', () => {
   expect(intakeSource).not.toContain('searchParams');
 });
 
+test('Student learning shows Completed only from server-accepted Item Completion', () => {
+  const learningSource = readFileSync(
+    new URL(
+      '../src/features/learning/StudentLearningPage.tsx',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  expect(learningSource).not.toContain('localStorage');
+  expect(learningSource).not.toContain('sessionStorage');
+  expect(learningSource).toContain("busy === 'save' ? 'Saving...'");
+  expect(learningSource).toContain('snapshot?.completion');
+  expect(learningSource).not.toContain('setCompleted(true)');
+});
+
 test('browser exposes only the server-authoritative Student access routes', () => {
   const appSource = readFileSync(
     new URL('../src/App.tsx', import.meta.url),
@@ -45,6 +60,7 @@ test('browser exposes only the server-authoritative Student access routes', () =
     '/student/invitation',
     '/student',
     '/student/intake',
+    '/student/learning',
     '/staff/configuration',
     '*',
   ]);

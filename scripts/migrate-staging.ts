@@ -70,7 +70,7 @@ try {
     .replaceAll('__WORKER_ROLE__', workerRoleIdentifier);
   await client.query(platformSql);
   await client.query(
-    `grant usage on schema identity_access, school_configuration, intake, infrastructure, audit
+    `grant usage on schema identity_access, school_configuration, intake, learning_progress, infrastructure, audit
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
@@ -106,6 +106,11 @@ try {
   );
   await client.query(
     `grant select, insert on intake.intake_operation_receipts
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant select, insert on learning_progress.item_completions,
+          learning_progress.item_completion_receipts
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
