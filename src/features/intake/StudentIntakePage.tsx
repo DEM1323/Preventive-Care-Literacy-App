@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import {
+  intakeFieldIsVisible,
+  selectedIntakeOptionCodes,
+} from '../../../modules/intake-answers/index.ts';
 import { createBrowserApiClient } from '../../../packages/api-client/src/index.ts';
 import type { paths } from '../../../packages/api-client/src/schema.ts';
 
@@ -7,16 +11,6 @@ const client = createBrowserApiClient();
 
 type IntakeSnapshot =
   paths['/api/v1/student/intake']['get']['responses']['200']['content']['application/json'];
-type IntakeField = IntakeSnapshot['form']['intakeForm']['fields'][number];
-
-// Visibility stays local: importing modules/intake would pull Node crypto into the browser.
-function fieldIsVisible(
-  field: IntakeField,
-  answers: Record<string, string>,
-): boolean {
-  if (!field.visibility) return true;
-  return answers[field.visibility.fieldId] === field.visibility.equalsOptionCode;
-}
 
 export function StudentIntakePage() {
   const navigate = useNavigate();
@@ -62,7 +56,7 @@ export function StudentIntakePage() {
   const visibleFields = useMemo(() => {
     if (!snapshot) return [];
     return snapshot.form.intakeForm.fields.filter((field) =>
-      fieldIsVisible(field, answers),
+      intakeFieldIsVisible(field, answers),
     );
   }, [answers, snapshot]);
 
@@ -71,7 +65,7 @@ export function StudentIntakePage() {
       const next = { ...current, [fieldId]: value };
       if (snapshot) {
         for (const field of snapshot.form.intakeForm.fields) {
-          if (field.visibility && !fieldIsVisible(field, next)) {
+          if (field.visibility && !intakeFieldIsVisible(field, next)) {
             delete next[field.id];
           }
         }
@@ -241,7 +235,8 @@ export function StudentIntakePage() {
                               }
                               className="mt-2 min-h-28 w-full border-2 border-[#17332d] bg-white px-4 py-3 text-base font-medium outline-none focus:shadow-[4px_4px_0_#e6af2e]"
                             />
-                          ) : field.type === 'yes-no' ? (
+                          ) : field.type === 'yes-no' ||
+                            field.type === 'single-choice' ? (
                             <select
                               required={
                                 field.required || field.requiredWhenVisible
@@ -259,6 +254,52 @@ export function StudentIntakePage() {
                                 </option>
                               ))}
                             </select>
+                          ) : field.type === 'multiple-choice' ? (
+                            <div className="mt-2 grid gap-2 font-medium normal-case tracking-normal">
+                              {field.options.map((option) => {
+                                const selected = selectedIntakeOptionCodes(
+                                  answers[field.id],
+                                ).includes(option.code);
+                                return (
+                                  <label
+                                    key={option.code}
+                                    className="flex items-center gap-2 text-sm"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={selected}
+                                      onChange={() => {
+                                        const codes = selectedIntakeOptionCodes(
+                                          answers[field.id],
+                                        );
+                                        const next = selected
+                                          ? codes.filter(
+                                              (code) => code !== option.code,
+                                            )
+                                          : [...codes, option.code];
+                                        setAnswer(field.id, next.join(','));
+                                      }}
+                                    />
+                                    {option.label}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          ) : field.type === 'acknowledgement' ? (
+                            <input
+                              type="checkbox"
+                              required={
+                                field.required || field.requiredWhenVisible
+                              }
+                              checked={answers[field.id] === 'yes'}
+                              onChange={(event) =>
+                                setAnswer(
+                                  field.id,
+                                  event.target.checked ? 'yes' : '',
+                                )
+                              }
+                              className="mt-2 h-5 w-5"
+                            />
                           ) : (
                             <input
                               type={
@@ -266,7 +307,9 @@ export function StudentIntakePage() {
                                   ? 'tel'
                                   : field.type === 'date'
                                     ? 'date'
-                                    : 'text'
+                                    : field.type === 'email'
+                                      ? 'email'
+                                      : 'text'
                               }
                               required={
                                 field.required || field.requiredWhenVisible

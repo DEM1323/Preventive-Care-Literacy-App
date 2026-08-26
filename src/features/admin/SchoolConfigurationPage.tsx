@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  evaluateIntakePreview,
+  isChoiceIntakeFieldType,
+  selectedIntakeOptionCodes,
+} from '../../../modules/intake-answers/index.ts';
 import { createBrowserApiClient } from '../../../packages/api-client/src/index.ts';
 import type { paths } from '../../../packages/api-client/src/schema.ts';
 
@@ -44,16 +49,12 @@ type Candidate = {
   };
   release: {
     modules: LearningModule[];
-    intakeForm: {
-      title: LocalizedValue;
-      sections: unknown[];
-      fields: Array<{
-        id: string;
-        label: LocalizedValue;
-        visibility: { equalsOptionCode: string } | null;
-      }>;
+    intakeForm: IntakeForm;
+    submissionAttestation: {
+      id: string;
+      revision: number;
+      text: LocalizedValue;
     };
-    submissionAttestation: { text: LocalizedValue };
   };
 };
 type Draft = Omit<DraftResponse, 'candidate'> & { candidate: Candidate };
@@ -71,6 +72,62 @@ type ModuleFields = {
   knowledgeIntroduction: string;
 };
 type ItemFields = { text: string; href?: string | null };
+type IntakeOption = {
+  id: string;
+  revision: number;
+  code: string;
+  label: LocalizedValue;
+};
+type IntakeField = {
+  id: string;
+  revision: number;
+  key: string;
+  sectionId: string;
+  type: string;
+  required: boolean;
+  requiredWhenVisible: boolean;
+  label: LocalizedValue;
+  helpText?: LocalizedValue;
+  visibility: { fieldId: string; equalsOptionCode: string } | null;
+  options?: IntakeOption[];
+};
+type IntakeSection = {
+  id: string;
+  revision: number;
+  title: LocalizedValue;
+};
+type IntakeForm = {
+  id: string;
+  revision: number;
+  title: LocalizedValue;
+  sections: IntakeSection[];
+  fields: IntakeField[];
+};
+type IntakeFormFields = { title: string; attestation: string };
+type IntakeSectionFields = { title: string };
+type IntakeFieldFields = {
+  label: string;
+  helpText: string;
+  fieldType: string;
+  required: boolean;
+  requiredWhenVisible: boolean;
+  sectionId: string;
+  visibilityFieldId: string;
+  visibilityOptionCode: string;
+};
+type IntakeOptionFields = { code: string; label: string };
+
+const intakeFieldTypeOptions = [
+  ['text', 'Short text'],
+  ['textarea', 'Long text'],
+  ['date', 'Date'],
+  ['tel', 'Phone'],
+  ['email', 'Email'],
+  ['yes-no', 'Yes / no'],
+  ['single-choice', 'Single choice'],
+  ['multiple-choice', 'Multiple choice'],
+  ['acknowledgement', 'Required acknowledgement'],
+] as const;
 
 function localized(value: LocalizedValue | undefined, locale: Locale): string {
   return value?.[locale]?.value ?? value?.['en-US']?.value ?? '';
@@ -118,6 +175,85 @@ function sameItem(left: ItemFields, right: ItemFields): boolean {
   return left.text === right.text && left.href === right.href;
 }
 
+function intakeFormFieldsFrom(
+  form: IntakeForm,
+  attestation: Candidate['release']['submissionAttestation'],
+): IntakeFormFields {
+  return {
+    title: localized(form.title, 'en-US'),
+    attestation: localized(attestation.text, 'en-US'),
+  };
+}
+
+function sameIntakeForm(left: IntakeFormFields, right: IntakeFormFields): boolean {
+  return left.title === right.title && left.attestation === right.attestation;
+}
+
+function intakeSectionFieldsFrom(section: IntakeSection): IntakeSectionFields {
+  return { title: localized(section.title, 'en-US') };
+}
+
+function sameIntakeSection(
+  left: IntakeSectionFields,
+  right: IntakeSectionFields,
+): boolean {
+  return left.title === right.title;
+}
+
+function intakeFieldFieldsFrom(field: IntakeField): IntakeFieldFields {
+  return {
+    label: localized(field.label, 'en-US'),
+    helpText: localized(field.helpText, 'en-US'),
+    fieldType: field.type,
+    required: field.required,
+    requiredWhenVisible: field.requiredWhenVisible,
+    sectionId: field.sectionId,
+    visibilityFieldId: field.visibility?.fieldId ?? '',
+    visibilityOptionCode: field.visibility?.equalsOptionCode ?? '',
+  };
+}
+
+function sameIntakeField(
+  left: IntakeFieldFields,
+  right: IntakeFieldFields,
+): boolean {
+  return (
+    left.label === right.label &&
+    left.helpText === right.helpText &&
+    left.fieldType === right.fieldType &&
+    left.required === right.required &&
+    left.requiredWhenVisible === right.requiredWhenVisible &&
+    left.sectionId === right.sectionId &&
+    left.visibilityFieldId === right.visibilityFieldId &&
+    left.visibilityOptionCode === right.visibilityOptionCode
+  );
+}
+
+function intakeOptionFieldsFrom(option: IntakeOption): IntakeOptionFields {
+  return {
+    code: option.code,
+    label: localized(option.label, 'en-US'),
+  };
+}
+
+function sameIntakeOption(
+  left: IntakeOptionFields,
+  right: IntakeOptionFields,
+): boolean {
+  return left.code === right.code && left.label === right.label;
+}
+
+function visibilityFrom(fields: IntakeFieldFields): {
+  fieldId: string;
+  equalsOptionCode: string;
+} | null {
+  if (!fields.visibilityFieldId || !fields.visibilityOptionCode) return null;
+  return {
+    fieldId: fields.visibilityFieldId,
+    equalsOptionCode: fields.visibilityOptionCode,
+  };
+}
+
 function asDraft(value: DraftResponse): Draft {
   return value as Draft;
 }
@@ -134,7 +270,9 @@ export function SchoolConfigurationPage() {
   const [mobileSurface, setMobileSurface] = useState<
     'edit' | 'preview' | 'readiness'
   >('preview');
-  const [syntheticYes, setSyntheticYes] = useState(true);
+  const [syntheticAnswers, setSyntheticAnswers] = useState<
+    Record<string, string>
+  >({});
   const [publishOpen, setPublishOpen] = useState(false);
   const [changeDescription, setChangeDescription] = useState('');
   const [password, setPassword] = useState('');
@@ -151,6 +289,10 @@ export function SchoolConfigurationPage() {
   const brandingEdits = useRef<BrandingFields | undefined>(undefined);
   const moduleEdits = useRef(new Map<string, ModuleFields>());
   const itemEdits = useRef(new Map<string, ItemFields>());
+  const intakeFormEdits = useRef<IntakeFormFields | undefined>(undefined);
+  const intakeSectionEdits = useRef(new Map<string, IntakeSectionFields>());
+  const intakeFieldEdits = useRef(new Map<string, IntakeFieldFields>());
+  const intakeOptionEdits = useRef(new Map<string, IntakeOptionFields>());
   const [editorEpoch, setEditorEpoch] = useState(0);
   const draftRef = useRef(draft);
   draftRef.current = draft;
@@ -159,6 +301,10 @@ export function SchoolConfigurationPage() {
     brandingEdits.current = undefined;
     moduleEdits.current = new Map();
     itemEdits.current = new Map();
+    intakeFormEdits.current = undefined;
+    intakeSectionEdits.current = new Map();
+    intakeFieldEdits.current = new Map();
+    intakeOptionEdits.current = new Map();
     setEditorEpoch((value) => value + 1);
   }
 
@@ -421,11 +567,129 @@ export function SchoolConfigurationPage() {
             itemEdits.current.delete(resourceId);
           }
         }
+        if (intakeFormEdits.current) {
+          const latest = draftRef.current;
+          if (!latest) return;
+          const sent = { ...intakeFormEdits.current };
+          const form = latest.candidate.release.intakeForm;
+          const attestation = latest.candidate.release.submissionAttestation;
+          const saved = await editDraft({
+            type: 'save-intake-form',
+            resourceId: form.id,
+            expectedResourceRevisions: [
+              { resourceId: form.id, revisionNumber: form.revision },
+              {
+                resourceId: attestation.id,
+                revisionNumber: attestation.revision,
+              },
+            ],
+            title: sent.title,
+            text: sent.attestation,
+          });
+          if (!saved) return;
+          if (
+            intakeFormEdits.current &&
+            sameIntakeForm(intakeFormEdits.current, sent)
+          ) {
+            intakeFormEdits.current = undefined;
+          }
+        }
+        for (const [resourceId, fields] of [
+          ...intakeSectionEdits.current.entries(),
+        ]) {
+          const latest = draftRef.current;
+          const section = latest?.candidate.release.intakeForm.sections.find(
+            (item) => item.id === resourceId,
+          );
+          if (!latest || !section) {
+            intakeSectionEdits.current.delete(resourceId);
+            continue;
+          }
+          const sent = { ...fields };
+          const saved = await editDraft({
+            type: 'save-intake-section',
+            resourceId,
+            expectedResourceRevisions: [
+              { resourceId, revisionNumber: section.revision },
+            ],
+            title: sent.title,
+          });
+          if (!saved) return;
+          const pending = intakeSectionEdits.current.get(resourceId);
+          if (pending && sameIntakeSection(pending, sent)) {
+            intakeSectionEdits.current.delete(resourceId);
+          }
+        }
+        for (const [resourceId, fields] of [
+          ...intakeFieldEdits.current.entries(),
+        ]) {
+          const latest = draftRef.current;
+          const field = latest?.candidate.release.intakeForm.fields.find(
+            (item) => item.id === resourceId,
+          );
+          if (!latest || !field) {
+            intakeFieldEdits.current.delete(resourceId);
+            continue;
+          }
+          const sent = { ...fields };
+          const saved = await editDraft({
+            type: 'save-intake-field',
+            resourceId,
+            expectedResourceRevisions: [
+              { resourceId, revisionNumber: field.revision },
+            ],
+            sectionId: sent.sectionId,
+            fieldType: sent.fieldType,
+            label: sent.label,
+            helpText: sent.helpText || null,
+            required: sent.required,
+            requiredWhenVisible: sent.requiredWhenVisible,
+            visibility: visibilityFrom(sent),
+          });
+          if (!saved) return;
+          const pending = intakeFieldEdits.current.get(resourceId);
+          if (pending && sameIntakeField(pending, sent)) {
+            intakeFieldEdits.current.delete(resourceId);
+          }
+        }
+        for (const [resourceId, fields] of [
+          ...intakeOptionEdits.current.entries(),
+        ]) {
+          const latest = draftRef.current;
+          const option = latest
+            ? latest.candidate.release.intakeForm.fields
+                .flatMap((field) => field.options ?? [])
+                .find((entry) => entry.id === resourceId)
+            : undefined;
+          if (!latest || !option) {
+            intakeOptionEdits.current.delete(resourceId);
+            continue;
+          }
+          const sent = { ...fields };
+          const saved = await editDraft({
+            type: 'save-intake-option',
+            resourceId,
+            expectedResourceRevisions: [
+              { resourceId, revisionNumber: option.revision },
+            ],
+            code: sent.code,
+            label: sent.label,
+          });
+          if (!saved) return;
+          const pending = intakeOptionEdits.current.get(resourceId);
+          if (pending && sameIntakeOption(pending, sent)) {
+            intakeOptionEdits.current.delete(resourceId);
+          }
+        }
       } while (
         saveAgain.current ||
         brandingEdits.current ||
         moduleEdits.current.size > 0 ||
-        itemEdits.current.size > 0
+        itemEdits.current.size > 0 ||
+        intakeFormEdits.current ||
+        intakeSectionEdits.current.size > 0 ||
+        intakeFieldEdits.current.size > 0 ||
+        intakeOptionEdits.current.size > 0
       );
     } finally {
       saveInFlight.current = false;
@@ -468,6 +732,56 @@ export function SchoolConfigurationPage() {
         text: localized(item.text, 'en-US'),
         href: item.href,
       }),
+      ...patch,
+    });
+    queueSave();
+  }
+
+  function patchIntakeForm(patch: Partial<IntakeFormFields>) {
+    const current = draftRef.current;
+    if (!current) return;
+    intakeFormEdits.current = {
+      ...(intakeFormEdits.current ??
+        intakeFormFieldsFrom(
+          current.candidate.release.intakeForm,
+          current.candidate.release.submissionAttestation,
+        )),
+      ...patch,
+    };
+    queueSave();
+  }
+
+  function patchIntakeSection(
+    section: IntakeSection,
+    patch: Partial<IntakeSectionFields>,
+  ) {
+    intakeSectionEdits.current.set(section.id, {
+      ...(intakeSectionEdits.current.get(section.id) ??
+        intakeSectionFieldsFrom(section)),
+      ...patch,
+    });
+    queueSave();
+  }
+
+  function patchIntakeField(
+    field: IntakeField,
+    patch: Partial<IntakeFieldFields>,
+  ) {
+    intakeFieldEdits.current.set(field.id, {
+      ...(intakeFieldEdits.current.get(field.id) ??
+        intakeFieldFieldsFrom(field)),
+      ...patch,
+    });
+    queueSave();
+  }
+
+  function patchIntakeOption(
+    option: IntakeOption,
+    patch: Partial<IntakeOptionFields>,
+  ) {
+    intakeOptionEdits.current.set(option.id, {
+      ...(intakeOptionEdits.current.get(option.id) ??
+        intakeOptionFieldsFrom(option)),
       ...patch,
     });
     queueSave();
@@ -615,10 +929,41 @@ export function SchoolConfigurationPage() {
   const selectedComparison = draft.comparisons.find((comparison) =>
     resource === 'branding'
       ? comparison.resourceId === branding.id
-      : comparison.resourceId === selectedModule?.id,
+      : resource === 'intake'
+        ? comparison.resourceId === candidate.release.intakeForm.id
+        : comparison.resourceId === selectedModule?.id,
   );
   const previewScreen =
     resource === 'branding' ? 'home' : resource === 'intake' ? 'intake' : 'module';
+  const intakePreview = evaluateIntakePreview(
+    candidate.release.intakeForm.fields.map((field) => ({
+      id: field.id,
+      type: field.type,
+      required: field.required,
+      requiredWhenVisible: field.requiredWhenVisible,
+      visibility: field.visibility,
+      options: field.options ?? [],
+    })),
+    syntheticAnswers,
+  );
+  const visibleIntakeFields = candidate.release.intakeForm.fields.filter(
+    (field) => intakePreview.visibleFieldIds.includes(field.id),
+  );
+
+  function setSyntheticAnswer(fieldId: string, value: string) {
+    const next = evaluateIntakePreview(
+      candidate.release.intakeForm.fields.map((field) => ({
+        id: field.id,
+        type: field.type,
+        required: field.required,
+        requiredWhenVisible: field.requiredWhenVisible,
+        visibility: field.visibility,
+        options: field.options ?? [],
+      })),
+      { ...syntheticAnswers, [fieldId]: value },
+    );
+    setSyntheticAnswers(next.answers);
+  }
 
   function chooseResource(next: ResourceKey) {
     setResource(next);
@@ -893,42 +1238,123 @@ export function SchoolConfigurationPage() {
                     {localized(candidate.release.intakeForm.title, locale)}
                   </h3>
                   <p className="mt-4 text-slate-600">
-                    Visibility rules use synthetic answers. The exact form
-                    contains {candidate.release.intakeForm.sections.length}{' '}
-                    ordered sections.
+                    Visibility rules use synthetic answers only. Hidden answers
+                    are omitted. No Intake Draft or Intake Record is loaded.
                   </p>
-                  <div className="mt-4 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSyntheticYes(false)}
-                      className={`rounded-full px-4 py-2 text-sm font-bold ${!syntheticYes ? 'bg-emerald-700 text-white' : 'bg-slate-100'}`}
-                    >
-                      Synthetic No
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSyntheticYes(true)}
-                      className={`rounded-full px-4 py-2 text-sm font-bold ${syntheticYes ? 'bg-emerald-700 text-white' : 'bg-slate-100'}`}
-                    >
-                      Synthetic Yes
-                    </button>
-                  </div>
-                  <div className="mt-5 grid gap-2">
-                    {candidate.release.intakeForm.fields
-                      .filter(
-                        (field) =>
-                          !field.visibility ||
-                          (syntheticYes &&
-                            field.visibility.equalsOptionCode === 'yes'),
-                      )
-                      .map((field) => (
-                        <p
-                          key={field.id}
-                          className="rounded-lg border bg-white p-3 text-sm font-bold"
-                        >
-                          {localized(field.label, locale)}
-                        </p>
-                      ))}
+                  <div className="mt-5 grid gap-4">
+                    {candidate.release.intakeForm.sections.map((section) => {
+                      const fields = visibleIntakeFields.filter(
+                        (field) => field.sectionId === section.id,
+                      );
+                      if (fields.length === 0) return null;
+                      return (
+                        <section key={section.id} className="grid gap-2">
+                          <h4 className="text-lg font-black">
+                            {localized(section.title, locale)}
+                          </h4>
+                          {fields.map((field) => {
+                            const required =
+                              intakePreview.requiredFieldIds.includes(field.id);
+                            const value = intakePreview.answers[field.id] ?? '';
+                            return (
+                              <div
+                                key={field.id}
+                                className="rounded-lg border bg-white p-3"
+                              >
+                                <p className="text-sm font-bold">
+                                  {localized(field.label, locale)}
+                                  {required ? ' · required' : ''}
+                                </p>
+                                {field.helpText ? (
+                                  <p className="mt-1 text-xs text-slate-500">
+                                    {localized(field.helpText, locale)}
+                                  </p>
+                                ) : null}
+                                {isChoiceIntakeFieldType(field.type) ? (
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {(field.options ?? []).map((option) => {
+                                      const selected =
+                                        field.type === 'multiple-choice'
+                                          ? selectedIntakeOptionCodes(
+                                              value,
+                                            ).includes(option.code)
+                                          : value === option.code;
+                                      return (
+                                        <button
+                                          type="button"
+                                          key={option.id}
+                                          onClick={() => {
+                                            if (field.type === 'multiple-choice') {
+                                              const codes =
+                                                selectedIntakeOptionCodes(value);
+                                              const next = codes.includes(
+                                                option.code,
+                                              )
+                                                ? codes.filter(
+                                                    (code) =>
+                                                      code !== option.code,
+                                                  )
+                                                : [...codes, option.code];
+                                              setSyntheticAnswer(
+                                                field.id,
+                                                next.join(','),
+                                              );
+                                              return;
+                                            }
+                                            setSyntheticAnswer(
+                                              field.id,
+                                              option.code,
+                                            );
+                                          }}
+                                          className={`rounded-full px-3 py-1 text-xs font-bold ${
+                                            selected
+                                              ? 'bg-emerald-700 text-white'
+                                              : 'bg-slate-100'
+                                          }`}
+                                        >
+                                          {localized(option.label, locale)}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                ) : field.type === 'acknowledgement' ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setSyntheticAnswer(
+                                        field.id,
+                                        value === 'yes' ? '' : 'yes',
+                                      )
+                                    }
+                                    className={`mt-2 rounded-full px-3 py-1 text-xs font-bold ${
+                                      value === 'yes'
+                                        ? 'bg-emerald-700 text-white'
+                                        : 'bg-slate-100'
+                                    }`}
+                                  >
+                                    {value === 'yes'
+                                      ? 'Acknowledged'
+                                      : 'Synthetic acknowledge'}
+                                  </button>
+                                ) : (
+                                  <input
+                                    value={value}
+                                    placeholder="Synthetic answer"
+                                    onChange={(event) =>
+                                      setSyntheticAnswer(
+                                        field.id,
+                                        event.target.value,
+                                      )
+                                    }
+                                    className="mt-2 w-full rounded-lg border px-2 py-1 text-sm"
+                                  />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </section>
+                      );
+                    })}
                   </div>
                   <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm">
                     {localized(
@@ -1002,6 +1428,99 @@ export function SchoolConfigurationPage() {
                 patchModule(selectedModule, fields);
               }}
               onPatchItem={patchItem}
+              onPatchIntakeForm={patchIntakeForm}
+              onPatchIntakeSection={patchIntakeSection}
+              onPatchIntakeField={patchIntakeField}
+              onPatchIntakeOption={patchIntakeOption}
+              onReorderIntake={(kind, orderedResourceIds, fieldId) => {
+                const form = candidate.release.intakeForm;
+                if (kind === 'sections') {
+                  void editDraft({
+                    type: 'reorder-intake-sections',
+                    orderedResourceIds,
+                    expectedResourceRevisions: [
+                      { resourceId: form.id, revisionNumber: form.revision },
+                      ...form.sections.map((section) => ({
+                        resourceId: section.id,
+                        revisionNumber: section.revision,
+                      })),
+                    ],
+                  });
+                  return;
+                }
+                if (kind === 'fields') {
+                  void editDraft({
+                    type: 'reorder-intake-fields',
+                    orderedResourceIds,
+                    expectedResourceRevisions: [
+                      { resourceId: form.id, revisionNumber: form.revision },
+                      ...form.fields.map((field) => ({
+                        resourceId: field.id,
+                        revisionNumber: field.revision,
+                      })),
+                    ],
+                  });
+                  return;
+                }
+                const field = form.fields.find((item) => item.id === fieldId);
+                if (!field) return;
+                void editDraft({
+                  type: 'reorder-intake-options',
+                  fieldId: field.id,
+                  orderedResourceIds,
+                  expectedResourceRevisions: [
+                    { resourceId: field.id, revisionNumber: field.revision },
+                    ...(field.options ?? []).map((option) => ({
+                      resourceId: option.id,
+                      revisionNumber: option.revision,
+                    })),
+                  ],
+                });
+              }}
+              onCreateIntakeSection={() =>
+                void editDraft({
+                  type: 'create-intake-section',
+                  title: 'New section',
+                  expectedResourceRevisions: [
+                    {
+                      resourceId: candidate.release.intakeForm.id,
+                      revisionNumber: candidate.release.intakeForm.revision,
+                    },
+                  ],
+                })
+              }
+              onCreateIntakeField={(sectionId, fieldType) =>
+                void editDraft({
+                  type: 'create-intake-field',
+                  sectionId,
+                  fieldType,
+                  label:
+                    fieldType === 'acknowledgement'
+                      ? 'I confirm this information'
+                      : 'New question',
+                  expectedResourceRevisions: [
+                    {
+                      resourceId: candidate.release.intakeForm.id,
+                      revisionNumber: candidate.release.intakeForm.revision,
+                    },
+                  ],
+                })
+              }
+              onCreateIntakeOption={(fieldId) => {
+                const field = candidate.release.intakeForm.fields.find(
+                  (item) => item.id === fieldId,
+                );
+                if (!field) return;
+                void editDraft({
+                  type: 'create-intake-option',
+                  fieldId,
+                  code: `option-${(field.options?.length ?? 0) + 1}`,
+                  label: 'New option',
+                  expectedResourceRevisions: [
+                    { resourceId: field.id, revisionNumber: field.revision },
+                  ],
+                });
+              }}
               onReorder={(collection, orderedResourceIds) => {
                 if (!selectedModule) return;
                 void editDraft({
@@ -1050,7 +1569,11 @@ export function SchoolConfigurationPage() {
               onJump={(path) => {
                 if (path.includes('branding')) chooseResource('branding');
                 else if (path.includes('modules')) chooseResource('modules');
-                else if (path.includes('intake')) chooseResource('intake');
+                else if (
+                  path.includes('intake') ||
+                  path.includes('submissionAttestation')
+                )
+                  chooseResource('intake');
                 else chooseResource('translations');
               }}
             />
@@ -1148,6 +1671,24 @@ function EditorPane(props: {
   onPatchItem(item: ModuleItem, patch: Partial<ItemFields>): void;
   onReorder(collection: Collection, orderedResourceIds: string[]): void;
   onCreateItem(collection: Collection): void;
+  onPatchIntakeForm(patch: Partial<IntakeFormFields>): void;
+  onPatchIntakeSection(
+    section: IntakeSection,
+    patch: Partial<IntakeSectionFields>,
+  ): void;
+  onPatchIntakeField(field: IntakeField, patch: Partial<IntakeFieldFields>): void;
+  onPatchIntakeOption(
+    option: IntakeOption,
+    patch: Partial<IntakeOptionFields>,
+  ): void;
+  onReorderIntake(
+    kind: 'sections' | 'fields' | 'options',
+    orderedResourceIds: string[],
+    fieldId?: string,
+  ): void;
+  onCreateIntakeSection(): void;
+  onCreateIntakeField(sectionId: string, fieldType: string): void;
+  onCreateIntakeOption(fieldId: string): void;
 }) {
   const branding = props.branding;
   const module = props.selectedModule;
@@ -1416,11 +1957,18 @@ function EditorPane(props: {
       ) : null}
 
       {props.resource === 'intake' ? (
-        <p className="mt-6 rounded-xl bg-violet-50 p-4 text-sm text-violet-950">
-          Intake Form authoring is not part of this slice. Preview the current
-          candidate with synthetic answers. Students remain on the active
-          release.
-        </p>
+        <IntakeFormEditor
+          draft={props.draft}
+          onPatchForm={props.onPatchIntakeForm}
+          onPatchSection={props.onPatchIntakeSection}
+          onPatchField={props.onPatchIntakeField}
+          onPatchOption={props.onPatchIntakeOption}
+          onReorder={props.onReorderIntake}
+          onCreateSection={props.onCreateIntakeSection}
+          onCreateField={props.onCreateIntakeField}
+          onCreateOption={props.onCreateIntakeOption}
+          onDiscard={props.onDiscard}
+        />
       ) : null}
 
       {props.resource === 'translations' ? (
@@ -1430,6 +1978,363 @@ function EditorPane(props: {
           blocks publication.
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function moveId(ids: string[], index: number): string[] | undefined {
+  if (index <= 0) return undefined;
+  const previous = ids[index - 1];
+  const currentId = ids[index];
+  if (!previous || !currentId) return undefined;
+  const next = [...ids];
+  next[index - 1] = currentId;
+  next[index] = previous;
+  return next;
+}
+
+function IntakeFormEditor(props: {
+  draft: Draft;
+  onPatchForm(patch: Partial<IntakeFormFields>): void;
+  onPatchSection(
+    section: IntakeSection,
+    patch: Partial<IntakeSectionFields>,
+  ): void;
+  onPatchField(field: IntakeField, patch: Partial<IntakeFieldFields>): void;
+  onPatchOption(option: IntakeOption, patch: Partial<IntakeOptionFields>): void;
+  onReorder(
+    kind: 'sections' | 'fields' | 'options',
+    orderedResourceIds: string[],
+    fieldId?: string,
+  ): void;
+  onCreateSection(): void;
+  onCreateField(sectionId: string, fieldType: string): void;
+  onCreateOption(fieldId: string): void;
+  onDiscard(resourceId: string, revisionNumber: number): void;
+}) {
+  const form = props.draft.candidate.release.intakeForm;
+  const attestation = props.draft.candidate.release.submissionAttestation;
+  const choiceFields = form.fields.filter((field) =>
+    isChoiceIntakeFieldType(field.type),
+  );
+  return (
+    <div className="mt-6 space-y-4">
+      <p className="text-xs text-slate-500">Stable ID: {form.id}</p>
+      <label className="block text-sm font-bold">
+        English title
+        <input
+          defaultValue={localized(form.title, 'en-US')}
+          onChange={(event) => props.onPatchForm({ title: event.target.value })}
+          className="mt-2 w-full rounded-xl border px-3 py-2"
+        />
+      </label>
+      <label className="block text-sm font-bold">
+        Submission Attestation
+        <textarea
+          defaultValue={localized(attestation.text, 'en-US')}
+          rows={4}
+          onChange={(event) =>
+            props.onPatchForm({ attestation: event.target.value })
+          }
+          className="mt-2 w-full rounded-xl border px-3 py-2"
+        />
+      </label>
+      <div className="flex items-center justify-between">
+        <strong className="text-sm">Sections</strong>
+        <button
+          type="button"
+          onClick={props.onCreateSection}
+          className="text-xs font-bold text-emerald-800"
+        >
+          Add section
+        </button>
+      </div>
+      {form.sections.map((section, sectionIndex) => (
+        <section key={section.id} className="rounded-xl border p-3">
+          <div className="flex items-center gap-2">
+            <input
+              defaultValue={localized(section.title, 'en-US')}
+              onChange={(event) =>
+                props.onPatchSection(section, { title: event.target.value })
+              }
+              className="w-full rounded-lg border px-2 py-1 text-sm font-bold"
+            />
+            {sectionIndex > 0 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const ids = moveId(
+                    form.sections.map((entry) => entry.id),
+                    sectionIndex,
+                  );
+                  if (ids) props.onReorder('sections', ids);
+                }}
+                className="shrink-0 text-xs font-bold"
+              >
+                Up
+              </button>
+            ) : null}
+            {props.draft.comparisons.find(
+              (comparison) => comparison.resourceId === section.id,
+            )?.discardEligible ? (
+              <button
+                type="button"
+                onClick={() => props.onDiscard(section.id, section.revision)}
+                className="shrink-0 text-xs font-bold"
+              >
+                Discard
+              </button>
+            ) : null}
+          </div>
+          <p className="mt-1 font-mono text-[11px] text-slate-400">
+            {section.id}
+          </p>
+          <div className="mt-3 grid gap-2">
+            {form.fields
+              .filter((field) => field.sectionId === section.id)
+              .map((field) => {
+                const fieldIndex = form.fields.findIndex(
+                  (entry) => entry.id === field.id,
+                );
+                const earlierChoices = choiceFields.filter(
+                  (entry) =>
+                    form.fields.findIndex((item) => item.id === entry.id) <
+                    fieldIndex,
+                );
+                return (
+                  <article key={field.id} className="rounded-lg bg-slate-50 p-2">
+                    <input
+                      defaultValue={localized(field.label, 'en-US')}
+                      onChange={(event) =>
+                        props.onPatchField(field, { label: event.target.value })
+                      }
+                      className="w-full rounded-lg border px-2 py-1 text-sm"
+                    />
+                    <input
+                      defaultValue={localized(field.helpText, 'en-US')}
+                      placeholder="Help text"
+                      onChange={(event) =>
+                        props.onPatchField(field, {
+                          helpText: event.target.value,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border px-2 py-1 text-xs"
+                    />
+                    <div className="mt-1 grid grid-cols-2 gap-1">
+                      <select
+                        defaultValue={field.type}
+                        onChange={(event) =>
+                          props.onPatchField(field, {
+                            fieldType: event.target.value,
+                          })
+                        }
+                        className="rounded-lg border px-2 py-1 text-xs"
+                      >
+                        {intakeFieldTypeOptions.map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        defaultValue={field.sectionId}
+                        onChange={(event) =>
+                          props.onPatchField(field, {
+                            sectionId: event.target.value,
+                          })
+                        }
+                        className="rounded-lg border px-2 py-1 text-xs"
+                      >
+                        {form.sections.map((entry) => (
+                          <option key={entry.id} value={entry.id}>
+                            {localized(entry.title, 'en-US')}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <label className="mt-1 flex items-center gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        defaultChecked={field.required}
+                        onChange={(event) =>
+                          props.onPatchField(field, {
+                            required: event.target.checked,
+                          })
+                        }
+                      />
+                      Required
+                    </label>
+                    <label className="mt-1 flex items-center gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        defaultChecked={field.requiredWhenVisible}
+                        onChange={(event) =>
+                          props.onPatchField(field, {
+                            requiredWhenVisible: event.target.checked,
+                          })
+                        }
+                      />
+                      Required when visible
+                    </label>
+                    <p className="mt-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                      Visible when earlier choice
+                    </p>
+                    <div className="mt-1 grid grid-cols-2 gap-1">
+                      <select
+                        defaultValue={field.visibility?.fieldId ?? ''}
+                        onChange={(event) =>
+                          props.onPatchField(field, {
+                            visibilityFieldId: event.target.value,
+                          })
+                        }
+                        className="rounded-lg border px-2 py-1 text-xs"
+                      >
+                        <option value="">Always visible</option>
+                        {earlierChoices.map((entry) => (
+                          <option key={entry.id} value={entry.id}>
+                            {localized(entry.label, 'en-US')}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        defaultValue={field.visibility?.equalsOptionCode ?? ''}
+                        onChange={(event) =>
+                          props.onPatchField(field, {
+                            visibilityOptionCode: event.target.value,
+                          })
+                        }
+                        className="rounded-lg border px-2 py-1 text-xs"
+                      >
+                        <option value="">Option code</option>
+                        {earlierChoices.map((entry) =>
+                          (entry.options ?? []).map((option) => (
+                            <option
+                              key={option.id}
+                              value={option.code}
+                            >{`${localized(entry.label, 'en-US')}: ${option.code}`}</option>
+                          )),
+                        )}
+                      </select>
+                    </div>
+                    {isChoiceIntakeFieldType(field.type) ? (
+                      <div className="mt-2 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                            Coded options
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => props.onCreateOption(field.id)}
+                            className="text-xs font-bold text-emerald-800"
+                          >
+                            Add option
+                          </button>
+                        </div>
+                        {(field.options ?? []).map((option, optionIndex) => (
+                          <div
+                            key={option.id}
+                            className="grid grid-cols-[7rem_1fr_auto] gap-1"
+                          >
+                            <input
+                              defaultValue={option.code}
+                              onChange={(event) =>
+                                props.onPatchOption(option, {
+                                  code: event.target.value,
+                                })
+                              }
+                              className="rounded border px-1 py-1 font-mono text-xs"
+                            />
+                            <input
+                              defaultValue={localized(option.label, 'en-US')}
+                              onChange={(event) =>
+                                props.onPatchOption(option, {
+                                  label: event.target.value,
+                                })
+                              }
+                              className="rounded border px-1 py-1 text-xs"
+                            />
+                            <div className="flex gap-1">
+                              {optionIndex > 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const ids = moveId(
+                                      (field.options ?? []).map(
+                                        (entry) => entry.id,
+                                      ),
+                                      optionIndex,
+                                    );
+                                    if (ids) {
+                                      props.onReorder('options', ids, field.id);
+                                    }
+                                  }}
+                                  className="text-[10px] font-bold"
+                                >
+                                  Up
+                                </button>
+                              ) : null}
+                              {props.draft.comparisons.find(
+                                (comparison) =>
+                                  comparison.resourceId === option.id,
+                              )?.discardEligible ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    props.onDiscard(option.id, option.revision)
+                                  }
+                                  className="text-[10px] font-bold"
+                                >
+                                  Discard
+                                </button>
+                              ) : null}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div className="mt-1 flex gap-2">
+                      {fieldIndex > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const ids = moveId(
+                              form.fields.map((entry) => entry.id),
+                              fieldIndex,
+                            );
+                            if (ids) props.onReorder('fields', ids);
+                          }}
+                          className="text-xs font-bold"
+                        >
+                          Move up
+                        </button>
+                      ) : null}
+                      {props.draft.comparisons.find(
+                        (comparison) => comparison.resourceId === field.id,
+                      )?.discardEligible ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            props.onDiscard(field.id, field.revision)
+                          }
+                          className="text-xs font-bold"
+                        >
+                          Discard
+                        </button>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
+            <button
+              type="button"
+              onClick={() => props.onCreateField(section.id, 'text')}
+              className="rounded-lg border border-dashed px-2 py-1 text-left text-xs font-bold text-emerald-800"
+            >
+              Add field
+            </button>
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

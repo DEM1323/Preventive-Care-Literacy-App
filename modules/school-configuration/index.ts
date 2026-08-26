@@ -6,6 +6,10 @@ import type {
   IdentityAndAccess,
 } from '../identity-access/index.ts';
 import { staffAuthenticationFreshnessMs } from '../identity-access/index.ts';
+import {
+  isChoiceIntakeFieldType,
+  isSupportedIntakeFieldType,
+} from '../intake-answers/index.ts';
 
 export const candidateFingerprintAlgorithm =
   'school-configuration-candidate/v1' as const;
@@ -123,6 +127,63 @@ export type DraftEdit =
       collection: 'knowledgeItems' | 'skillItems' | 'applicationItems';
       text: string;
       href?: string | null;
+    }
+  | {
+      type: 'save-intake-form';
+      resourceId: string;
+      title: string;
+      text: string;
+    }
+  | {
+      type: 'save-intake-section';
+      resourceId: string;
+      title: string;
+    }
+  | {
+      type: 'save-intake-field';
+      resourceId: string;
+      sectionId: string;
+      fieldType: string;
+      label: string;
+      helpText?: string | null;
+      required: boolean;
+      requiredWhenVisible: boolean;
+      visibility: { fieldId: string; equalsOptionCode: string } | null;
+    }
+  | {
+      type: 'save-intake-option';
+      resourceId: string;
+      code: string;
+      label: string;
+    }
+  | {
+      type: 'reorder-intake-sections';
+      orderedResourceIds: string[];
+    }
+  | {
+      type: 'reorder-intake-fields';
+      orderedResourceIds: string[];
+    }
+  | {
+      type: 'reorder-intake-options';
+      fieldId: string;
+      orderedResourceIds: string[];
+    }
+  | {
+      type: 'create-intake-section';
+      title: string;
+    }
+  | {
+      type: 'create-intake-field';
+      sectionId: string;
+      fieldType: string;
+      label: string;
+    }
+  | {
+      type: 'create-intake-option';
+      fieldId: string;
+      code: string;
+      label: string;
     }
   | {
       type: 'restore-active-revision';
@@ -632,6 +693,22 @@ export function validateCandidate(
   assertLocalizedValue(attestation.text, 'release.submissionAttestation.text');
   assertReviewedTranslations(candidate);
   canonicalJson(candidate);
+  const publicationBlockers: string[] = [];
+  collectIntakeFormValidation(candidate, (_severity, code, path) => {
+    if (
+      code === 'INVALID_VISIBILITY_REFERENCE' ||
+      code === 'CYCLIC_VISIBILITY' ||
+      code === 'UNSUPPORTED_FIELD_SHAPE' ||
+      code === 'MISSING_SUBMISSION_ATTESTATION' ||
+      code === 'DUPLICATE_OPTION_CODE' ||
+      code === 'INVALID_FIELD_REFERENCE'
+    ) {
+      publicationBlockers.push(path);
+    }
+  });
+  if (publicationBlockers[0]) {
+    throw new InvalidSchoolConfigurationError(publicationBlockers[0]);
+  }
 }
 
 export function extractExactResources(candidate: unknown): ExactResource[] {
@@ -906,6 +983,48 @@ function modulesArray(candidate: unknown): Record<string, unknown>[] {
   return modules.filter(isRecord);
 }
 
+function intakeFormRecord(candidate: unknown): Record<string, unknown> {
+  const intake = releaseRecord(candidate).intakeForm;
+  if (!isRecord(intake)) {
+    throw new InvalidSchoolConfigurationError('release.intakeForm');
+  }
+  return intake;
+}
+
+function intakeSections(candidate: unknown): Record<string, unknown>[] {
+  const sections = intakeFormRecord(candidate).sections;
+  if (!Array.isArray(sections)) {
+    throw new InvalidSchoolConfigurationError('release.intakeForm.sections');
+  }
+  return sections.filter(isRecord);
+}
+
+function intakeFields(candidate: unknown): Record<string, unknown>[] {
+  const fields = intakeFormRecord(candidate).fields;
+  if (!Array.isArray(fields)) {
+    throw new InvalidSchoolConfigurationError('release.intakeForm.fields');
+  }
+  return fields.filter(isRecord);
+}
+
+function intakeOptions(
+  field: Record<string, unknown>,
+): Record<string, unknown>[] {
+  if (!Array.isArray(field.options)) return [];
+  return field.options.filter(isRecord);
+}
+
+const optionCodePattern = /^[a-z][a-z0-9_-]{0,63}$/;
+
+function slugKey(value: string, fallback: string): string {
+  const slug = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+  return slug || fallback;
+}
+
 function applyExplicitOrder(candidate: unknown): void {
   modulesArray(candidate).forEach((module, index) => {
     module.order = index + 1;
@@ -922,6 +1041,18 @@ function applyExplicitOrder(candidate: unknown): void {
       });
     }
   });
+  const intake = intakeFormRecord(candidate);
+  intakeSections(candidate).forEach((section, index) => {
+    section.order = index + 1;
+  });
+  intakeFields(candidate).forEach((field, index) => {
+    field.order = index + 1;
+    intakeOptions(field).forEach((option, optionIndex) => {
+      option.order = optionIndex + 1;
+    });
+  });
+  intake.sections = intakeSections(candidate);
+  intake.fields = intakeFields(candidate);
 }
 
 function setEnglishSource(
@@ -1051,6 +1182,94 @@ function createLearningModule(
     ],
     pronunciationTerms: [],
   };
+}
+
+function createIntakeOption(
+  ids: IdGenerator,
+  code: string,
+  label: string,
+): Record<string, unknown> {
+  return {
+    id: ids.create(),
+    revision: 1,
+    order: 1,
+    code,
+    label: createEnglishLocalized(ids, label),
+  };
+}
+
+function createIntakeSection(
+  ids: IdGenerator,
+  title: string,
+): Record<string, unknown> {
+  const id = ids.create();
+  return {
+    id,
+    revision: 1,
+    key: slugKey(title, `section-${id.slice(0, 8)}`),
+    order: 1,
+    title: createEnglishLocalized(ids, title),
+  };
+}
+
+function defaultChoiceOptions(
+  ids: IdGenerator,
+  fieldType: string,
+): Record<string, unknown>[] {
+  if (fieldType === 'yes-no') {
+    return [
+      createIntakeOption(ids, 'yes', 'Yes'),
+      createIntakeOption(ids, 'no', 'No'),
+    ];
+  }
+  if (fieldType === 'single-choice' || fieldType === 'multiple-choice') {
+    return [
+      createIntakeOption(ids, 'option-a', 'Option A'),
+      createIntakeOption(ids, 'option-b', 'Option B'),
+    ];
+  }
+  return [];
+}
+
+function createIntakeField(
+  ids: IdGenerator,
+  sectionId: string,
+  fieldType: string,
+  label: string,
+): Record<string, unknown> {
+  const id = ids.create();
+  const options = defaultChoiceOptions(ids, fieldType);
+  return {
+    id,
+    revision: 1,
+    key: slugKey(label, `field-${id.slice(0, 8)}`),
+    sectionId,
+    order: 1,
+    type: fieldType,
+    required: fieldType === 'acknowledgement' ? true : false,
+    requiredWhenVisible: false,
+    defaultValue: null,
+    label: createEnglishLocalized(ids, label),
+    visibility: null,
+    ...(options.length > 0 ? { options } : {}),
+  };
+}
+
+function reorderByIds(
+  records: Record<string, unknown>[],
+  orderedResourceIds: string[],
+  path: string,
+): Record<string, unknown>[] {
+  const byId = new Map(records.map((record) => [String(record.id), record]));
+  if (
+    orderedResourceIds.length !== records.length ||
+    orderedResourceIds.some((id) => !byId.has(id))
+  ) {
+    throw new InvalidSchoolConfigurationError(path);
+  }
+  return orderedResourceIds.map(
+    (id) => byId.get(id) as Record<string, unknown>,
+  );
 }
 
 function localizedPath(path: string, locale: string): string {
@@ -1327,7 +1546,242 @@ export function collectValidationResults(
       }
     });
   }
+  collectIntakeFormValidation(candidate, add);
   return { blockers, warnings };
+}
+
+function collectIntakeFormValidation(
+  candidate: unknown,
+  add: (
+    severity: 'blocker' | 'warning',
+    code: string,
+    path: string,
+    message: string,
+  ) => void,
+): void {
+  if (!isRecord(candidate) || !isRecord(candidate.release)) return;
+  const intake = candidate.release.intakeForm;
+  const attestation = candidate.release.submissionAttestation;
+  if (
+    !isRecord(intake) ||
+    !Array.isArray(intake.sections) ||
+    !Array.isArray(intake.fields)
+  ) {
+    add(
+      'blocker',
+      'EMPTY_REQUIRED_SECTION',
+      'release.intakeForm',
+      'A release needs one Intake Form with ordered sections and fields.',
+    );
+    return;
+  }
+  if (intake.sections.length === 0) {
+    add(
+      'blocker',
+      'EMPTY_REQUIRED_SECTION',
+      'release.intakeForm.sections',
+      'The Intake Form needs at least one section.',
+    );
+  }
+  if (intake.fields.length === 0) {
+    add(
+      'blocker',
+      'EMPTY_REQUIRED_SECTION',
+      'release.intakeForm.fields',
+      'The Intake Form needs at least one field.',
+    );
+  }
+  const sections = intake.sections.filter(isRecord);
+  const fields = intake.fields.filter(isRecord);
+  const sectionIds = new Set(sections.map((section) => String(section.id)));
+  const fieldById = new Map(
+    fields.map((field) => [String(field.id), field] as const),
+  );
+  const fieldIndex = new Map(
+    fields.map((field, index) => [String(field.id), index]),
+  );
+  const visibilityEdges: Array<{ from: string; to: string; path: string }> = [];
+
+  if (
+    !isRecord(attestation) ||
+    !isRecord(attestation.text) ||
+    !isRecord(attestation.text['en-US']) ||
+    typeof attestation.text['en-US'].value !== 'string' ||
+    attestation.text['en-US'].value.trim().length === 0
+  ) {
+    add(
+      'blocker',
+      'MISSING_SUBMISSION_ATTESTATION',
+      'release.submissionAttestation.text',
+      'Submission Attestation content is required before publication.',
+    );
+  }
+
+  fields.forEach((field, index) => {
+    const fieldId = String(field.id);
+    const path = `release.intakeForm.fields.${fieldId}`;
+    if (
+      typeof field.sectionId !== 'string' ||
+      !sectionIds.has(field.sectionId)
+    ) {
+      add(
+        'blocker',
+        'INVALID_FIELD_REFERENCE',
+        `${path}.sectionId`,
+        'Each field must belong to an earlier authored section.',
+      );
+    }
+    if (!isSupportedIntakeFieldType(field.type)) {
+      add(
+        'blocker',
+        'UNSUPPORTED_FIELD_SHAPE',
+        `${path}.type`,
+        'This field type is not part of the supported Intake Form model.',
+      );
+    }
+    const options = intakeOptions(field);
+    const choice = isChoiceIntakeFieldType(field.type);
+    if (choice && options.length === 0) {
+      add(
+        'blocker',
+        'UNSUPPORTED_FIELD_SHAPE',
+        `${path}.options`,
+        'Choice fields need locale-neutral coded options.',
+      );
+    }
+    if (!choice && options.length > 0) {
+      add(
+        'blocker',
+        'UNSUPPORTED_FIELD_SHAPE',
+        `${path}.options`,
+        'Only choice fields may include coded options.',
+      );
+    }
+    if (field.type === 'yes-no') {
+      const codes = new Set(options.map((option) => option.code));
+      if (!codes.has('yes') || !codes.has('no')) {
+        add(
+          'blocker',
+          'UNSUPPORTED_FIELD_SHAPE',
+          `${path}.options`,
+          'Yes/no fields need stable yes and no option codes.',
+        );
+      }
+    }
+    const seenCodes = new Set<string>();
+    options.forEach((option, optionIndex) => {
+      const optionPath = `${path}.options[${optionIndex}]`;
+      if (
+        typeof option.code !== 'string' ||
+        !optionCodePattern.test(option.code)
+      ) {
+        add(
+          'blocker',
+          'UNSUPPORTED_FIELD_SHAPE',
+          `${optionPath}.code`,
+          'Option meaning must use a locale-neutral code, not a label or position.',
+        );
+        return;
+      }
+      if (seenCodes.has(option.code)) {
+        add(
+          'blocker',
+          'DUPLICATE_OPTION_CODE',
+          `${optionPath}.code`,
+          'Option codes must be unique within a field.',
+        );
+      }
+      seenCodes.add(option.code);
+    });
+    if (field.visibility != null) {
+      const visibilityPath = `${path}.visibility`;
+      const visibility = field.visibility;
+      if (
+        !isRecord(visibility) ||
+        typeof visibility.fieldId !== 'string' ||
+        typeof visibility.equalsOptionCode !== 'string'
+      ) {
+        add(
+          'blocker',
+          'INVALID_VISIBILITY_REFERENCE',
+          visibilityPath,
+          'Visibility rules must name an earlier choice field and one of its codes.',
+        );
+      } else {
+        const controller = fieldById.get(visibility.fieldId);
+        const controllerIndex = fieldIndex.get(visibility.fieldId);
+        const optionCode = visibility.equalsOptionCode;
+        visibilityEdges.push({
+          from: fieldId,
+          to: visibility.fieldId,
+          path: visibilityPath,
+        });
+        if (!controller || controllerIndex === undefined) {
+          add(
+            'blocker',
+            'INVALID_VISIBILITY_REFERENCE',
+            visibilityPath,
+            'Visibility rules cannot reference a missing field.',
+          );
+        } else if (!isChoiceIntakeFieldType(controller.type)) {
+          add(
+            'blocker',
+            'INVALID_VISIBILITY_REFERENCE',
+            visibilityPath,
+            'Visibility rules may only reference earlier choice fields.',
+          );
+        } else if (controllerIndex >= index) {
+          add(
+            'blocker',
+            'INVALID_VISIBILITY_REFERENCE',
+            visibilityPath,
+            'Visibility rules may only reference earlier choice fields.',
+          );
+        } else if (
+          !intakeOptions(controller).some(
+            (option) => option.code === optionCode,
+          )
+        ) {
+          add(
+            'blocker',
+            'INVALID_VISIBILITY_REFERENCE',
+            visibilityPath,
+            'Visibility rules must use a locale-neutral option code from the controlling field.',
+          );
+        }
+      }
+    }
+  });
+
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const adjacency = new Map<string, string[]>();
+  for (const edge of visibilityEdges) {
+    const current = adjacency.get(edge.from) ?? [];
+    current.push(edge.to);
+    adjacency.set(edge.from, current);
+  }
+  let cyclic = false;
+  function walk(node: string): void {
+    if (cyclic || visited.has(node)) return;
+    if (visiting.has(node)) {
+      cyclic = true;
+      return;
+    }
+    visiting.add(node);
+    for (const next of adjacency.get(node) ?? []) walk(next);
+    visiting.delete(node);
+    visited.add(node);
+  }
+  for (const field of fields) walk(String(field.id));
+  if (cyclic) {
+    add(
+      'blocker',
+      'CYCLIC_VISIBILITY',
+      'release.intakeForm.fields',
+      'Visibility rules must remain acyclic.',
+    );
+  }
 }
 
 export function presentDraft(
@@ -1560,6 +2014,169 @@ export function applyDraftEdit(input: {
       assertSafeHref(edit.href, `release.modules.${edit.collection}.href`);
     }
     items.push(createModuleItem(input.ids, edit.text.trim(), edit.href));
+  } else if (edit.type === 'save-intake-form') {
+    const intake = intakeFormRecord(next);
+    const attestation = releaseRecord(next).submissionAttestation;
+    if (!isRecord(attestation)) {
+      throw new InvalidSchoolConfigurationError(
+        'release.submissionAttestation',
+      );
+    }
+    assertSafeRichText(edit.title, 'release.intakeForm.title.en-US');
+    assertSafeRichText(edit.text, 'release.submissionAttestation.text.en-US');
+    intake.title = setEnglishSource(
+      intake.title,
+      edit.title.trim(),
+      'release.intakeForm.title',
+    );
+    attestation.text = setEnglishSource(
+      attestation.text,
+      edit.text.trim(),
+      'release.submissionAttestation.text',
+    );
+  } else if (edit.type === 'save-intake-section') {
+    const section = findRevisioned(next, edit.resourceId);
+    if (!section) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.sections');
+    }
+    assertSafeRichText(
+      edit.title,
+      `release.intakeForm.sections.${edit.resourceId}.title.en-US`,
+    );
+    section.title = setEnglishSource(
+      section.title,
+      edit.title.trim(),
+      `release.intakeForm.sections.${edit.resourceId}.title`,
+    );
+  } else if (edit.type === 'save-intake-field') {
+    const field = findRevisioned(next, edit.resourceId);
+    if (!field) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.fields');
+    }
+    assertSafeRichText(
+      edit.label,
+      `release.intakeForm.fields.${edit.resourceId}.label.en-US`,
+    );
+    if (edit.helpText) {
+      assertSafeRichText(
+        edit.helpText,
+        `release.intakeForm.fields.${edit.resourceId}.helpText.en-US`,
+      );
+    }
+    field.sectionId = edit.sectionId;
+    field.type = edit.fieldType;
+    field.required =
+      edit.fieldType === 'acknowledgement' ? true : edit.required;
+    field.requiredWhenVisible = edit.requiredWhenVisible;
+    field.visibility = edit.visibility;
+    field.label = setEnglishSource(
+      field.label,
+      edit.label.trim(),
+      `release.intakeForm.fields.${edit.resourceId}.label`,
+    );
+    if (edit.helpText !== undefined) {
+      if (edit.helpText && edit.helpText.trim()) {
+        field.helpText = isRecord(field.helpText)
+          ? setEnglishSource(
+              field.helpText,
+              edit.helpText.trim(),
+              `release.intakeForm.fields.${edit.resourceId}.helpText`,
+            )
+          : createEnglishLocalized(input.ids, edit.helpText.trim());
+      } else {
+        delete field.helpText;
+      }
+    }
+    if (!isChoiceIntakeFieldType(edit.fieldType)) {
+      delete field.options;
+    } else if (!Array.isArray(field.options) || field.options.length === 0) {
+      field.options = defaultChoiceOptions(input.ids, edit.fieldType);
+    }
+  } else if (edit.type === 'save-intake-option') {
+    const option = findRevisioned(next, edit.resourceId);
+    if (!option) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.options');
+    }
+    assertSafeRichText(
+      edit.label,
+      `release.intakeForm.options.${edit.resourceId}.label.en-US`,
+    );
+    if (!optionCodePattern.test(edit.code)) {
+      throw new InvalidSchoolConfigurationError(
+        `release.intakeForm.options.${edit.resourceId}.code`,
+      );
+    }
+    option.code = edit.code;
+    option.label = setEnglishSource(
+      option.label,
+      edit.label.trim(),
+      `release.intakeForm.options.${edit.resourceId}.label`,
+    );
+  } else if (edit.type === 'reorder-intake-sections') {
+    const intake = intakeFormRecord(next);
+    intake.sections = reorderByIds(
+      intakeSections(next),
+      edit.orderedResourceIds,
+      'release.intakeForm.sections',
+    );
+  } else if (edit.type === 'reorder-intake-fields') {
+    const intake = intakeFormRecord(next);
+    intake.fields = reorderByIds(
+      intakeFields(next),
+      edit.orderedResourceIds,
+      'release.intakeForm.fields',
+    );
+  } else if (edit.type === 'reorder-intake-options') {
+    const field = findRevisioned(next, edit.fieldId);
+    if (!field) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.fields');
+    }
+    field.options = reorderByIds(
+      intakeOptions(field),
+      edit.orderedResourceIds,
+      `release.intakeForm.fields.${edit.fieldId}.options`,
+    );
+  } else if (edit.type === 'create-intake-section') {
+    assertSafeRichText(edit.title, 'release.intakeForm.sections.title.en-US');
+    const intake = intakeFormRecord(next);
+    intake.sections = [
+      ...intakeSections(next),
+      createIntakeSection(input.ids, edit.title.trim()),
+    ];
+  } else if (edit.type === 'create-intake-field') {
+    assertSafeRichText(edit.label, 'release.intakeForm.fields.label.en-US');
+    if (
+      !intakeSections(next).some((section) => section.id === edit.sectionId)
+    ) {
+      throw new InvalidSchoolConfigurationError(
+        'release.intakeForm.fields.sectionId',
+      );
+    }
+    const intake = intakeFormRecord(next);
+    intake.fields = [
+      ...intakeFields(next),
+      createIntakeField(
+        input.ids,
+        edit.sectionId,
+        edit.fieldType,
+        edit.label.trim(),
+      ),
+    ];
+  } else if (edit.type === 'create-intake-option') {
+    assertSafeRichText(edit.label, 'release.intakeForm.options.label.en-US');
+    if (!optionCodePattern.test(edit.code)) {
+      throw new InvalidSchoolConfigurationError(
+        'release.intakeForm.options.code',
+      );
+    }
+    const field = findRevisioned(next, edit.fieldId);
+    if (!field || !isChoiceIntakeFieldType(field.type)) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.fields');
+    }
+    field.options = [
+      ...intakeOptions(field),
+      createIntakeOption(input.ids, edit.code, edit.label.trim()),
+    ];
   } else if (edit.type === 'restore-active-revision') {
     if (!input.activePayload) {
       throw new InvalidSchoolConfigurationError('activeRevision');
@@ -1573,6 +2190,13 @@ export function applyDraftEdit(input: {
       throw new InvalidSchoolConfigurationError('discard');
     }
     discardedResourceIds.push(...collectResourceIds(existing));
+    const sectionFields = intakeFields(next).filter(
+      (field) => field.sectionId === edit.resourceId,
+    );
+    for (const field of sectionFields) {
+      discardedResourceIds.push(...collectResourceIds(field));
+      next = removeRevisioned(next, String(field.id));
+    }
     next = removeRevisioned(next, edit.resourceId);
   }
   applyExplicitOrder(next);
