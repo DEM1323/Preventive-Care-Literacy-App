@@ -13,6 +13,7 @@ test('browser control catalog ids exist in the pages the golden journey actually
     'src/features/admin/SchoolConfigurationPage.tsx',
   );
   const staffHome = await source('src/features/staff/StaffHomePage.tsx');
+  const classWorkspace = await source('src/features/staff/ClassWorkspace.tsx');
   const studentAccess = await source(
     'src/features/student-access/StudentAccessPages.tsx',
   );
@@ -25,7 +26,7 @@ test('browser control catalog ids exist in the pages the golden journey actually
     expect(configuration).toContain(`id="${id}"`);
   }
   for (const id of goldenJourneyBrowserControls.staffHome) {
-    expect(staffHome).toContain(`id="${id}"`);
+    expect(`${staffHome}\n${classWorkspace}`).toContain(`id="${id}"`);
   }
   expect(studentAccess).toContain(
     `id="${goldenJourneyBrowserControls.studentHomeUnlocked[0]}"`,

@@ -36,6 +36,12 @@
                       "items": {
                         "properties": {
                           "classId": { "format": "uuid", "type": "string" },
+                          "closedAt": {
+                            "anyOf": [
+                              { "format": "date-time", "type": "string" },
+                              { "type": "null" }
+                            ]
+                          },
                           "createdAt": {
                             "format": "date-time",
                             "type": "string"
@@ -88,13 +94,184 @@
                             },
                             "type": "array"
                           },
-                          "name": { "type": "string" }
+                          "name": { "type": "string" },
+                          "relationships": {
+                            "items": {
+                              "properties": {
+                                "classMembershipId": {
+                                  "anyOf": [
+                                    { "format": "uuid", "type": "string" },
+                                    { "type": "null" }
+                                  ]
+                                },
+                                "deliveryStatus": {
+                                  "anyOf": [
+                                    { "enum": ["delivered"], "type": "string" },
+                                    { "enum": ["delayed"], "type": "string" },
+                                    { "enum": ["failed"], "type": "string" }
+                                  ]
+                                },
+                                "history": {
+                                  "items": {
+                                    "properties": {
+                                      "createdAt": {
+                                        "format": "date-time",
+                                        "type": "string"
+                                      },
+                                      "generation": {
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "invitationId": {
+                                        "format": "uuid",
+                                        "type": "string"
+                                      },
+                                      "status": {
+                                        "anyOf": [
+                                          {
+                                            "enum": ["pending_delivery"],
+                                            "type": "string"
+                                          },
+                                          {
+                                            "enum": ["delivered"],
+                                            "type": "string"
+                                          },
+                                          {
+                                            "enum": ["delivery_failed"],
+                                            "type": "string"
+                                          },
+                                          {
+                                            "enum": ["expired"],
+                                            "type": "string"
+                                          },
+                                          {
+                                            "enum": ["completed"],
+                                            "type": "string"
+                                          },
+                                          {
+                                            "enum": ["revoked"],
+                                            "type": "string"
+                                          },
+                                          {
+                                            "enum": ["superseded"],
+                                            "type": "string"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "invitationId",
+                                      "status",
+                                      "generation",
+                                      "createdAt"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "type": "array"
+                                },
+                                "latestInvitation": {
+                                  "properties": {
+                                    "expiresAt": {
+                                      "format": "date-time",
+                                      "type": "string"
+                                    },
+                                    "generation": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    },
+                                    "invitationId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "purpose": {
+                                      "enum": ["join_class"],
+                                      "type": "string"
+                                    },
+                                    "status": {
+                                      "anyOf": [
+                                        {
+                                          "enum": ["pending_delivery"],
+                                          "type": "string"
+                                        },
+                                        {
+                                          "enum": ["delivered"],
+                                          "type": "string"
+                                        },
+                                        {
+                                          "enum": ["delivery_failed"],
+                                          "type": "string"
+                                        },
+                                        {
+                                          "enum": ["expired"],
+                                          "type": "string"
+                                        },
+                                        {
+                                          "enum": ["completed"],
+                                          "type": "string"
+                                        },
+                                        {
+                                          "enum": ["revoked"],
+                                          "type": "string"
+                                        },
+                                        {
+                                          "enum": ["superseded"],
+                                          "type": "string"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "invitationId",
+                                    "purpose",
+                                    "generation",
+                                    "status",
+                                    "expiresAt"
+                                  ],
+                                  "type": "object"
+                                },
+                                "membershipStatus": {
+                                  "anyOf": [
+                                    { "enum": ["none"], "type": "string" },
+                                    { "enum": ["active"], "type": "string" },
+                                    { "enum": ["inactive"], "type": "string" }
+                                  ]
+                                },
+                                "recipient": { "type": "string" },
+                                "studentId": {
+                                  "anyOf": [
+                                    { "format": "uuid", "type": "string" },
+                                    { "type": "null" }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "recipient",
+                                "studentId",
+                                "classMembershipId",
+                                "membershipStatus",
+                                "latestInvitation",
+                                "deliveryStatus",
+                                "history"
+                              ],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "status": {
+                            "anyOf": [
+                              { "enum": ["open"], "type": "string" },
+                              { "enum": ["closed"], "type": "string" }
+                            ]
+                          }
                         },
                         "required": [
                           "classId",
                           "name",
                           "createdAt",
-                          "invitations"
+                          "status",
+                          "closedAt",
+                          "invitations",
+                          "relationships"
                         ],
                         "type": "object"
                       },
@@ -123,6 +300,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -149,6 +327,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -175,6 +354,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -263,6 +443,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -289,6 +470,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -315,6 +497,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -341,6 +524,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -367,6 +551,1596 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/classes/closures": {
+      "post": {
+        "operationId": "closeClass",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "classId": { "format": "uuid", "type": "string" },
+                  "operationId": { "format": "uuid", "type": "string" }
+                },
+                "required": ["operationId", "classId"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "classId": { "format": "uuid", "type": "string" },
+                    "deactivatedMembershipCount": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": { "enum": ["closed"], "type": "string" },
+                    "revokedInvitationCount": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "operationId",
+                    "classId",
+                    "outcome",
+                    "revokedInvitationCount",
+                    "deactivatedMembershipCount"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/classes/definitions": {
+      "post": {
+        "operationId": "createClass",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "classId": { "format": "uuid", "type": "string" },
+                  "name": {
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "pattern": ".*\\S.*",
+                    "type": "string"
+                  },
+                  "operationId": { "format": "uuid", "type": "string" }
+                },
+                "required": ["operationId", "classId", "name"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "classId": { "format": "uuid", "type": "string" },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": { "enum": ["created"], "type": "string" }
+                  },
+                  "required": ["operationId", "classId", "outcome"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/classes/invitation-previews": {
+      "post": {
+        "operationId": "previewClassInvitation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "classId": { "format": "uuid", "type": "string" },
+                  "recipient": {
+                    "maxLength": 322,
+                    "pattern": "^\\s*[^\\s@]+@[^\\s@]+\\s*$",
+                    "type": "string"
+                  }
+                },
+                "required": ["classId", "recipient"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "properties": {
+                        "outcome": { "enum": ["ready"], "type": "string" },
+                        "reuse": {
+                          "anyOf": [
+                            { "enum": ["none"], "type": "string" },
+                            { "enum": ["existing_student"], "type": "string" },
+                            {
+                              "enum": ["inactive_membership"],
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["outcome", "reuse"],
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
+                        "outcome": {
+                          "enum": ["already_a_member"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["outcome"],
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
+                        "outcome": {
+                          "enum": ["already_invited"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["outcome"],
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
+                        "outcome": {
+                          "enum": ["identity_review"],
+                          "type": "string"
+                        },
+                        "reason": {
+                          "enum": ["historical_binding"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["outcome", "reason"],
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
+                        "outcome": {
+                          "enum": ["class_closed"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["outcome"],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/classes/invitation-resends": {
+      "post": {
+        "operationId": "resendClassInvitation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "invitationId": { "format": "uuid", "type": "string" },
+                  "operationId": { "format": "uuid", "type": "string" },
+                  "replacementInvitationId": {
+                    "format": "uuid",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "operationId",
+                  "invitationId",
+                  "replacementInvitationId"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "classId": { "format": "uuid", "type": "string" },
+                    "invitationId": { "format": "uuid", "type": "string" },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": { "enum": ["superseded"], "type": "string" },
+                    "supersededInvitationId": {
+                      "format": "uuid",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "operationId",
+                    "classId",
+                    "invitationId",
+                    "supersededInvitationId",
+                    "outcome"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/classes/invitation-revocations": {
+      "post": {
+        "operationId": "revokeClassInvitation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "invitationId": { "format": "uuid", "type": "string" },
+                  "operationId": { "format": "uuid", "type": "string" }
+                },
+                "required": ["operationId", "invitationId"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "invitationId": { "format": "uuid", "type": "string" },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": {
+                      "anyOf": [
+                        { "enum": ["revoked"], "type": "string" },
+                        { "enum": ["unchanged_redeemed"], "type": "string" }
+                      ]
+                    }
+                  },
+                  "required": ["operationId", "invitationId", "outcome"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/classes/invitations": {
+      "post": {
+        "operationId": "sendClassInvitation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "classId": { "format": "uuid", "type": "string" },
+                  "invitationId": { "format": "uuid", "type": "string" },
+                  "operationId": { "format": "uuid", "type": "string" },
+                  "recipient": {
+                    "maxLength": 322,
+                    "pattern": "^\\s*[^\\s@]+@[^\\s@]+\\s*$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "operationId",
+                  "classId",
+                  "invitationId",
+                  "recipient"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "classId": { "format": "uuid", "type": "string" },
+                    "invitationId": { "format": "uuid", "type": "string" },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": { "enum": ["created"], "type": "string" }
+                  },
+                  "required": [
+                    "operationId",
+                    "classId",
+                    "invitationId",
+                    "outcome"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/classes/membership-deactivations": {
+      "post": {
+        "operationId": "deactivateClassMembership",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "classMembershipId": { "format": "uuid", "type": "string" },
+                  "operationId": { "format": "uuid", "type": "string" }
+                },
+                "required": ["operationId", "classMembershipId"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "classMembershipId": { "format": "uuid", "type": "string" },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": { "enum": ["deactivated"], "type": "string" }
+                  },
+                  "required": ["operationId", "classMembershipId", "outcome"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -433,6 +2207,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -459,6 +2234,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -485,6 +2261,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -511,6 +2288,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -601,6 +2379,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -627,6 +2406,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -653,6 +2433,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -679,6 +2460,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -705,6 +2487,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -731,6 +2514,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -757,6 +2541,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -871,6 +2656,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -897,6 +2683,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -923,6 +2710,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -949,6 +2737,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -975,6 +2764,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1001,6 +2791,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1027,6 +2818,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1107,6 +2899,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1133,6 +2926,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1159,6 +2953,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1185,6 +2980,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1211,6 +3007,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1237,6 +3034,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1328,6 +3126,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1354,6 +3153,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1380,6 +3180,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1506,6 +3307,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1532,6 +3334,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1558,6 +3361,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1584,6 +3388,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1610,6 +3415,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1636,6 +3442,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1662,6 +3469,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1753,6 +3561,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1779,6 +3588,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1805,6 +3615,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1831,6 +3642,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1857,6 +3669,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1883,6 +3696,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1909,6 +3723,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -1935,6 +3750,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2052,6 +3868,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2078,6 +3895,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2104,6 +3922,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2130,6 +3949,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2156,6 +3976,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2182,6 +4003,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2208,6 +4030,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2234,6 +4057,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2331,6 +4155,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2357,6 +4182,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2383,6 +4209,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2409,6 +4236,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2435,6 +4263,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2461,6 +4290,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2487,6 +4317,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2513,6 +4344,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2580,6 +4412,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2606,6 +4439,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2632,6 +4466,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2658,6 +4493,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2705,6 +4541,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2787,6 +4624,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2813,6 +4651,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2839,6 +4678,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2865,6 +4705,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2891,6 +4732,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2938,6 +4780,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2964,6 +4807,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -2990,6 +4834,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3016,6 +4861,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3079,6 +4925,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3105,6 +4952,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3131,6 +4979,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3157,6 +5006,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3183,6 +5033,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3209,6 +5060,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3277,6 +5129,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3303,6 +5156,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3329,6 +5183,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3355,6 +5210,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3381,6 +5237,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3448,6 +5305,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3474,6 +5332,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3500,6 +5359,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3526,6 +5386,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3552,6 +5413,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3745,6 +5607,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3771,6 +5634,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3797,6 +5661,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3823,6 +5688,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3849,6 +5715,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3875,6 +5742,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3973,6 +5841,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -3999,6 +5868,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -4025,6 +5895,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -4265,6 +6136,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -4291,6 +6163,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -4337,6 +6210,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -4473,6 +6347,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -4499,6 +6374,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -4568,6 +6444,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -4594,6 +6471,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -4918,6 +6796,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -4944,6 +6823,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -4970,6 +6850,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5074,6 +6955,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5100,6 +6982,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5126,6 +7009,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5152,6 +7036,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5178,6 +7063,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5204,6 +7090,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5347,6 +7234,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5373,6 +7261,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5399,6 +7288,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5425,6 +7315,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5451,6 +7342,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5477,6 +7369,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5503,6 +7396,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5653,6 +7547,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5679,6 +7574,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5705,6 +7601,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5796,6 +7693,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5822,6 +7720,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5848,6 +7747,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5874,6 +7774,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5900,6 +7801,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5926,6 +7828,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -5952,6 +7855,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -6016,6 +7920,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }
@@ -6042,6 +7947,7 @@
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
                     "status": { "type": "integer" },
                     "title": { "type": "string" },
                     "type": { "type": "string" }

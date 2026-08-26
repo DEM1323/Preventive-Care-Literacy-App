@@ -118,6 +118,16 @@ export function createInvitationSecretProtector(
         ]).toString('base64url'),
       };
     },
+    revealInvitationRecipient(input) {
+      return decryptInvitationDelivery({
+        keys,
+        keyId: input.keyId,
+        ciphertext: input.ciphertext,
+        invitationId: input.invitationId,
+        purpose: input.purpose,
+        generation: input.generation,
+      }).recipient;
+    },
   };
 }
 

@@ -142,6 +142,8 @@ test('Administrator creates one Class and one protected purpose-bound Invitation
         classId,
         name: 'Health Literacy 7A',
         createdAt: now.toISOString(),
+        status: 'open',
+        closedAt: null,
         invitations: [
           {
             invitationId,
@@ -153,10 +155,37 @@ test('Administrator creates one Class and one protected purpose-bound Invitation
             ).toISOString(),
           },
         ],
+        relationships: [
+          {
+            recipient: 'student.one@example.test',
+            studentId: null,
+            classMembershipId: null,
+            membershipStatus: 'none',
+            latestInvitation: {
+              invitationId,
+              purpose: 'join_class',
+              generation: 1,
+              status: 'pending_delivery',
+              expiresAt: new Date(
+                now.getTime() + 7 * 24 * 60 * 60 * 1000,
+              ).toISOString(),
+            },
+            deliveryStatus: 'delayed',
+            history: [
+              {
+                invitationId,
+                status: 'pending_delivery',
+                generation: 1,
+                createdAt: now.toISOString(),
+              },
+            ],
+          },
+        ],
       },
     ],
   });
-  expect(JSON.stringify(directory.data)).not.toContain('example.test');
+  expect(JSON.stringify(directory.data)).not.toContain('729104');
+  expect(JSON.stringify(directory.data)).not.toContain('Student.One');
 
   const inspection = new Client({
     connectionString: postgres.connectionString,

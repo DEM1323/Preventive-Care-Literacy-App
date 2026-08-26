@@ -4,15 +4,17 @@ import { PermanentInvitationDeliveryError } from '../../../modules/invitation-de
 export function createResendInvitationMail(options: {
   apiKey: string;
   sender: string;
-  controlledRecipient: string;
+  controlledRecipient?: string;
   fetch?: typeof fetch;
 }): InvitationDeliveryDependencies['mail'] {
   const request = options.fetch ?? fetch;
+  const controlledRecipient = options.controlledRecipient?.trim();
   return {
     async sendInvitation(input) {
       if (
+        controlledRecipient &&
         input.recipient.trim().toLowerCase() !==
-        options.controlledRecipient.trim().toLowerCase()
+          controlledRecipient.toLowerCase()
       ) {
         throw new PermanentInvitationDeliveryError();
       }

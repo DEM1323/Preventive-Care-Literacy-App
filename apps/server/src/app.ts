@@ -36,6 +36,11 @@ import {
   FirstAdministratorRequiredError,
   LastAdministratorRequiredError,
   StaffIdentityNotFoundError,
+  ClassNotFoundError,
+  ClassClosedError,
+  InvitationNotFoundError,
+  ClassMembershipNotFoundError,
+  InvitationNotSendableError,
 } from '../../../modules/identity-access/index.ts';
 import type {
   Intake,
@@ -374,11 +379,126 @@ const CreateClassInvitationBody = Type.Object(
   },
   { additionalProperties: false },
 );
+const InvitationRecipientSchema = Type.String({
+  maxLength: 322,
+  pattern: '^\\s*[^\\s@]+@[^\\s@]+\\s*$',
+});
+const InvitationStatusSchema = Type.Union([
+  Type.Literal('pending_delivery'),
+  Type.Literal('delivered'),
+  Type.Literal('delivery_failed'),
+  Type.Literal('expired'),
+  Type.Literal('completed'),
+  Type.Literal('revoked'),
+  Type.Literal('superseded'),
+]);
 const CreateClassInvitationResponse = Type.Object({
   operationId: Type.String({ format: 'uuid' }),
   classId: Type.String({ format: 'uuid' }),
   invitationId: Type.String({ format: 'uuid' }),
   outcome: Type.Literal('created'),
+});
+const CreateClassBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    classId: Type.String({ format: 'uuid' }),
+    name: Type.String({ minLength: 1, maxLength: 200, pattern: '.*\\S.*' }),
+  },
+  { additionalProperties: false },
+);
+const CreateClassResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  classId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('created'),
+});
+const PreviewClassInvitationBody = Type.Object(
+  {
+    classId: Type.String({ format: 'uuid' }),
+    recipient: InvitationRecipientSchema,
+  },
+  { additionalProperties: false },
+);
+const PreviewClassInvitationResponse = Type.Union([
+  Type.Object({
+    outcome: Type.Literal('ready'),
+    reuse: Type.Union([
+      Type.Literal('none'),
+      Type.Literal('existing_student'),
+      Type.Literal('inactive_membership'),
+    ]),
+  }),
+  Type.Object({ outcome: Type.Literal('already_a_member') }),
+  Type.Object({ outcome: Type.Literal('already_invited') }),
+  Type.Object({
+    outcome: Type.Literal('identity_review'),
+    reason: Type.Literal('historical_binding'),
+  }),
+  Type.Object({ outcome: Type.Literal('class_closed') }),
+]);
+const SendClassInvitationBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    classId: Type.String({ format: 'uuid' }),
+    invitationId: Type.String({ format: 'uuid' }),
+    recipient: InvitationRecipientSchema,
+  },
+  { additionalProperties: false },
+);
+const ResendClassInvitationBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    invitationId: Type.String({ format: 'uuid' }),
+    replacementInvitationId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+const ResendClassInvitationResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  classId: Type.String({ format: 'uuid' }),
+  invitationId: Type.String({ format: 'uuid' }),
+  supersededInvitationId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('superseded'),
+});
+const RevokeClassInvitationBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    invitationId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+const RevokeClassInvitationResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  invitationId: Type.String({ format: 'uuid' }),
+  outcome: Type.Union([
+    Type.Literal('revoked'),
+    Type.Literal('unchanged_redeemed'),
+  ]),
+});
+const DeactivateClassMembershipBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    classMembershipId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+const DeactivateClassMembershipResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  classMembershipId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('deactivated'),
+});
+const CloseClassBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    classId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+const CloseClassResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  classId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('closed'),
+  revokedInvitationCount: Type.Integer({ minimum: 0 }),
+  deactivatedMembershipCount: Type.Integer({ minimum: 0 }),
 });
 const ClassDirectoryResponse = Type.Object({
   classes: Type.Array(
@@ -386,21 +506,50 @@ const ClassDirectoryResponse = Type.Object({
       classId: Type.String({ format: 'uuid' }),
       name: Type.String(),
       createdAt: Type.String({ format: 'date-time' }),
+      status: Type.Union([Type.Literal('open'), Type.Literal('closed')]),
+      closedAt: Type.Union([Type.String({ format: 'date-time' }), Type.Null()]),
       invitations: Type.Array(
         Type.Object({
           invitationId: Type.String({ format: 'uuid' }),
           purpose: Type.Literal('join_class'),
           generation: Type.Integer({ minimum: 1 }),
-          status: Type.Union([
-            Type.Literal('pending_delivery'),
-            Type.Literal('delivered'),
-            Type.Literal('delivery_failed'),
-            Type.Literal('expired'),
-            Type.Literal('completed'),
-            Type.Literal('revoked'),
-            Type.Literal('superseded'),
-          ]),
+          status: InvitationStatusSchema,
           expiresAt: Type.String({ format: 'date-time' }),
+        }),
+      ),
+      relationships: Type.Array(
+        Type.Object({
+          recipient: Type.String(),
+          studentId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
+          classMembershipId: Type.Union([
+            Type.String({ format: 'uuid' }),
+            Type.Null(),
+          ]),
+          membershipStatus: Type.Union([
+            Type.Literal('none'),
+            Type.Literal('active'),
+            Type.Literal('inactive'),
+          ]),
+          latestInvitation: Type.Object({
+            invitationId: Type.String({ format: 'uuid' }),
+            purpose: Type.Literal('join_class'),
+            generation: Type.Integer({ minimum: 1 }),
+            status: InvitationStatusSchema,
+            expiresAt: Type.String({ format: 'date-time' }),
+          }),
+          deliveryStatus: Type.Union([
+            Type.Literal('delivered'),
+            Type.Literal('delayed'),
+            Type.Literal('failed'),
+          ]),
+          history: Type.Array(
+            Type.Object({
+              invitationId: Type.String({ format: 'uuid' }),
+              status: InvitationStatusSchema,
+              generation: Type.Integer({ minimum: 1 }),
+              createdAt: Type.String({ format: 'date-time' }),
+            }),
+          ),
         }),
       ),
     }),
@@ -722,6 +871,7 @@ const ProblemDetails = Type.Object({
   ),
   candidateFingerprint: Type.Optional(Type.String()),
   affectedValue: Type.Optional(Type.String()),
+  outcome: Type.Optional(Type.String()),
 });
 
 const ProblemResponse = {
@@ -1019,7 +1169,7 @@ export async function buildApp(
                       ? 'clinical-directory'
                       : route === '/api/v1/clinical/intake-records/current'
                         ? 'clinical-intake-reveal'
-                        : route === '/api/v1/administration/classes'
+                        : route.startsWith('/api/v1/administration/classes')
                           ? 'classes'
                           : route === '/api/v1/student/intake'
                             ? 'student-intake'
@@ -1125,6 +1275,47 @@ export async function buildApp(
         title: error.message,
         status: 422,
         code: error.code,
+      });
+    }
+    if (error instanceof ClassNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/class-not-found',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof InvitationNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/invitation-not-found',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof ClassMembershipNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/class-membership-not-found',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof ClassClosedError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/class-closed',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof InvitationNotSendableError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/invitation-not-sendable',
+        title: error.message,
+        status: 409,
+        code: error.code,
+        outcome: error.outcome,
       });
     }
     if (error instanceof StaffAuthenticationFailedError) {
@@ -2093,6 +2284,226 @@ export async function buildApp(
       return {
         classes: await identityAndAccess.listClasses({ sessionHandle }),
       };
+    },
+  );
+
+  function requireStaffCookie(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): string | FastifyReply {
+    const sessionHandle = readSecureOpaqueCookie(
+      request.headers.cookie,
+      staffSessionCookie,
+    );
+    if (!sessionHandle) {
+      return reply.type('application/problem+json').code(401).send({
+        type: 'https://preventive-care-literacy.example/problems/staff-session',
+        title: 'Staff session required',
+        status: 401,
+        code: 'STAFF_SESSION_REQUIRED',
+      });
+    }
+    return sessionHandle;
+  }
+
+  app.post<{ Body: Static<typeof CreateClassBody> }>(
+    '/api/v1/administration/classes/definitions',
+    {
+      schema: {
+        operationId: 'createClass',
+        security: [{ staffSession: [] }],
+        body: CreateClassBody,
+        response: {
+          201: CreateClassResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = requireStaffCookie(request, reply);
+      if (typeof sessionHandle !== 'string') return sessionHandle;
+      const result = await identityAndAccess.createClass({
+        ...request.body,
+        sessionHandle,
+      });
+      return reply.code(201).send(result);
+    },
+  );
+
+  app.post<{ Body: Static<typeof PreviewClassInvitationBody> }>(
+    '/api/v1/administration/classes/invitation-previews',
+    {
+      schema: {
+        operationId: 'previewClassInvitation',
+        security: [{ staffSession: [] }],
+        body: PreviewClassInvitationBody,
+        response: {
+          200: PreviewClassInvitationResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = requireStaffCookie(request, reply);
+      if (typeof sessionHandle !== 'string') return sessionHandle;
+      return identityAndAccess.previewClassInvitation({
+        ...request.body,
+        sessionHandle,
+      });
+    },
+  );
+
+  app.post<{ Body: Static<typeof SendClassInvitationBody> }>(
+    '/api/v1/administration/classes/invitations',
+    {
+      schema: {
+        operationId: 'sendClassInvitation',
+        security: [{ staffSession: [] }],
+        body: SendClassInvitationBody,
+        response: {
+          201: CreateClassInvitationResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = requireStaffCookie(request, reply);
+      if (typeof sessionHandle !== 'string') return sessionHandle;
+      const result = await identityAndAccess.sendClassInvitation({
+        ...request.body,
+        sessionHandle,
+      });
+      return reply.code(201).send(result);
+    },
+  );
+
+  app.post<{ Body: Static<typeof ResendClassInvitationBody> }>(
+    '/api/v1/administration/classes/invitation-resends',
+    {
+      schema: {
+        operationId: 'resendClassInvitation',
+        security: [{ staffSession: [] }],
+        body: ResendClassInvitationBody,
+        response: {
+          201: ResendClassInvitationResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = requireStaffCookie(request, reply);
+      if (typeof sessionHandle !== 'string') return sessionHandle;
+      const result = await identityAndAccess.resendClassInvitation({
+        ...request.body,
+        sessionHandle,
+      });
+      return reply.code(201).send(result);
+    },
+  );
+
+  app.post<{ Body: Static<typeof RevokeClassInvitationBody> }>(
+    '/api/v1/administration/classes/invitation-revocations',
+    {
+      schema: {
+        operationId: 'revokeClassInvitation',
+        security: [{ staffSession: [] }],
+        body: RevokeClassInvitationBody,
+        response: {
+          200: RevokeClassInvitationResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = requireStaffCookie(request, reply);
+      if (typeof sessionHandle !== 'string') return sessionHandle;
+      return identityAndAccess.revokeClassInvitation({
+        ...request.body,
+        sessionHandle,
+      });
+    },
+  );
+
+  app.post<{ Body: Static<typeof DeactivateClassMembershipBody> }>(
+    '/api/v1/administration/classes/membership-deactivations',
+    {
+      schema: {
+        operationId: 'deactivateClassMembership',
+        security: [{ staffSession: [] }],
+        body: DeactivateClassMembershipBody,
+        response: {
+          200: DeactivateClassMembershipResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = requireStaffCookie(request, reply);
+      if (typeof sessionHandle !== 'string') return sessionHandle;
+      return identityAndAccess.deactivateClassMembership({
+        ...request.body,
+        sessionHandle,
+      });
+    },
+  );
+
+  app.post<{ Body: Static<typeof CloseClassBody> }>(
+    '/api/v1/administration/classes/closures',
+    {
+      schema: {
+        operationId: 'closeClass',
+        security: [{ staffSession: [] }],
+        body: CloseClassBody,
+        response: {
+          200: CloseClassResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = requireStaffCookie(request, reply);
+      if (typeof sessionHandle !== 'string') return sessionHandle;
+      return identityAndAccess.closeClass({
+        ...request.body,
+        sessionHandle,
+      });
     },
   );
 
