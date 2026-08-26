@@ -90,6 +90,8 @@ export type Database = {
     session_handle_hash: string;
     authentication_assurance: string;
     authenticated_at: Timestamp;
+    last_seen_at: MutableTimestamp;
+    idle_expires_at: MutableTimestamp;
     expires_at: Timestamp;
     revoked_at: ColumnType<Date | null, Date | null, Date | null>;
     created_at: Timestamp;

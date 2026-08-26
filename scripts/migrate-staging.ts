@@ -101,6 +101,18 @@ try {
          to ${runtimeRoleIdentifier}`,
   );
   await client.query(
+    `grant execute on function identity_access.workspace_staff_count()
+         to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function identity_access.read_staff_identity(uuid, uuid)
+         to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function identity_access.apply_staff_lifecycle(uuid, uuid, text, text[], timestamptz)
+         to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
     `grant select, insert, update, delete on intake.intake_drafts
        to ${runtimeRoleIdentifier}`,
   );

@@ -89,6 +89,26 @@ test('operator workspace catalog projects bounded non-sensitive summaries across
         configurationState: 'active',
         draftVersion: 4,
         activeReleaseId: releaseId,
+        staffIdentities: [
+          {
+            staffIdentityId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf1112',
+            displayName: 'Active Staff One',
+            email: 'active1@example.test',
+            permissions: [],
+            status: 'active',
+            createdAt: expect.any(String),
+            activatedAt: null,
+          },
+          {
+            staffIdentityId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf1113',
+            displayName: 'Active Staff Two',
+            email: 'active2@example.test',
+            permissions: [],
+            status: 'active',
+            createdAt: expect.any(String),
+            activatedAt: null,
+          },
+        ],
       },
       {
         workspaceId: draftWorkspaceId,
@@ -98,6 +118,17 @@ test('operator workspace catalog projects bounded non-sensitive summaries across
         configurationState: 'draft',
         draftVersion: 2,
         activeReleaseId: null,
+        staffIdentities: [
+          {
+            staffIdentityId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf1111',
+            displayName: 'Draft Staff',
+            email: 'draft@example.test',
+            permissions: [],
+            status: 'active',
+            createdAt: expect.any(String),
+            activatedAt: null,
+          },
+        ],
       },
       {
         workspaceId: uninitializedWorkspaceId,
@@ -107,6 +138,7 @@ test('operator workspace catalog projects bounded non-sensitive summaries across
         configurationState: 'uninitialized',
         draftVersion: null,
         activeReleaseId: null,
+        staffIdentities: [],
       },
     ]);
   } finally {

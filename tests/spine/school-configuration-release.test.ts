@@ -167,7 +167,12 @@ test('Administrator imports and previews the exact reviewed five-locale candidat
 
 test('publication requires fresh password-plus-TOTP and atomically activates one immutable package', async () => {
   const client = createApiClient(baseUrl);
-  now = new Date(now.getTime() + 16 * 60 * 1000);
+  now = new Date(now.getTime() + 14 * 60 * 1000);
+  const keptAlive = await client.GET('/api/v1/staff/session', {
+    headers: { cookie },
+  });
+  expect(keptAlive.response.status).toBe(200);
+  now = new Date(now.getTime() + 2 * 60 * 1000);
   const command = {
     operationId: crypto.randomUUID(),
     expectedActiveReleaseId: null,
@@ -365,6 +370,22 @@ test('expiry during package upload is rechecked before activation', async () => 
 
 test('a deterministic package failure is retained without activation', async () => {
   const client = createApiClient(baseUrl);
+  const signIn = await client.POST('/api/v1/auth/staff/sign-in', {
+    headers: { origin, 'x-prevcare-csrf': '1' },
+    body: { email, password },
+  });
+  expect(signIn.response.status).toBe(200);
+  const authenticated = await client.POST('/api/v1/auth/staff/totp', {
+    headers: { origin, 'x-prevcare-csrf': '1' },
+    body: {
+      flowHandle: signIn.data?.flowHandle ?? '',
+      code: totpCode(fakeAuth.totpSecretFor(email)),
+    },
+  });
+  expect(authenticated.response.status).toBe(200);
+  cookie = authenticated.response.headers
+    .get('set-cookie')
+    ?.split(';', 1)[0] as string;
   const steppedUp = await client.POST('/api/v1/auth/staff/step-up', {
     headers: { ...operatorHeaders, cookie },
     body: { password, totp: totpCode(fakeAuth.totpSecretFor(email)) },

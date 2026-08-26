@@ -22,6 +22,28 @@ function createStubIdentityAndAccess(): IdentityAndAccess {
         outcome: 'provisioned',
       };
     },
+    async recoverStaffIdentity(command) {
+      return {
+        operationId: command.operationId,
+        staffIdentityId: command.staffIdentityId,
+        outcome: 'recovered',
+      };
+    },
+    async disableStaffIdentity(command) {
+      return {
+        operationId: command.operationId,
+        staffIdentityId: command.staffIdentityId,
+        outcome: 'disabled',
+      };
+    },
+    async replaceStaffPermissions(command) {
+      return {
+        operationId: command.operationId,
+        staffIdentityId: command.staffIdentityId,
+        permissions: [...command.permissions],
+        outcome: 'replaced',
+      };
+    },
     async startStaffSignIn() {
       throw new Error('Not configured in this test');
     },
@@ -218,6 +240,7 @@ describe.serial('staging HTTP security boundary', () => {
           configurationState: 'draft',
           draftVersion: 3,
           activeReleaseId: null,
+          staffIdentities: [],
         },
       ],
     });

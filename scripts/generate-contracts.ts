@@ -33,6 +33,15 @@ async function renderContracts() {
       provisionStaffIdentity: async () => {
         throw new Error('Contract generation does not execute commands');
       },
+      recoverStaffIdentity: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      disableStaffIdentity: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      replaceStaffPermissions: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
       startStaffSignIn: async () => {
         throw new Error('Contract generation does not execute commands');
       },

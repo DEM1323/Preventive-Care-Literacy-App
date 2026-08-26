@@ -3,6 +3,31 @@ import { createBrowserApiClient } from '../../../packages/api-client/src/index.t
 
 const client = createBrowserApiClient();
 
+type Problem = { code?: string };
+
+function operatorLifecycleMessage(
+  action: 'provision' | 'recover' | 'disable' | 'permissions',
+  error: unknown,
+): string {
+  const code = (error as Problem | undefined)?.code;
+  if (code === 'FIRST_ADMINISTRATOR_REQUIRED') {
+    return 'The first Staff Identity must hold Administrative Permission so it can initialize School Configuration.';
+  }
+  if (code === 'LAST_ADMINISTRATOR_REQUIRED') {
+    return 'A School Workspace must keep at least one Staff Identity with Administrative Permission.';
+  }
+  if (action === 'provision') {
+    return 'The Staff Identity could not be provisioned.';
+  }
+  if (action === 'recover') {
+    return 'The Staff Identity could not be recovered.';
+  }
+  if (action === 'disable') {
+    return 'The Staff Identity could not be disabled.';
+  }
+  return 'Staff permissions could not be replaced.';
+}
+
 type WorkspaceSummary = {
   workspaceId: string;
   displayName: string;
@@ -11,6 +36,15 @@ type WorkspaceSummary = {
   configurationState: 'uninitialized' | 'draft' | 'active';
   draftVersion: number | null;
   activeReleaseId: string | null;
+  staffIdentities: {
+    staffIdentityId: string;
+    displayName: string;
+    email: string;
+    permissions: ('administrative' | 'clinical')[];
+    status: 'active' | 'disabled';
+    createdAt: string;
+    activatedAt: string | null;
+  }[];
 };
 
 function oneTimePassword(): string {
@@ -33,12 +67,19 @@ export function OperatorConsolePage() {
   const [administrative, setAdministrative] = useState(true);
   const [clinical, setClinical] = useState(false);
   const [createdPassword, setCreatedPassword] = useState<string>();
+  const [passwordKind, setPasswordKind] = useState<'provision' | 'recovery'>(
+    'provision',
+  );
   const [busy, setBusy] = useState<string>();
   const [status, setStatus] = useState('');
   const workspaceCommand = useRef<
     { operationId: string; workspaceId: string } | undefined
   >(undefined);
   const staffCommand = useRef<
+    | { operationId: string; staffIdentityId: string; password: string }
+    | undefined
+  >(undefined);
+  const recoveryCommand = useRef<
     | { operationId: string; staffIdentityId: string; password: string }
     | undefined
   >(undefined);
@@ -122,7 +163,9 @@ export function OperatorConsolePage() {
       staffCommand.current = undefined;
       setCreatedPassword(undefined);
       setAdministrative(true);
-      setStatus('Workspace created. Provision its first staff member next.');
+      setStatus(
+        'Workspace created. It has no School Configuration yet. Provision the first School Administrator next.',
+      );
       await loadWorkspaces().catch(() =>
         setStatus(
           'Workspace created, but the catalog could not be refreshed. Reload the page.',
@@ -172,14 +215,17 @@ export function OperatorConsolePage() {
         },
       );
       if (result.response.status !== 201) {
-        setStatus('The Staff Identity could not be provisioned.');
+        setStatus(operatorLifecycleMessage('provision', result.error));
         return;
       }
+      setPasswordKind('provision');
       setCreatedPassword(command.password);
       staffCommand.current = undefined;
       setStaffName('');
       setStaffEmail('');
-      setStatus('Staff Identity provisioned. Deliver the password securely.');
+      setStatus(
+        'Staff Identity provisioned. Deliver the password securely, then they sign in at /staff/sign-in to enroll TOTP and activate access. School Configuration can be initialized after that first Administrator signs in.',
+      );
       await loadWorkspaces().catch(() =>
         setStatus(
           'Staff Identity provisioned, but the catalog could not be refreshed. Deliver the password shown below, then reload.',
@@ -187,6 +233,120 @@ export function OperatorConsolePage() {
       );
     } catch {
       setStatus('Staff provisioning failed. Retry preserves this operation.');
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function recoverStaff(staffIdentityId: string) {
+    if (!selectedWorkspaceId) return;
+    setBusy(`recover:${staffIdentityId}`);
+    setStatus('');
+    setCreatedPassword(undefined);
+    const command =
+      recoveryCommand.current?.staffIdentityId === staffIdentityId
+        ? recoveryCommand.current
+        : (recoveryCommand.current = {
+            operationId: crypto.randomUUID(),
+            staffIdentityId,
+            password: oneTimePassword(),
+          });
+    try {
+      const result = await client.POST(
+        '/api/v1/administration/staff-identities/recoveries',
+        {
+          params: { header: { 'x-prevcare-csrf': '1' } },
+          body: {
+            operationId: command.operationId,
+            workspaceId: selectedWorkspaceId,
+            staffIdentityId,
+            newPassword: command.password,
+            schoolApprover,
+            reason: reason || 'Credential recovery requested by the school',
+          },
+        },
+      );
+      if (result.response.status !== 200) {
+        setStatus(operatorLifecycleMessage('recover', result.error));
+        return;
+      }
+      setPasswordKind('recovery');
+      setCreatedPassword(command.password);
+      recoveryCommand.current = undefined;
+      setStatus(
+        'Credentials recovered. Deliver the new password securely. All Staff Sessions were revoked.',
+      );
+      await loadWorkspaces();
+    } catch {
+      setStatus('Staff recovery failed. Retry preserves this operation.');
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function disableStaff(staffIdentityId: string) {
+    if (!selectedWorkspaceId) return;
+    setBusy(`disable:${staffIdentityId}`);
+    setStatus('');
+    try {
+      const result = await client.POST(
+        '/api/v1/administration/staff-identities/disablements',
+        {
+          params: { header: { 'x-prevcare-csrf': '1' } },
+          body: {
+            operationId: crypto.randomUUID(),
+            workspaceId: selectedWorkspaceId,
+            staffIdentityId,
+            schoolApprover,
+            reason: reason || 'Staff disablement requested by the school',
+          },
+        },
+      );
+      if (result.response.status !== 200) {
+        setStatus(operatorLifecycleMessage('disable', result.error));
+        return;
+      }
+      setStatus('Staff Identity disabled. All Staff Sessions were revoked.');
+      await loadWorkspaces();
+    } catch {
+      setStatus('Staff disablement failed. Retry the same request.');
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function replaceStaffPermissions(
+    staffIdentityId: string,
+    permissions: ('administrative' | 'clinical')[],
+  ) {
+    if (!selectedWorkspaceId) return;
+    setBusy(`permissions:${staffIdentityId}`);
+    setStatus('');
+    try {
+      const result = await client.POST(
+        '/api/v1/administration/staff-identities/permission-replacements',
+        {
+          params: { header: { 'x-prevcare-csrf': '1' } },
+          body: {
+            operationId: crypto.randomUUID(),
+            workspaceId: selectedWorkspaceId,
+            staffIdentityId,
+            permissions,
+            schoolApprover,
+            reason: reason || 'Permission change requested by the school',
+          },
+        },
+      );
+      if (result.response.status !== 200) {
+        setStatus(operatorLifecycleMessage('permissions', result.error));
+        return;
+      }
+      setStatus(
+        'Permissions replaced. All Staff Sessions were revoked so the next sign-in uses current grants.',
+      );
+      await loadWorkspaces();
+    } catch {
+      setStatus('Permission replacement failed. Retry the same request.');
     } finally {
       setBusy(undefined);
     }
@@ -350,8 +510,17 @@ export function OperatorConsolePage() {
             <p className="font-mono text-xs font-bold uppercase">Step 02</p>
             <h2 className="mt-1 text-2xl font-black">Provision staff</h2>
             <p className="mt-2 text-sm text-slate-600">
-              {selected ? selected.displayName : 'Select a workspace first.'}
+              {selected
+                ? `${selected.displayName} · configuration ${selected.configurationState}`
+                : 'Select a workspace first.'}
             </p>
+            {selected?.configurationState === 'uninitialized' ? (
+              <p className="mt-2 text-sm">
+                This workspace has no School Configuration yet. Grant the first
+                School Administrator access, then they sign in at /staff/sign-in
+                to initialize it.
+              </p>
+            ) : null}
             <label className="mt-4 block font-bold">
               Display name
               <input
@@ -417,7 +586,8 @@ export function OperatorConsolePage() {
               </label>
               {provisioningFirstStaff ? (
                 <p className="mt-2 text-xs text-slate-600">
-                  The first Staff Identity must administer configuration.
+                  The first Staff Identity must hold Administrative Permission
+                  so it can initialize School Configuration.
                 </p>
               ) : null}
               <label className="mt-2 flex gap-2">
@@ -446,12 +616,107 @@ export function OperatorConsolePage() {
             </button>
           </form>
 
+          {selected && selected.staffIdentities.length > 0 ? (
+            <section className="border-2 border-[#15251f] bg-white p-6">
+              <p className="font-mono text-xs font-bold uppercase">Step 03</p>
+              <h2 className="mt-1 text-2xl font-black">Staff identities</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Recovery and disablement keep the named identity. Permission
+                changes take effect on the next sign-in.
+              </p>
+              <ul className="mt-4 grid gap-3">
+                {selected.staffIdentities.map((staff) => (
+                  <li
+                    key={staff.staffIdentityId}
+                    className="border-2 border-[#9aaa99] p-4"
+                  >
+                    <strong>{staff.displayName}</strong>
+                    <p className="font-mono text-xs">{staff.email}</p>
+                    <p className="mt-1 text-sm">
+                      {staff.permissions.join(', ') || 'no permissions'} ·{' '}
+                      {staff.status}
+                      {staff.activatedAt
+                        ? ' · activated'
+                        : ' · awaiting first sign-in'}
+                    </p>
+                    {staff.status === 'active' ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={busy !== undefined || !schoolApprover}
+                          onClick={() => void recoverStaff(staff.staffIdentityId)}
+                          className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
+                        >
+                          {busy === `recover:${staff.staffIdentityId}`
+                            ? 'Recovering...'
+                            : 'Recover credentials'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy !== undefined || !schoolApprover}
+                          onClick={() => void disableStaff(staff.staffIdentityId)}
+                          className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
+                        >
+                          {busy === `disable:${staff.staffIdentityId}`
+                            ? 'Disabling...'
+                            : 'Disable'}
+                        </button>
+                        {staff.permissions.includes('clinical') ? (
+                          <button
+                            type="button"
+                            disabled={
+                              busy !== undefined ||
+                              !schoolApprover ||
+                              !staff.permissions.includes('administrative')
+                            }
+                            onClick={() =>
+                              void replaceStaffPermissions(
+                                staff.staffIdentityId,
+                                ['administrative'],
+                              )
+                            }
+                            className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
+                          >
+                            Remove clinical
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={busy !== undefined || !schoolApprover}
+                            onClick={() =>
+                              void replaceStaffPermissions(
+                                staff.staffIdentityId,
+                                staff.permissions.includes('administrative')
+                                  ? ['administrative', 'clinical']
+                                  : ['clinical'],
+                              )
+                            }
+                            className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
+                          >
+                            Grant clinical
+                          </button>
+                        )}
+                      </div>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
           {createdPassword ? (
             <section className="border-2 border-amber-700 bg-amber-50 p-6">
-              <h2 className="font-black">One-time initial password</h2>
+              <h2 className="font-black">
+                {passwordKind === 'recovery'
+                  ? 'Replacement password'
+                  : 'One-time initial password'}
+              </h2>
               <p className="mt-2 text-sm">
                 Deliver this securely. It is not stored by the console and
                 disappears when you leave or change the form.
+                {passwordKind === 'recovery'
+                  ? ' They enroll TOTP again at /staff/sign-in.'
+                  : ''}
               </p>
               <code className="mt-4 block break-all border border-amber-700 bg-white p-3 text-lg font-bold">
                 {createdPassword}
