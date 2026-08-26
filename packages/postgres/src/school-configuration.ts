@@ -263,30 +263,12 @@ export function createPostgresSchoolConfigurationStore(options: {
           [input.session.workspaceId, resourceRows],
         );
         await client.query(
-          `delete from school_configuration.managed_translation_reviews review
-            using jsonb_to_recordset($2::jsonb) as x(
-              resource_id uuid, revision_number integer, kind text,
-              slot text, position integer, payload jsonb
-            ), school_configuration.authored_revisions revision
-            where revision.workspace_id = $1
-              and revision.resource_id = x.resource_id
-              and revision.revision_number <> x.revision_number
-              and revision.lifecycle = 'working'
-              and review.workspace_id = revision.workspace_id
-              and (
-                (review.source_resource_id = revision.resource_id
-                 and review.source_revision_number = revision.revision_number)
-                or (review.translation_resource_id = revision.resource_id
-                 and review.translation_revision_number = revision.revision_number)
-              )`,
-          [input.session.workspaceId, resourceRows],
-        );
-        await client.query(
-          `delete from school_configuration.authored_revisions revision
-            using jsonb_to_recordset($2::jsonb) as x(
-              resource_id uuid, revision_number integer, kind text,
-              slot text, position integer, payload jsonb
-            )
+          `update school_configuration.authored_revisions revision
+              set lifecycle = 'frozen'
+             from jsonb_to_recordset($2::jsonb) as x(
+               resource_id uuid, revision_number integer, kind text,
+               slot text, position integer, payload jsonb
+             )
             where revision.workspace_id = $1
               and revision.resource_id = x.resource_id
               and revision.revision_number <> x.revision_number

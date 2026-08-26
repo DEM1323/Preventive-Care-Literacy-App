@@ -76,6 +76,9 @@ import {
   InvalidSchoolConfigurationError,
   OperationIdReusedError,
   ResourceRevisionConflictError,
+  TranslationAdapterRejectedError,
+  TranslationProviderUnavailableError,
+  UnsafeGeneratedTranslationError,
 } from '../../../modules/school-configuration/index.ts';
 import {
   createEnvelopeKeyManagement,
@@ -100,10 +103,12 @@ import {
   type InvitationSecretKeys,
 } from '../../../packages/invitation-secrets/src/index.ts';
 import { createSchoolConfiguration } from '../../../modules/school-configuration/index.ts';
+import type { TranslationAdapter } from '../../../modules/school-configuration/index.ts';
 import {
   createPostgresSchoolConfigurationStore,
   sha256SessionHandle,
 } from '../../../packages/postgres/src/school-configuration.ts';
+import { translationAdapterFromEnvironment } from '../../../packages/translation-adapter/src/index.ts';
 import { createMemoryReleasePackageStorage } from '../../../packages/release-package-storage/src/index.ts';
 import type { ReleasePackageStorage } from '../../../modules/school-configuration/index.ts';
 import { createPostgresIntakeStore } from '../../../packages/postgres/src/intake.ts';
@@ -867,6 +872,61 @@ const SchoolConfigurationDraftResponse = Type.Object({
       discardEligible: Type.Boolean(),
     }),
   ),
+  managedTranslations: Type.Object({
+    locales: Type.Array(
+      Type.Object({
+        locale: Type.Union([
+          Type.Literal('es-US'),
+          Type.Literal('pt-BR'),
+          Type.Literal('fr-CA'),
+          Type.Literal('ht-HT'),
+        ]),
+        missing: Type.Integer({ minimum: 0 }),
+        stale: Type.Integer({ minimum: 0 }),
+        generated: Type.Integer({ minimum: 0 }),
+        reviewed: Type.Integer({ minimum: 0 }),
+      }),
+    ),
+    items: Type.Array(
+      Type.Object({
+        path: Type.String(),
+        locale: Type.Union([
+          Type.Literal('es-US'),
+          Type.Literal('pt-BR'),
+          Type.Literal('fr-CA'),
+          Type.Literal('ht-HT'),
+        ]),
+        kind: Type.Union([
+          Type.Literal('interface_string'),
+          Type.Literal('learning_module_field'),
+          Type.Literal('intake_question'),
+          Type.Literal('intake_answer_option'),
+        ]),
+        sourceResourceId: Type.String({ format: 'uuid' }),
+        translationResourceId: Type.Optional(Type.String({ format: 'uuid' })),
+        sourceRevision: Type.Integer({ minimum: 1 }),
+        status: Type.Union([
+          Type.Literal('missing'),
+          Type.Literal('stale'),
+          Type.Literal('generated'),
+          Type.Literal('reviewed'),
+        ]),
+        schoolEditable: Type.Boolean(),
+        provenance: Type.Optional(
+          Type.Object({
+            adapter: Type.Optional(Type.String()),
+            adapterVersion: Type.Optional(Type.String()),
+            model: Type.Optional(Type.String()),
+            glossaryRevision: Type.Optional(Type.String()),
+            sourceRevision: Type.Integer({ minimum: 1 }),
+            generatedAt: Type.Optional(Type.String()),
+            reviewer: Type.Optional(Type.String()),
+            reviewedAt: Type.Optional(Type.String()),
+          }),
+        ),
+      }),
+    ),
+  }),
 });
 const BrandingAssetBody = Type.Object(
   {
@@ -903,6 +963,8 @@ const DraftEditBody = Type.Object(
       Type.Literal('create-intake-option'),
       Type.Literal('restore-active-revision'),
       Type.Literal('discard-authored-resource'),
+      Type.Literal('save-managed-translation'),
+      Type.Literal('review-managed-translation'),
     ]),
     resourceId: Type.Optional(Type.String({ format: 'uuid' })),
     moduleId: Type.Optional(Type.String({ format: 'uuid' })),
@@ -949,6 +1011,14 @@ const DraftEditBody = Type.Object(
         }),
       ]),
     ),
+    locale: Type.Optional(
+      Type.Union([
+        Type.Literal('es-US'),
+        Type.Literal('pt-BR'),
+        Type.Literal('fr-CA'),
+        Type.Literal('ht-HT'),
+      ]),
+    ),
   },
   { additionalProperties: false },
 );
@@ -964,6 +1034,51 @@ const EditSchoolConfigurationDraftResponse = Type.Object({
   unpublishedChanges: Type.Boolean(),
   validation: SchoolConfigurationDraftResponse.properties.validation,
   comparisons: SchoolConfigurationDraftResponse.properties.comparisons,
+  managedTranslations:
+    SchoolConfigurationDraftResponse.properties.managedTranslations,
+});
+const GenerateManagedTranslationsBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    expectedDraftVersion: Type.Integer({ minimum: 0 }),
+    locale: Type.Union([
+      Type.Literal('es-US'),
+      Type.Literal('pt-BR'),
+      Type.Literal('fr-CA'),
+      Type.Literal('ht-HT'),
+    ]),
+    sourceResourceIds: Type.Optional(
+      Type.Array(Type.String({ format: 'uuid' })),
+    ),
+  },
+  { additionalProperties: false },
+);
+const GenerateManagedTranslationsResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  affectedResources: Type.Array(ExactResourceResponse),
+  workspaceId: Type.String({ format: 'uuid' }),
+  draftVersion: Type.Integer({ minimum: 0 }),
+  activeReleaseId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
+  activeReleaseNumber: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
+  candidateFingerprint: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  candidate: Type.Unknown(),
+  unpublishedChanges: Type.Boolean(),
+  validation: SchoolConfigurationDraftResponse.properties.validation,
+  comparisons: SchoolConfigurationDraftResponse.properties.comparisons,
+  managedTranslations:
+    SchoolConfigurationDraftResponse.properties.managedTranslations,
+  rejected: Type.Array(
+    Type.Object({
+      sourceResourceId: Type.String({ format: 'uuid' }),
+      locale: Type.Union([
+        Type.Literal('es-US'),
+        Type.Literal('pt-BR'),
+        Type.Literal('fr-CA'),
+        Type.Literal('ht-HT'),
+      ]),
+      code: Type.String(),
+    }),
+  ),
 });
 const PublishSchoolConfigurationReleaseBody = Type.Object(
   {
@@ -1387,6 +1502,27 @@ function parseDraftEdit(body: Static<typeof DraftEditBody>): DraftEdit {
     }
     return { type: body.type, resourceId: body.resourceId };
   }
+  if (body.type === 'save-managed-translation') {
+    if (!body.resourceId || !body.locale || body.text === undefined) {
+      throw new InvalidSchoolConfigurationError('managedTranslation');
+    }
+    return {
+      type: body.type,
+      resourceId: body.resourceId,
+      locale: body.locale,
+      text: body.text,
+    };
+  }
+  if (body.type === 'review-managed-translation') {
+    if (!body.resourceId || !body.locale) {
+      throw new InvalidSchoolConfigurationError('managedTranslation');
+    }
+    return {
+      type: body.type,
+      resourceId: body.resourceId,
+      locale: body.locale,
+    };
+  }
   if (!body.resourceId) {
     throw new InvalidSchoolConfigurationError('discard');
   }
@@ -1777,6 +1913,31 @@ export async function buildApp(
             ? { affectedValue: error.affectedValue }
             : {}),
         });
+    }
+    if (
+      error instanceof UnsafeGeneratedTranslationError ||
+      error instanceof TranslationAdapterRejectedError
+    ) {
+      return reply
+        .type('application/problem+json')
+        .code(422)
+        .send({
+          type: 'https://preventive-care-literacy.example/problems/managed-translation-rejected',
+          title: error.message,
+          status: 422,
+          code: error.code,
+          ...(error.affectedValue
+            ? { affectedValue: error.affectedValue }
+            : {}),
+        });
+    }
+    if (error instanceof TranslationProviderUnavailableError) {
+      return reply.type('application/problem+json').code(503).send({
+        type: 'https://preventive-care-literacy.example/problems/managed-translation-unavailable',
+        title: error.message,
+        status: 503,
+        code: error.code,
+      });
     }
     if (error instanceof StudentAuthenticationFailedError) {
       return reply.type('application/problem+json').code(401).send({
@@ -2973,6 +3134,57 @@ export async function buildApp(
       },
     );
 
+    app.post<{ Body: Static<typeof GenerateManagedTranslationsBody> }>(
+      '/api/v1/administration/school-configuration/managed-translation-generations',
+      {
+        schema: {
+          operationId: 'generateManagedTranslations',
+          security: [{ staffSession: [] }],
+          body: GenerateManagedTranslationsBody,
+          response: {
+            200: GenerateManagedTranslationsResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            409: ProblemResponse,
+            422: ProblemResponse,
+            503: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request) => {
+        const sessionHandle = readSecureOpaqueCookie(
+          request.headers.cookie,
+          staffSessionCookie,
+        );
+        if (!sessionHandle) throw new StaffAuthenticationFailedError();
+        const startedAt = performance.now();
+        const result = await schoolConfiguration.generateTranslations({
+          sessionHandle,
+          operationId: request.body.operationId,
+          expectedDraftVersion: request.body.expectedDraftVersion,
+          locale: request.body.locale,
+          sourceResourceIds: request.body.sourceResourceIds,
+        });
+        telemetry?.record({
+          name: 'translation.generation.completed',
+          adapter: 'google-cloud-translation-advanced',
+          adapterVersion: result.telemetry.adapterVersion,
+          model: result.telemetry.model,
+          glossaryRevision: result.telemetry.glossaryRevision,
+          locale: result.telemetry.locale,
+          segmentCount: result.telemetry.segmentCount,
+          rejectedCount: result.telemetry.rejectedCount,
+          outcome: result.telemetry.outcome,
+          durationMs: Math.max(0, Math.round(performance.now() - startedAt)),
+        });
+        const { telemetry: recordedGeneration, ...response } = result;
+        void recordedGeneration;
+        return response;
+      },
+    );
+
     app.post<{ Body: Static<typeof ImportSchoolConfigurationDraftBody> }>(
       '/api/v1/administration/school-configuration/draft-imports',
       {
@@ -3321,6 +3533,7 @@ export async function createServer(options: {
   wrappingKeys?: EnvelopeKeyMaterial;
   applicationKeys?: ApplicationKeyManagement;
   releasePackages?: ReleasePackageStorage;
+  translationAdapter?: TranslationAdapter;
   buildIdentity?: BuildAttestation;
 }): Promise<FastifyInstance> {
   const connectionUrl = new URL(options.databaseUrl);
@@ -3374,6 +3587,8 @@ export async function createServer(options: {
     packages: options.releasePackages ?? createMemoryReleasePackageStorage(),
     clock,
     ids,
+    translationAdapter:
+      options.translationAdapter ?? translationAdapterFromEnvironment(),
   });
   const intake = createIntake({
     resolveStudentSession: (command) =>

@@ -118,6 +118,9 @@ async function renderContracts() {
         editDraft: async () => {
           throw new Error('Contract generation does not execute commands');
         },
+        generateTranslations: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
         publish: async () => {
           throw new Error('Contract generation does not execute commands');
         },

@@ -123,9 +123,20 @@ test('an empty Staff workspace can install the bundled synthetic draft', () => {
   expect(source).toContain('Synthetic Intake preview');
   expect(source).toContain('evaluateIntakePreview');
   expect(source).toContain("width === 'mobile' ? 'max-w-[375px]'");
+  expect(source).toContain(
+    "'/api/v1/administration/school-configuration/managed-translation-generations'",
+  );
+  expect(source).toContain('save-managed-translation');
+  expect(source).toContain('review-managed-translation');
+  expect(source).toContain('Generate suggestions');
+  expect(source).toContain('Mark reviewed');
+  expect(source).toContain('English is canonical');
   expect(source).not.toContain('/api/v1/student/intake');
   expect(source).not.toContain(
     'Intake Form authoring is not part of this slice',
+  );
+  expect(source).not.toContain(
+    'Managed Translation generation and review are not part of this slice',
   );
   expect(source).not.toContain('SchoolConfigurationEditorPrototype');
 });
