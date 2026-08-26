@@ -929,6 +929,11 @@ describe.serial('clinical directory and current Intake Record reveal', () => {
     const client = createApiClient(baseUrl);
     const before = now;
 
+    now = new Date(before.getTime() + 14 * 60 * 1000);
+    const keptAlive = await client.GET('/api/v1/staff/session', {
+      headers: { cookie: clinicianCookie },
+    });
+    expect(keptAlive.response.status).toBe(200);
     now = new Date(before.getTime() + 16 * 60 * 1000);
     const staleDirectory = await client.GET(
       '/api/v1/clinical/review-directory',

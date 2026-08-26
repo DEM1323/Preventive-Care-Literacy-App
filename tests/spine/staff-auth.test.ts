@@ -332,6 +332,86 @@ describe.serial('staff provisioning', () => {
     );
     expect(fakeAuth.hasCredentials(email)).toBe(true);
   });
+
+  test('the first Staff Identity in a workspace must hold Administrative Permission', async () => {
+    const client = createApiClient(baseUrl);
+    const emptyWorkspaceId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf2010';
+    const workspace = await client.POST(
+      '/api/v1/administration/school-workspaces',
+      {
+        body: {
+          operationId: crypto.randomUUID(),
+          workspaceId: emptyWorkspaceId,
+          displayName: 'Unstaffed School',
+        },
+        headers: authorizedHeaders,
+      },
+    );
+    expect(workspace.response.status).toBe(201);
+
+    const clinicalFirst = await client.POST(
+      '/api/v1/administration/staff-identities',
+      {
+        body: {
+          operationId: crypto.randomUUID(),
+          workspaceId: emptyWorkspaceId,
+          staffIdentityId: crypto.randomUUID(),
+          displayName: 'Jordan Reyes',
+          email: 'first-clinical@school.example',
+          permissions: ['clinical'],
+          schoolApprover: 'principal@school.example',
+          reason: 'Clinical-only first staff should be rejected',
+          initialPassword: 'clinical-first-password-32',
+        },
+        headers: authorizedHeaders,
+      },
+    );
+    expect(clinicalFirst.response.status).toBe(422);
+    expect(clinicalFirst.error).toMatchObject({
+      code: 'FIRST_ADMINISTRATOR_REQUIRED',
+    });
+    expect(fakeAuth.hasCredentials('first-clinical@school.example')).toBe(
+      false,
+    );
+
+    const administrator = await client.POST(
+      '/api/v1/administration/staff-identities',
+      {
+        body: {
+          operationId: crypto.randomUUID(),
+          workspaceId: emptyWorkspaceId,
+          staffIdentityId: crypto.randomUUID(),
+          displayName: 'Marcus Chen',
+          email: 'first-admin@school.example',
+          permissions: ['administrative'],
+          schoolApprover: 'principal@school.example',
+          reason: 'Initial School Administrator before configuration',
+          initialPassword: 'first-admin-password-32-chars',
+        },
+        headers: authorizedHeaders,
+      },
+    );
+    expect(administrator.response.status).toBe(201);
+
+    const laterClinical = await client.POST(
+      '/api/v1/administration/staff-identities',
+      {
+        body: {
+          operationId: crypto.randomUUID(),
+          workspaceId: emptyWorkspaceId,
+          staffIdentityId: crypto.randomUUID(),
+          displayName: 'Clinical Colleague',
+          email: 'later-clinical@school.example',
+          permissions: ['clinical'],
+          schoolApprover: 'principal@school.example',
+          reason: 'Later clinical staff may be provisioned independently',
+          initialPassword: 'later-clinical-password-32ch',
+        },
+        headers: authorizedHeaders,
+      },
+    );
+    expect(laterClinical.response.status).toBe(201);
+  });
 });
 
 describe.serial('staff authentication', () => {
@@ -560,6 +640,32 @@ describe.serial('staff session rechecks', () => {
     currentTime = before;
     expect(expired.response.status).toBe(401);
   });
+
+  test('idle sessions expire after 15 minutes and activity slides the window', async () => {
+    const client = createApiClient(baseUrl);
+    const cookie = await signIn(client, nurseEmail, nursePassword);
+    const signedInAt = currentTime;
+    currentTime = new Date(signedInAt.getTime() + 15 * 60 * 1000);
+    const idle = await client.GET('/api/v1/staff/session', {
+      headers: { cookie },
+    });
+    currentTime = signedInAt;
+    expect(idle.response.status).toBe(401);
+
+    const activeCookie = await signIn(client, nurseEmail, nursePassword);
+    const secondSignIn = currentTime;
+    currentTime = new Date(secondSignIn.getTime() + 14 * 60 * 1000);
+    const stillActive = await client.GET('/api/v1/staff/session', {
+      headers: { cookie: activeCookie },
+    });
+    expect(stillActive.response.status).toBe(200);
+    currentTime = new Date(secondSignIn.getTime() + 28 * 60 * 1000);
+    const slid = await client.GET('/api/v1/staff/session', {
+      headers: { cookie: activeCookie },
+    });
+    currentTime = signedInAt;
+    expect(slid.response.status).toBe(200);
+  });
 });
 
 describe.serial('independent permission enforcement', () => {
@@ -722,6 +828,11 @@ describe.serial('independent permission enforcement', () => {
     );
 
     const before = currentTime;
+    currentTime = new Date(before.getTime() + 14 * 60 * 1000);
+    const keptAlive = await client.GET('/api/v1/staff/session', {
+      headers: { cookie: nurseCookie },
+    });
+    expect(keptAlive.response.status).toBe(200);
     currentTime = new Date(before.getTime() + 16 * 60 * 1000);
     const stale = await client.GET('/api/v1/clinical/review-directory', {
       headers: { cookie: nurseCookie },
@@ -734,5 +845,353 @@ describe.serial('independent permission enforcement', () => {
     });
     currentTime = before;
     expect(stillValid.response.status).toBe(200);
+  });
+});
+
+describe.serial('staff identity lifecycle', () => {
+  const recoverableId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf2021';
+  const recoverableEmail = 'recoverable@school.example';
+  const recoverablePassword = 'recoverable-password-32-chars';
+  const disablementId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf2022';
+  const disablementEmail = 'disablement@school.example';
+  const disablementPassword = 'disablement-password-32-chars';
+  const permissionId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf2023';
+  const permissionEmail = 'permissions@school.example';
+  const permissionPassword = 'permissions-password-32-chars';
+
+  test('recovery keeps the named identity and permissions while revoking sessions', async () => {
+    const client = createApiClient(baseUrl);
+    const provisioned = await provisionStaffIdentity(client, {
+      operationId: crypto.randomUUID(),
+      staffIdentityId: recoverableId,
+      email: recoverableEmail,
+      displayName: 'Recoverable Staff',
+      permissions: ['administrative', 'clinical'],
+      initialPassword: recoverablePassword,
+    });
+    expect(provisioned.response.status).toBe(201);
+    const cookie = await signIn(client, recoverableEmail, recoverablePassword);
+    const catalogBefore = await client.GET('/api/v1/operator/workspaces', {
+      headers: authorizedHeaders,
+    });
+    expect(catalogBefore.response.status).toBe(200);
+    const beforeEntry = catalogBefore.data
+      ?.find((workspace) => workspace.workspaceId === workspaceId)
+      ?.staffIdentities.find(
+        (entry) => entry.staffIdentityId === recoverableId,
+      );
+    expect(beforeEntry).toMatchObject({
+      displayName: 'Recoverable Staff',
+      email: recoverableEmail,
+      permissions: ['administrative', 'clinical'],
+      status: 'active',
+    });
+    expect(beforeEntry?.activatedAt).toBe(currentTime.toISOString());
+
+    const recoveredPassword = 'recovered-password-32-characters';
+    const recovered = await client.POST(
+      '/api/v1/administration/staff-identities/recoveries',
+      {
+        body: {
+          operationId: crypto.randomUUID(),
+          workspaceId,
+          staffIdentityId: recoverableId,
+          newPassword: recoveredPassword,
+          schoolApprover: 'principal@school.example',
+          reason: 'Lost authenticator; school asked for credential recovery',
+        },
+        headers: authorizedHeaders,
+      },
+    );
+    expect(recovered.response.status).toBe(200);
+    expect(recovered.data).toMatchObject({
+      staffIdentityId: recoverableId,
+      outcome: 'recovered',
+    });
+    expect(JSON.stringify(recovered.data)).not.toContain(recoveredPassword);
+
+    const inspection = new Client({
+      connectionString: postgres.connectionString,
+    });
+    await inspection.connect();
+    try {
+      const audit = await inspection.query<{
+        event_type: string;
+        details: unknown;
+      }>(
+        `select event_type, details from audit.evidence
+           where event_type = 'staff_identity.recovered'
+             and details->>'staffIdentityId' = $1`,
+        [recoverableId],
+      );
+      expect(audit.rows).toHaveLength(1);
+      expect(audit.rows[0]?.details).toEqual({
+        staffIdentityId: recoverableId,
+        revokedSessionCount: 1,
+        permissions: ['administrative', 'clinical'],
+        reason: 'Lost authenticator; school asked for credential recovery',
+      });
+      const serialized = JSON.stringify(audit.rows[0]);
+      expect(serialized).not.toContain(recoveredPassword);
+      expect(serialized).not.toContain(cookie.split('=')[1]);
+    } finally {
+      await inspection.end();
+    }
+
+    const revoked = await client.GET('/api/v1/staff/session', {
+      headers: { cookie },
+    });
+    expect(revoked.response.status).toBe(401);
+
+    const oldPassword = await client.POST('/api/v1/auth/staff/sign-in', {
+      body: { email: recoverableEmail, password: recoverablePassword },
+      headers: csrfHeaders,
+    });
+    expect(oldPassword.response.status).toBe(401);
+
+    const started = await client.POST('/api/v1/auth/staff/sign-in', {
+      body: { email: recoverableEmail, password: recoveredPassword },
+      headers: csrfHeaders,
+    });
+    expect(started.response.status).toBe(200);
+    expect(started.data?.stage).toBe('enroll');
+    const completed = await client.POST('/api/v1/auth/staff/totp', {
+      body: {
+        flowHandle: started.data!.flowHandle,
+        code: totpCode(fakeAuth.totpSecretFor(recoverableEmail)),
+      },
+      headers: csrfHeaders,
+    });
+    expect(completed.response.status).toBe(200);
+    const restored = await client.GET('/api/v1/staff/session', {
+      headers: {
+        cookie: cookieFrom(completed.response.headers.get('set-cookie')),
+      },
+    });
+    expect(restored.response.status).toBe(200);
+    expect(restored.data).toMatchObject({
+      staffIdentityId: recoverableId,
+      displayName: 'Recoverable Staff',
+      permissions: ['administrative', 'clinical'],
+    });
+  });
+
+  test('disablement revokes sessions without erasing the named identity', async () => {
+    const client = createApiClient(baseUrl);
+    const provisioned = await provisionStaffIdentity(client, {
+      operationId: crypto.randomUUID(),
+      staffIdentityId: disablementId,
+      email: disablementEmail,
+      displayName: 'Disabled Staff',
+      permissions: ['clinical'],
+      initialPassword: disablementPassword,
+    });
+    expect(provisioned.response.status).toBe(201);
+    const cookie = await signIn(client, disablementEmail, disablementPassword);
+
+    const disabled = await client.POST(
+      '/api/v1/administration/staff-identities/disablements',
+      {
+        body: {
+          operationId: crypto.randomUUID(),
+          workspaceId,
+          staffIdentityId: disablementId,
+          schoolApprover: 'principal@school.example',
+          reason: 'Staff departed; access must stop immediately',
+        },
+        headers: authorizedHeaders,
+      },
+    );
+    expect(disabled.response.status).toBe(200);
+    expect(disabled.data).toMatchObject({
+      staffIdentityId: disablementId,
+      outcome: 'disabled',
+    });
+
+    const revoked = await client.GET('/api/v1/staff/session', {
+      headers: { cookie },
+    });
+    expect(revoked.response.status).toBe(401);
+    const signInDenied = await client.POST('/api/v1/auth/staff/sign-in', {
+      body: { email: disablementEmail, password: disablementPassword },
+      headers: csrfHeaders,
+    });
+    expect(signInDenied.response.status).toBe(401);
+
+    const directory = await client.GET(
+      '/api/v1/administration/staff-identities',
+      {
+        headers: {
+          cookie: await signIn(
+            client,
+            administratorEmail,
+            administratorPassword,
+          ),
+        },
+      },
+    );
+    expect(
+      directory.data?.staffIdentities.find(
+        (entry) => entry.staffIdentityId === disablementId,
+      ),
+    ).toMatchObject({
+      displayName: 'Disabled Staff',
+      email: disablementEmail,
+      permissions: ['clinical'],
+      status: 'disabled',
+    });
+  });
+
+  test('permission changes revoke sessions and protected requests recheck grants', async () => {
+    const client = createApiClient(baseUrl);
+    const provisioned = await provisionStaffIdentity(client, {
+      operationId: crypto.randomUUID(),
+      staffIdentityId: permissionId,
+      email: permissionEmail,
+      displayName: 'Permission Staff',
+      permissions: ['administrative', 'clinical'],
+      initialPassword: permissionPassword,
+    });
+    expect(provisioned.response.status).toBe(201);
+    const cookie = await signIn(client, permissionEmail, permissionPassword);
+    const clinical = await client.GET('/api/v1/clinical/review-directory', {
+      headers: { cookie },
+    });
+    expect(clinical.response.status).toBe(200);
+
+    const replaced = await client.POST(
+      '/api/v1/administration/staff-identities/permission-replacements',
+      {
+        body: {
+          operationId: crypto.randomUUID(),
+          workspaceId,
+          staffIdentityId: permissionId,
+          permissions: ['administrative'],
+          schoolApprover: 'principal@school.example',
+          reason: 'Clinical access removed; administrative access retained',
+        },
+        headers: authorizedHeaders,
+      },
+    );
+    expect(replaced.response.status).toBe(200);
+    expect(replaced.data).toMatchObject({
+      staffIdentityId: permissionId,
+      outcome: 'replaced',
+      permissions: ['administrative'],
+    });
+
+    const revoked = await client.GET('/api/v1/staff/session', {
+      headers: { cookie },
+    });
+    expect(revoked.response.status).toBe(401);
+
+    const freshCookie = await signIn(
+      client,
+      permissionEmail,
+      permissionPassword,
+    );
+    const deniedClinical = await client.GET(
+      '/api/v1/clinical/review-directory',
+      { headers: { cookie: freshCookie } },
+    );
+    expect(deniedClinical.response.status).toBe(403);
+    expect(deniedClinical.error).toMatchObject({
+      code: 'STAFF_PERMISSION_REQUIRED',
+    });
+    const stillAdmin = await client.GET(
+      '/api/v1/administration/staff-identities',
+      { headers: { cookie: freshCookie } },
+    );
+    expect(stillAdmin.response.status).toBe(200);
+    expect(
+      stillAdmin.data?.staffIdentities.find(
+        (entry) => entry.staffIdentityId === permissionId,
+      )?.permissions,
+    ).toEqual(['administrative']);
+  });
+
+  test('the last remaining Administrative Permission cannot be removed or disabled', async () => {
+    const client = createApiClient(baseUrl);
+    const lastAdminWorkspaceId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf2011';
+    const lastAdminIdentityId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf2024';
+    const lastAdminEmail = 'last-admin@school.example';
+    const lastAdminPassword = 'last-admin-password-32-chars!';
+    const workspace = await client.POST(
+      '/api/v1/administration/school-workspaces',
+      {
+        body: {
+          operationId: crypto.randomUUID(),
+          workspaceId: lastAdminWorkspaceId,
+          displayName: 'Single Administrator School',
+        },
+        headers: authorizedHeaders,
+      },
+    );
+    expect(workspace.response.status).toBe(201);
+    const provisioned = await client.POST(
+      '/api/v1/administration/staff-identities',
+      {
+        body: {
+          operationId: crypto.randomUUID(),
+          workspaceId: lastAdminWorkspaceId,
+          staffIdentityId: lastAdminIdentityId,
+          displayName: 'Only Administrator',
+          email: lastAdminEmail,
+          permissions: ['administrative'],
+          schoolApprover: 'principal@school.example',
+          reason: 'Sole School Administrator before configuration',
+          initialPassword: lastAdminPassword,
+        },
+        headers: authorizedHeaders,
+      },
+    );
+    expect(provisioned.response.status).toBe(201);
+
+    const stripped = await client.POST(
+      '/api/v1/administration/staff-identities/permission-replacements',
+      {
+        body: {
+          operationId: crypto.randomUUID(),
+          workspaceId: lastAdminWorkspaceId,
+          staffIdentityId: lastAdminIdentityId,
+          permissions: ['clinical'],
+          schoolApprover: 'principal@school.example',
+          reason: 'Attempt to leave the workspace without an Administrator',
+        },
+        headers: authorizedHeaders,
+      },
+    );
+    expect(stripped.response.status).toBe(422);
+    expect(stripped.error).toMatchObject({
+      code: 'LAST_ADMINISTRATOR_REQUIRED',
+    });
+
+    const disabled = await client.POST(
+      '/api/v1/administration/staff-identities/disablements',
+      {
+        body: {
+          operationId: crypto.randomUUID(),
+          workspaceId: lastAdminWorkspaceId,
+          staffIdentityId: lastAdminIdentityId,
+          schoolApprover: 'principal@school.example',
+          reason: 'Attempt to disable the last Administrator',
+        },
+        headers: authorizedHeaders,
+      },
+    );
+    expect(disabled.response.status).toBe(422);
+    expect(disabled.error).toMatchObject({
+      code: 'LAST_ADMINISTRATOR_REQUIRED',
+    });
+
+    const cookie = await signIn(client, lastAdminEmail, lastAdminPassword);
+    const session = await client.GET('/api/v1/staff/session', {
+      headers: { cookie },
+    });
+    expect(session.response.status).toBe(200);
+    expect(session.data).toMatchObject({
+      staffIdentityId: lastAdminIdentityId,
+      permissions: ['administrative'],
+    });
   });
 });

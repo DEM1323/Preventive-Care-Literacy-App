@@ -33,6 +33,9 @@ import {
   StepUpIncompleteError,
   StepUpRejectedError,
   AdministrativePermissionRequiredError,
+  FirstAdministratorRequiredError,
+  LastAdministratorRequiredError,
+  StaffIdentityNotFoundError,
 } from '../../../modules/identity-access/index.ts';
 import type {
   Intake,
@@ -177,6 +180,27 @@ const OperatorSessionEndedResponse = Type.Object({
 
 const OperatorSessionResponse = Type.Object({ actorId: Type.String() });
 
+const StaffPermissionSchema = Type.Union([
+  Type.Literal('administrative'),
+  Type.Literal('clinical'),
+]);
+
+const OperatorStaffIdentitySummaryResponse = Type.Object(
+  {
+    staffIdentityId: Type.String({ format: 'uuid' }),
+    displayName: Type.String(),
+    email: Type.String(),
+    permissions: Type.Array(StaffPermissionSchema),
+    status: Type.Union([Type.Literal('active'), Type.Literal('disabled')]),
+    createdAt: Type.String({ format: 'date-time' }),
+    activatedAt: Type.Union([
+      Type.String({ format: 'date-time' }),
+      Type.Null(),
+    ]),
+  },
+  { additionalProperties: false },
+);
+
 const OperatorWorkspaceSummaryResponse = Type.Object(
   {
     workspaceId: Type.String({ format: 'uuid' }),
@@ -190,6 +214,7 @@ const OperatorWorkspaceSummaryResponse = Type.Object(
     ]),
     draftVersion: Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
     activeReleaseId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
+    staffIdentities: Type.Array(OperatorStaffIdentitySummaryResponse),
   },
   { additionalProperties: false },
 );
@@ -204,11 +229,6 @@ const CreateSchoolWorkspaceResponse = Type.Object({
   workspaceId: Type.String({ format: 'uuid' }),
   outcome: Type.Literal('created'),
 });
-
-const StaffPermissionSchema = Type.Union([
-  Type.Literal('administrative'),
-  Type.Literal('clinical'),
-]);
 
 const ProvisionStaffIdentityBody = Type.Object(
   {
@@ -237,6 +257,56 @@ const ProvisionStaffIdentityResponse = Type.Object({
   staffIdentityId: Type.String({ format: 'uuid' }),
   supabaseUserId: Type.String({ format: 'uuid' }),
   outcome: Type.Literal('provisioned'),
+});
+
+const StaffLifecycleActorBody = {
+  operationId: Type.String({ format: 'uuid' }),
+  workspaceId: Type.String({ format: 'uuid' }),
+  staffIdentityId: Type.String({ format: 'uuid' }),
+  schoolApprover: Type.String({ minLength: 1, maxLength: 200 }),
+  reason: Type.String({ minLength: 1, maxLength: 2000 }),
+} as const;
+
+const RecoverStaffIdentityBody = Type.Object(
+  {
+    ...StaffLifecycleActorBody,
+    newPassword: Type.String({ minLength: 12, maxLength: 200 }),
+  },
+  { additionalProperties: false },
+);
+
+const RecoverStaffIdentityResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  staffIdentityId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('recovered'),
+});
+
+const DisableStaffIdentityBody = Type.Object(StaffLifecycleActorBody, {
+  additionalProperties: false,
+});
+
+const DisableStaffIdentityResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  staffIdentityId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('disabled'),
+});
+
+const ReplaceStaffPermissionsBody = Type.Object(
+  {
+    ...StaffLifecycleActorBody,
+    permissions: Type.Array(StaffPermissionSchema, {
+      minItems: 1,
+      uniqueItems: true,
+    }),
+  },
+  { additionalProperties: false },
+);
+
+const ReplaceStaffPermissionsResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  staffIdentityId: Type.String({ format: 'uuid' }),
+  permissions: Type.Array(StaffPermissionSchema),
+  outcome: Type.Literal('replaced'),
 });
 
 const StaffSignInBody = Type.Object(
@@ -930,7 +1000,12 @@ export async function buildApp(
         ? 'health'
         : route === '/api/v1/administration/school-workspaces'
           ? 'create-school-workspace'
-          : route === '/api/v1/administration/staff-identities'
+          : route === '/api/v1/administration/staff-identities' ||
+              route === '/api/v1/administration/staff-identities/recoveries' ||
+              route ===
+                '/api/v1/administration/staff-identities/disablements' ||
+              route ===
+                '/api/v1/administration/staff-identities/permission-replacements'
             ? 'staff-identities'
             : route === '/api/v1/auth/staff/sign-in'
               ? 'staff-sign-in'
@@ -1025,6 +1100,30 @@ export async function buildApp(
         type: 'https://preventive-care-literacy.example/problems/staff-identity-exists',
         title: error.message,
         status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof FirstAdministratorRequiredError) {
+      return reply.type('application/problem+json').code(422).send({
+        type: 'https://preventive-care-literacy.example/problems/first-administrator-required',
+        title: error.message,
+        status: 422,
+        code: error.code,
+      });
+    }
+    if (error instanceof StaffIdentityNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/staff-identity-not-found',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof LastAdministratorRequiredError) {
+      return reply.type('application/problem+json').code(422).send({
+        type: 'https://preventive-care-literacy.example/problems/last-administrator-required',
+        title: error.message,
+        status: 422,
         code: error.code,
       });
     }
@@ -1513,6 +1612,7 @@ export async function buildApp(
           413: ProblemResponse,
           201: ProvisionStaffIdentityResponse,
           409: ProblemResponse,
+          422: ProblemResponse,
           500: ProblemResponse,
         },
       },
@@ -1525,6 +1625,108 @@ export async function buildApp(
         actor,
       });
       return reply.code(201).send(result);
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof RecoverStaffIdentityBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/administration/staff-identities/recoveries',
+    {
+      schema: {
+        operationId: 'recoverStaffIdentity',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: RecoverStaffIdentityBody,
+        response: {
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          413: ProblemResponse,
+          200: RecoverStaffIdentityResponse,
+          409: ProblemResponse,
+          422: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      return identityAndAccess.recoverStaffIdentity({
+        ...request.body,
+        actor,
+      });
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof DisableStaffIdentityBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/administration/staff-identities/disablements',
+    {
+      schema: {
+        operationId: 'disableStaffIdentity',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: DisableStaffIdentityBody,
+        response: {
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          413: ProblemResponse,
+          200: DisableStaffIdentityResponse,
+          409: ProblemResponse,
+          422: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      return identityAndAccess.disableStaffIdentity({
+        ...request.body,
+        actor,
+      });
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof ReplaceStaffPermissionsBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/administration/staff-identities/permission-replacements',
+    {
+      schema: {
+        operationId: 'replaceStaffPermissions',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: ReplaceStaffPermissionsBody,
+        response: {
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          413: ProblemResponse,
+          200: ReplaceStaffPermissionsResponse,
+          409: ProblemResponse,
+          422: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      return identityAndAccess.replaceStaffPermissions({
+        ...request.body,
+        actor,
+      });
     },
   );
 

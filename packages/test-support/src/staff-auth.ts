@@ -108,6 +108,25 @@ export function createFakeStaffAuth(): {
         factor.verified = true;
         return { assurance: 'aal2' };
       },
+
+      async replacePassword(input) {
+        for (const user of users.values()) {
+          if (user.supabaseUserId === input.supabaseUserId) {
+            user.password = input.password;
+            return;
+          }
+        }
+        throw new Error('Unknown staff credentials');
+      },
+
+      async resetTotpFactors(supabaseUserId) {
+        for (const [email, user] of users) {
+          if (user.supabaseUserId === supabaseUserId) {
+            factors.delete(email);
+            return;
+          }
+        }
+      },
     },
 
     hasCredentials(email) {

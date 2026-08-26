@@ -1,6 +1,7 @@
 import { Kysely, PostgresDialect, sql } from 'kysely';
 import { Pool } from 'pg';
 import {
+  FirstAdministratorRequiredError,
   StaffIdentityAlreadyExistsError,
   type StaffAccessStore,
   type StaffDirectoryEntry,
@@ -63,6 +64,21 @@ export function createPostgresStaffAccessStore(options: {
             return receipt.result as Awaited<
               ReturnType<StaffAccessStore['commitStaffProvisioning']>
             >;
+          }
+
+          await sql`select pg_advisory_xact_lock(hashtextextended(${`${request.workspaceId}:staff-identities`}, 0))`.execute(
+            transaction,
+          );
+          const existingStaff = await sql<{
+            count: string;
+          }>`select identity_access.workspace_staff_count() as count`.execute(
+            transaction,
+          );
+          if (
+            Number(existingStaff.rows[0]?.count ?? 0) === 0 &&
+            !request.permissions.includes('administrative')
+          ) {
+            throw new FirstAdministratorRequiredError();
           }
 
           const records = await request.createRecords();
@@ -193,6 +209,145 @@ export function createPostgresStaffAccessStore(options: {
       });
     },
 
+    async readStaffIdentity(request) {
+      return database.transaction().execute(async (transaction) => {
+        await setWorkspaceScope(transaction, request.workspaceId);
+        const row = await sql<{
+          status: 'active' | 'disabled';
+          supabase_user_id: string;
+          display_name: string;
+          email: string;
+          permissions: string[] | null;
+        }>`select status, supabase_user_id, display_name, email, permissions
+             from identity_access.read_staff_identity(${request.workspaceId}, ${request.staffIdentityId})`.execute(
+          transaction,
+        );
+        const identity = row.rows[0];
+        if (!identity) return undefined;
+        return {
+          staffIdentityId: request.staffIdentityId,
+          workspaceId: request.workspaceId,
+          displayName: identity.display_name,
+          email: identity.email,
+          supabaseUserId: identity.supabase_user_id,
+          status: identity.status,
+          permissions: (identity.permissions ?? []) as StaffPermission[],
+        };
+      });
+    },
+
+    async findStaffLifecycleReceipt(request) {
+      return database.transaction().execute(async (transaction) => {
+        await setWorkspaceScope(transaction, request.workspaceId);
+        const receipt = await transaction
+          .selectFrom('infrastructure.operation_receipts')
+          .select('result')
+          .where('workspace_id', '=', request.workspaceId)
+          .where('operation_id', '=', request.operationId)
+          .where('command_name', '=', request.commandName)
+          .executeTakeFirst();
+        return receipt?.result as
+          | Awaited<ReturnType<StaffAccessStore['findStaffLifecycleReceipt']>>
+          | undefined;
+      });
+    },
+
+    async applyStaffLifecycle(request) {
+      return database.transaction().execute(async (transaction) => {
+        await setWorkspaceScope(transaction, request.workspaceId);
+        await sql`select pg_advisory_xact_lock(hashtextextended(${`${request.workspaceId}:${request.operationId}`}, 0))`.execute(
+          transaction,
+        );
+        const receipt = await transaction
+          .selectFrom('infrastructure.operation_receipts')
+          .select('result')
+          .where('workspace_id', '=', request.workspaceId)
+          .where('operation_id', '=', request.operationId)
+          .where('command_name', '=', request.commandName)
+          .executeTakeFirst();
+        if (receipt) {
+          return {
+            outcome: 'applied' as const,
+            revokedSessionCount: 0,
+            status: 'active' as const,
+            permissions: [] as StaffPermission[],
+            supabaseUserId: '',
+            displayName: '',
+            email: '',
+          };
+        }
+        const permissionSql =
+          request.permissions === null
+            ? sql`null::text[]`
+            : sql`${request.permissions}::text[]`;
+        const applied = await sql<{
+          outcome: 'applied' | 'not_found' | 'last_administrator';
+          revoked_session_count: number | string | null;
+          status: 'active' | 'disabled' | null;
+          permissions: string[] | null;
+          supabase_user_id: string | null;
+          display_name: string | null;
+          email: string | null;
+        }>`select * from identity_access.apply_staff_lifecycle(
+            ${request.workspaceId},
+            ${request.staffIdentityId},
+            ${request.change},
+            ${permissionSql},
+            ${request.occurredAt}
+          )`.execute(transaction);
+        const row = applied.rows[0];
+        if (!row || row.outcome === 'not_found') {
+          return { outcome: 'not_found' as const };
+        }
+        if (row.outcome === 'last_administrator') {
+          return { outcome: 'last_administrator' as const };
+        }
+        await transaction
+          .insertInto('infrastructure.operation_receipts')
+          .values({
+            workspace_id: request.workspaceId,
+            operation_id: request.operationId,
+            command_name: request.commandName,
+            result: request.result,
+            recorded_at: request.occurredAt,
+            record_owner: 'school',
+            record_classification: 'operational_evidence',
+            disposal_class: 'operation_receipt',
+          })
+          .execute();
+        await transaction
+          .insertInto('audit.evidence')
+          .values({
+            audit_id: request.auditId,
+            workspace_id: request.workspaceId,
+            operation_id: request.operationId,
+            event_type: request.eventType,
+            actor_type: request.actor.type,
+            actor_id: request.actor.id,
+            occurred_at: request.occurredAt,
+            details: {
+              staffIdentityId: request.staffIdentityId,
+              revokedSessionCount: Number(row.revoked_session_count ?? 0),
+              permissions: row.permissions ?? [],
+              reason: request.reason,
+            },
+            record_owner: 'school',
+            record_classification: 'audit_evidence',
+            disposal_class: 'workspace_audit_evidence',
+          })
+          .execute();
+        return {
+          outcome: 'applied' as const,
+          revokedSessionCount: Number(row.revoked_session_count ?? 0),
+          status: row.status ?? 'active',
+          permissions: (row.permissions ?? []) as StaffPermission[],
+          supabaseUserId: row.supabase_user_id ?? '',
+          displayName: row.display_name ?? '',
+          email: row.email ?? '',
+        };
+      });
+    },
+
     async recordStaffAudit(request) {
       await database.transaction().execute(async (transaction) => {
         await setWorkspaceScope(transaction, request.workspaceId);
@@ -308,6 +463,8 @@ export function createPostgresStaffAccessStore(options: {
             session_handle_hash: request.session.sessionHandleHash,
             authentication_assurance: request.session.authenticationAssurance,
             authenticated_at: request.session.authenticatedAt,
+            last_seen_at: request.session.lastSeenAt,
+            idle_expires_at: request.session.idleExpiresAt,
             expires_at: request.session.expiresAt,
             revoked_at: null,
             created_at: request.session.authenticatedAt,
@@ -344,6 +501,7 @@ export function createPostgresStaffAccessStore(options: {
           .selectFrom('identity_access.staff_sessions')
           .selectAll()
           .where('session_handle_hash', '=', request.sessionHandleHash)
+          .forUpdate()
           .executeTakeFirst();
         if (!session) return undefined;
         await setWorkspaceScope(transaction, session.workspace_id);
@@ -367,6 +525,28 @@ export function createPostgresStaffAccessStore(options: {
           .select('refreshed_at')
           .where('session_id', '=', session.session_id)
           .executeTakeFirst();
+        const stillValid =
+          session.revoked_at === null &&
+          session.expires_at > request.now &&
+          session.idle_expires_at > request.now &&
+          identity.status === 'active';
+        let lastSeenAt = session.last_seen_at;
+        let idleExpiresAt = session.idle_expires_at;
+        if (stillValid) {
+          idleExpiresAt =
+            request.idleExpiresAt < session.expires_at
+              ? request.idleExpiresAt
+              : session.expires_at;
+          lastSeenAt = request.now;
+          await transaction
+            .updateTable('identity_access.staff_sessions')
+            .set({
+              last_seen_at: lastSeenAt,
+              idle_expires_at: idleExpiresAt,
+            })
+            .where('session_id', '=', session.session_id)
+            .execute();
+        }
         return {
           sessionId: session.session_id,
           staffIdentityId: session.staff_identity_id,
@@ -381,6 +561,7 @@ export function createPostgresStaffAccessStore(options: {
           authenticatedAt: session.authenticated_at,
           authenticationFreshAt:
             freshness?.refreshed_at ?? session.authenticated_at,
+          idleExpiresAt,
           expiresAt: session.expires_at,
           revokedAt: session.revoked_at ?? undefined,
           status: identity.status as 'active' | 'disabled',
@@ -405,6 +586,7 @@ export function createPostgresStaffAccessStore(options: {
           .where('workspace_id', '=', request.workspaceId)
           .where('revoked_at', 'is', null)
           .where('expires_at', '>', request.refreshedAt)
+          .where('idle_expires_at', '>', request.refreshedAt)
           .executeTakeFirst();
         if (!session) return false;
         const permission = await sql<{

@@ -533,6 +533,7 @@ export function createPostgresIntakeStore(options: {
           staff_identity_id: string;
           authenticated_at: Date;
           expires_at: Date;
+          idle_expires_at: Date;
           revoked_at: Date | null;
           identity_status: 'active' | 'disabled' | null;
           authentication_fresh_at: Date | null;
@@ -540,8 +541,8 @@ export function createPostgresIntakeStore(options: {
           workspace_found: boolean;
         }>(
           `select session_id, workspace_id, staff_identity_id, authenticated_at,
-                  expires_at, revoked_at, identity_status, authentication_fresh_at,
-                  has_clinical_permission, workspace_found
+                  expires_at, idle_expires_at, revoked_at, identity_status,
+                  authentication_fresh_at, has_clinical_permission, workspace_found
              from identity_access.lock_clinical_reveal_authority($1)`,
           [input.sessionHandleHash],
         );
@@ -571,6 +572,7 @@ export function createPostgresIntakeStore(options: {
           staff_identity_id: locked.staff_identity_id,
           authenticated_at: locked.authenticated_at,
           expires_at: locked.expires_at,
+          idle_expires_at: locked.idle_expires_at,
           revoked_at: locked.revoked_at,
           status: locked.identity_status,
           authentication_fresh_at: locked.authentication_fresh_at,
@@ -610,6 +612,9 @@ export function createPostgresIntakeStore(options: {
           return undefined;
         };
 
+        if (new Date(current.idle_expires_at) <= input.now()) {
+          return deny('expired');
+        }
         const initialDenial = authorityStillHolds(input.now());
         if (initialDenial) return deny(initialDenial);
 

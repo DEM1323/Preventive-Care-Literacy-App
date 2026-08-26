@@ -254,5 +254,47 @@ export function createSupabaseStaffAuth(options: {
           : 'aal1',
       };
     },
+
+    async replacePassword(input) {
+      const response = await http(
+        `${baseUrl}/admin/users/${input.supabaseUserId}`,
+        {
+          method: 'PUT',
+          headers: adminHeaders,
+          body: JSON.stringify({ password: input.password }),
+        },
+      );
+      if (!response.ok) {
+        throw new Error(
+          `Supabase staff password replacement failed: ${response.status}`,
+        );
+      }
+    },
+
+    async resetTotpFactors(supabaseUserId) {
+      const response = await http(`${baseUrl}/admin/users/${supabaseUserId}`, {
+        headers: adminHeaders,
+      });
+      if (!response.ok) {
+        throw new Error(
+          `Supabase staff factor listing failed: ${response.status}`,
+        );
+      }
+      const body = (await response.json()) as {
+        factors?: { id: string; factor_type?: string }[];
+      };
+      for (const factor of body.factors ?? []) {
+        if (factor.factor_type && factor.factor_type !== 'totp') continue;
+        const deleted = await http(
+          `${baseUrl}/admin/users/${supabaseUserId}/factors/${factor.id}`,
+          { method: 'DELETE', headers: adminHeaders },
+        );
+        if (!deleted.ok && deleted.status !== 404) {
+          throw new Error(
+            `Supabase staff factor reset failed: ${deleted.status}`,
+          );
+        }
+      }
+    },
   };
 }

@@ -115,7 +115,7 @@ beforeAll(async () => {
     await owner.query(
       `insert into identity_access.staff_sessions values
        ($1, $2, $3, $4, 'aal2', $5, $6, null, $5,
-        'school', 'operational_evidence', 'staff_session')`,
+        'school', 'operational_evidence', 'staff_session', $5, $7)`,
       [
         crypto.randomUUID(),
         workspaceId,
@@ -123,6 +123,7 @@ beforeAll(async () => {
         createHash('sha256').update(sessionHandle).digest('hex'),
         now,
         new Date(now.getTime() + 60 * 60 * 1000),
+        new Date(now.getTime() + 15 * 60 * 1000),
       ],
     );
   } finally {

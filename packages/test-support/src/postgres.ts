@@ -100,6 +100,15 @@ export async function createRuntimeDatabaseUser(
       `grant execute on function identity_access.operator_workspace_catalog() to ${role}`,
     );
     await client.query(
+      `grant execute on function identity_access.workspace_staff_count() to ${role}`,
+    );
+    await client.query(
+      `grant execute on function identity_access.read_staff_identity(uuid, uuid) to ${role}`,
+    );
+    await client.query(
+      `grant execute on function identity_access.apply_staff_lifecycle(uuid, uuid, text, text[], timestamptz) to ${role}`,
+    );
+    await client.query(
       'grant select, insert, update on infrastructure.outbox to ' + role,
     );
     await client.query(
