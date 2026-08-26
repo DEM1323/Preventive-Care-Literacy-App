@@ -74,7 +74,9 @@ async function renderContracts() {
           type: 'technical_operator',
           id: 'contract-generator',
         }),
+        createSession: () => 'contract-generator-session',
       },
+      listOperatorWorkspaces: async () => [],
       schoolConfiguration: {
         readDraft: async () => undefined,
         stepUp: async () => {

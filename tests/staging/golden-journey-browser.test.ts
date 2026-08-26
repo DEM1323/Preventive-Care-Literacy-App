@@ -295,7 +295,9 @@ test('Playwright contexts bypass CSP only for axe instrumentation and leave serv
         type: 'technical_operator',
         id: 'operator@example.test',
       }),
+      createSession: () => 'operator-session',
     },
+    listOperatorWorkspaces: async () => [],
   });
   const response = await app.inject({ method: 'GET', url: '/health/live' });
   await app.close();

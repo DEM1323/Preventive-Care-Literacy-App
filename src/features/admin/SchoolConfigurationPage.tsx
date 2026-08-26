@@ -56,6 +56,7 @@ function localized(value: LocalizedValue, locale: Locale): string {
 export function SchoolConfigurationPage() {
   const navigate = useNavigate();
   const [draft, setDraft] = useState<Draft>();
+  const [workspaceId, setWorkspaceId] = useState<string>();
   const [locale, setLocale] = useState<Locale>('en-US');
   const [width, setWidth] = useState<'desktop' | 'mobile'>('desktop');
   const [surface, setSurface] = useState<'module' | 'intake'>('module');
@@ -67,6 +68,7 @@ export function SchoolConfigurationPage() {
   const [totp, setTotp] = useState('');
   const [status, setStatus] = useState('Loading the shared draft...');
   const operationId = useRef(crypto.randomUUID());
+  const initializationOperationId = useRef(crypto.randomUUID());
 
   async function loadDraft() {
     let response;
@@ -92,6 +94,20 @@ export function SchoolConfigurationPage() {
     }
     if (response.response.status === 404) {
       setStatus('No shared School Configuration Draft has been assembled yet.');
+      try {
+        const session = await client.GET('/api/v1/staff/session');
+        if (session.response.status === 401) {
+          navigate('/staff/sign-in');
+          return;
+        }
+        if (session.response.status === 200 && session.data) {
+          setWorkspaceId(session.data.workspaceId);
+        }
+      } catch {
+        setStatus(
+          'No configuration draft exists, but workspace access could not be confirmed. Reload to retry.',
+        );
+      }
       return;
     }
     if (!response.data) {
@@ -101,7 +117,58 @@ export function SchoolConfigurationPage() {
       return;
     }
     setDraft(response.data as Draft);
+    setWorkspaceId((response.data as Draft).workspaceId);
     setStatus('');
+  }
+
+  async function installDemoDraft() {
+    if (!workspaceId) return;
+    setStatus(
+      'Installing the synthetic demo configuration as a shared draft...',
+    );
+    try {
+      const { default: demoConfigurationText } =
+        await import('../../../docs/fixtures/umb-demo-school-configuration-release-1.json?raw');
+      const fixture = JSON.parse(demoConfigurationText) as Record<
+        string,
+        unknown
+      >;
+      const fixtureWorkspace = fixture.workspace;
+      if (!fixtureWorkspace || typeof fixtureWorkspace !== 'object') {
+        setStatus('The bundled demo configuration is malformed.');
+        return;
+      }
+      const candidate = {
+        ...fixture,
+        workspace: { ...fixtureWorkspace, id: workspaceId },
+      };
+      const result = await client.POST(
+        '/api/v1/administration/school-configuration/draft-imports',
+        {
+          body: {
+            operationId: initializationOperationId.current,
+            expectedDraftVersion: 0,
+            candidate,
+          },
+        },
+      );
+      if (result.response.status !== 201) {
+        const problem = result.error as Problem | undefined;
+        setStatus(
+          problem?.code === 'DRAFT_VERSION_CONFLICT'
+            ? 'A configuration draft now exists. Reloading it...'
+            : 'The demo configuration could not be installed.',
+        );
+        if (problem?.code === 'DRAFT_VERSION_CONFLICT') await loadDraft();
+        return;
+      }
+      initializationOperationId.current = crypto.randomUUID();
+      await loadDraft();
+    } catch {
+      setStatus(
+        'Demo configuration installation failed. Retry preserves this operation.',
+      );
+    }
   }
 
   useEffect(() => {
@@ -210,7 +277,27 @@ export function SchoolConfigurationPage() {
   if (!draft) {
     return (
       <main className="min-h-full bg-slate-950 px-6 py-20 text-slate-100">
-        <p className="mx-auto max-w-2xl">{status}</p>
+        <section className="mx-auto max-w-2xl border-l-4 border-emerald-400 bg-slate-900 p-8">
+          <p>{status}</p>
+          {workspaceId &&
+          status ===
+            'No shared School Configuration Draft has been assembled yet.' ? (
+            <>
+              <p className="mt-4 text-sm leading-6 text-slate-400">
+                Install the bundled synthetic configuration to validate this
+                workspace end to end. It is test content, not real-world
+                publication approval.
+              </p>
+              <button
+                type="button"
+                onClick={() => void installDemoDraft()}
+                className="mt-6 rounded bg-emerald-400 px-4 py-3 font-black text-slate-950"
+              >
+                Install synthetic demo draft
+              </button>
+            </>
+          ) : null}
+        </section>
       </main>
     );
   }
