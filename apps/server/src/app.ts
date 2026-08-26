@@ -64,7 +64,10 @@ import {
   LearningUnavailableError,
 } from '../../../modules/learning-progress/index.ts';
 import { createLearningProgress } from '../../../modules/learning-progress/index.ts';
-import type { SchoolConfiguration } from '../../../modules/school-configuration/index.ts';
+import type {
+  DraftEdit,
+  SchoolConfiguration,
+} from '../../../modules/school-configuration/index.ts';
 import {
   ActiveReleaseConflictError,
   AuthenticationFreshnessRequiredError,
@@ -829,8 +832,105 @@ const SchoolConfigurationDraftResponse = Type.Object({
   workspaceId: Type.String({ format: 'uuid' }),
   draftVersion: Type.Integer({ minimum: 0 }),
   activeReleaseId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
+  activeReleaseNumber: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
   candidateFingerprint: Type.String({ pattern: '^[0-9a-f]{64}$' }),
   candidate: Type.Unknown(),
+  unpublishedChanges: Type.Boolean(),
+  validation: Type.Object({
+    blockers: Type.Array(
+      Type.Object({
+        code: Type.String(),
+        path: Type.String(),
+        message: Type.String(),
+        severity: Type.Literal('blocker'),
+      }),
+    ),
+    warnings: Type.Array(
+      Type.Object({
+        code: Type.String(),
+        path: Type.String(),
+        message: Type.String(),
+        severity: Type.Literal('warning'),
+      }),
+    ),
+  }),
+  comparisons: Type.Array(
+    Type.Object({
+      resourceId: Type.String({ format: 'uuid' }),
+      draftRevision: Type.Integer({ minimum: 1 }),
+      activeRevision: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
+      differs: Type.Boolean(),
+      discardEligible: Type.Boolean(),
+    }),
+  ),
+});
+const BrandingAssetBody = Type.Object(
+  {
+    mediaType: Type.String({ maxLength: 100 }),
+    width: Type.Integer({ minimum: 1, maximum: 1024 }),
+    height: Type.Integer({ minimum: 1, maximum: 1024 }),
+    byteLength: Type.Integer({ minimum: 1, maximum: 262144 }),
+    src: Type.String({ maxLength: 300000 }),
+  },
+  { additionalProperties: false },
+);
+const DraftEditBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    expectedDraftVersion: Type.Integer({ minimum: 0 }),
+    expectedResourceRevisions: Type.Array(ExactResourceResponse),
+    type: Type.Union([
+      Type.Literal('save-workspace-branding'),
+      Type.Literal('save-learning-module'),
+      Type.Literal('save-learning-module-item'),
+      Type.Literal('reorder-learning-modules'),
+      Type.Literal('reorder-learning-module-items'),
+      Type.Literal('create-learning-module'),
+      Type.Literal('create-learning-module-item'),
+      Type.Literal('restore-active-revision'),
+      Type.Literal('discard-authored-resource'),
+    ]),
+    resourceId: Type.Optional(Type.String({ format: 'uuid' })),
+    moduleId: Type.Optional(Type.String({ format: 'uuid' })),
+    collection: Type.Optional(
+      Type.Union([
+        Type.Literal('knowledgeItems'),
+        Type.Literal('skillItems'),
+        Type.Literal('applicationItems'),
+      ]),
+    ),
+    orderedResourceIds: Type.Optional(
+      Type.Array(Type.String({ format: 'uuid' })),
+    ),
+    displayName: Type.Optional(Type.String({ maxLength: 200 })),
+    shortName: Type.Optional(Type.String({ maxLength: 40 })),
+    generatedTextMark: Type.Optional(Type.String({ maxLength: 4 })),
+    primaryColor: Type.Optional(Type.String({ maxLength: 7 })),
+    accentColor: Type.Optional(Type.String({ maxLength: 7 })),
+    logo: Type.Optional(Type.Union([BrandingAssetBody, Type.Null()])),
+    secondaryMark: Type.Optional(Type.Union([BrandingAssetBody, Type.Null()])),
+    title: Type.Optional(Type.String({ maxLength: 200 })),
+    description: Type.Optional(Type.String({ maxLength: 4000 })),
+    knowledgeIntroduction: Type.Optional(Type.String({ maxLength: 8000 })),
+    text: Type.Optional(Type.String({ maxLength: 8000 })),
+    href: Type.Optional(
+      Type.Union([Type.String({ maxLength: 2000 }), Type.Null()]),
+    ),
+  },
+  { additionalProperties: false },
+);
+const EditSchoolConfigurationDraftResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  affectedResources: Type.Array(ExactResourceResponse),
+  workspaceId: Type.String({ format: 'uuid' }),
+  draftVersion: Type.Integer({ minimum: 0 }),
+  activeReleaseId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
+  activeReleaseNumber: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
+  candidateFingerprint: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  candidate: Type.Unknown(),
+  unpublishedChanges: Type.Boolean(),
+  validation: SchoolConfigurationDraftResponse.properties.validation,
+  comparisons: SchoolConfigurationDraftResponse.properties.comparisons,
 });
 const PublishSchoolConfigurationReleaseBody = Type.Object(
   {
@@ -1038,6 +1138,109 @@ export function createOperatorAuthenticator(
       return `${message}.${signatureFor(message)}`;
     },
   };
+}
+
+function parseDraftEdit(body: Static<typeof DraftEditBody>): DraftEdit {
+  if (body.type === 'save-workspace-branding') {
+    if (
+      !body.resourceId ||
+      body.displayName === undefined ||
+      body.shortName === undefined ||
+      body.generatedTextMark === undefined ||
+      body.primaryColor === undefined ||
+      body.accentColor === undefined
+    ) {
+      throw new InvalidSchoolConfigurationError('workspace.branding');
+    }
+    return {
+      type: body.type,
+      resourceId: body.resourceId,
+      displayName: body.displayName,
+      shortName: body.shortName,
+      generatedTextMark: body.generatedTextMark,
+      primaryColor: body.primaryColor,
+      accentColor: body.accentColor,
+      logo: body.logo,
+      secondaryMark: body.secondaryMark,
+    };
+  }
+  if (body.type === 'save-learning-module') {
+    if (
+      !body.resourceId ||
+      body.title === undefined ||
+      body.description === undefined ||
+      body.knowledgeIntroduction === undefined
+    ) {
+      throw new InvalidSchoolConfigurationError('release.modules');
+    }
+    return {
+      type: body.type,
+      resourceId: body.resourceId,
+      title: body.title,
+      description: body.description,
+      knowledgeIntroduction: body.knowledgeIntroduction,
+    };
+  }
+  if (body.type === 'save-learning-module-item') {
+    if (!body.resourceId || body.text === undefined) {
+      throw new InvalidSchoolConfigurationError('release.modules');
+    }
+    return {
+      type: body.type,
+      resourceId: body.resourceId,
+      text: body.text,
+      href: body.href,
+    };
+  }
+  if (body.type === 'reorder-learning-modules') {
+    if (!body.orderedResourceIds) {
+      throw new InvalidSchoolConfigurationError('release.modules');
+    }
+    return { type: body.type, orderedResourceIds: body.orderedResourceIds };
+  }
+  if (body.type === 'reorder-learning-module-items') {
+    if (!body.moduleId || !body.collection || !body.orderedResourceIds) {
+      throw new InvalidSchoolConfigurationError('release.modules');
+    }
+    return {
+      type: body.type,
+      moduleId: body.moduleId,
+      collection: body.collection,
+      orderedResourceIds: body.orderedResourceIds,
+    };
+  }
+  if (body.type === 'create-learning-module') {
+    if (body.title === undefined || body.description === undefined) {
+      throw new InvalidSchoolConfigurationError('release.modules');
+    }
+    return {
+      type: body.type,
+      title: body.title,
+      description: body.description,
+    };
+  }
+  if (body.type === 'create-learning-module-item') {
+    if (!body.moduleId || !body.collection || body.text === undefined) {
+      throw new InvalidSchoolConfigurationError('release.modules');
+    }
+    return {
+      type: body.type,
+      moduleId: body.moduleId,
+      collection: body.collection,
+      text: body.text,
+      href: body.href,
+    };
+  }
+  if (body.type === 'restore-active-revision') {
+    if (!body.resourceId) {
+      throw new InvalidSchoolConfigurationError('activeRevision');
+    }
+    return { type: body.type, resourceId: body.resourceId };
+  }
+  if (!body.resourceId) {
+    throw new InvalidSchoolConfigurationError('discard');
+  }
+  return { type: 'discard-authored-resource', resourceId: body.resourceId };
 }
 
 export async function buildApp(
@@ -2581,6 +2784,42 @@ export async function buildApp(
           });
         }
         return draft;
+      },
+    );
+
+    app.post<{ Body: Static<typeof DraftEditBody> }>(
+      '/api/v1/administration/school-configuration/draft-edits',
+      {
+        bodyLimit: 2 * 1024 * 1024,
+        schema: {
+          operationId: 'editSchoolConfigurationDraft',
+          security: [{ staffSession: [] }],
+          body: DraftEditBody,
+          response: {
+            200: EditSchoolConfigurationDraftResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            422: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request) => {
+        const sessionHandle = readSecureOpaqueCookie(
+          request.headers.cookie,
+          staffSessionCookie,
+        );
+        if (!sessionHandle) throw new StaffAuthenticationFailedError();
+        return schoolConfiguration.editDraft({
+          sessionHandle,
+          operationId: request.body.operationId,
+          expectedDraftVersion: request.body.expectedDraftVersion,
+          expectedResourceRevisions: request.body.expectedResourceRevisions,
+          edit: parseDraftEdit(request.body),
+        });
       },
     );
 

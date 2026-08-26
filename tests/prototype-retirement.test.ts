@@ -102,6 +102,18 @@ test('an empty Staff workspace can install the bundled synthetic draft', () => {
   expect(source).toContain(
     'workspace: { ...fixtureWorkspace, id: workspaceId }',
   );
+  expect(source).toContain(
+    "'/api/v1/administration/school-configuration/draft-edits'",
+  );
+  expect(source).toContain('Edit selected');
+  expect(source).toContain('Release readiness');
+  expect(source).toContain('Restore active revision');
+  expect(source).toContain('Discard never-published');
+  expect(source).toContain('Reload shared draft');
+  expect(source).toContain('Compare');
+  expect(source).toContain('Preview follows the selected resource');
+  expect(source).toContain('Active Students remain pinned');
+  expect(source).not.toContain('SchoolConfigurationEditorPrototype');
 });
 
 test('configuration publication keeps its success confirmation after reloading the draft', () => {

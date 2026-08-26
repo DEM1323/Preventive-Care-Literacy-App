@@ -148,6 +148,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/administration/school-configuration/draft-edits': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['editSchoolConfigurationDraft'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/administration/school-configuration/draft-imports': {
     parameters: {
       query?: never;
@@ -2173,9 +2189,35 @@ export interface operations {
         content: {
           'application/json': {
             activeReleaseId: string | null;
+            activeReleaseNumber: number | null;
             candidate: unknown;
             candidateFingerprint: string;
+            comparisons: {
+              activeRevision: number | null;
+              differs: boolean;
+              discardEligible: boolean;
+              draftRevision: number;
+              /** Format: uuid */
+              resourceId: string;
+            }[];
             draftVersion: number;
+            unpublishedChanges: boolean;
+            validation: {
+              blockers: {
+                code: string;
+                message: string;
+                path: string;
+                /** @enum {string} */
+                severity: 'blocker';
+              }[];
+              warnings: {
+                code: string;
+                message: string;
+                path: string;
+                /** @enum {string} */
+                severity: 'warning';
+              }[];
+            };
             /** Format: uuid */
             workspaceId: string;
           };
@@ -2221,6 +2263,252 @@ export interface operations {
       };
       /** @description Default Response */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  editSchoolConfigurationDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          accentColor?: string;
+          collection?: 'knowledgeItems' | 'skillItems' | 'applicationItems';
+          description?: string;
+          displayName?: string;
+          expectedDraftVersion: number;
+          expectedResourceRevisions: {
+            /** Format: uuid */
+            resourceId: string;
+            revisionNumber: number;
+          }[];
+          generatedTextMark?: string;
+          href?: string | null;
+          knowledgeIntroduction?: string;
+          logo?: {
+            byteLength: number;
+            height: number;
+            mediaType: string;
+            src: string;
+            width: number;
+          } | null;
+          /** Format: uuid */
+          moduleId?: string;
+          /** Format: uuid */
+          operationId: string;
+          orderedResourceIds?: string[];
+          primaryColor?: string;
+          /** Format: uuid */
+          resourceId?: string;
+          secondaryMark?: {
+            byteLength: number;
+            height: number;
+            mediaType: string;
+            src: string;
+            width: number;
+          } | null;
+          shortName?: string;
+          text?: string;
+          title?: string;
+          type:
+            | 'save-workspace-branding'
+            | 'save-learning-module'
+            | 'save-learning-module-item'
+            | 'reorder-learning-modules'
+            | 'reorder-learning-module-items'
+            | 'create-learning-module'
+            | 'create-learning-module-item'
+            | 'restore-active-revision'
+            | 'discard-authored-resource';
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            activeReleaseId: string | null;
+            activeReleaseNumber: number | null;
+            affectedResources: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            }[];
+            candidate: unknown;
+            candidateFingerprint: string;
+            comparisons: {
+              activeRevision: number | null;
+              differs: boolean;
+              discardEligible: boolean;
+              draftRevision: number;
+              /** Format: uuid */
+              resourceId: string;
+            }[];
+            draftVersion: number;
+            /** Format: uuid */
+            operationId: string;
+            unpublishedChanges: boolean;
+            validation: {
+              blockers: {
+                code: string;
+                message: string;
+                path: string;
+                /** @enum {string} */
+                severity: 'blocker';
+              }[];
+              warnings: {
+                code: string;
+                message: string;
+                path: string;
+                /** @enum {string} */
+                severity: 'warning';
+              }[];
+            };
+            /** Format: uuid */
+            workspaceId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      422: {
         headers: {
           [name: string]: unknown;
         };
