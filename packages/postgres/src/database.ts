@@ -9,6 +9,13 @@ export type Database = {
     workspace_id: string;
     name: string;
     created_at: Timestamp;
+    status: ColumnType<string, string | undefined, string>;
+    closed_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+    closed_by: ColumnType<
+      string | null,
+      string | null | undefined,
+      string | null
+    >;
     record_owner: string;
     record_classification: string;
     disposal_class: string;

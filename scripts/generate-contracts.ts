@@ -68,6 +68,27 @@ async function renderContracts() {
       createClassInvitation: async () => {
         throw new Error('Contract generation does not execute commands');
       },
+      createClass: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      previewClassInvitation: async () => {
+        throw new Error('Contract generation does not execute queries');
+      },
+      sendClassInvitation: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      resendClassInvitation: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      revokeClassInvitation: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      deactivateClassMembership: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      closeClass: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
       listClasses: async () => {
         throw new Error('Contract generation does not execute queries');
       },

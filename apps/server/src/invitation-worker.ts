@@ -58,7 +58,7 @@ const dependencies = {
   mail: createResendInvitationMail({
     apiKey: required('RESEND_API_KEY'),
     sender: required('INVITATION_EMAIL_FROM'),
-    controlledRecipient: required('INVITATION_CONTROLLED_MAILBOX'),
+    controlledRecipient: process.env.INVITATION_CONTROLLED_MAILBOX,
   }),
   decrypt: (input: Parameters<InvitationDeliveryDependencies['decrypt']>[0]) =>
     decryptInvitationDelivery({ ...input, keys }),

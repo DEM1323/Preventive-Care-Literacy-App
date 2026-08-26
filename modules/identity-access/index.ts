@@ -67,9 +67,26 @@ export type IdentityAndAccess = {
   openClinicalDirectory(
     command: StaffSessionCommand,
   ): Promise<ClinicalDirectory>;
+  createClass(command: CreateClassCommand): Promise<CreateClassResult>;
   createClassInvitation(
     command: CreateClassInvitationCommand,
   ): Promise<CreateClassInvitationResult>;
+  previewClassInvitation(
+    command: PreviewClassInvitationCommand,
+  ): Promise<InvitationPreview>;
+  sendClassInvitation(
+    command: SendClassInvitationCommand,
+  ): Promise<CreateClassInvitationResult>;
+  resendClassInvitation(
+    command: ResendClassInvitationCommand,
+  ): Promise<ResendClassInvitationResult>;
+  revokeClassInvitation(
+    command: RevokeClassInvitationCommand,
+  ): Promise<RevokeClassInvitationResult>;
+  deactivateClassMembership(
+    command: DeactivateClassMembershipCommand,
+  ): Promise<DeactivateClassMembershipResult>;
+  closeClass(command: CloseClassCommand): Promise<CloseClassResult>;
   listClasses(command: StaffSessionCommand): Promise<ClassDirectoryEntry[]>;
   redeemInvitation(
     command: RedeemInvitationCommand,
@@ -115,24 +132,144 @@ export type CreateClassInvitationResult = {
   outcome: 'created';
 };
 
+export type InvitationStatus =
+  | 'pending_delivery'
+  | 'delivered'
+  | 'delivery_failed'
+  | 'expired'
+  | 'completed'
+  | 'revoked'
+  | 'superseded';
+
+export type InvitationDeliveryStatus = 'delivered' | 'delayed' | 'failed';
+
+export type MembershipStatus = 'none' | 'active' | 'inactive';
+
+export type ClassDirectoryRelationship = {
+  recipient: string;
+  studentId: string | null;
+  classMembershipId: string | null;
+  membershipStatus: MembershipStatus;
+  latestInvitation: {
+    invitationId: string;
+    purpose: 'join_class';
+    generation: number;
+    status: InvitationStatus;
+    expiresAt: Date;
+  };
+  deliveryStatus: InvitationDeliveryStatus;
+  history: {
+    invitationId: string;
+    status: InvitationStatus;
+    generation: number;
+    createdAt: Date;
+  }[];
+};
+
 export type ClassDirectoryEntry = {
   classId: string;
   name: string;
   createdAt: Date;
+  status: 'open' | 'closed';
+  closedAt: Date | null;
   invitations: {
     invitationId: string;
     purpose: 'join_class';
     generation: number;
-    status:
-      | 'pending_delivery'
-      | 'delivered'
-      | 'delivery_failed'
-      | 'expired'
-      | 'completed'
-      | 'revoked'
-      | 'superseded';
+    status: InvitationStatus;
     expiresAt: Date;
   }[];
+  relationships: ClassDirectoryRelationship[];
+};
+
+export type CreateClassCommand = {
+  operationId: string;
+  classId: string;
+  name: string;
+  sessionHandle: string;
+};
+
+export type CreateClassResult = {
+  operationId: string;
+  classId: string;
+  outcome: 'created';
+};
+
+export type PreviewClassInvitationCommand = {
+  classId: string;
+  recipient: string;
+  sessionHandle: string;
+};
+
+export type InvitationPreview =
+  | {
+      outcome: 'ready';
+      reuse: 'none' | 'existing_student' | 'inactive_membership';
+    }
+  | { outcome: 'already_a_member' }
+  | { outcome: 'already_invited' }
+  | { outcome: 'identity_review'; reason: 'historical_binding' }
+  | { outcome: 'class_closed' };
+
+export type SendClassInvitationCommand = {
+  operationId: string;
+  classId: string;
+  invitationId: string;
+  recipient: string;
+  sessionHandle: string;
+};
+
+export type ResendClassInvitationCommand = {
+  operationId: string;
+  invitationId: string;
+  replacementInvitationId: string;
+  sessionHandle: string;
+};
+
+export type ResendClassInvitationResult = {
+  operationId: string;
+  classId: string;
+  invitationId: string;
+  supersededInvitationId: string;
+  outcome: 'superseded';
+};
+
+export type RevokeClassInvitationCommand = {
+  operationId: string;
+  invitationId: string;
+  sessionHandle: string;
+};
+
+export type RevokeClassInvitationResult = {
+  operationId: string;
+  invitationId: string;
+  outcome: 'revoked' | 'unchanged_redeemed';
+};
+
+export type DeactivateClassMembershipCommand = {
+  operationId: string;
+  classMembershipId: string;
+  sessionHandle: string;
+};
+
+export type DeactivateClassMembershipResult = {
+  operationId: string;
+  classMembershipId: string;
+  outcome: 'deactivated';
+};
+
+export type CloseClassCommand = {
+  operationId: string;
+  classId: string;
+  sessionHandle: string;
+};
+
+export type CloseClassResult = {
+  operationId: string;
+  classId: string;
+  outcome: 'closed';
+  revokedInvitationCount: number;
+  deactivatedMembershipCount: number;
 };
 
 export type InvitationSecretProtector = {
@@ -170,6 +307,13 @@ export type InvitationSecretProtector = {
     keyId: string;
     ciphertext: string;
   };
+  revealInvitationRecipient(input: {
+    invitationId: string;
+    purpose: 'join_class';
+    generation: number;
+    keyId: string;
+    ciphertext: string;
+  }): string;
 };
 
 export class SchoolWorkspaceAlreadyExistsError extends Error {
@@ -312,6 +456,51 @@ export class StudentAuthenticationFailedError extends Error {
   constructor() {
     super('Student authentication failed');
     this.name = 'StudentAuthenticationFailedError';
+  }
+}
+
+export class ClassNotFoundError extends Error {
+  readonly code = 'CLASS_NOT_FOUND';
+
+  constructor() {
+    super('Class was not found');
+    this.name = 'ClassNotFoundError';
+  }
+}
+
+export class ClassClosedError extends Error {
+  readonly code = 'CLASS_CLOSED';
+
+  constructor() {
+    super('Class is closed');
+    this.name = 'ClassClosedError';
+  }
+}
+
+export class InvitationNotFoundError extends Error {
+  readonly code = 'INVITATION_NOT_FOUND';
+
+  constructor() {
+    super('Invitation was not found');
+    this.name = 'InvitationNotFoundError';
+  }
+}
+
+export class ClassMembershipNotFoundError extends Error {
+  readonly code = 'CLASS_MEMBERSHIP_NOT_FOUND';
+
+  constructor() {
+    super('Class Membership was not found');
+    this.name = 'ClassMembershipNotFoundError';
+  }
+}
+
+export class InvitationNotSendableError extends Error {
+  readonly code = 'INVITATION_NOT_SENDABLE';
+
+  constructor(readonly outcome: InvitationPreview['outcome']) {
+    super('Invitation cannot be sent');
+    this.name = 'InvitationNotSendableError';
   }
 }
 
@@ -740,6 +929,67 @@ export type StaffAccessStore = {
   }): Promise<ClinicalDirectoryStudent[]>;
 };
 
+export type InvitationPreviewFacts = {
+  classStatus: 'open' | 'closed' | 'missing';
+  activeMembership: boolean;
+  inactiveMembership: boolean;
+  pendingInvitation: boolean;
+  currentStudentId: string | undefined;
+  historicalBinding: boolean;
+};
+
+export function invitationPreviewFrom(
+  facts: InvitationPreviewFacts,
+): InvitationPreview {
+  if (facts.classStatus === 'closed') return { outcome: 'class_closed' };
+  if (facts.activeMembership) return { outcome: 'already_a_member' };
+  if (facts.historicalBinding) {
+    return { outcome: 'identity_review', reason: 'historical_binding' };
+  }
+  if (facts.pendingInvitation) return { outcome: 'already_invited' };
+  if (facts.inactiveMembership) {
+    return { outcome: 'ready', reuse: 'inactive_membership' };
+  }
+  if (facts.currentStudentId) {
+    return { outcome: 'ready', reuse: 'existing_student' };
+  }
+  return { outcome: 'ready', reuse: 'none' };
+}
+
+export function invitationIsSendable(facts: InvitationPreviewFacts): boolean {
+  return invitationPreviewFrom(facts).outcome === 'ready';
+}
+
+export type ClassDirectorySnapshot = {
+  classes: {
+    classId: string;
+    name: string;
+    createdAt: Date;
+    status: 'open' | 'closed';
+    closedAt: Date | null;
+  }[];
+  invitations: {
+    classId: string;
+    invitationId: string;
+    purpose: 'join_class';
+    generation: number;
+    status: InvitationStatus;
+    expiresAt: Date;
+    createdAt: Date;
+    recipientDigest: string;
+    keyId: string;
+    ciphertext: string;
+    deliveryStatus: 'pending' | 'sending' | 'delivered' | 'suppressed';
+  }[];
+  memberships: {
+    classId: string;
+    classMembershipId: string;
+    studentId: string;
+    status: 'active' | 'inactive';
+    emailDigests: string[];
+  }[];
+};
+
 export type ClassInvitationStore = {
   commit(request: {
     workspaceId: string;
@@ -747,10 +997,107 @@ export type ClassInvitationStore = {
     operationId: string;
     createRecords(): ClassInvitationCommit;
   }): Promise<CreateClassInvitationResult>;
+  createClass(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    createRecords(): ClassDefinitionCommit;
+  }): Promise<CreateClassResult>;
+  preview(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    classId: string;
+    recipientDigest: string;
+    now: Date;
+  }): Promise<InvitationPreviewFacts>;
+  send(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    classId: string;
+    recipientDigest: string;
+    now: Date;
+    createRecords(): SendClassInvitationCommit;
+  }): Promise<
+    | { outcome: 'created'; result: CreateClassInvitationResult }
+    | { outcome: 'replayed'; result: CreateClassInvitationResult }
+    | { outcome: 'not_sendable'; preview: InvitationPreviewFacts }
+  >;
+  readInvitation(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    invitationId: string;
+  }): Promise<
+    | {
+        invitationId: string;
+        classId: string;
+        status: InvitationStatus;
+        generation: number;
+        purpose: 'join_class';
+        recipientDigest: string;
+        keyId: string;
+        ciphertext: string;
+        classStatus: 'open' | 'closed';
+      }
+    | undefined
+  >;
+  resend(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    invitationId: string;
+    createRecords(): SendClassInvitationCommit;
+  }): Promise<
+    | { outcome: 'superseded'; result: ResendClassInvitationResult }
+    | { outcome: 'replayed'; result: ResendClassInvitationResult }
+    | { outcome: 'not_found' }
+    | { outcome: 'class_closed' }
+    | { outcome: 'not_resendable'; status: InvitationStatus }
+  >;
+  revoke(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    invitationId: string;
+    auditId: string;
+    occurredAt: Date;
+    result: RevokeClassInvitationResult;
+  }): Promise<
+    | { outcome: 'applied'; result: RevokeClassInvitationResult }
+    | { outcome: 'replayed'; result: RevokeClassInvitationResult }
+    | { outcome: 'not_found' }
+  >;
+  deactivateMembership(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    classMembershipId: string;
+    auditId: string;
+    occurredAt: Date;
+    result: DeactivateClassMembershipResult;
+  }): Promise<
+    | { outcome: 'applied'; result: DeactivateClassMembershipResult }
+    | { outcome: 'replayed'; result: DeactivateClassMembershipResult }
+    | { outcome: 'not_found' }
+  >;
+  closeClass(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    classId: string;
+    auditId: string;
+    occurredAt: Date;
+    actorId: string;
+  }): Promise<
+    | { outcome: 'applied'; result: CloseClassResult }
+    | { outcome: 'replayed'; result: CloseClassResult }
+    | { outcome: 'not_found' }
+    | { outcome: 'already_closed' }
+  >;
   list(request: {
     workspaceId: string;
     staffIdentityId: string;
-  }): Promise<ClassDirectoryEntry[]>;
+  }): Promise<ClassDirectorySnapshot>;
 };
 
 export type InvitationRedemptionCandidate = {
@@ -798,6 +1145,7 @@ export type ClassInvitationCommit = {
     workspaceId: string;
     name: string;
     createdAt: Date;
+    status: 'open';
   };
   invitation: {
     invitationId: string;
@@ -834,6 +1182,36 @@ export type ClassInvitationCommit = {
   auditId: string;
   outboxId: string;
   actorId: string;
+};
+
+export type ClassDefinitionCommit = {
+  classRecord: {
+    classId: string;
+    workspaceId: string;
+    name: string;
+    createdAt: Date;
+    status: 'open';
+  };
+  receipt: {
+    result: CreateClassResult;
+    recordedAt: Date;
+  };
+  auditId: string;
+  actorId: string;
+};
+
+export type SendClassInvitationCommit = {
+  invitation: ClassInvitationCommit['invitation'];
+  challenge: ClassInvitationCommit['challenge'];
+  delivery: ClassInvitationCommit['delivery'];
+  receipt: {
+    result: CreateClassInvitationResult | ResendClassInvitationResult;
+    recordedAt: Date;
+  };
+  auditId: string;
+  outboxId: string;
+  actorId: string;
+  supersededInvitationId?: string;
 };
 
 type StaffProvisioningCommit = {
@@ -968,6 +1346,169 @@ export function createIdentityAndAccess(dependencies: {
       store: dependencies.classInvitations,
       secrets: dependencies.invitationSecrets,
     };
+  }
+
+  function effectiveInvitationStatus(
+    status: InvitationStatus,
+    expiresAt: Date,
+    now: Date,
+  ): InvitationStatus {
+    if (
+      (status === 'pending_delivery' || status === 'delivered') &&
+      expiresAt <= now
+    ) {
+      return 'expired';
+    }
+    return status;
+  }
+
+  function deliveryStatusFor(
+    invitationStatus: InvitationStatus,
+    deliveryStatus: 'pending' | 'sending' | 'delivered' | 'suppressed',
+  ): InvitationDeliveryStatus {
+    if (deliveryStatus === 'delivered') return 'delivered';
+    if (
+      invitationStatus === 'delivery_failed' ||
+      deliveryStatus === 'suppressed'
+    ) {
+      return 'failed';
+    }
+    return 'delayed';
+  }
+
+  function protectInvitationSecrets(input: {
+    invitationId: string;
+    recipient: string;
+    secrets: InvitationSecretProtector;
+  }) {
+    const createdAt = dependencies.clock.now();
+    const code = input.secrets.createCode();
+    const protectedSecrets = input.secrets.protect({
+      invitationId: input.invitationId,
+      purpose: 'join_class',
+      generation: 1,
+      recipient: input.recipient,
+      code,
+    });
+    return {
+      createdAt,
+      invitation: {
+        invitationId: input.invitationId,
+        purpose: 'join_class' as const,
+        recipientDigest: protectedSecrets.recipientDigest,
+        currentGeneration: 1 as const,
+        status: 'pending_delivery' as const,
+        createdAt,
+        authorizationExpiresAt: new Date(
+          createdAt.getTime() + 7 * 24 * 60 * 60 * 1000,
+        ),
+      },
+      challenge: {
+        invitationId: input.invitationId,
+        generation: 1 as const,
+        purpose: 'join_class' as const,
+        codeDigest: protectedSecrets.codeDigest,
+        lookupDigest: protectedSecrets.lookupDigest,
+        expiresAt: new Date(createdAt.getTime() + 10 * 60 * 1000),
+        failedAttempts: 0 as const,
+      },
+      delivery: {
+        invitationId: input.invitationId,
+        generation: 1 as const,
+        keyId: protectedSecrets.keyId,
+        ciphertext: protectedSecrets.ciphertext,
+        status: 'pending' as const,
+        providerIdempotencyKey: `${input.invitationId}:1`,
+      },
+    };
+  }
+
+  function assembleClassDirectory(
+    snapshot: ClassDirectorySnapshot,
+    secrets: InvitationSecretProtector,
+  ): ClassDirectoryEntry[] {
+    const now = dependencies.clock.now();
+    return snapshot.classes.map((classRecord) => {
+      const invitations = snapshot.invitations.filter(
+        (invitation) => invitation.classId === classRecord.classId,
+      );
+      const memberships = snapshot.memberships.filter(
+        (membership) => membership.classId === classRecord.classId,
+      );
+      const grouped = new Map<string, typeof invitations>();
+      for (const invitation of invitations) {
+        const group = grouped.get(invitation.recipientDigest) ?? [];
+        group.push(invitation);
+        grouped.set(invitation.recipientDigest, group);
+      }
+      const relationships: ClassDirectoryRelationship[] = [];
+      for (const group of grouped.values()) {
+        const sorted = [...group].sort((left, right) => {
+          const rank = (status: InvitationStatus) =>
+            status === 'superseded' ? 1 : 0;
+          const ranked = rank(left.status) - rank(right.status);
+          if (ranked !== 0) return ranked;
+          const created = right.createdAt.getTime() - left.createdAt.getTime();
+          if (created !== 0) return created;
+          return right.invitationId.localeCompare(left.invitationId);
+        });
+        const latest = sorted[0];
+        if (!latest) continue;
+        const membership = memberships.find((entry) =>
+          entry.emailDigests.includes(latest.recipientDigest),
+        );
+        let recipient = latest.recipientDigest;
+        try {
+          recipient = secrets.revealInvitationRecipient(latest);
+        } catch {
+          recipient = latest.recipientDigest;
+        }
+        const status = effectiveInvitationStatus(
+          latest.status,
+          latest.expiresAt,
+          now,
+        );
+        relationships.push({
+          recipient,
+          studentId: membership?.studentId ?? null,
+          classMembershipId: membership?.classMembershipId ?? null,
+          membershipStatus: membership?.status ?? 'none',
+          latestInvitation: {
+            invitationId: latest.invitationId,
+            purpose: 'join_class',
+            generation: latest.generation,
+            status,
+            expiresAt: latest.expiresAt,
+          },
+          deliveryStatus: deliveryStatusFor(status, latest.deliveryStatus),
+          history: [...sorted].reverse().map((item) => ({
+            invitationId: item.invitationId,
+            status: effectiveInvitationStatus(item.status, item.expiresAt, now),
+            generation: item.generation,
+            createdAt: item.createdAt,
+          })),
+        });
+      }
+      return {
+        classId: classRecord.classId,
+        name: classRecord.name,
+        createdAt: classRecord.createdAt,
+        status: classRecord.status,
+        closedAt: classRecord.closedAt,
+        invitations: invitations.map((invitation) => ({
+          invitationId: invitation.invitationId,
+          purpose: invitation.purpose,
+          generation: invitation.generation,
+          status: effectiveInvitationStatus(
+            invitation.status,
+            invitation.expiresAt,
+            now,
+          ),
+          expiresAt: invitation.expiresAt,
+        })),
+        relationships,
+      };
+    });
   }
 
   function requireStudentAccessSeams() {
@@ -1682,6 +2223,36 @@ export function createIdentityAndAccess(dependencies: {
       };
     },
 
+    async createClass(command) {
+      const session = await requireAdministrator(command.sessionHandle);
+      const { store } = requireClassInvitationSeams();
+      return store.createClass({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        createRecords() {
+          const createdAt = dependencies.clock.now();
+          const result: CreateClassResult = {
+            operationId: command.operationId,
+            classId: command.classId,
+            outcome: 'created',
+          };
+          return {
+            classRecord: {
+              classId: command.classId,
+              workspaceId: session.workspaceId,
+              name: command.name,
+              createdAt,
+              status: 'open',
+            },
+            receipt: { result, recordedAt: createdAt },
+            auditId: dependencies.ids.create(),
+            actorId: session.staffIdentityId,
+          };
+        },
+      });
+    },
+
     async createClassInvitation(command) {
       const session = await requireAdministrator(command.sessionHandle);
       const { store, secrets } = requireClassInvitationSeams();
@@ -1711,6 +2282,7 @@ export function createIdentityAndAccess(dependencies: {
               workspaceId: session.workspaceId,
               name: command.name,
               createdAt,
+              status: 'open',
             },
             invitation: {
               invitationId: command.invitationId,
@@ -1751,13 +2323,193 @@ export function createIdentityAndAccess(dependencies: {
       });
     },
 
-    async listClasses(command) {
+    async previewClassInvitation(command) {
       const session = await requireAdministrator(command.sessionHandle);
-      const { store } = requireClassInvitationSeams();
-      return store.list({
+      const { store, secrets } = requireClassInvitationSeams();
+      const facts = await store.preview({
         workspaceId: session.workspaceId,
         staffIdentityId: session.staffIdentityId,
+        classId: command.classId,
+        recipientDigest: secrets.digestRecipient(command.recipient),
+        now: dependencies.clock.now(),
       });
+      if (facts.classStatus === 'missing') throw new ClassNotFoundError();
+      return invitationPreviewFrom(facts);
+    },
+
+    async sendClassInvitation(command) {
+      const session = await requireAdministrator(command.sessionHandle);
+      const { store, secrets } = requireClassInvitationSeams();
+      const recipientDigest = secrets.digestRecipient(command.recipient);
+      const sent = await store.send({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        classId: command.classId,
+        recipientDigest,
+        now: dependencies.clock.now(),
+        createRecords() {
+          const protectedSecrets = protectInvitationSecrets({
+            invitationId: command.invitationId,
+            recipient: command.recipient,
+            secrets,
+          });
+          const result: CreateClassInvitationResult = {
+            operationId: command.operationId,
+            classId: command.classId,
+            invitationId: command.invitationId,
+            outcome: 'created',
+          };
+          return {
+            invitation: {
+              ...protectedSecrets.invitation,
+              workspaceId: session.workspaceId,
+              classId: command.classId,
+            },
+            challenge: protectedSecrets.challenge,
+            delivery: protectedSecrets.delivery,
+            receipt: { result, recordedAt: protectedSecrets.createdAt },
+            auditId: dependencies.ids.create(),
+            outboxId: dependencies.ids.create(),
+            actorId: session.staffIdentityId,
+          };
+        },
+      });
+      if (sent.outcome === 'replayed' || sent.outcome === 'created') {
+        return sent.result;
+      }
+      if (sent.preview.classStatus === 'missing') {
+        throw new ClassNotFoundError();
+      }
+      const preview = invitationPreviewFrom(sent.preview);
+      if (preview.outcome === 'class_closed') throw new ClassClosedError();
+      throw new InvitationNotSendableError(preview.outcome);
+    },
+
+    async resendClassInvitation(command) {
+      const session = await requireAdministrator(command.sessionHandle);
+      const { store, secrets } = requireClassInvitationSeams();
+      const current = await store.readInvitation({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        invitationId: command.invitationId,
+      });
+      if (!current) throw new InvitationNotFoundError();
+      if (current.classStatus === 'closed') throw new ClassClosedError();
+      const recipient = secrets.revealInvitationRecipient(current);
+      const resent = await store.resend({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        invitationId: command.invitationId,
+        createRecords() {
+          const protectedSecrets = protectInvitationSecrets({
+            invitationId: command.replacementInvitationId,
+            recipient,
+            secrets,
+          });
+          const result: ResendClassInvitationResult = {
+            operationId: command.operationId,
+            classId: current.classId,
+            invitationId: command.replacementInvitationId,
+            supersededInvitationId: command.invitationId,
+            outcome: 'superseded',
+          };
+          return {
+            invitation: {
+              ...protectedSecrets.invitation,
+              workspaceId: session.workspaceId,
+              classId: current.classId,
+            },
+            challenge: protectedSecrets.challenge,
+            delivery: protectedSecrets.delivery,
+            receipt: { result, recordedAt: protectedSecrets.createdAt },
+            auditId: dependencies.ids.create(),
+            outboxId: dependencies.ids.create(),
+            actorId: session.staffIdentityId,
+            supersededInvitationId: command.invitationId,
+          };
+        },
+      });
+      if (resent.outcome === 'replayed' || resent.outcome === 'superseded') {
+        return resent.result;
+      }
+      if (resent.outcome === 'not_found') throw new InvitationNotFoundError();
+      if (resent.outcome === 'class_closed') throw new ClassClosedError();
+      throw new InvitationNotSendableError('already_invited');
+    },
+
+    async revokeClassInvitation(command) {
+      const session = await requireAdministrator(command.sessionHandle);
+      const { store } = requireClassInvitationSeams();
+      const result: RevokeClassInvitationResult = {
+        operationId: command.operationId,
+        invitationId: command.invitationId,
+        outcome: 'revoked',
+      };
+      const revoked = await store.revoke({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        invitationId: command.invitationId,
+        auditId: dependencies.ids.create(),
+        occurredAt: dependencies.clock.now(),
+        result,
+      });
+      if (revoked.outcome === 'not_found') throw new InvitationNotFoundError();
+      return revoked.result;
+    },
+
+    async deactivateClassMembership(command) {
+      const session = await requireAdministrator(command.sessionHandle);
+      const { store } = requireClassInvitationSeams();
+      const result: DeactivateClassMembershipResult = {
+        operationId: command.operationId,
+        classMembershipId: command.classMembershipId,
+        outcome: 'deactivated',
+      };
+      const deactivated = await store.deactivateMembership({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        classMembershipId: command.classMembershipId,
+        auditId: dependencies.ids.create(),
+        occurredAt: dependencies.clock.now(),
+        result,
+      });
+      if (deactivated.outcome === 'not_found') {
+        throw new ClassMembershipNotFoundError();
+      }
+      return deactivated.result;
+    },
+
+    async closeClass(command) {
+      const session = await requireAdministrator(command.sessionHandle);
+      const { store } = requireClassInvitationSeams();
+      const closed = await store.closeClass({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        classId: command.classId,
+        auditId: dependencies.ids.create(),
+        occurredAt: dependencies.clock.now(),
+        actorId: session.staffIdentityId,
+      });
+      if (closed.outcome === 'not_found') throw new ClassNotFoundError();
+      if (closed.outcome === 'already_closed') throw new ClassClosedError();
+      return closed.result;
+    },
+
+    async listClasses(command) {
+      const session = await requireAdministrator(command.sessionHandle);
+      const { store, secrets } = requireClassInvitationSeams();
+      return assembleClassDirectory(
+        await store.list({
+          workspaceId: session.workspaceId,
+          staffIdentityId: session.staffIdentityId,
+        }),
+        secrets,
+      );
     },
 
     async redeemInvitation(command) {

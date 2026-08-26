@@ -90,6 +90,8 @@ export async function createRuntimeDatabaseUser(
       `grant select, insert, update on identity_access.staff_sessions,
           identity_access.staff_auth_flows, identity_access.invitations,
            identity_access.invitation_challenges,
+           identity_access.invitation_deliveries,
+           identity_access.classes,
            identity_access.class_memberships, identity_access.student_sessions,
            identity_access.staff_session_freshness to ${role}`,
     );

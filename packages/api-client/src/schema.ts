@@ -20,6 +20,118 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/administration/classes/closures': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['closeClass'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/classes/definitions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['createClass'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/classes/invitation-previews': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['previewClassInvitation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/classes/invitation-resends': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['resendClassInvitation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/classes/invitation-revocations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['revokeClassInvitation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/classes/invitations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['sendClassInvitation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/classes/membership-deactivations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['deactivateClassMembership'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/administration/school-configuration': {
     parameters: {
       query?: never;
@@ -667,6 +779,7 @@ export interface operations {
             classes: {
               /** Format: uuid */
               classId: string;
+              closedAt: string | null;
               /** Format: date-time */
               createdAt: string;
               invitations: {
@@ -687,6 +800,46 @@ export interface operations {
                   | 'superseded';
               }[];
               name: string;
+              relationships: {
+                classMembershipId: string | null;
+                deliveryStatus: 'delivered' | 'delayed' | 'failed';
+                history: {
+                  /** Format: date-time */
+                  createdAt: string;
+                  generation: number;
+                  /** Format: uuid */
+                  invitationId: string;
+                  status:
+                    | 'pending_delivery'
+                    | 'delivered'
+                    | 'delivery_failed'
+                    | 'expired'
+                    | 'completed'
+                    | 'revoked'
+                    | 'superseded';
+                }[];
+                latestInvitation: {
+                  /** Format: date-time */
+                  expiresAt: string;
+                  generation: number;
+                  /** Format: uuid */
+                  invitationId: string;
+                  /** @enum {string} */
+                  purpose: 'join_class';
+                  status:
+                    | 'pending_delivery'
+                    | 'delivered'
+                    | 'delivery_failed'
+                    | 'expired'
+                    | 'completed'
+                    | 'revoked'
+                    | 'superseded';
+                };
+                membershipStatus: 'none' | 'active' | 'inactive';
+                recipient: string;
+                studentId: string | null;
+              }[];
+              status: 'open' | 'closed';
             }[];
           };
         };
@@ -703,6 +856,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -721,6 +875,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -739,6 +894,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -799,6 +955,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -817,6 +974,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -835,6 +993,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -853,6 +1012,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -871,6 +1031,1123 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  closeClass: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          classId: string;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            classId: string;
+            deactivatedMembershipCount: number;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'closed';
+            revokedInvitationCount: number;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  createClass: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          classId: string;
+          name: string;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            classId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'created';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  previewClassInvitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          classId: string;
+          recipient: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @enum {string} */
+                outcome: 'ready';
+                reuse: 'none' | 'existing_student' | 'inactive_membership';
+              }
+            | {
+                /** @enum {string} */
+                outcome: 'already_a_member';
+              }
+            | {
+                /** @enum {string} */
+                outcome: 'already_invited';
+              }
+            | {
+                /** @enum {string} */
+                outcome: 'identity_review';
+                /** @enum {string} */
+                reason: 'historical_binding';
+              }
+            | {
+                /** @enum {string} */
+                outcome: 'class_closed';
+              };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  resendClassInvitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          invitationId: string;
+          /** Format: uuid */
+          operationId: string;
+          /** Format: uuid */
+          replacementInvitationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            classId: string;
+            /** Format: uuid */
+            invitationId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'superseded';
+            /** Format: uuid */
+            supersededInvitationId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  revokeClassInvitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          invitationId: string;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            invitationId: string;
+            /** Format: uuid */
+            operationId: string;
+            outcome: 'revoked' | 'unchanged_redeemed';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  sendClassInvitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          classId: string;
+          /** Format: uuid */
+          invitationId: string;
+          /** Format: uuid */
+          operationId: string;
+          recipient: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            classId: string;
+            /** Format: uuid */
+            invitationId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'created';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  deactivateClassMembership: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          classMembershipId: string;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            classMembershipId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'deactivated';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -916,6 +2193,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -934,6 +2212,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -952,6 +2231,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -970,6 +2250,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1027,6 +2308,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1045,6 +2327,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1063,6 +2346,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1081,6 +2365,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1099,6 +2384,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1117,6 +2403,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1135,6 +2422,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1201,6 +2489,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1219,6 +2508,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1237,6 +2527,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1255,6 +2546,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1273,6 +2565,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1291,6 +2584,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1309,6 +2603,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1366,6 +2661,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1384,6 +2680,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1402,6 +2699,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1420,6 +2718,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1438,6 +2737,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1456,6 +2756,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1505,6 +2806,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1523,6 +2825,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1541,6 +2844,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1608,6 +2912,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1626,6 +2931,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1644,6 +2950,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1662,6 +2969,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1680,6 +2988,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1698,6 +3007,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1716,6 +3026,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1776,6 +3087,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1794,6 +3106,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1812,6 +3125,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1830,6 +3144,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1848,6 +3163,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1866,6 +3182,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1884,6 +3201,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1902,6 +3220,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1964,6 +3283,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -1982,6 +3302,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2000,6 +3321,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2018,6 +3340,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2036,6 +3359,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2054,6 +3378,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2072,6 +3397,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2090,6 +3416,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2151,6 +3478,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2169,6 +3497,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2187,6 +3516,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2205,6 +3535,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2223,6 +3554,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2241,6 +3573,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2259,6 +3592,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2277,6 +3611,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2324,6 +3659,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2342,6 +3678,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2360,6 +3697,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2378,6 +3716,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2419,6 +3758,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2471,6 +3811,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2489,6 +3830,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2507,6 +3849,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2525,6 +3868,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2543,6 +3887,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2584,6 +3929,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2602,6 +3948,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2620,6 +3967,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2638,6 +3986,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2686,6 +4035,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2704,6 +4054,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2722,6 +4073,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2740,6 +4092,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2758,6 +4111,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2776,6 +4130,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2824,6 +4179,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2842,6 +4198,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2860,6 +4217,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2878,6 +4236,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2896,6 +4255,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2944,6 +4304,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2962,6 +4323,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2980,6 +4342,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -2998,6 +4361,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3016,6 +4380,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3111,6 +4476,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3129,6 +4495,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3147,6 +4514,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3165,6 +4533,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3183,6 +4552,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3201,6 +4571,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3255,6 +4626,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3273,6 +4645,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3291,6 +4664,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3371,6 +4745,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3389,6 +4764,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3429,6 +4805,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3488,6 +4865,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3506,6 +4884,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3553,6 +4932,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3571,6 +4951,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3686,6 +5067,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3704,6 +5086,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3722,6 +5105,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3780,6 +5164,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3798,6 +5183,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3816,6 +5202,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3834,6 +5221,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3852,6 +5240,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3870,6 +5259,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3949,6 +5339,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3967,6 +5358,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -3985,6 +5377,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4003,6 +5396,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4021,6 +5415,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4039,6 +5434,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4057,6 +5453,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4120,6 +5517,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4138,6 +5536,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4156,6 +5555,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4219,6 +5619,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4237,6 +5638,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4255,6 +5657,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4273,6 +5676,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4291,6 +5695,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4309,6 +5714,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4327,6 +5733,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4375,6 +5782,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;
@@ -4393,6 +5801,7 @@ export interface operations {
             candidateFingerprint?: string;
             code: string;
             draftVersion?: number;
+            outcome?: string;
             status: number;
             title: string;
             type: string;

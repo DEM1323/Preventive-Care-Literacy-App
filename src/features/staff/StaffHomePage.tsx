@@ -1,7 +1,11 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createBrowserApiClient } from '../../../packages/api-client/src/index.ts';
 import { ClinicalReviewSection } from './ClinicalReviewSection';
+import {
+  ClassWorkspace,
+  type ClassDirectoryEntry,
+} from './ClassWorkspace';
 
 const client = createBrowserApiClient();
 
@@ -22,26 +26,6 @@ type StaffDirectoryEntry = {
   createdAt: string;
 };
 
-type ClassDirectoryEntry = {
-  classId: string;
-  name: string;
-  createdAt: string;
-  invitations: {
-    invitationId: string;
-    purpose: 'join_class';
-    generation: number;
-    status:
-      | 'pending_delivery'
-      | 'delivered'
-      | 'delivery_failed'
-      | 'expired'
-      | 'completed'
-      | 'revoked'
-      | 'superseded';
-    expiresAt: string;
-  }[];
-};
-
 export function StaffHomePage() {
   const navigate = useNavigate();
   const [session, setSession] = useState<StaffSession | undefined>();
@@ -49,21 +33,6 @@ export function StaffHomePage() {
     StaffDirectoryEntry[] | undefined
   >();
   const [classes, setClasses] = useState<ClassDirectoryEntry[] | undefined>();
-  const [className, setClassName] = useState('');
-  const [recipient, setRecipient] = useState('');
-  const [invitationOutcome, setInvitationOutcome] = useState<
-    'idle' | 'sending' | 'sent' | 'failed'
-  >('idle');
-  const pendingCommand = useRef<
-    | {
-        operationId: string;
-        classId: string;
-        invitationId: string;
-        name: string;
-        recipient: string;
-      }
-    | undefined
-  >(undefined);
 
   async function loadClasses() {
     const listing = await client.GET('/api/v1/administration/classes');
@@ -103,38 +72,6 @@ export function StaffHomePage() {
     setSession(undefined);
     await client.POST('/api/v1/auth/staff/sign-out');
     navigate('/staff/sign-in');
-  }
-
-  async function createClassInvitation(event: FormEvent) {
-    event.preventDefault();
-    setInvitationOutcome('sending');
-    const command =
-      pendingCommand.current ??
-      (pendingCommand.current = {
-        operationId: crypto.randomUUID(),
-        classId: crypto.randomUUID(),
-        invitationId: crypto.randomUUID(),
-        name: className,
-        recipient,
-      });
-    let result;
-    try {
-      result = await client.POST('/api/v1/administration/classes', {
-        body: command,
-      });
-    } catch {
-      setInvitationOutcome('failed');
-      return;
-    }
-    if (result.response.status !== 201) {
-      setInvitationOutcome('failed');
-      return;
-    }
-    setClassName('');
-    setRecipient('');
-    pendingCommand.current = undefined;
-    setInvitationOutcome('sent');
-    await loadClasses();
   }
 
   if (!session) {
@@ -216,81 +153,7 @@ export function StaffHomePage() {
         ) : null}
 
         {classes ? (
-          <div className="mt-10 border-t border-slate-700 pt-8">
-            <h2 className="text-xl font-black tracking-tight">Classes</h2>
-            <form className="mt-4 grid gap-4" onSubmit={createClassInvitation}>
-              <label className="grid gap-2 font-bold" htmlFor="class-name">
-                Class name
-                <input
-                  id="class-name"
-                  required
-                  maxLength={200}
-                  value={className}
-                  onChange={(event) => {
-                    setClassName(event.target.value);
-                    pendingCommand.current = undefined;
-                    setInvitationOutcome('idle');
-                  }}
-                  className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                />
-              </label>
-              <label
-                className="grid gap-2 font-bold"
-                htmlFor="invitation-recipient"
-              >
-                Invitation email
-                <input
-                  id="invitation-recipient"
-                  required
-                  type="email"
-                  maxLength={320}
-                  value={recipient}
-                  onChange={(event) => {
-                    setRecipient(event.target.value);
-                    pendingCommand.current = undefined;
-                    setInvitationOutcome('idle');
-                  }}
-                  className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={invitationOutcome === 'sending'}
-                className="rounded bg-sky-400 px-4 py-2 font-black text-slate-950 disabled:opacity-50"
-              >
-                {invitationOutcome === 'sending'
-                  ? 'Creating…'
-                  : 'Create class and send invitation'}
-              </button>
-              <p aria-live="polite" className="text-sm text-slate-300">
-                {invitationOutcome === 'sent'
-                  ? 'Class created. Invitation delivery is pending.'
-                  : invitationOutcome === 'failed'
-                    ? 'The class and invitation could not be created.'
-                    : ''}
-              </p>
-            </form>
-
-            <div className="mt-8 grid gap-4">
-              {classes.map((classEntry) => (
-                <article
-                  key={classEntry.classId}
-                  className="border border-slate-700 bg-slate-950 p-4"
-                >
-                  <h3 className="font-black">{classEntry.name}</h3>
-                  {classEntry.invitations.map((invitation) => (
-                    <p
-                      key={invitation.invitationId}
-                      className="mt-2 text-sm text-slate-300"
-                    >
-                      Invitation delivery:{' '}
-                      {invitation.status.replaceAll('_', ' ')}
-                    </p>
-                  ))}
-                </article>
-              ))}
-            </div>
-          </div>
+          <ClassWorkspace classes={classes} onReload={loadClasses} />
         ) : null}
       </section>
     </main>
