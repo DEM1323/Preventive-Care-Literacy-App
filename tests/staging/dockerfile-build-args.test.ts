@@ -65,3 +65,11 @@ test('dummy commit and tree values are well-formed bake inputs, not runtime heal
   expect(dummyCommit).toMatch(/^[0-9a-f]{40}$/);
   expect(dummyTree).toMatch(/^[0-9a-f]{40}$/);
 });
+
+test('Docker build context includes the synthetic configuration fixture used by Vite', async () => {
+  const dockerignore = await readFile(
+    new URL('../../.dockerignore', import.meta.url),
+    'utf8',
+  );
+  expect(dockerignore.split('\n')).not.toContain('docs');
+});
