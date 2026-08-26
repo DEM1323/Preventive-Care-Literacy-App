@@ -7,6 +7,7 @@ import {
   CandidateFingerprintConflictError,
   DraftVersionConflictError,
   errorFromPublicationFailure,
+  InvalidSchoolConfigurationError,
   OperationIdReusedError,
   ResourceRevisionConflictError,
   type ImportSchoolConfigurationDraftResult,
@@ -106,13 +107,19 @@ export function createPostgresSchoolConfigurationStore(options: {
         const result = await client.query<{
           draft_version: string;
           active_release_id: string | null;
+          active_release_number: string | null;
+          active_candidate_fingerprint: string | null;
           candidate: unknown;
           candidate_fingerprint: string;
         }>(
           `select state.draft_version, state.active_release_id,
+                  release.release_number as active_release_number,
+                  release.candidate_fingerprint as active_candidate_fingerprint,
                   draft.candidate, draft.candidate_fingerprint
              from school_configuration.configuration_states state
              join school_configuration.draft_candidates draft using (workspace_id)
+             left join school_configuration.configuration_releases release
+               on release.release_id = state.active_release_id
             where state.workspace_id = $1`,
           [session.workspaceId],
         );
@@ -122,9 +129,337 @@ export function createPostgresSchoolConfigurationStore(options: {
           workspaceId: session.workspaceId,
           draftVersion: Number(row.draft_version),
           activeReleaseId: row.active_release_id,
+          activeReleaseNumber: row.active_release_number
+            ? Number(row.active_release_number)
+            : null,
+          activeCandidateFingerprint: row.active_candidate_fingerprint,
           candidateFingerprint: row.candidate_fingerprint,
           candidate: row.candidate,
         };
+      });
+    },
+
+    async readActiveReleaseResources(session) {
+      return transaction(options.pool, async (client) => {
+        await setScope(client, session.workspaceId, session.staffIdentityId);
+        const result = await client.query<{
+          resource_id: string;
+          revision_number: number;
+          resource_kind: string;
+          slot: string;
+          position: number | null;
+          payload: Record<string, unknown>;
+        }>(
+          `select component.resource_id, component.revision_number,
+                  resource.resource_kind, component.slot, component.position,
+                  revision.payload
+             from school_configuration.configuration_states state
+             join school_configuration.release_components component
+               on component.release_id = state.active_release_id
+              and component.workspace_id = state.workspace_id
+             join school_configuration.authored_resources resource
+               on resource.workspace_id = component.workspace_id
+              and resource.resource_id = component.resource_id
+             join school_configuration.authored_revisions revision
+               on revision.workspace_id = component.workspace_id
+              and revision.resource_id = component.resource_id
+              and revision.revision_number = component.revision_number
+            where state.workspace_id = $1 and state.active_release_id is not null`,
+          [session.workspaceId],
+        );
+        return result.rows.map((row) => ({
+          resourceId: row.resource_id,
+          revisionNumber: row.revision_number,
+          kind: row.resource_kind,
+          slot: row.slot,
+          position: row.position,
+          payload: row.payload,
+        }));
+      });
+    },
+
+    async saveDraft(input) {
+      return transaction(options.pool, async (client) => {
+        await setScope(
+          client,
+          input.session.workspaceId,
+          input.session.staffIdentityId,
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${input.session.workspaceId}:${input.operationId}`],
+        );
+        const receipt = await client.query<{
+          request_fingerprint: string | null;
+          result: { draftVersion: number };
+        }>(
+          `select request_fingerprint, result
+             from infrastructure.operation_receipts
+            where workspace_id = $1 and operation_id = $2`,
+          [input.session.workspaceId, input.operationId],
+        );
+        if (receipt.rows[0]) {
+          if (
+            receipt.rows[0].request_fingerprint !== input.requestFingerprint
+          ) {
+            throw new OperationIdReusedError();
+          }
+          return receipt.rows[0].result;
+        }
+        const state = await client.query<{ draft_version: string }>(
+          `select draft_version from school_configuration.configuration_states
+            where workspace_id = $1 for update`,
+          [input.session.workspaceId],
+        );
+        const currentVersion = Number(state.rows[0]?.draft_version ?? 0);
+        if (currentVersion !== input.expectedDraftVersion) {
+          throw new DraftVersionConflictError(currentVersion);
+        }
+        for (const expected of input.expectedResourceRevisions) {
+          const current = await client.query<{ revision_number: number }>(
+            `select revision_number from school_configuration.draft_components
+              where workspace_id = $1 and resource_id = $2`,
+            [input.session.workspaceId, expected.resourceId],
+          );
+          if (current.rows[0]?.revision_number !== expected.revisionNumber) {
+            throw new ResourceRevisionConflictError();
+          }
+        }
+        if (input.discardedResourceIds.length > 0) {
+          const published = await client.query<{ resource_id: string }>(
+            `select distinct resource_id
+               from school_configuration.release_components
+              where workspace_id = $1 and resource_id = any($2::uuid[])`,
+            [input.session.workspaceId, input.discardedResourceIds],
+          );
+          if (published.rows.length > 0) {
+            throw new InvalidSchoolConfigurationError('discard');
+          }
+        }
+        await client.query(
+          `delete from school_configuration.draft_components
+            where workspace_id = $1`,
+          [input.session.workspaceId],
+        );
+        const resourceRows = JSON.stringify(
+          input.resources.map((resource) => ({
+            resource_id: resource.resourceId,
+            revision_number: resource.revisionNumber,
+            kind: resource.kind,
+            slot: resource.slot,
+            position: resource.position,
+            payload: resource.payload,
+          })),
+        );
+        await client.query(
+          `insert into school_configuration.authored_resources
+             (workspace_id, resource_id, resource_kind)
+           select $1, resource_id, kind
+             from jsonb_to_recordset($2::jsonb) as x(
+               resource_id uuid, revision_number integer, kind text,
+               slot text, position integer, payload jsonb
+             )
+           on conflict (workspace_id, resource_id) do nothing`,
+          [input.session.workspaceId, resourceRows],
+        );
+        await client.query(
+          `delete from school_configuration.managed_translation_reviews review
+            using jsonb_to_recordset($2::jsonb) as x(
+              resource_id uuid, revision_number integer, kind text,
+              slot text, position integer, payload jsonb
+            ), school_configuration.authored_revisions revision
+            where revision.workspace_id = $1
+              and revision.resource_id = x.resource_id
+              and revision.revision_number <> x.revision_number
+              and revision.lifecycle = 'working'
+              and review.workspace_id = revision.workspace_id
+              and (
+                (review.source_resource_id = revision.resource_id
+                 and review.source_revision_number = revision.revision_number)
+                or (review.translation_resource_id = revision.resource_id
+                 and review.translation_revision_number = revision.revision_number)
+              )`,
+          [input.session.workspaceId, resourceRows],
+        );
+        await client.query(
+          `delete from school_configuration.authored_revisions revision
+            using jsonb_to_recordset($2::jsonb) as x(
+              resource_id uuid, revision_number integer, kind text,
+              slot text, position integer, payload jsonb
+            )
+            where revision.workspace_id = $1
+              and revision.resource_id = x.resource_id
+              and revision.revision_number <> x.revision_number
+              and revision.lifecycle = 'working'`,
+          [input.session.workspaceId, resourceRows],
+        );
+        await client.query(
+          `update school_configuration.authored_revisions revision
+              set payload = x.payload, authored_by = $3, authored_at = $4
+             from jsonb_to_recordset($2::jsonb) as x(
+               resource_id uuid, revision_number integer, kind text,
+               slot text, position integer, payload jsonb
+             )
+            where revision.workspace_id = $1
+              and revision.resource_id = x.resource_id
+              and revision.revision_number = x.revision_number
+              and revision.lifecycle = 'working'`,
+          [
+            input.session.workspaceId,
+            resourceRows,
+            input.session.staffIdentityId,
+            input.changedAt,
+          ],
+        );
+        await client.query(
+          `insert into school_configuration.authored_revisions
+             (workspace_id, resource_id, revision_number, lifecycle,
+              payload_schema_version, payload, authored_by, authored_at)
+           select $1, x.resource_id, x.revision_number, 'working', 1, x.payload, $3, $4
+             from jsonb_to_recordset($2::jsonb) as x(
+               resource_id uuid, revision_number integer, kind text,
+               slot text, position integer, payload jsonb
+             )
+            where not exists (
+              select 1 from school_configuration.authored_revisions revision
+               where revision.workspace_id = $1
+                 and revision.resource_id = x.resource_id
+                 and revision.revision_number = x.revision_number
+            )`,
+          [
+            input.session.workspaceId,
+            resourceRows,
+            input.session.staffIdentityId,
+            input.changedAt,
+          ],
+        );
+        await client.query(
+          `insert into school_configuration.draft_components
+             (workspace_id, resource_id, revision_number, slot, position)
+           select $1, x.resource_id, x.revision_number, x.slot, x.position
+             from jsonb_to_recordset($2::jsonb) as x(
+               resource_id uuid, revision_number integer, kind text,
+               slot text, position integer, payload jsonb
+             )`,
+          [input.session.workspaceId, resourceRows],
+        );
+        if (input.discardedResourceIds.length > 0) {
+          await client.query(
+            `delete from school_configuration.managed_translation_reviews
+              where workspace_id = $1
+                and (source_resource_id = any($2::uuid[])
+                 or translation_resource_id = any($2::uuid[]))`,
+            [input.session.workspaceId, input.discardedResourceIds],
+          );
+          await client.query(
+            `delete from school_configuration.authored_revisions
+              where workspace_id = $1 and resource_id = any($2::uuid[])
+                and lifecycle = 'working'`,
+            [input.session.workspaceId, input.discardedResourceIds],
+          );
+          await client.query(
+            `delete from school_configuration.authored_resources resource
+              where workspace_id = $1 and resource_id = any($2::uuid[])
+                and not exists (
+                  select 1 from school_configuration.authored_revisions revision
+                   where revision.workspace_id = resource.workspace_id
+                     and revision.resource_id = resource.resource_id
+                )`,
+            [input.session.workspaceId, input.discardedResourceIds],
+          );
+        }
+        if (input.reviews.length > 0) {
+          await client.query(
+            `insert into school_configuration.managed_translation_reviews
+               (workspace_id, source_resource_id, source_revision_number,
+                translation_resource_id, translation_revision_number, locale,
+                review_provenance_id, reviewer, reviewed_at)
+             select $1, source_resource_id, source_revision_number,
+                    translation_resource_id, translation_revision_number, locale,
+                    review_provenance_id, reviewer, reviewed_at
+               from jsonb_to_recordset($2::jsonb) as x(
+                 source_resource_id uuid, source_revision_number integer,
+                 translation_resource_id uuid, translation_revision_number integer,
+                 locale text, review_provenance_id uuid, reviewer text,
+                 reviewed_at timestamptz
+               )
+             on conflict do nothing`,
+            [
+              input.session.workspaceId,
+              JSON.stringify(
+                input.reviews.map((review) => ({
+                  source_resource_id: review.sourceResourceId,
+                  source_revision_number: review.sourceRevisionNumber,
+                  translation_resource_id: review.translationResourceId,
+                  translation_revision_number: review.translationRevisionNumber,
+                  locale: review.locale,
+                  review_provenance_id: review.reviewProvenanceId,
+                  reviewer: review.reviewer,
+                  reviewed_at: review.reviewedAt.toISOString(),
+                })),
+              ),
+            ],
+          );
+        }
+        await client.query(
+          `insert into school_configuration.draft_candidates
+             (workspace_id, candidate, candidate_fingerprint, updated_by, updated_at)
+           values ($1, $2, $3, $4, $5)
+           on conflict (workspace_id) do update
+             set candidate = excluded.candidate,
+                 candidate_fingerprint = excluded.candidate_fingerprint,
+                 updated_by = excluded.updated_by,
+                 updated_at = excluded.updated_at`,
+          [
+            input.session.workspaceId,
+            input.candidate,
+            input.candidateFingerprint,
+            input.session.staffIdentityId,
+            input.changedAt,
+          ],
+        );
+        const result = { draftVersion: currentVersion + 1 };
+        await client.query(
+          `update school_configuration.configuration_states
+              set draft_version = $2 where workspace_id = $1`,
+          [input.session.workspaceId, result.draftVersion],
+        );
+        await client.query(
+          `insert into infrastructure.operation_receipts
+             (workspace_id, operation_id, command_name, result,
+              request_fingerprint, recorded_at, record_owner,
+              record_classification, disposal_class)
+           values ($1, $2, 'editSchoolConfigurationDraft', $3, $4, $5,
+                   'school', 'operational_evidence', 'operation_receipt')`,
+          [
+            input.session.workspaceId,
+            input.operationId,
+            result,
+            input.requestFingerprint,
+            input.changedAt,
+          ],
+        );
+        await client.query(
+          `insert into audit.evidence
+             (audit_id, workspace_id, operation_id, event_type, actor_type,
+              actor_id, occurred_at, details, record_owner,
+              record_classification, disposal_class)
+           values ($1, $2, $3, 'school_configuration_draft.edited',
+                   'staff', $4, $5, $6, 'school', 'audit_evidence',
+                   'workspace_audit_evidence')`,
+          [
+            input.auditId,
+            input.session.workspaceId,
+            input.operationId,
+            input.session.staffIdentityId,
+            input.changedAt,
+            {
+              candidateFingerprint: input.candidateFingerprint,
+              discardedResourceIds: input.discardedResourceIds,
+            },
+          ],
+        );
+        return result;
       });
     },
 

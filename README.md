@@ -32,7 +32,7 @@ Keep local configuration outside the repository. For example, place it at `~/.co
 | `/student`             | Server-authoritative Student access restoration                              |
 | `/student/intake`      | Synthetic Student Intake Draft and submission                                |
 | `/student/learning`    | Server-confirmed Item Completion for one item                                |
-| `/staff/configuration` | Shared draft initialization, preview, and freshness-gated publication        |
+| `/staff/configuration` | Administrator authoring, preview, and freshness-gated publication            |
 | All other routes       | Prototype retirement notice                                                  |
 
 ## Verification

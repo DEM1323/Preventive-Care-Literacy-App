@@ -42,12 +42,108 @@ export type ExactTranslationReview = {
 
 type Locale = (typeof supportedLocales)[number];
 
+export type ValidationResult = {
+  code: string;
+  path: string;
+  message: string;
+  severity: 'blocker' | 'warning';
+};
+
+export type ResourceComparison = {
+  resourceId: string;
+  draftRevision: number;
+  activeRevision: number | null;
+  differs: boolean;
+  discardEligible: boolean;
+};
+
 export type SchoolConfigurationDraft = {
   workspaceId: string;
   draftVersion: number;
   activeReleaseId: string | null;
+  activeReleaseNumber: number | null;
   candidateFingerprint: string;
   candidate: unknown;
+  unpublishedChanges: boolean;
+  validation: { blockers: ValidationResult[]; warnings: ValidationResult[] };
+  comparisons: ResourceComparison[];
+};
+
+export type BrandingAsset = {
+  mediaType: string;
+  width: number;
+  height: number;
+  byteLength: number;
+  src: string;
+};
+
+export type DraftEdit =
+  | {
+      type: 'save-workspace-branding';
+      resourceId: string;
+      displayName: string;
+      shortName: string;
+      generatedTextMark: string;
+      primaryColor: string;
+      accentColor: string;
+      logo?: BrandingAsset | null;
+      secondaryMark?: BrandingAsset | null;
+    }
+  | {
+      type: 'save-learning-module';
+      resourceId: string;
+      title: string;
+      description: string;
+      knowledgeIntroduction: string;
+    }
+  | {
+      type: 'save-learning-module-item';
+      resourceId: string;
+      text: string;
+      href?: string | null;
+    }
+  | {
+      type: 'reorder-learning-modules';
+      orderedResourceIds: string[];
+    }
+  | {
+      type: 'reorder-learning-module-items';
+      moduleId: string;
+      collection: 'knowledgeItems' | 'skillItems' | 'applicationItems';
+      orderedResourceIds: string[];
+    }
+  | {
+      type: 'create-learning-module';
+      title: string;
+      description: string;
+    }
+  | {
+      type: 'create-learning-module-item';
+      moduleId: string;
+      collection: 'knowledgeItems' | 'skillItems' | 'applicationItems';
+      text: string;
+      href?: string | null;
+    }
+  | {
+      type: 'restore-active-revision';
+      resourceId: string;
+    }
+  | {
+      type: 'discard-authored-resource';
+      resourceId: string;
+    };
+
+export type EditSchoolConfigurationDraftCommand = {
+  sessionHandle: string;
+  operationId: string;
+  expectedDraftVersion: number;
+  expectedResourceRevisions: { resourceId: string; revisionNumber: number }[];
+  edit: DraftEdit;
+};
+
+export type EditSchoolConfigurationDraftResult = SchoolConfigurationDraft & {
+  operationId: string;
+  affectedResources: { resourceId: string; revisionNumber: number }[];
 };
 
 export type ImportSchoolConfigurationDraftCommand = {
@@ -210,6 +306,16 @@ export type ReleasePackageStorage = {
   }): Promise<'created' | 'matched'>;
 };
 
+export type StoredSchoolConfigurationDraft = {
+  workspaceId: string;
+  draftVersion: number;
+  activeReleaseId: string | null;
+  activeReleaseNumber: number | null;
+  activeCandidateFingerprint: string | null;
+  candidateFingerprint: string;
+  candidate: unknown;
+};
+
 export type SchoolConfigurationStore = {
   withPublicationLock<Result>(input: {
     workspaceId: string;
@@ -223,7 +329,24 @@ export type SchoolConfigurationStore = {
   }): Promise<Result>;
   readDraft(
     session: AdministrativeSessionContext,
-  ): Promise<SchoolConfigurationDraft | undefined>;
+  ): Promise<StoredSchoolConfigurationDraft | undefined>;
+  readActiveReleaseResources(
+    session: AdministrativeSessionContext,
+  ): Promise<ExactResource[]>;
+  saveDraft(input: {
+    session: AdministrativeSessionContext;
+    operationId: string;
+    requestFingerprint: string;
+    expectedDraftVersion: number;
+    expectedResourceRevisions: { resourceId: string; revisionNumber: number }[];
+    candidate: unknown;
+    candidateFingerprint: string;
+    resources: ExactResource[];
+    reviews: ExactTranslationReview[];
+    discardedResourceIds: string[];
+    changedAt: Date;
+    auditId: string;
+  }): Promise<{ draftVersion: number }>;
   importDraft(input: {
     session: AdministrativeSessionContext;
     operationId: string;
@@ -605,6 +728,860 @@ export function extractTranslationReviews(
   return reviews;
 }
 
+const hexColorPattern = /^#[0-9A-Fa-f]{6}$/;
+const safeRichTextPattern = /^(?:[^<>]|<strong>[^<>]*<\/strong>)*$/;
+const generatedTextMarkPattern = /^[A-Za-z0-9]{1,4}$/;
+const allowedBrandingKeys = new Set([
+  'id',
+  'revision',
+  'displayName',
+  'shortName',
+  'generatedTextMark',
+  'primaryColor',
+  'accentColor',
+  'officialInstitutionalMarks',
+  'secondaryMark',
+  'affiliationDisclaimer',
+  'logo',
+]);
+const allowedAssetTypes = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/svg+xml',
+]);
+
+function cloneCandidate(candidate: unknown): unknown {
+  return structuredClone(candidate);
+}
+
+function relativeLuminance(hex: string): number {
+  const channels = [1, 3, 5].map((offset) => {
+    const channel = Number.parseInt(hex.slice(offset, offset + 2), 16) / 255;
+    return channel <= 0.03928
+      ? channel / 12.92
+      : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+function contrastRatio(left: string, right: string): number {
+  const first = relativeLuminance(left);
+  const second = relativeLuminance(right);
+  const lighter = Math.max(first, second);
+  const darker = Math.min(first, second);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function canonicalMeaning(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalMeaning);
+  if (!isRecord(value)) return value;
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort()
+      .filter((key) => key !== 'order')
+      .map((key) => [key, canonicalMeaning(value[key])]),
+  );
+}
+
+function indexRevisioned(
+  value: unknown,
+  map: Map<string, Record<string, unknown>>,
+): void {
+  if (Array.isArray(value)) {
+    value.forEach((child) => indexRevisioned(child, map));
+    return;
+  }
+  if (!isRecord(value)) return;
+  if (typeof value.id === 'string' && Number.isInteger(value.revision)) {
+    map.set(value.id, value);
+  }
+  Object.values(value).forEach((child) => indexRevisioned(child, map));
+}
+
+function assignCanonicalRevisions(previous: unknown, next: unknown): unknown {
+  const previousById = new Map<string, Record<string, unknown>>();
+  indexRevisioned(previous, previousById);
+  function visit(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(visit);
+    if (!isRecord(value)) return value;
+    const copy: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(value)) {
+      copy[key] = visit(child);
+    }
+    if (typeof copy.id === 'string' && Number.isInteger(copy.revision)) {
+      const prior = previousById.get(copy.id);
+      if (prior) {
+        copy.revision =
+          canonicalJson(canonicalMeaning(prior)) ===
+          canonicalJson(canonicalMeaning(copy))
+            ? prior.revision
+            : Number(prior.revision) + 1;
+      }
+    }
+    return copy;
+  }
+  return visit(next);
+}
+
+function findRevisioned(
+  value: unknown,
+  resourceId: string,
+): Record<string, unknown> | undefined {
+  if (Array.isArray(value)) {
+    for (const child of value) {
+      const found = findRevisioned(child, resourceId);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  if (!isRecord(value)) return undefined;
+  if (value.id === resourceId) return value;
+  for (const child of Object.values(value)) {
+    const found = findRevisioned(child, resourceId);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+function replaceRevisioned(
+  value: unknown,
+  resourceId: string,
+  replacement: unknown,
+): unknown {
+  if (Array.isArray(value)) {
+    return value.map((child) => {
+      if (isRecord(child) && child.id === resourceId) return replacement;
+      return replaceRevisioned(child, resourceId, replacement);
+    });
+  }
+  if (!isRecord(value)) return value;
+  if (value.id === resourceId) return replacement;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [
+      key,
+      replaceRevisioned(child, resourceId, replacement),
+    ]),
+  );
+}
+
+function removeRevisioned(value: unknown, resourceId: string): unknown {
+  if (Array.isArray(value)) {
+    return value
+      .filter((child) => !(isRecord(child) && child.id === resourceId))
+      .map((child) => removeRevisioned(child, resourceId));
+  }
+  if (!isRecord(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [
+      key,
+      removeRevisioned(child, resourceId),
+    ]),
+  );
+}
+
+function collectResourceIds(value: unknown, ids: string[] = []): string[] {
+  if (Array.isArray(value)) {
+    value.forEach((child) => collectResourceIds(child, ids));
+    return ids;
+  }
+  if (!isRecord(value)) return ids;
+  if (typeof value.id === 'string') ids.push(value.id);
+  Object.values(value).forEach((child) => collectResourceIds(child, ids));
+  return ids;
+}
+
+function releaseRecord(candidate: unknown): Record<string, unknown> {
+  if (!isRecord(candidate) || !isRecord(candidate.release)) {
+    throw new InvalidSchoolConfigurationError('release');
+  }
+  return candidate.release;
+}
+
+function modulesArray(candidate: unknown): Record<string, unknown>[] {
+  const modules = releaseRecord(candidate).modules;
+  if (!Array.isArray(modules)) {
+    throw new InvalidSchoolConfigurationError('release.modules');
+  }
+  return modules.filter(isRecord);
+}
+
+function applyExplicitOrder(candidate: unknown): void {
+  modulesArray(candidate).forEach((module, index) => {
+    module.order = index + 1;
+    for (const collection of [
+      'knowledgeItems',
+      'skillItems',
+      'applicationItems',
+      'pronunciationTerms',
+    ] as const) {
+      const items = module[collection];
+      if (!Array.isArray(items)) continue;
+      items.filter(isRecord).forEach((item, itemIndex) => {
+        item.order = itemIndex + 1;
+      });
+    }
+  });
+}
+
+function setEnglishSource(
+  localized: unknown,
+  value: string,
+  path: string,
+): Record<string, unknown> {
+  if (!isRecord(localized) || !isRecord(localized['en-US'])) {
+    throw new InvalidSchoolConfigurationError(path);
+  }
+  if (localized['en-US'].value === value) return localized;
+  return {
+    ...localized,
+    'en-US': {
+      id: localized['en-US'].id,
+      revision: localized['en-US'].revision,
+      value,
+      origin: 'administrator-authored',
+    },
+  };
+}
+
+function assertSafeRichText(value: string, path: string): void {
+  if (!safeRichTextPattern.test(value)) {
+    throw new InvalidSchoolConfigurationError(path);
+  }
+}
+
+function assertHexColor(value: string, path: string): void {
+  if (!hexColorPattern.test(value)) {
+    throw new InvalidSchoolConfigurationError(path);
+  }
+}
+
+function assertSafeHref(href: string, path: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(href);
+  } catch {
+    throw new InvalidSchoolConfigurationError(path);
+  }
+  if (
+    parsed.protocol !== 'https:' ||
+    parsed.username !== '' ||
+    parsed.password !== ''
+  ) {
+    throw new InvalidSchoolConfigurationError(path);
+  }
+}
+
+function assertSafeAsset(asset: BrandingAsset, path: string): void {
+  if (
+    !allowedAssetTypes.has(asset.mediaType) ||
+    !Number.isInteger(asset.width) ||
+    !Number.isInteger(asset.height) ||
+    !Number.isInteger(asset.byteLength) ||
+    asset.width < 1 ||
+    asset.width > 1024 ||
+    asset.height < 1 ||
+    asset.height > 1024 ||
+    asset.byteLength < 1 ||
+    asset.byteLength > 262144 ||
+    typeof asset.src !== 'string'
+  ) {
+    throw new InvalidSchoolConfigurationError(path);
+  }
+  const svg = asset.mediaType === 'image/svg+xml';
+  if (asset.src.startsWith('https://')) {
+    assertSafeHref(asset.src, path);
+    return;
+  }
+  const dataPrefix = `data:${asset.mediaType}`;
+  if (!asset.src.startsWith(dataPrefix)) {
+    throw new InvalidSchoolConfigurationError(path);
+  }
+  if (svg && /<script|onload=|onerror=|javascript:/i.test(asset.src)) {
+    throw new InvalidSchoolConfigurationError(path);
+  }
+}
+
+function createEnglishLocalized(
+  ids: IdGenerator,
+  value: string,
+): Record<string, unknown> {
+  return {
+    'en-US': {
+      id: ids.create(),
+      revision: 1,
+      value,
+      origin: 'administrator-authored',
+    },
+  };
+}
+
+function createModuleItem(
+  ids: IdGenerator,
+  text: string,
+  href?: string | null,
+): Record<string, unknown> {
+  return {
+    id: ids.create(),
+    revision: 1,
+    order: 1,
+    text: createEnglishLocalized(ids, text),
+    ...(href ? { href } : {}),
+  };
+}
+
+function createLearningModule(
+  ids: IdGenerator,
+  title: string,
+  description: string,
+): Record<string, unknown> {
+  return {
+    id: ids.create(),
+    revision: 1,
+    order: 1,
+    key: 'custom',
+    iconKey: 'custom',
+    title: createEnglishLocalized(ids, title),
+    description: createEnglishLocalized(ids, description),
+    knowledgeIntroduction: createEnglishLocalized(ids, description),
+    knowledgeItems: [createModuleItem(ids, 'New knowledge key point')],
+    skillItems: [createModuleItem(ids, 'I can describe this skill.')],
+    applicationItems: [
+      createModuleItem(ids, 'Complete this application step.'),
+    ],
+    pronunciationTerms: [],
+  };
+}
+
+function localizedPath(path: string, locale: string): string {
+  return `${path}.${locale}`;
+}
+
+export function collectValidationResults(
+  candidate: unknown,
+  workspaceId: string,
+): { blockers: ValidationResult[]; warnings: ValidationResult[] } {
+  const blockers: ValidationResult[] = [];
+  const warnings: ValidationResult[] = [];
+  function add(
+    severity: 'blocker' | 'warning',
+    code: string,
+    path: string,
+    message: string,
+  ) {
+    (severity === 'blocker' ? blockers : warnings).push({
+      code,
+      path,
+      message,
+      severity,
+    });
+  }
+  try {
+    candidateWorkspace(candidate);
+  } catch (error) {
+    if (error instanceof InvalidSchoolConfigurationError) {
+      add(
+        'blocker',
+        'INVALID_SCHOOL_CONFIGURATION',
+        error.affectedValue ?? 'workspace',
+        error.message,
+      );
+      return { blockers, warnings };
+    }
+    throw error;
+  }
+  if (
+    !isRecord(candidate) ||
+    !isRecord(candidate.workspace) ||
+    candidate.workspace.id !== workspaceId
+  ) {
+    add(
+      'blocker',
+      'INVALID_SCHOOL_CONFIGURATION',
+      'workspace.id',
+      'Workspace identity does not match.',
+    );
+    return { blockers, warnings };
+  }
+  const branding = isRecord(candidate.workspace.branding)
+    ? candidate.workspace.branding
+    : undefined;
+  if (branding) {
+    for (const key of Object.keys(branding)) {
+      if (!allowedBrandingKeys.has(key)) {
+        add(
+          'blocker',
+          'CONSTRAINED_BRANDING',
+          `workspace.branding.${key}`,
+          'Workspace Branding cannot include custom fonts, CSS, or unconstrained fields.',
+        );
+      }
+    }
+    if (
+      typeof branding.primaryColor !== 'string' ||
+      !hexColorPattern.test(branding.primaryColor)
+    ) {
+      add(
+        'blocker',
+        'INVALID_COLOR',
+        'workspace.branding.primaryColor',
+        'Primary color must be a six-digit hex value.',
+      );
+    } else if (contrastRatio(branding.primaryColor, '#ffffff') < 4.5) {
+      add(
+        'blocker',
+        'INACCESSIBLE_CONTRAST',
+        'workspace.branding.primaryColor',
+        'Primary color does not meet accessible contrast against white.',
+      );
+    }
+    if (
+      typeof branding.accentColor !== 'string' ||
+      !hexColorPattern.test(branding.accentColor)
+    ) {
+      add(
+        'blocker',
+        'INVALID_COLOR',
+        'workspace.branding.accentColor',
+        'Accent color must be a six-digit hex value.',
+      );
+    } else if (contrastRatio(branding.accentColor, '#ffffff') < 4.5) {
+      add(
+        'blocker',
+        'INACCESSIBLE_CONTRAST',
+        'workspace.branding.accentColor',
+        'Accent color does not meet accessible contrast against white.',
+      );
+    }
+    if (
+      typeof branding.generatedTextMark !== 'string' ||
+      !generatedTextMarkPattern.test(branding.generatedTextMark)
+    ) {
+      add(
+        'blocker',
+        'CONSTRAINED_BRANDING',
+        'workspace.branding.generatedTextMark',
+        'The generated text mark must be one to four letters or digits.',
+      );
+    }
+    if (branding.logo != null) {
+      try {
+        if (!isRecord(branding.logo)) {
+          throw new InvalidSchoolConfigurationError();
+        }
+        assertSafeAsset(
+          branding.logo as BrandingAsset,
+          'workspace.branding.logo',
+        );
+      } catch {
+        add(
+          'blocker',
+          'INVALID_ASSET',
+          'workspace.branding.logo',
+          'The school mark is not a safe, constrained branding asset.',
+        );
+      }
+    }
+    if (branding.secondaryMark != null) {
+      try {
+        if (!isRecord(branding.secondaryMark)) {
+          throw new InvalidSchoolConfigurationError();
+        }
+        assertSafeAsset(
+          branding.secondaryMark as BrandingAsset,
+          'workspace.branding.secondaryMark',
+        );
+      } catch {
+        add(
+          'blocker',
+          'INVALID_ASSET',
+          'workspace.branding.secondaryMark',
+          'The secondary mark is not a safe, constrained branding asset.',
+        );
+      }
+    }
+  }
+  const reviewProvenanceId =
+    isRecord(candidate.reviewProvenance) &&
+    typeof candidate.reviewProvenance.id === 'string'
+      ? candidate.reviewProvenance.id
+      : undefined;
+  function visitLocalized(value: unknown, path: string): void {
+    if (Array.isArray(value)) {
+      value.forEach((child, index) => visit(child, `${path}[${index}]`));
+      return;
+    }
+    if (!isRecord(value)) return;
+    const localeKeys = supportedLocales.filter((locale) => locale in value);
+    if (localeKeys.length > 0) {
+      const source = isRecord(value['en-US']) ? value['en-US'] : undefined;
+      const sourceReviewed =
+        source !== undefined &&
+        source.reviewProvenanceId === reviewProvenanceId &&
+        typeof source.value === 'string' &&
+        source.value.trim().length > 0;
+      for (const locale of supportedLocales) {
+        const localized = value[locale];
+        if (!isRecord(localized) || typeof localized.value !== 'string') {
+          add(
+            'blocker',
+            'MISSING_TRANSLATION',
+            localizedPath(path, locale),
+            'Every supported language needs a complete Managed Translation before publication.',
+          );
+          continue;
+        }
+        if (localized.value.trim().length === 0) {
+          add(
+            'blocker',
+            'MISSING_TRANSLATION',
+            localizedPath(path, locale),
+            'Translated values cannot be empty.',
+          );
+        }
+        if (!safeRichTextPattern.test(localized.value)) {
+          add(
+            'blocker',
+            'UNSAFE_RICH_TEXT',
+            localizedPath(path, locale),
+            'Only plain text and <strong> emphasis are allowed.',
+          );
+        }
+        if (locale === 'en-US') {
+          if (!sourceReviewed) {
+            add(
+              'blocker',
+              'STALE_TRANSLATION',
+              localizedPath(path, locale),
+              'Canonical English source changed and is not ready for publication.',
+            );
+          }
+          continue;
+        }
+        if (
+          !sourceReviewed ||
+          localized.reviewProvenanceId !== reviewProvenanceId
+        ) {
+          add(
+            'blocker',
+            'STALE_TRANSLATION',
+            localizedPath(path, locale),
+            'This Managed Translation is missing, stale, or unreviewed for the current English source.',
+          );
+        }
+      }
+      return;
+    }
+    Object.entries(value).forEach(([key, child]) =>
+      visit(child, path ? `${path}.${key}` : key),
+    );
+  }
+  function visit(value: unknown, path: string): void {
+    if (Array.isArray(value)) {
+      value.forEach((child, index) => visit(child, `${path}[${index}]`));
+      return;
+    }
+    if (!isRecord(value)) return;
+    if (typeof value.href === 'string' && value.href.length > 0) {
+      try {
+        assertSafeHref(value.href, `${path}.href`);
+      } catch {
+        add(
+          'blocker',
+          'INVALID_URL',
+          `${path}.href`,
+          'Application links must be HTTPS URLs without credentials.',
+        );
+      }
+    }
+    visitLocalized(value, path);
+  }
+  visit(candidate, 'candidate');
+  const modules =
+    isRecord(candidate) && isRecord(candidate.release)
+      ? candidate.release.modules
+      : undefined;
+  if (!Array.isArray(modules) || modules.length === 0) {
+    add(
+      'blocker',
+      'EMPTY_REQUIRED_SECTION',
+      'release.modules',
+      'A release needs at least one active Learning Module.',
+    );
+  } else {
+    modules.filter(isRecord).forEach((module, index) => {
+      for (const collection of [
+        'knowledgeItems',
+        'skillItems',
+        'applicationItems',
+      ] as const) {
+        const items = module[collection];
+        if (!Array.isArray(items) || items.length === 0) {
+          add(
+            'blocker',
+            'EMPTY_REQUIRED_SECTION',
+            `release.modules[${index}].${collection}`,
+            'Knowledge, Skills, and Application each need at least one authored item.',
+          );
+        }
+      }
+    });
+  }
+  return { blockers, warnings };
+}
+
+export function presentDraft(
+  draft: StoredSchoolConfigurationDraft,
+  activeResources: ExactResource[],
+): SchoolConfigurationDraft {
+  const draftResources = extractExactResources(draft.candidate);
+  const activeById = new Map(
+    activeResources.map((resource) => [resource.resourceId, resource]),
+  );
+  const publishedIds = new Set(
+    activeResources.map((resource) => resource.resourceId),
+  );
+  return {
+    workspaceId: draft.workspaceId,
+    draftVersion: draft.draftVersion,
+    activeReleaseId: draft.activeReleaseId,
+    activeReleaseNumber: draft.activeReleaseNumber,
+    candidateFingerprint: draft.candidateFingerprint,
+    candidate: draft.candidate,
+    unpublishedChanges:
+      !draft.activeCandidateFingerprint ||
+      draft.candidateFingerprint !== draft.activeCandidateFingerprint,
+    validation: collectValidationResults(draft.candidate, draft.workspaceId),
+    comparisons: draftResources.map((resource) => {
+      const active = activeById.get(resource.resourceId);
+      return {
+        resourceId: resource.resourceId,
+        draftRevision: resource.revisionNumber,
+        activeRevision: active?.revisionNumber ?? null,
+        differs:
+          !active ||
+          canonicalJson(canonicalMeaning(active.payload)) !==
+            canonicalJson(canonicalMeaning(resource.payload)),
+        discardEligible: !publishedIds.has(resource.resourceId),
+      };
+    }),
+  };
+}
+
+export function applyDraftEdit(input: {
+  candidate: unknown;
+  edit: DraftEdit;
+  ids: IdGenerator;
+  activePayload?: Record<string, unknown>;
+}): { candidate: unknown; discardedResourceIds: string[] } {
+  let next = cloneCandidate(input.candidate);
+  const discardedResourceIds: string[] = [];
+  const edit = input.edit;
+  if (edit.type === 'save-workspace-branding') {
+    const branding = findRevisioned(next, edit.resourceId);
+    if (!branding) {
+      throw new InvalidSchoolConfigurationError('workspace.branding');
+    }
+    assertHexColor(edit.primaryColor, 'workspace.branding.primaryColor');
+    assertHexColor(edit.accentColor, 'workspace.branding.accentColor');
+    if (!generatedTextMarkPattern.test(edit.generatedTextMark)) {
+      throw new InvalidSchoolConfigurationError(
+        'workspace.branding.generatedTextMark',
+      );
+    }
+    if (!edit.displayName.trim() || !edit.shortName.trim()) {
+      throw new InvalidSchoolConfigurationError('workspace.branding');
+    }
+    assertSafeRichText(
+      edit.displayName,
+      'workspace.branding.displayName.en-US',
+    );
+    assertSafeRichText(edit.shortName, 'workspace.branding.shortName.en-US');
+    if (edit.logo) assertSafeAsset(edit.logo, 'workspace.branding.logo');
+    if (edit.secondaryMark) {
+      assertSafeAsset(edit.secondaryMark, 'workspace.branding.secondaryMark');
+    }
+    branding.displayName = setEnglishSource(
+      branding.displayName,
+      edit.displayName.trim(),
+      'workspace.branding.displayName',
+    );
+    branding.shortName = setEnglishSource(
+      branding.shortName,
+      edit.shortName.trim(),
+      'workspace.branding.shortName',
+    );
+    branding.generatedTextMark = edit.generatedTextMark;
+    branding.primaryColor = edit.primaryColor;
+    branding.accentColor = edit.accentColor;
+    if (edit.logo !== undefined) branding.logo = edit.logo;
+    if (edit.secondaryMark !== undefined) {
+      branding.secondaryMark = edit.secondaryMark;
+    }
+  } else if (edit.type === 'save-learning-module') {
+    const module = findRevisioned(next, edit.resourceId);
+    if (!module) throw new InvalidSchoolConfigurationError('release.modules');
+    assertSafeRichText(
+      edit.title,
+      `release.modules.${edit.resourceId}.title.en-US`,
+    );
+    assertSafeRichText(
+      edit.description,
+      `release.modules.${edit.resourceId}.description.en-US`,
+    );
+    assertSafeRichText(
+      edit.knowledgeIntroduction,
+      `release.modules.${edit.resourceId}.knowledgeIntroduction.en-US`,
+    );
+    module.title = setEnglishSource(
+      module.title,
+      edit.title.trim(),
+      `release.modules.${edit.resourceId}.title`,
+    );
+    module.description = setEnglishSource(
+      module.description,
+      edit.description.trim(),
+      `release.modules.${edit.resourceId}.description`,
+    );
+    module.knowledgeIntroduction = setEnglishSource(
+      module.knowledgeIntroduction,
+      edit.knowledgeIntroduction.trim(),
+      `release.modules.${edit.resourceId}.knowledgeIntroduction`,
+    );
+  } else if (edit.type === 'save-learning-module-item') {
+    const item = findRevisioned(next, edit.resourceId);
+    if (!item) {
+      throw new InvalidSchoolConfigurationError('release.modules');
+    }
+    const owningModule = modulesArray(next).find((module) =>
+      ['knowledgeItems', 'skillItems', 'applicationItems'].some(
+        (collection) => {
+          const items = module[collection];
+          return (
+            Array.isArray(items) &&
+            items.some(
+              (child) => isRecord(child) && child.id === edit.resourceId,
+            )
+          );
+        },
+      ),
+    );
+    const collection = owningModule
+      ? (['knowledgeItems', 'skillItems', 'applicationItems'] as const).find(
+          (name) => {
+            const items = owningModule[name];
+            return (
+              Array.isArray(items) &&
+              items.some(
+                (child) => isRecord(child) && child.id === edit.resourceId,
+              )
+            );
+          },
+        )
+      : 'knowledgeItems';
+    assertSafeRichText(
+      edit.text,
+      `release.modules.${collection}.${edit.resourceId}.text.en-US`,
+    );
+    if (edit.href) {
+      assertSafeHref(
+        edit.href,
+        `release.modules.${collection}.${edit.resourceId}.href`,
+      );
+    }
+    item.text = setEnglishSource(
+      item.text,
+      edit.text.trim(),
+      `release.modules.${collection}.${edit.resourceId}.text`,
+    );
+    if (edit.href !== undefined) {
+      if (edit.href) item.href = edit.href;
+      else delete item.href;
+    }
+  } else if (edit.type === 'reorder-learning-modules') {
+    const modules = modulesArray(next);
+    const byId = new Map(modules.map((module) => [String(module.id), module]));
+    if (
+      edit.orderedResourceIds.length !== modules.length ||
+      edit.orderedResourceIds.some((id) => !byId.has(id))
+    ) {
+      throw new InvalidSchoolConfigurationError('release.modules');
+    }
+    releaseRecord(next).modules = edit.orderedResourceIds.map(
+      (id) => byId.get(id) as Record<string, unknown>,
+    );
+  } else if (edit.type === 'reorder-learning-module-items') {
+    const module = findRevisioned(next, edit.moduleId);
+    if (!module) throw new InvalidSchoolConfigurationError('release.modules');
+    const items = module[edit.collection];
+    if (!Array.isArray(items)) {
+      throw new InvalidSchoolConfigurationError(
+        `release.modules.${edit.collection}`,
+      );
+    }
+    const records = items.filter(isRecord);
+    const byId = new Map(records.map((item) => [String(item.id), item]));
+    if (
+      edit.orderedResourceIds.length !== records.length ||
+      edit.orderedResourceIds.some((id) => !byId.has(id))
+    ) {
+      throw new InvalidSchoolConfigurationError(
+        `release.modules.${edit.collection}`,
+      );
+    }
+    module[edit.collection] = edit.orderedResourceIds.map(
+      (id) => byId.get(id) as Record<string, unknown>,
+    );
+  } else if (edit.type === 'create-learning-module') {
+    assertSafeRichText(edit.title, 'release.modules.title.en-US');
+    assertSafeRichText(edit.description, 'release.modules.description.en-US');
+    releaseRecord(next).modules = [
+      ...modulesArray(next),
+      createLearningModule(
+        input.ids,
+        edit.title.trim(),
+        edit.description.trim(),
+      ),
+    ];
+  } else if (edit.type === 'create-learning-module-item') {
+    const module = findRevisioned(next, edit.moduleId);
+    if (!module) throw new InvalidSchoolConfigurationError('release.modules');
+    const items = module[edit.collection];
+    if (!Array.isArray(items)) {
+      throw new InvalidSchoolConfigurationError(
+        `release.modules.${edit.collection}`,
+      );
+    }
+    assertSafeRichText(
+      edit.text,
+      `release.modules.${edit.collection}.text.en-US`,
+    );
+    if (edit.href) {
+      assertSafeHref(edit.href, `release.modules.${edit.collection}.href`);
+    }
+    items.push(createModuleItem(input.ids, edit.text.trim(), edit.href));
+  } else if (edit.type === 'restore-active-revision') {
+    if (!input.activePayload) {
+      throw new InvalidSchoolConfigurationError('activeRevision');
+    }
+    next = replaceRevisioned(next, edit.resourceId, input.activePayload);
+    applyExplicitOrder(next);
+    return { candidate: next, discardedResourceIds };
+  } else if (edit.type === 'discard-authored-resource') {
+    const existing = findRevisioned(next, edit.resourceId);
+    if (!existing) {
+      throw new InvalidSchoolConfigurationError('discard');
+    }
+    discardedResourceIds.push(...collectResourceIds(existing));
+    next = removeRevisioned(next, edit.resourceId);
+  }
+  applyExplicitOrder(next);
+  return {
+    candidate: assignCanonicalRevisions(input.candidate, next),
+    discardedResourceIds,
+  };
+}
+
 export function createSchoolConfiguration(dependencies: {
   identityAndAccess: Pick<
     IdentityAndAccess,
@@ -621,11 +1598,98 @@ export function createSchoolConfiguration(dependencies: {
         await dependencies.identityAndAccess.requireAdministrativeSession(
           command,
         );
-      return dependencies.store.readDraft(session);
+      const draft = await dependencies.store.readDraft(session);
+      if (!draft) return undefined;
+      const activeResources =
+        await dependencies.store.readActiveReleaseResources(session);
+      return presentDraft(draft, activeResources);
     },
 
     stepUp(command: { sessionHandle: string; password: string; totp: string }) {
       return dependencies.identityAndAccess.stepUpStaffSession(command);
+    },
+
+    async editDraft(command: EditSchoolConfigurationDraftCommand) {
+      const session =
+        await dependencies.identityAndAccess.requireAdministrativeSession(
+          command,
+        );
+      const draft = await dependencies.store.readDraft(session);
+      if (!draft) throw new InvalidSchoolConfigurationError('draft');
+      if (draft.draftVersion !== command.expectedDraftVersion) {
+        throw new DraftVersionConflictError(draft.draftVersion);
+      }
+      const currentResources = extractExactResources(draft.candidate);
+      const currentById = new Map(
+        currentResources.map((resource) => [resource.resourceId, resource]),
+      );
+      for (const expected of command.expectedResourceRevisions) {
+        const current = currentById.get(expected.resourceId);
+        if (!current || current.revisionNumber !== expected.revisionNumber) {
+          throw new ResourceRevisionConflictError();
+        }
+      }
+      const activeResources =
+        await dependencies.store.readActiveReleaseResources(session);
+      const restoreResourceId =
+        command.edit.type === 'restore-active-revision'
+          ? command.edit.resourceId
+          : undefined;
+      const activePayload = restoreResourceId
+        ? activeResources.find(
+            (resource) => resource.resourceId === restoreResourceId,
+          )?.payload
+        : undefined;
+      if (command.edit.type === 'discard-authored-resource') {
+        const published = new Set(
+          activeResources.map((resource) => resource.resourceId),
+        );
+        if (published.has(command.edit.resourceId)) {
+          throw new InvalidSchoolConfigurationError('discard');
+        }
+      }
+      const applied = applyDraftEdit({
+        candidate: draft.candidate,
+        edit: command.edit,
+        ids: dependencies.ids,
+        activePayload,
+      });
+      const candidateFingerprint = fingerprintCandidate(applied.candidate);
+      const resources = extractExactResources(applied.candidate);
+      const saved = await dependencies.store.saveDraft({
+        session,
+        operationId: command.operationId,
+        requestFingerprint: sha256(
+          canonicalJson({
+            expectedDraftVersion: command.expectedDraftVersion,
+            expectedResourceRevisions: command.expectedResourceRevisions,
+            edit: JSON.parse(JSON.stringify(command.edit)),
+            candidateFingerprint,
+          }),
+        ),
+        expectedDraftVersion: command.expectedDraftVersion,
+        expectedResourceRevisions: command.expectedResourceRevisions,
+        candidate: applied.candidate,
+        candidateFingerprint,
+        resources,
+        reviews: [],
+        discardedResourceIds: applied.discardedResourceIds,
+        changedAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+      });
+      const stored = await dependencies.store.readDraft(session);
+      if (!stored) throw new InvalidSchoolConfigurationError('draft');
+      return {
+        operationId: command.operationId,
+        affectedResources: resources.map((resource) => ({
+          resourceId: resource.resourceId,
+          revisionNumber: resource.revisionNumber,
+        })),
+        ...presentDraft(
+          { ...stored, draftVersion: saved.draftVersion },
+          activeResources,
+        ),
+      };
     },
 
     async importDraft(command: ImportSchoolConfigurationDraftCommand) {
