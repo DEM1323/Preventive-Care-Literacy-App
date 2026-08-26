@@ -14,6 +14,12 @@ import {
   canonicalJson,
   supportedLocales,
 } from '../school-configuration/index.ts';
+import type { SupportedIntakeFieldType } from '../intake-answers/index.ts';
+import {
+  intakeFieldIsVisible,
+  isSupportedIntakeFieldType,
+  selectedIntakeOptionCodes,
+} from '../intake-answers/index.ts';
 
 export { renderIntakeAnswer } from '../intake-answers/index.ts';
 export type { LocalizedIntakeAnswerField } from '../intake-answers/index.ts';
@@ -68,7 +74,7 @@ export type IntakeFormField = {
   key: string;
   sectionId: string;
   order: number;
-  type: 'text' | 'date' | 'tel' | 'yes-no' | 'textarea';
+  type: SupportedIntakeFieldType;
   required: boolean;
   requiredWhenVisible: boolean;
   visibility: { fieldId: string; equalsOptionCode: string } | null;
@@ -344,16 +350,7 @@ function localizedText(
 }
 
 function fieldType(value: unknown): IntakeFormField['type'] | undefined {
-  if (
-    value === 'text' ||
-    value === 'date' ||
-    value === 'tel' ||
-    value === 'yes-no' ||
-    value === 'textarea'
-  ) {
-    return value;
-  }
-  return undefined;
+  return isSupportedIntakeFieldType(value) ? value : undefined;
 }
 
 export function projectStudentIntakeForm(
@@ -459,10 +456,7 @@ export function fieldIsVisible(
   field: IntakeFormField,
   answers: IntakeAnswerMap,
 ): boolean {
-  if (!field.visibility) return true;
-  return (
-    answers[field.visibility.fieldId] === field.visibility.equalsOptionCode
-  );
+  return intakeFieldIsVisible(field, answers);
 }
 
 export function answersAreComplete(
@@ -483,7 +477,18 @@ export function answersAreComplete(
     if (!required && (value === undefined || value.trim() === '')) continue;
     if (typeof value !== 'string' || value.trim().length === 0) return false;
     if (field.options.length > 0) {
-      if (!field.options.some((option) => option.code === value)) return false;
+      const selected = selectedIntakeOptionCodes(value);
+      if (selected.length === 0) return false;
+      if (
+        selected.some(
+          (code) => !field.options.some((option) => option.code === code),
+        )
+      ) {
+        return false;
+      }
+      if (field.type !== 'multiple-choice' && selected.length !== 1) {
+        return false;
+      }
     }
   }
   return true;

@@ -2312,6 +2312,7 @@ export interface operations {
       content: {
         'application/json': {
           accentColor?: string;
+          code?: string;
           collection?: 'knowledgeItems' | 'skillItems' | 'applicationItems';
           description?: string;
           displayName?: string;
@@ -2321,9 +2322,14 @@ export interface operations {
             resourceId: string;
             revisionNumber: number;
           }[];
+          /** Format: uuid */
+          fieldId?: string;
+          fieldType?: string;
           generatedTextMark?: string;
+          helpText?: string | null;
           href?: string | null;
           knowledgeIntroduction?: string;
+          label?: string;
           logo?: {
             byteLength: number;
             height: number;
@@ -2337,6 +2343,8 @@ export interface operations {
           operationId: string;
           orderedResourceIds?: string[];
           primaryColor?: string;
+          required?: boolean;
+          requiredWhenVisible?: boolean;
           /** Format: uuid */
           resourceId?: string;
           secondaryMark?: {
@@ -2346,6 +2354,8 @@ export interface operations {
             src: string;
             width: number;
           } | null;
+          /** Format: uuid */
+          sectionId?: string;
           shortName?: string;
           text?: string;
           title?: string;
@@ -2357,8 +2367,23 @@ export interface operations {
             | 'reorder-learning-module-items'
             | 'create-learning-module'
             | 'create-learning-module-item'
+            | 'save-intake-form'
+            | 'save-intake-section'
+            | 'save-intake-field'
+            | 'save-intake-option'
+            | 'reorder-intake-sections'
+            | 'reorder-intake-fields'
+            | 'reorder-intake-options'
+            | 'create-intake-section'
+            | 'create-intake-field'
+            | 'create-intake-option'
             | 'restore-active-revision'
             | 'discard-authored-resource';
+          visibility?: null | {
+            equalsOptionCode: string;
+            /** Format: uuid */
+            fieldId: string;
+          };
         };
       };
     };
@@ -4723,7 +4748,16 @@ export interface operations {
                 revision: number;
                 /** Format: uuid */
                 sectionId: string;
-                type: 'text' | 'date' | 'tel' | 'yes-no' | 'textarea';
+                type:
+                  | 'text'
+                  | 'date'
+                  | 'tel'
+                  | 'yes-no'
+                  | 'textarea'
+                  | 'email'
+                  | 'single-choice'
+                  | 'multiple-choice'
+                  | 'acknowledgement';
                 visibility: null | {
                   equalsOptionCode: string;
                   /** Format: uuid */
@@ -5310,7 +5344,16 @@ export interface operations {
                   revision: number;
                   /** Format: uuid */
                   sectionId: string;
-                  type: 'text' | 'date' | 'tel' | 'yes-no' | 'textarea';
+                  type:
+                    | 'text'
+                    | 'date'
+                    | 'tel'
+                    | 'yes-no'
+                    | 'textarea'
+                    | 'email'
+                    | 'single-choice'
+                    | 'multiple-choice'
+                    | 'acknowledgement';
                   visibility: null | {
                     equalsOptionCode: string;
                     /** Format: uuid */

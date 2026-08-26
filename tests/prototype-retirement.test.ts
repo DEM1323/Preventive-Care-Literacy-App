@@ -2,7 +2,12 @@ import { expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename } from 'node:path';
-import { renderIntakeAnswer } from '../modules/intake-answers/index.ts';
+import {
+  evaluateIntakePreview,
+  intakeFieldIsVisible,
+  omitHiddenIntakeAnswers,
+  renderIntakeAnswer,
+} from '../modules/intake-answers/index.ts';
 import {
   clinicalHttpFailureLocksAllState,
   ignoreStaleClinicalGeneration,
@@ -113,6 +118,15 @@ test('an empty Staff workspace can install the bundled synthetic draft', () => {
   expect(source).toContain('Compare');
   expect(source).toContain('Preview follows the selected resource');
   expect(source).toContain('Active Students remain pinned');
+  expect(source).toContain('save-intake-field');
+  expect(source).toContain('create-intake-section');
+  expect(source).toContain('Synthetic Intake preview');
+  expect(source).toContain('evaluateIntakePreview');
+  expect(source).toContain("width === 'mobile' ? 'max-w-[375px]'");
+  expect(source).not.toContain('/api/v1/student/intake');
+  expect(source).not.toContain(
+    'Intake Form authoring is not part of this slice',
+  );
   expect(source).not.toContain('SchoolConfigurationEditorPrototype');
 });
 
@@ -243,4 +257,48 @@ test('clinical UI fail-closed helpers clear immediately and ignore stale in-flig
   expect(renderIntakeAnswer(optionField, 'yes')).toBe('Has insurance');
   expect(renderIntakeAnswer(optionField, 'yes')).not.toBe('yes');
   expect(renderIntakeAnswer(optionField, 'unknown-code')).toBeUndefined();
+});
+
+test('synthetic Intake preview omits hidden answers and applies requiredness', () => {
+  const controller = {
+    id: 'controller',
+    type: 'yes-no',
+    required: true,
+    requiredWhenVisible: false,
+    visibility: null as { fieldId: string; equalsOptionCode: string } | null,
+    options: [{ code: 'yes' }, { code: 'no' }],
+  };
+  const dependent = {
+    id: 'detail',
+    type: 'textarea',
+    required: false,
+    requiredWhenVisible: true,
+    visibility: { fieldId: 'controller', equalsOptionCode: 'yes' },
+    options: [] as { code: string }[],
+  };
+  expect(intakeFieldIsVisible(dependent, { controller: 'no' })).toBe(false);
+  expect(intakeFieldIsVisible(dependent, { controller: 'yes' })).toBe(true);
+  expect(
+    omitHiddenIntakeAnswers([controller, dependent], {
+      controller: 'no',
+      detail: 'kept only while visible',
+    }),
+  ).toEqual({ controller: 'no' });
+  const hidden = evaluateIntakePreview([controller, dependent], {
+    controller: 'no',
+    detail: 'should vanish',
+  });
+  expect(hidden.visibleFieldIds).toEqual(['controller']);
+  expect(hidden.answers).toEqual({ controller: 'no' });
+  expect(hidden.requiredFieldIds).toEqual(['controller']);
+  const shown = evaluateIntakePreview([controller, dependent], {
+    controller: 'yes',
+    detail: 'now required',
+  });
+  expect(shown.visibleFieldIds).toEqual(['controller', 'detail']);
+  expect(shown.requiredFieldIds).toEqual(['controller', 'detail']);
+  expect(shown.answers).toEqual({
+    controller: 'yes',
+    detail: 'now required',
+  });
 });

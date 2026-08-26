@@ -628,6 +628,10 @@ const StudentIntakeFormResponse = Type.Object({
           Type.Literal('tel'),
           Type.Literal('yes-no'),
           Type.Literal('textarea'),
+          Type.Literal('email'),
+          Type.Literal('single-choice'),
+          Type.Literal('multiple-choice'),
+          Type.Literal('acknowledgement'),
         ]),
         required: Type.Boolean(),
         requiredWhenVisible: Type.Boolean(),
@@ -887,11 +891,23 @@ const DraftEditBody = Type.Object(
       Type.Literal('reorder-learning-module-items'),
       Type.Literal('create-learning-module'),
       Type.Literal('create-learning-module-item'),
+      Type.Literal('save-intake-form'),
+      Type.Literal('save-intake-section'),
+      Type.Literal('save-intake-field'),
+      Type.Literal('save-intake-option'),
+      Type.Literal('reorder-intake-sections'),
+      Type.Literal('reorder-intake-fields'),
+      Type.Literal('reorder-intake-options'),
+      Type.Literal('create-intake-section'),
+      Type.Literal('create-intake-field'),
+      Type.Literal('create-intake-option'),
       Type.Literal('restore-active-revision'),
       Type.Literal('discard-authored-resource'),
     ]),
     resourceId: Type.Optional(Type.String({ format: 'uuid' })),
     moduleId: Type.Optional(Type.String({ format: 'uuid' })),
+    fieldId: Type.Optional(Type.String({ format: 'uuid' })),
+    sectionId: Type.Optional(Type.String({ format: 'uuid' })),
     collection: Type.Optional(
       Type.Union([
         Type.Literal('knowledgeItems'),
@@ -913,8 +929,25 @@ const DraftEditBody = Type.Object(
     description: Type.Optional(Type.String({ maxLength: 4000 })),
     knowledgeIntroduction: Type.Optional(Type.String({ maxLength: 8000 })),
     text: Type.Optional(Type.String({ maxLength: 8000 })),
+    label: Type.Optional(Type.String({ maxLength: 8000 })),
+    helpText: Type.Optional(
+      Type.Union([Type.String({ maxLength: 8000 }), Type.Null()]),
+    ),
     href: Type.Optional(
       Type.Union([Type.String({ maxLength: 2000 }), Type.Null()]),
+    ),
+    fieldType: Type.Optional(Type.String({ maxLength: 40 })),
+    code: Type.Optional(Type.String({ maxLength: 64 })),
+    required: Type.Optional(Type.Boolean()),
+    requiredWhenVisible: Type.Optional(Type.Boolean()),
+    visibility: Type.Optional(
+      Type.Union([
+        Type.Null(),
+        Type.Object({
+          fieldId: Type.String({ format: 'uuid' }),
+          equalsOptionCode: Type.String({ maxLength: 64 }),
+        }),
+      ]),
     ),
   },
   { additionalProperties: false },
@@ -1229,6 +1262,123 @@ function parseDraftEdit(body: Static<typeof DraftEditBody>): DraftEdit {
       collection: body.collection,
       text: body.text,
       href: body.href,
+    };
+  }
+  if (body.type === 'save-intake-form') {
+    if (
+      !body.resourceId ||
+      body.title === undefined ||
+      body.text === undefined
+    ) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm');
+    }
+    return {
+      type: body.type,
+      resourceId: body.resourceId,
+      title: body.title,
+      text: body.text,
+    };
+  }
+  if (body.type === 'save-intake-section') {
+    if (!body.resourceId || body.title === undefined) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.sections');
+    }
+    return {
+      type: body.type,
+      resourceId: body.resourceId,
+      title: body.title,
+    };
+  }
+  if (body.type === 'save-intake-field') {
+    if (
+      !body.resourceId ||
+      !body.sectionId ||
+      body.fieldType === undefined ||
+      body.label === undefined ||
+      body.required === undefined ||
+      body.requiredWhenVisible === undefined
+    ) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.fields');
+    }
+    return {
+      type: body.type,
+      resourceId: body.resourceId,
+      sectionId: body.sectionId,
+      fieldType: body.fieldType,
+      label: body.label,
+      helpText: body.helpText,
+      required: body.required,
+      requiredWhenVisible: body.requiredWhenVisible,
+      visibility: body.visibility ?? null,
+    };
+  }
+  if (body.type === 'save-intake-option') {
+    if (
+      !body.resourceId ||
+      body.code === undefined ||
+      body.label === undefined
+    ) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.options');
+    }
+    return {
+      type: body.type,
+      resourceId: body.resourceId,
+      code: body.code,
+      label: body.label,
+    };
+  }
+  if (body.type === 'reorder-intake-sections') {
+    if (!body.orderedResourceIds) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.sections');
+    }
+    return { type: body.type, orderedResourceIds: body.orderedResourceIds };
+  }
+  if (body.type === 'reorder-intake-fields') {
+    if (!body.orderedResourceIds) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.fields');
+    }
+    return { type: body.type, orderedResourceIds: body.orderedResourceIds };
+  }
+  if (body.type === 'reorder-intake-options') {
+    if (!body.fieldId || !body.orderedResourceIds) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.options');
+    }
+    return {
+      type: body.type,
+      fieldId: body.fieldId,
+      orderedResourceIds: body.orderedResourceIds,
+    };
+  }
+  if (body.type === 'create-intake-section') {
+    if (body.title === undefined) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.sections');
+    }
+    return { type: body.type, title: body.title };
+  }
+  if (body.type === 'create-intake-field') {
+    if (
+      !body.sectionId ||
+      body.fieldType === undefined ||
+      body.label === undefined
+    ) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.fields');
+    }
+    return {
+      type: body.type,
+      sectionId: body.sectionId,
+      fieldType: body.fieldType,
+      label: body.label,
+    };
+  }
+  if (body.type === 'create-intake-option') {
+    if (!body.fieldId || body.code === undefined || body.label === undefined) {
+      throw new InvalidSchoolConfigurationError('release.intakeForm.options');
+    }
+    return {
+      type: body.type,
+      fieldId: body.fieldId,
+      code: body.code,
+      label: body.label,
     };
   }
   if (body.type === 'restore-active-revision') {
