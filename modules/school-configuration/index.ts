@@ -10,6 +10,52 @@ import {
   isChoiceIntakeFieldType,
   isSupportedIntakeFieldType,
 } from '../intake-answers/index.ts';
+import {
+  applyGeneratedTranslations,
+  applyManagedTranslationEdit,
+  applyManagedTranslationReview,
+  extractTranslatableSegments,
+  findLocalizedValue,
+  managedLocales,
+  presentManagedTranslations,
+  translationStatusFor,
+  type ManagedLocale,
+  type ManagedTranslationWork,
+  type TranslationAdapter,
+  type TranslationGenerationRejection,
+  type TranslationGenerationTelemetry,
+} from './managed-translations.ts';
+
+export {
+  applyGeneratedTranslations,
+  assertApprovedTranslationRequest,
+  createUnavailableTranslationAdapter,
+  extractTranslatableSegments,
+  presentManagedTranslations,
+  productOwnedInterfaceCatalog,
+  restorePlaceholders,
+  shieldPlaceholders,
+  translationAdapterId,
+  translationAdapterVersion,
+  translationGlossaryRevision,
+  translationSafetyRegressionFixtures,
+  translationSegmentKinds,
+  TranslationAdapterRejectedError,
+  TranslationProviderUnavailableError,
+  UnsafeGeneratedTranslationError,
+  validateTranslationSafety,
+} from './managed-translations.ts';
+export type {
+  ManagedLocale,
+  ManagedTranslationItem,
+  ManagedTranslationWork,
+  TranslationAdapter,
+  TranslationGenerationRejection,
+  TranslationGenerationTelemetry,
+  TranslationSegment,
+  TranslationSegmentKind,
+  TranslationStatus,
+} from './managed-translations.ts';
 
 export const candidateFingerprintAlgorithm =
   'school-configuration-candidate/v1' as const;
@@ -71,6 +117,7 @@ export type SchoolConfigurationDraft = {
   unpublishedChanges: boolean;
   validation: { blockers: ValidationResult[]; warnings: ValidationResult[] };
   comparisons: ResourceComparison[];
+  managedTranslations: ManagedTranslationWork;
 };
 
 export type BrandingAsset = {
@@ -192,6 +239,17 @@ export type DraftEdit =
   | {
       type: 'discard-authored-resource';
       resourceId: string;
+    }
+  | {
+      type: 'save-managed-translation';
+      resourceId: string;
+      locale: ManagedLocale;
+      text: string;
+    }
+  | {
+      type: 'review-managed-translation';
+      resourceId: string;
+      locale: ManagedLocale;
     };
 
 export type EditSchoolConfigurationDraftCommand = {
@@ -205,6 +263,21 @@ export type EditSchoolConfigurationDraftCommand = {
 export type EditSchoolConfigurationDraftResult = SchoolConfigurationDraft & {
   operationId: string;
   affectedResources: { resourceId: string; revisionNumber: number }[];
+};
+
+export type GenerateManagedTranslationsCommand = {
+  sessionHandle: string;
+  operationId: string;
+  expectedDraftVersion: number;
+  locale: ManagedLocale;
+  sourceResourceIds?: string[];
+};
+
+export type GenerateManagedTranslationsResult = SchoolConfigurationDraft & {
+  operationId: string;
+  affectedResources: { resourceId: string; revisionNumber: number }[];
+  rejected: TranslationGenerationRejection[];
+  telemetry: TranslationGenerationTelemetry;
 };
 
 export type ImportSchoolConfigurationDraftCommand = {
@@ -567,8 +640,19 @@ function assertReviewedTranslations(candidate: unknown): void {
           typeof localized.id !== 'string' ||
           !Number.isInteger(localized.revision) ||
           Number(localized.revision) < 1 ||
-          localized.reviewProvenanceId !== reviewProvenanceId ||
           !/^(?:[^<>]|<strong>[^<>]*<\/strong>)*$/.test(localized.value)
+        ) {
+          affected = `${path}.${locale}`;
+          return;
+        }
+        if (locale === 'en-US') continue;
+        const sourceRevision = Number(
+          isRecord(value['en-US']) ? value['en-US'].revision : 0,
+        );
+        const boundRevision = Number(localized.sourceRevision ?? 1);
+        if (
+          typeof localized.reviewProvenanceId !== 'string' ||
+          boundRevision !== sourceRevision
         ) {
           affected = `${path}.${locale}`;
           return;
@@ -750,24 +834,14 @@ export function extractExactResources(candidate: unknown): ExactResource[] {
 export function extractTranslationReviews(
   candidate: unknown,
 ): ExactTranslationReview[] {
-  if (
-    !isRecord(candidate) ||
-    !isRecord(candidate.reviewProvenance) ||
-    typeof candidate.reviewProvenance.id !== 'string' ||
-    typeof candidate.reviewProvenance.actor !== 'string' ||
-    typeof candidate.reviewProvenance.recordedAt !== 'string'
-  ) {
-    throw new InvalidSchoolConfigurationError('reviewProvenance');
-  }
-  const provenance = {
-    id: candidate.reviewProvenance.id,
-    actor: candidate.reviewProvenance.actor,
-    recordedAt: candidate.reviewProvenance.recordedAt,
-  };
-  const reviewedAt = new Date(provenance.recordedAt);
-  if (Number.isNaN(reviewedAt.getTime())) {
-    throw new InvalidSchoolConfigurationError('reviewProvenance.recordedAt');
-  }
+  const global =
+    isRecord(candidate) && isRecord(candidate.reviewProvenance)
+      ? candidate.reviewProvenance
+      : undefined;
+  const globalReviewedAt =
+    global && typeof global.recordedAt === 'string'
+      ? new Date(global.recordedAt)
+      : undefined;
   const reviews: ExactTranslationReview[] = [];
   function visit(value: unknown): void {
     if (Array.isArray(value)) {
@@ -775,26 +849,35 @@ export function extractTranslationReviews(
       return;
     }
     if (!isRecord(value)) return;
-    if (supportedLocales.every((locale) => locale in value)) {
-      const source = value['en-US'];
-      if (!isRecord(source)) {
-        throw new InvalidSchoolConfigurationError('translationSource');
-      }
-      for (const locale of supportedLocales.slice(1) as Array<
-        Exclude<Locale, 'en-US'>
-      >) {
+    const source = isRecord(value['en-US']) ? value['en-US'] : undefined;
+    if (source && typeof source.id === 'string') {
+      for (const locale of managedLocales) {
         const translation = value[locale];
-        if (!isRecord(translation)) {
-          throw new InvalidSchoolConfigurationError(`translation.${locale}`);
+        if (
+          !isRecord(translation) ||
+          typeof translation.id !== 'string' ||
+          typeof translation.reviewProvenanceId !== 'string'
+        ) {
+          continue;
         }
+        const reviewedAt =
+          typeof translation.reviewedAt === 'string'
+            ? new Date(translation.reviewedAt)
+            : globalReviewedAt;
+        if (!reviewedAt || Number.isNaN(reviewedAt.getTime())) continue;
         reviews.push({
           sourceResourceId: String(source.id),
           sourceRevisionNumber: Number(source.revision),
           translationResourceId: String(translation.id),
           translationRevisionNumber: Number(translation.revision),
           locale,
-          reviewProvenanceId: provenance.id,
-          reviewer: provenance.actor,
+          reviewProvenanceId: String(translation.reviewProvenanceId),
+          reviewer:
+            typeof translation.reviewer === 'string'
+              ? translation.reviewer
+              : typeof global?.actor === 'string'
+                ? global.actor
+                : 'administrator',
           reviewedAt,
         });
       }
@@ -1420,11 +1503,6 @@ export function collectValidationResults(
       }
     }
   }
-  const reviewProvenanceId =
-    isRecord(candidate.reviewProvenance) &&
-    typeof candidate.reviewProvenance.id === 'string'
-      ? candidate.reviewProvenance.id
-      : undefined;
   function visitLocalized(value: unknown, path: string): void {
     if (Array.isArray(value)) {
       value.forEach((child, index) => visit(child, `${path}[${index}]`));
@@ -1434,11 +1512,6 @@ export function collectValidationResults(
     const localeKeys = supportedLocales.filter((locale) => locale in value);
     if (localeKeys.length > 0) {
       const source = isRecord(value['en-US']) ? value['en-US'] : undefined;
-      const sourceReviewed =
-        source !== undefined &&
-        source.reviewProvenanceId === reviewProvenanceId &&
-        typeof source.value === 'string' &&
-        source.value.trim().length > 0;
       for (const locale of supportedLocales) {
         const localized = value[locale];
         if (!isRecord(localized) || typeof localized.value !== 'string') {
@@ -1466,21 +1539,13 @@ export function collectValidationResults(
             'Only plain text and <strong> emphasis are allowed.',
           );
         }
-        if (locale === 'en-US') {
-          if (!sourceReviewed) {
-            add(
-              'blocker',
-              'STALE_TRANSLATION',
-              localizedPath(path, locale),
-              'Canonical English source changed and is not ready for publication.',
-            );
-          }
-          continue;
-        }
-        if (
-          !sourceReviewed ||
-          localized.reviewProvenanceId !== reviewProvenanceId
-        ) {
+        if (locale === 'en-US') continue;
+        const sourceRevision = Number(source?.revision ?? 0);
+        const boundRevision = Number(localized.sourceRevision ?? 1);
+        const reviewed =
+          typeof localized.reviewProvenanceId === 'string' &&
+          boundRevision === sourceRevision;
+        if (!reviewed) {
           add(
             'blocker',
             'STALE_TRANSLATION',
@@ -1819,6 +1884,7 @@ export function presentDraft(
         discardEligible: !publishedIds.has(resource.resourceId),
       };
     }),
+    managedTranslations: presentManagedTranslations(draft.candidate),
   };
 }
 
@@ -1827,6 +1893,8 @@ export function applyDraftEdit(input: {
   edit: DraftEdit;
   ids: IdGenerator;
   activePayload?: Record<string, unknown>;
+  reviewer?: string;
+  reviewedAt?: Date;
 }): { candidate: unknown; discardedResourceIds: string[] } {
   let next = cloneCandidate(input.candidate);
   const discardedResourceIds: string[] = [];
@@ -2198,6 +2266,33 @@ export function applyDraftEdit(input: {
       next = removeRevisioned(next, String(field.id));
     }
     next = removeRevisioned(next, edit.resourceId);
+  } else if (edit.type === 'save-managed-translation') {
+    if (!(managedLocales as readonly string[]).includes(edit.locale)) {
+      throw new InvalidSchoolConfigurationError('managedTranslation.locale');
+    }
+    assertSafeRichText(edit.text, `managedTranslation.${edit.locale}`);
+    next = applyManagedTranslationEdit({
+      candidate: next,
+      sourceResourceId: edit.resourceId,
+      locale: edit.locale,
+      text: edit.text.trim(),
+      ids: input.ids,
+    });
+  } else if (edit.type === 'review-managed-translation') {
+    if (!(managedLocales as readonly string[]).includes(edit.locale)) {
+      throw new InvalidSchoolConfigurationError('managedTranslation.locale');
+    }
+    if (!input.reviewer || !input.reviewedAt) {
+      throw new InvalidSchoolConfigurationError('managedTranslation.reviewer');
+    }
+    next = applyManagedTranslationReview({
+      candidate: next,
+      sourceResourceId: edit.resourceId,
+      locale: edit.locale,
+      reviewProvenanceId: input.ids.create(),
+      reviewer: input.reviewer,
+      reviewedAt: input.reviewedAt,
+    });
   }
   applyExplicitOrder(next);
   return {
@@ -2215,6 +2310,7 @@ export function createSchoolConfiguration(dependencies: {
   packages: ReleasePackageStorage;
   clock: Clock;
   ids: IdGenerator;
+  translationAdapter: TranslationAdapter;
 }) {
   return {
     async readDraft(command: { sessionHandle: string }) {
@@ -2277,6 +2373,8 @@ export function createSchoolConfiguration(dependencies: {
         edit: command.edit,
         ids: dependencies.ids,
         activePayload,
+        reviewer: session.staffIdentityId,
+        reviewedAt: dependencies.clock.now(),
       });
       const candidateFingerprint = fingerprintCandidate(applied.candidate);
       const resources = extractExactResources(applied.candidate);
@@ -2296,7 +2394,7 @@ export function createSchoolConfiguration(dependencies: {
         candidate: applied.candidate,
         candidateFingerprint,
         resources,
-        reviews: [],
+        reviews: extractTranslationReviews(applied.candidate),
         discardedResourceIds: applied.discardedResourceIds,
         changedAt: dependencies.clock.now(),
         auditId: dependencies.ids.create(),
@@ -2309,6 +2407,124 @@ export function createSchoolConfiguration(dependencies: {
           resourceId: resource.resourceId,
           revisionNumber: resource.revisionNumber,
         })),
+        ...presentDraft(
+          { ...stored, draftVersion: saved.draftVersion },
+          activeResources,
+        ),
+      };
+    },
+
+    async generateTranslations(command: GenerateManagedTranslationsCommand) {
+      const session =
+        await dependencies.identityAndAccess.requireAdministrativeSession(
+          command,
+        );
+      if (!(managedLocales as readonly string[]).includes(command.locale)) {
+        throw new InvalidSchoolConfigurationError('managedTranslation.locale');
+      }
+      const draft = await dependencies.store.readDraft(session);
+      if (!draft) throw new InvalidSchoolConfigurationError('draft');
+      if (draft.draftVersion !== command.expectedDraftVersion) {
+        throw new DraftVersionConflictError(draft.draftVersion);
+      }
+      const requested = new Set(command.sourceResourceIds ?? []);
+      const segments = extractTranslatableSegments(
+        draft.candidate,
+        command.locale,
+      ).filter((segment) => {
+        if (requested.size > 0 && !requested.has(segment.sourceResourceId)) {
+          return false;
+        }
+        const english = findLocalizedValue(
+          draft.candidate,
+          segment.sourceResourceId,
+          'en-US',
+        );
+        const localized = findLocalizedValue(
+          draft.candidate,
+          segment.sourceResourceId,
+          command.locale,
+        );
+        return translationStatusFor(english, localized) !== 'reviewed';
+      });
+      const startedAt = dependencies.clock.now();
+      let outputs: Awaited<
+        ReturnType<TranslationAdapter['translate']>
+      >['outputs'] = [];
+      if (segments.length > 0) {
+        const translated = await dependencies.translationAdapter.translate({
+          segments,
+        });
+        outputs = translated.outputs;
+      }
+      const applied = applyGeneratedTranslations({
+        candidate: draft.candidate,
+        locale: command.locale,
+        outputs,
+        adapter: dependencies.translationAdapter,
+        generatedAt: startedAt,
+        ids: dependencies.ids,
+        requestedSourceIds: command.sourceResourceIds,
+      });
+      const candidate = assignCanonicalRevisions(
+        draft.candidate,
+        applied.candidate,
+      );
+      const candidateFingerprint = fingerprintCandidate(candidate);
+      const resources = extractExactResources(candidate);
+      const saved = await dependencies.store.saveDraft({
+        session,
+        operationId: command.operationId,
+        requestFingerprint: sha256(
+          canonicalJson({
+            expectedDraftVersion: command.expectedDraftVersion,
+            locale: command.locale,
+            sourceResourceIds: command.sourceResourceIds ?? [],
+            candidateFingerprint,
+            rejected: applied.rejected.map((item) => ({
+              sourceResourceId: item.sourceResourceId,
+              locale: item.locale,
+              code: item.code,
+            })),
+          }),
+        ),
+        expectedDraftVersion: command.expectedDraftVersion,
+        expectedResourceRevisions: [],
+        candidate,
+        candidateFingerprint,
+        resources,
+        reviews: extractTranslationReviews(candidate),
+        discardedResourceIds: [],
+        changedAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+      });
+      const stored = await dependencies.store.readDraft(session);
+      if (!stored) throw new InvalidSchoolConfigurationError('draft');
+      const activeResources =
+        await dependencies.store.readActiveReleaseResources(session);
+      const telemetry: TranslationGenerationTelemetry = {
+        adapter: dependencies.translationAdapter.id,
+        adapterVersion: dependencies.translationAdapter.version,
+        model: dependencies.translationAdapter.model,
+        glossaryRevision: dependencies.translationAdapter.glossaryRevision,
+        locale: command.locale,
+        segmentCount: segments.length,
+        rejectedCount: applied.rejected.length,
+        outcome:
+          applied.rejected.length === 0
+            ? 'ok'
+            : applied.written > 0
+              ? 'rejected'
+              : 'rejected',
+      };
+      return {
+        operationId: command.operationId,
+        affectedResources: resources.map((resource) => ({
+          resourceId: resource.resourceId,
+          revisionNumber: resource.revisionNumber,
+        })),
+        rejected: applied.rejected,
+        telemetry,
         ...presentDraft(
           { ...stored, draftVersion: saved.draftVersion },
           activeResources,

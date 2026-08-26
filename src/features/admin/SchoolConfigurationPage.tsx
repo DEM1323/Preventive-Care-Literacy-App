@@ -11,6 +11,7 @@ import type { paths } from '../../../packages/api-client/src/schema.ts';
 const client = createBrowserApiClient();
 const locales = ['en-US', 'es-US', 'pt-BR', 'fr-CA', 'ht-HT'] as const;
 type Locale = (typeof locales)[number];
+type ManagedLocale = Exclude<Locale, 'en-US'>;
 type ResourceKey = 'branding' | 'modules' | 'intake' | 'translations';
 type Collection = 'knowledgeItems' | 'skillItems' | 'applicationItems';
 type DraftEditBody =
@@ -116,6 +117,36 @@ type IntakeFieldFields = {
   visibilityOptionCode: string;
 };
 type IntakeOptionFields = { code: string; label: string };
+type ManagedTranslationItem = Draft['managedTranslations']['items'][number];
+type LocalizedEntry = {
+  id?: string;
+  revision?: number;
+  value?: string;
+  origin?: string;
+  reviewer?: string;
+  reviewedAt?: string;
+  generation?: {
+    adapter?: string;
+    adapterVersion?: string;
+    model?: string;
+    glossaryRevision?: string;
+    generatedAt?: string;
+  };
+};
+
+const managedLocaleLabels: Record<ManagedLocale, string> = {
+  'es-US': 'Spanish',
+  'pt-BR': 'Portuguese',
+  'fr-CA': 'French',
+  'ht-HT': 'Haitian Creole',
+};
+
+const translationKindLabels: Record<ManagedTranslationItem['kind'], string> = {
+  interface_string: 'Interface',
+  learning_module_field: 'Learning',
+  intake_question: 'Intake',
+  intake_answer_option: 'Answer option',
+};
 
 const intakeFieldTypeOptions = [
   ['text', 'Short text'],
@@ -131,6 +162,37 @@ const intakeFieldTypeOptions = [
 
 function localized(value: LocalizedValue | undefined, locale: Locale): string {
   return value?.[locale]?.value ?? value?.['en-US']?.value ?? '';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function findLocalizedMap(
+  value: unknown,
+  sourceResourceId: string,
+): Record<string, LocalizedEntry> | undefined {
+  if (Array.isArray(value)) {
+    for (const child of value) {
+      const found = findLocalizedMap(child, sourceResourceId);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  if (!isRecord(value)) return undefined;
+  const english = value['en-US'];
+  if (
+    isRecord(english) &&
+    typeof english.id === 'string' &&
+    english.id === sourceResourceId
+  ) {
+    return value as Record<string, LocalizedEntry>;
+  }
+  for (const child of Object.values(value)) {
+    const found = findLocalizedMap(child, sourceResourceId);
+    if (found) return found;
+  }
+  return undefined;
 }
 
 function brandingFieldsFrom(
@@ -283,6 +345,7 @@ export function SchoolConfigurationPage() {
   const operationId = useRef(crypto.randomUUID());
   const initializationOperationId = useRef(crypto.randomUUID());
   const saveOperationId = useRef(crypto.randomUUID());
+  const generateOperationId = useRef(crypto.randomUUID());
   const saveTimer = useRef<number | undefined>(undefined);
   const saveInFlight = useRef(false);
   const saveAgain = useRef(false);
@@ -472,6 +535,128 @@ export function SchoolConfigurationPage() {
       );
       return false;
     }
+  }
+
+  async function generateTranslations(
+    locale: ManagedLocale,
+    sourceResourceIds?: string[],
+  ): Promise<boolean> {
+    const current = draftRef.current;
+    if (!current) return false;
+    setSaveState('Generating Managed Translations...');
+    setConflict(false);
+    try {
+      const result = await client.POST(
+        '/api/v1/administration/school-configuration/managed-translation-generations',
+        {
+          body: {
+            operationId: generateOperationId.current,
+            expectedDraftVersion: current.draftVersion,
+            locale,
+            ...(sourceResourceIds && sourceResourceIds.length > 0
+              ? { sourceResourceIds }
+              : {}),
+          },
+        },
+      );
+      if (result.response.status === 200 && result.data) {
+        generateOperationId.current = crypto.randomUUID();
+        const next = asDraft(result.data);
+        draftRef.current = next;
+        setDraft(next);
+        const rejected = result.data.rejected.length;
+        setSaveState(
+          rejected > 0
+            ? `${rejected} generated segments failed safety checks and were not written.`
+            : 'Generated suggestions saved as unreviewed draft text.',
+        );
+        return true;
+      }
+      const problem = result.error as Problem | undefined;
+      if (
+        problem?.code === 'RESOURCE_REVISION_CONFLICT' ||
+        problem?.code === 'DRAFT_VERSION_CONFLICT'
+      ) {
+        setConflict(true);
+        setSaveState(
+          'Another Administrator changed this resource. Compare or reload before generating again.',
+        );
+        return false;
+      }
+      setSaveState(
+        problem?.code === 'TRANSLATION_PROVIDER_UNAVAILABLE'
+          ? 'Managed Translation generation is unavailable.'
+          : 'Generation could not finish. Retry keeps this operation until the service recovers.',
+      );
+      return false;
+    } catch {
+      setSaveState(
+        'Generation failed. Retry keeps this operation until the service recovers.',
+      );
+      return false;
+    }
+  }
+
+  async function saveManagedTranslation(
+    item: ManagedTranslationItem,
+    text: string,
+  ): Promise<boolean> {
+    const current = draftRef.current;
+    if (!current) return false;
+    const map = findLocalizedMap(current.candidate, item.sourceResourceId);
+    const translation = map?.[item.locale];
+    return editDraft({
+      type: 'save-managed-translation',
+      resourceId: item.sourceResourceId,
+      locale: item.locale,
+      text,
+      expectedResourceRevisions:
+        translation?.id && typeof translation.revision === 'number'
+          ? [
+              {
+                resourceId: translation.id,
+                revisionNumber: translation.revision,
+              },
+            ]
+          : [],
+    });
+  }
+
+  async function reviewManagedTranslation(
+    item: ManagedTranslationItem,
+    text?: string,
+  ): Promise<boolean> {
+    const current = draftRef.current;
+    if (!current) return false;
+    const map = findLocalizedMap(current.candidate, item.sourceResourceId);
+    const existing = map?.[item.locale]?.value ?? '';
+    if (text !== undefined && text !== existing) {
+      const saved = await saveManagedTranslation(item, text);
+      if (!saved) return false;
+    }
+    const latest = draftRef.current;
+    if (!latest) return false;
+    const translation = findLocalizedMap(
+      latest.candidate,
+      item.sourceResourceId,
+    )?.[item.locale];
+    if (!translation?.id || typeof translation.revision !== 'number') {
+      setSaveState(
+        'Generate or save this translation before marking it reviewed.',
+      );
+      return false;
+    }
+    return editDraft({
+      type: 'review-managed-translation',
+      resourceId: item.sourceResourceId,
+      locale: item.locale,
+      expectedResourceRevisions: [
+        {
+          resourceId: translation.id,
+          revisionNumber: translation.revision,
+        },
+      ],
+    });
   }
 
   async function flushPendingEdits() {
@@ -934,7 +1119,15 @@ export function SchoolConfigurationPage() {
         : comparison.resourceId === selectedModule?.id,
   );
   const previewScreen =
-    resource === 'branding' ? 'home' : resource === 'intake' ? 'intake' : 'module';
+    resource === 'branding' || resource === 'translations'
+      ? 'home'
+      : resource === 'intake'
+        ? 'intake'
+        : 'module';
+  const previewLocaleWork =
+    locale === 'en-US'
+      ? undefined
+      : draft.managedTranslations.locales.find((item) => item.locale === locale);
   const intakePreview = evaluateIntakePreview(
     candidate.release.intakeForm.fields.map((field) => ({
       id: field.id,
@@ -1139,6 +1332,21 @@ export function SchoolConfigurationPage() {
                 Exact draft candidate. Synthetic data only. No Student route or
                 record is loaded. Preview follows the selected resource.
               </p>
+              {previewLocaleWork ? (
+                <p className="mt-2 text-xs leading-5 text-amber-900">
+                  Previewing draft {locale} translations. Students still see the
+                  active release.
+                  {previewLocaleWork.stale > 0
+                    ? ` ${previewLocaleWork.stale} stale.`
+                    : ''}
+                  {previewLocaleWork.generated > 0
+                    ? ` ${previewLocaleWork.generated} generated and unreviewed.`
+                    : ''}
+                  {previewLocaleWork.missing > 0
+                    ? ` ${previewLocaleWork.missing} missing, so English is shown.`
+                    : ''}
+                </p>
+              ) : null}
             </div>
             <div className="flex gap-2">
               <select
@@ -1560,6 +1768,20 @@ export function SchoolConfigurationPage() {
                   ],
                 });
               }}
+              previewLocale={locale}
+              onPreviewLocale={setLocale}
+              onGenerateTranslations={(nextLocale, sourceResourceIds) => {
+                setLocale(nextLocale);
+                void generateTranslations(nextLocale, sourceResourceIds);
+              }}
+              onSaveTranslation={(item, text) => {
+                setLocale(item.locale);
+                void saveManagedTranslation(item, text);
+              }}
+              onReviewTranslation={(item, text) => {
+                setLocale(item.locale);
+                void reviewManagedTranslation(item, text);
+              }}
             />
           ) : (
             <ReadinessPane
@@ -1689,6 +1911,14 @@ function EditorPane(props: {
   onCreateIntakeSection(): void;
   onCreateIntakeField(sectionId: string, fieldType: string): void;
   onCreateIntakeOption(fieldId: string): void;
+  previewLocale: Locale;
+  onPreviewLocale(locale: Locale): void;
+  onGenerateTranslations(
+    locale: ManagedLocale,
+    sourceResourceIds?: string[],
+  ): void;
+  onSaveTranslation(item: ManagedTranslationItem, text: string): void;
+  onReviewTranslation(item: ManagedTranslationItem, text?: string): void;
 }) {
   const branding = props.branding;
   const module = props.selectedModule;
@@ -1972,12 +2202,223 @@ function EditorPane(props: {
       ) : null}
 
       {props.resource === 'translations' ? (
-        <p className="mt-6 rounded-xl bg-sky-50 p-4 text-sm text-sky-950">
-          Managed Translation generation and review are not part of this slice.
-          Linked readiness results still show missing or stale locale work that
-          blocks publication.
-        </p>
+        <ManagedTranslationsEditor
+          draft={props.draft}
+          previewLocale={props.previewLocale}
+          onPreviewLocale={props.onPreviewLocale}
+          onGenerate={props.onGenerateTranslations}
+          onSave={props.onSaveTranslation}
+          onReview={props.onReviewTranslation}
+        />
       ) : null}
+    </div>
+  );
+}
+
+function ManagedTranslationsEditor(props: {
+  draft: Draft;
+  previewLocale: Locale;
+  onPreviewLocale(locale: Locale): void;
+  onGenerate(locale: ManagedLocale, sourceResourceIds?: string[]): void;
+  onSave(item: ManagedTranslationItem, text: string): void;
+  onReview(item: ManagedTranslationItem, text?: string): void;
+}) {
+  const work = props.draft.managedTranslations;
+  const selectedLocale: ManagedLocale =
+    props.previewLocale === 'en-US' ? 'es-US' : props.previewLocale;
+  const summary = work.locales.find((item) => item.locale === selectedLocale);
+  const items = work.items.filter((item) => item.locale === selectedLocale);
+  const blockers = props.draft.validation.blockers.filter((blocker) =>
+    blocker.path.includes(selectedLocale),
+  );
+  const [draftText, setDraftText] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    setDraftText({});
+  }, [props.draft.draftVersion]);
+
+  function textFor(item: ManagedTranslationItem): string {
+    if (item.path in draftText) return draftText[item.path] ?? '';
+    return (
+      findLocalizedMap(props.draft.candidate, item.sourceResourceId)?.[
+        item.locale
+      ]?.value ?? ''
+    );
+  }
+
+  return (
+    <div className="mt-6 space-y-4">
+      <p className="text-sm leading-6 text-slate-600">
+        English is canonical. Generate provider suggestions from server-loaded
+        authored content, then review before publication. Regeneration never
+        overwrites reviewed text.
+      </p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {work.locales.map((localeSummary) => {
+          const selected = localeSummary.locale === selectedLocale;
+          const needsWork =
+            localeSummary.missing +
+              localeSummary.stale +
+              localeSummary.generated >
+            0;
+          return (
+            <button
+              key={localeSummary.locale}
+              type="button"
+              onClick={() => props.onPreviewLocale(localeSummary.locale)}
+              className={`rounded-xl border p-3 text-left ${
+                selected ? 'border-emerald-700 bg-emerald-50' : 'bg-white'
+              }`}
+            >
+              <strong className="text-sm">
+                {managedLocaleLabels[localeSummary.locale]}
+              </strong>
+              <span className="mt-1 block text-xs text-slate-600">
+                {localeSummary.reviewed} reviewed · {localeSummary.generated}{' '}
+                generated · {localeSummary.stale} stale ·{' '}
+                {localeSummary.missing} missing
+              </span>
+              <span
+                className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  needsWork
+                    ? 'bg-amber-100 text-amber-900'
+                    : 'bg-emerald-100 text-emerald-800'
+                }`}
+              >
+                {needsWork ? 'Needs review' : 'Ready'}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => props.onGenerate(selectedLocale)}
+          className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white"
+        >
+          Generate suggestions
+        </button>
+        {summary && summary.generated + summary.stale + summary.missing > 0 ? (
+          <p className="self-center text-xs text-slate-500">
+            Generated text stays unreviewed until an Administrator marks it
+            reviewed.
+          </p>
+        ) : null}
+      </div>
+      {blockers.length > 0 ? (
+        <div className="space-y-2">
+          {blockers.map((blocker) => (
+            <p
+              key={`${blocker.code}:${blocker.path}`}
+              className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs text-rose-900"
+            >
+              <strong>{blocker.code}</strong>
+              <span className="mt-1 block">{blocker.message}</span>
+              <span className="mt-1 block font-mono text-[11px]">
+                {blocker.path}
+              </span>
+            </p>
+          ))}
+        </div>
+      ) : null}
+      <div className="space-y-3">
+        {items.map((item) => {
+          const map = findLocalizedMap(
+            props.draft.candidate,
+            item.sourceResourceId,
+          );
+          const source = map?.['en-US']?.value ?? '';
+          const current = textFor(item);
+          const provenance = item.provenance;
+          return (
+            <article key={item.path} className="rounded-xl border p-3">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                    {translationKindLabels[item.kind]} · {item.status}
+                  </p>
+                  <p className="mt-1 font-mono text-[11px] text-slate-500">
+                    {item.path}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {item.status !== 'reviewed' ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        props.onGenerate(item.locale, [item.sourceResourceId])
+                      }
+                      className="text-xs font-bold text-emerald-800"
+                    >
+                      {item.status === 'missing' ? 'Generate' : 'Regenerate'}
+                    </button>
+                  ) : null}
+                  {item.status === 'generated' ? (
+                    <button
+                      type="button"
+                      onClick={() => props.onReview(item, current)}
+                      className="text-xs font-bold text-emerald-800"
+                    >
+                      Mark reviewed
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              <p className="mt-3 text-xs font-bold text-slate-500">English</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">
+                {source || 'Not yet loaded on this candidate.'}
+              </p>
+              <label className="mt-3 block text-xs font-bold text-slate-500">
+                {managedLocaleLabels[item.locale]}
+                <textarea
+                  value={current}
+                  rows={3}
+                  disabled={item.status === 'missing'}
+                  onChange={(event) =>
+                    setDraftText((state) => ({
+                      ...state,
+                      [item.path]: event.target.value,
+                    }))
+                  }
+                  className="mt-1 w-full rounded-lg border px-2 py-1 text-sm disabled:bg-slate-50"
+                />
+              </label>
+              {item.status !== 'missing' ? (
+                <button
+                  type="button"
+                  onClick={() => props.onSave(item, current)}
+                  className="mt-2 text-xs font-bold text-slate-600"
+                >
+                  Save translation
+                </button>
+              ) : null}
+              {provenance ? (
+                <p className="mt-2 text-[11px] leading-5 text-slate-500">
+                  Source revision {provenance.sourceRevision}
+                  {provenance.adapter ? ` · ${provenance.adapter}` : ''}
+                  {provenance.adapterVersion
+                    ? ` · ${provenance.adapterVersion}`
+                    : ''}
+                  {provenance.model ? ` · ${provenance.model}` : ''}
+                  {provenance.glossaryRevision
+                    ? ` · ${provenance.glossaryRevision}`
+                    : ''}
+                  {provenance.generatedAt
+                    ? ` · generated ${provenance.generatedAt}`
+                    : ''}
+                  {provenance.reviewer
+                    ? ` · reviewer ${provenance.reviewer}`
+                    : ''}
+                  {provenance.reviewedAt
+                    ? ` · reviewed ${provenance.reviewedAt}`
+                    : ''}
+                </p>
+              ) : null}
+            </article>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -180,6 +180,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/administration/school-configuration/managed-translation-generations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['generateManagedTranslations'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/administration/school-configuration/releases': {
     parameters: {
       query?: never;
@@ -2201,6 +2217,41 @@ export interface operations {
               resourceId: string;
             }[];
             draftVersion: number;
+            managedTranslations: {
+              items: {
+                kind:
+                  | 'interface_string'
+                  | 'learning_module_field'
+                  | 'intake_question'
+                  | 'intake_answer_option';
+                locale: 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+                path: string;
+                provenance?: {
+                  adapter?: string;
+                  adapterVersion?: string;
+                  generatedAt?: string;
+                  glossaryRevision?: string;
+                  model?: string;
+                  reviewedAt?: string;
+                  reviewer?: string;
+                  sourceRevision: number;
+                };
+                schoolEditable: boolean;
+                /** Format: uuid */
+                sourceResourceId: string;
+                sourceRevision: number;
+                status: 'missing' | 'stale' | 'generated' | 'reviewed';
+                /** Format: uuid */
+                translationResourceId?: string;
+              }[];
+              locales: {
+                generated: number;
+                locale: 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+                missing: number;
+                reviewed: number;
+                stale: number;
+              }[];
+            };
             unpublishedChanges: boolean;
             validation: {
               blockers: {
@@ -2330,6 +2381,7 @@ export interface operations {
           href?: string | null;
           knowledgeIntroduction?: string;
           label?: string;
+          locale?: 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
           logo?: {
             byteLength: number;
             height: number;
@@ -2378,7 +2430,9 @@ export interface operations {
             | 'create-intake-field'
             | 'create-intake-option'
             | 'restore-active-revision'
-            | 'discard-authored-resource';
+            | 'discard-authored-resource'
+            | 'save-managed-translation'
+            | 'review-managed-translation';
           visibility?: null | {
             equalsOptionCode: string;
             /** Format: uuid */
@@ -2413,6 +2467,41 @@ export interface operations {
               resourceId: string;
             }[];
             draftVersion: number;
+            managedTranslations: {
+              items: {
+                kind:
+                  | 'interface_string'
+                  | 'learning_module_field'
+                  | 'intake_question'
+                  | 'intake_answer_option';
+                locale: 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+                path: string;
+                provenance?: {
+                  adapter?: string;
+                  adapterVersion?: string;
+                  generatedAt?: string;
+                  glossaryRevision?: string;
+                  model?: string;
+                  reviewedAt?: string;
+                  reviewer?: string;
+                  sourceRevision: number;
+                };
+                schoolEditable: boolean;
+                /** Format: uuid */
+                sourceResourceId: string;
+                sourceRevision: number;
+                status: 'missing' | 'stale' | 'generated' | 'reviewed';
+                /** Format: uuid */
+                translationResourceId?: string;
+              }[];
+              locales: {
+                generated: number;
+                locale: 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+                missing: number;
+                reviewed: number;
+                stale: number;
+              }[];
+            };
             /** Format: uuid */
             operationId: string;
             unpublishedChanges: boolean;
@@ -2725,6 +2814,250 @@ export interface operations {
       };
       /** @description Default Response */
       500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  generateManagedTranslations: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          expectedDraftVersion: number;
+          locale: 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+          /** Format: uuid */
+          operationId: string;
+          sourceResourceIds?: string[];
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            activeReleaseId: string | null;
+            activeReleaseNumber: number | null;
+            affectedResources: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            }[];
+            candidate: unknown;
+            candidateFingerprint: string;
+            comparisons: {
+              activeRevision: number | null;
+              differs: boolean;
+              discardEligible: boolean;
+              draftRevision: number;
+              /** Format: uuid */
+              resourceId: string;
+            }[];
+            draftVersion: number;
+            managedTranslations: {
+              items: {
+                kind:
+                  | 'interface_string'
+                  | 'learning_module_field'
+                  | 'intake_question'
+                  | 'intake_answer_option';
+                locale: 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+                path: string;
+                provenance?: {
+                  adapter?: string;
+                  adapterVersion?: string;
+                  generatedAt?: string;
+                  glossaryRevision?: string;
+                  model?: string;
+                  reviewedAt?: string;
+                  reviewer?: string;
+                  sourceRevision: number;
+                };
+                schoolEditable: boolean;
+                /** Format: uuid */
+                sourceResourceId: string;
+                sourceRevision: number;
+                status: 'missing' | 'stale' | 'generated' | 'reviewed';
+                /** Format: uuid */
+                translationResourceId?: string;
+              }[];
+              locales: {
+                generated: number;
+                locale: 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+                missing: number;
+                reviewed: number;
+                stale: number;
+              }[];
+            };
+            /** Format: uuid */
+            operationId: string;
+            rejected: {
+              code: string;
+              locale: 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+              /** Format: uuid */
+              sourceResourceId: string;
+            }[];
+            unpublishedChanges: boolean;
+            validation: {
+              blockers: {
+                code: string;
+                message: string;
+                path: string;
+                /** @enum {string} */
+                severity: 'blocker';
+              }[];
+              warnings: {
+                code: string;
+                message: string;
+                path: string;
+                /** @enum {string} */
+                severity: 'warning';
+              }[];
+            };
+            /** Format: uuid */
+            workspaceId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
         headers: {
           [name: string]: unknown;
         };

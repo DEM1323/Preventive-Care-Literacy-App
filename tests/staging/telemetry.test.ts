@@ -28,7 +28,24 @@ test('telemetry emits only allowlisted operational fields', () => {
     durationMs: 1,
   } as TelemetryEvent);
 
+  telemetry.record({
+    name: 'translation.generation.completed',
+    adapter: 'google-cloud-translation-advanced',
+    adapterVersion: 'managed-translation-adapter/v1',
+    glossaryRevision: 'school-health-glossary/v1',
+    locale: 'es-US',
+    segmentCount: 2,
+    rejectedCount: 0,
+    outcome: 'ok',
+    durationMs: 9,
+    sourceText: 'private source',
+    translatedText: 'private translation',
+  } as TelemetryEvent);
+
   expect(lines).toEqual([
     '{"name":"http.request.completed","method":"POST","route":"create-school-workspace","statusCode":201,"durationMs":12}',
+    '{"name":"translation.generation.completed","adapter":"google-cloud-translation-advanced","adapterVersion":"managed-translation-adapter/v1","glossaryRevision":"school-health-glossary/v1","locale":"es-US","segmentCount":2,"rejectedCount":0,"outcome":"ok","durationMs":9}',
   ]);
+  expect(`${JSON.stringify(lines)}`).not.toContain('private source');
+  expect(`${JSON.stringify(lines)}`).not.toContain('student@example.test');
 });

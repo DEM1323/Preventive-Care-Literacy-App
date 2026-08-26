@@ -2208,6 +2208,123 @@
                       "type": "array"
                     },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "managedTranslations": {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "properties": {
+                              "kind": {
+                                "anyOf": [
+                                  {
+                                    "enum": ["interface_string"],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": ["learning_module_field"],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": ["intake_question"],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": ["intake_answer_option"],
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "locale": {
+                                "anyOf": [
+                                  { "enum": ["es-US"], "type": "string" },
+                                  { "enum": ["pt-BR"], "type": "string" },
+                                  { "enum": ["fr-CA"], "type": "string" },
+                                  { "enum": ["ht-HT"], "type": "string" }
+                                ]
+                              },
+                              "path": { "type": "string" },
+                              "provenance": {
+                                "properties": {
+                                  "adapter": { "type": "string" },
+                                  "adapterVersion": { "type": "string" },
+                                  "generatedAt": { "type": "string" },
+                                  "glossaryRevision": { "type": "string" },
+                                  "model": { "type": "string" },
+                                  "reviewedAt": { "type": "string" },
+                                  "reviewer": { "type": "string" },
+                                  "sourceRevision": {
+                                    "minimum": 1,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": ["sourceRevision"],
+                                "type": "object"
+                              },
+                              "schoolEditable": { "type": "boolean" },
+                              "sourceResourceId": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "sourceRevision": {
+                                "minimum": 1,
+                                "type": "integer"
+                              },
+                              "status": {
+                                "anyOf": [
+                                  { "enum": ["missing"], "type": "string" },
+                                  { "enum": ["stale"], "type": "string" },
+                                  { "enum": ["generated"], "type": "string" },
+                                  { "enum": ["reviewed"], "type": "string" }
+                                ]
+                              },
+                              "translationResourceId": {
+                                "format": "uuid",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "locale",
+                              "kind",
+                              "sourceResourceId",
+                              "sourceRevision",
+                              "status",
+                              "schoolEditable"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "locales": {
+                          "items": {
+                            "properties": {
+                              "generated": { "minimum": 0, "type": "integer" },
+                              "locale": {
+                                "anyOf": [
+                                  { "enum": ["es-US"], "type": "string" },
+                                  { "enum": ["pt-BR"], "type": "string" },
+                                  { "enum": ["fr-CA"], "type": "string" },
+                                  { "enum": ["ht-HT"], "type": "string" }
+                                ]
+                              },
+                              "missing": { "minimum": 0, "type": "integer" },
+                              "reviewed": { "minimum": 0, "type": "integer" },
+                              "stale": { "minimum": 0, "type": "integer" }
+                            },
+                            "required": [
+                              "locale",
+                              "missing",
+                              "stale",
+                              "generated",
+                              "reviewed"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "required": ["locales", "items"],
+                      "type": "object"
+                    },
                     "unpublishedChanges": { "type": "boolean" },
                     "validation": {
                       "properties": {
@@ -2258,7 +2375,8 @@
                     "candidate",
                     "unpublishedChanges",
                     "validation",
-                    "comparisons"
+                    "comparisons",
+                    "managedTranslations"
                   ],
                   "type": "object"
                 }
@@ -2430,6 +2548,14 @@
                     "type": "string"
                   },
                   "label": { "maxLength": 8000, "type": "string" },
+                  "locale": {
+                    "anyOf": [
+                      { "enum": ["es-US"], "type": "string" },
+                      { "enum": ["pt-BR"], "type": "string" },
+                      { "enum": ["fr-CA"], "type": "string" },
+                      { "enum": ["ht-HT"], "type": "string" }
+                    ]
+                  },
                   "logo": {
                     "anyOf": [
                       {
@@ -2549,6 +2675,14 @@
                       {
                         "enum": ["discard-authored-resource"],
                         "type": "string"
+                      },
+                      {
+                        "enum": ["save-managed-translation"],
+                        "type": "string"
+                      },
+                      {
+                        "enum": ["review-managed-translation"],
+                        "type": "string"
                       }
                     ]
                   },
@@ -2641,6 +2775,123 @@
                       "type": "array"
                     },
                     "draftVersion": { "minimum": 0, "type": "integer" },
+                    "managedTranslations": {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "properties": {
+                              "kind": {
+                                "anyOf": [
+                                  {
+                                    "enum": ["interface_string"],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": ["learning_module_field"],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": ["intake_question"],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": ["intake_answer_option"],
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "locale": {
+                                "anyOf": [
+                                  { "enum": ["es-US"], "type": "string" },
+                                  { "enum": ["pt-BR"], "type": "string" },
+                                  { "enum": ["fr-CA"], "type": "string" },
+                                  { "enum": ["ht-HT"], "type": "string" }
+                                ]
+                              },
+                              "path": { "type": "string" },
+                              "provenance": {
+                                "properties": {
+                                  "adapter": { "type": "string" },
+                                  "adapterVersion": { "type": "string" },
+                                  "generatedAt": { "type": "string" },
+                                  "glossaryRevision": { "type": "string" },
+                                  "model": { "type": "string" },
+                                  "reviewedAt": { "type": "string" },
+                                  "reviewer": { "type": "string" },
+                                  "sourceRevision": {
+                                    "minimum": 1,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": ["sourceRevision"],
+                                "type": "object"
+                              },
+                              "schoolEditable": { "type": "boolean" },
+                              "sourceResourceId": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "sourceRevision": {
+                                "minimum": 1,
+                                "type": "integer"
+                              },
+                              "status": {
+                                "anyOf": [
+                                  { "enum": ["missing"], "type": "string" },
+                                  { "enum": ["stale"], "type": "string" },
+                                  { "enum": ["generated"], "type": "string" },
+                                  { "enum": ["reviewed"], "type": "string" }
+                                ]
+                              },
+                              "translationResourceId": {
+                                "format": "uuid",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "locale",
+                              "kind",
+                              "sourceResourceId",
+                              "sourceRevision",
+                              "status",
+                              "schoolEditable"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "locales": {
+                          "items": {
+                            "properties": {
+                              "generated": { "minimum": 0, "type": "integer" },
+                              "locale": {
+                                "anyOf": [
+                                  { "enum": ["es-US"], "type": "string" },
+                                  { "enum": ["pt-BR"], "type": "string" },
+                                  { "enum": ["fr-CA"], "type": "string" },
+                                  { "enum": ["ht-HT"], "type": "string" }
+                                ]
+                              },
+                              "missing": { "minimum": 0, "type": "integer" },
+                              "reviewed": { "minimum": 0, "type": "integer" },
+                              "stale": { "minimum": 0, "type": "integer" }
+                            },
+                            "required": [
+                              "locale",
+                              "missing",
+                              "stale",
+                              "generated",
+                              "reviewed"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "required": ["locales", "items"],
+                      "type": "object"
+                    },
                     "operationId": { "format": "uuid", "type": "string" },
                     "unpublishedChanges": { "type": "boolean" },
                     "validation": {
@@ -2694,7 +2945,8 @@
                     "candidate",
                     "unpublishedChanges",
                     "validation",
-                    "comparisons"
+                    "comparisons",
+                    "managedTranslations"
                   ],
                   "type": "object"
                 }
@@ -3118,6 +3370,492 @@
             "description": "Default Response"
           },
           "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/school-configuration/managed-translation-generations": {
+      "post": {
+        "operationId": "generateManagedTranslations",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "expectedDraftVersion": { "minimum": 0, "type": "integer" },
+                  "locale": {
+                    "anyOf": [
+                      { "enum": ["es-US"], "type": "string" },
+                      { "enum": ["pt-BR"], "type": "string" },
+                      { "enum": ["fr-CA"], "type": "string" },
+                      { "enum": ["ht-HT"], "type": "string" }
+                    ]
+                  },
+                  "operationId": { "format": "uuid", "type": "string" },
+                  "sourceResourceIds": {
+                    "items": { "format": "uuid", "type": "string" },
+                    "type": "array"
+                  }
+                },
+                "required": ["operationId", "expectedDraftVersion", "locale"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeReleaseNumber": {
+                      "anyOf": [
+                        { "minimum": 1, "type": "integer" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedResources": {
+                      "items": {
+                        "properties": {
+                          "resourceId": { "format": "uuid", "type": "string" },
+                          "revisionNumber": { "minimum": 1, "type": "integer" }
+                        },
+                        "required": ["resourceId", "revisionNumber"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "candidate": {},
+                    "candidateFingerprint": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "comparisons": {
+                      "items": {
+                        "properties": {
+                          "activeRevision": {
+                            "anyOf": [
+                              { "minimum": 1, "type": "integer" },
+                              { "type": "null" }
+                            ]
+                          },
+                          "differs": { "type": "boolean" },
+                          "discardEligible": { "type": "boolean" },
+                          "draftRevision": { "minimum": 1, "type": "integer" },
+                          "resourceId": { "format": "uuid", "type": "string" }
+                        },
+                        "required": [
+                          "resourceId",
+                          "draftRevision",
+                          "activeRevision",
+                          "differs",
+                          "discardEligible"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "managedTranslations": {
+                      "properties": {
+                        "items": {
+                          "items": {
+                            "properties": {
+                              "kind": {
+                                "anyOf": [
+                                  {
+                                    "enum": ["interface_string"],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": ["learning_module_field"],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": ["intake_question"],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": ["intake_answer_option"],
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "locale": {
+                                "anyOf": [
+                                  { "enum": ["es-US"], "type": "string" },
+                                  { "enum": ["pt-BR"], "type": "string" },
+                                  { "enum": ["fr-CA"], "type": "string" },
+                                  { "enum": ["ht-HT"], "type": "string" }
+                                ]
+                              },
+                              "path": { "type": "string" },
+                              "provenance": {
+                                "properties": {
+                                  "adapter": { "type": "string" },
+                                  "adapterVersion": { "type": "string" },
+                                  "generatedAt": { "type": "string" },
+                                  "glossaryRevision": { "type": "string" },
+                                  "model": { "type": "string" },
+                                  "reviewedAt": { "type": "string" },
+                                  "reviewer": { "type": "string" },
+                                  "sourceRevision": {
+                                    "minimum": 1,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": ["sourceRevision"],
+                                "type": "object"
+                              },
+                              "schoolEditable": { "type": "boolean" },
+                              "sourceResourceId": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "sourceRevision": {
+                                "minimum": 1,
+                                "type": "integer"
+                              },
+                              "status": {
+                                "anyOf": [
+                                  { "enum": ["missing"], "type": "string" },
+                                  { "enum": ["stale"], "type": "string" },
+                                  { "enum": ["generated"], "type": "string" },
+                                  { "enum": ["reviewed"], "type": "string" }
+                                ]
+                              },
+                              "translationResourceId": {
+                                "format": "uuid",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "locale",
+                              "kind",
+                              "sourceResourceId",
+                              "sourceRevision",
+                              "status",
+                              "schoolEditable"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "locales": {
+                          "items": {
+                            "properties": {
+                              "generated": { "minimum": 0, "type": "integer" },
+                              "locale": {
+                                "anyOf": [
+                                  { "enum": ["es-US"], "type": "string" },
+                                  { "enum": ["pt-BR"], "type": "string" },
+                                  { "enum": ["fr-CA"], "type": "string" },
+                                  { "enum": ["ht-HT"], "type": "string" }
+                                ]
+                              },
+                              "missing": { "minimum": 0, "type": "integer" },
+                              "reviewed": { "minimum": 0, "type": "integer" },
+                              "stale": { "minimum": 0, "type": "integer" }
+                            },
+                            "required": [
+                              "locale",
+                              "missing",
+                              "stale",
+                              "generated",
+                              "reviewed"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "required": ["locales", "items"],
+                      "type": "object"
+                    },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "rejected": {
+                      "items": {
+                        "properties": {
+                          "code": { "type": "string" },
+                          "locale": {
+                            "anyOf": [
+                              { "enum": ["es-US"], "type": "string" },
+                              { "enum": ["pt-BR"], "type": "string" },
+                              { "enum": ["fr-CA"], "type": "string" },
+                              { "enum": ["ht-HT"], "type": "string" }
+                            ]
+                          },
+                          "sourceResourceId": {
+                            "format": "uuid",
+                            "type": "string"
+                          }
+                        },
+                        "required": ["sourceResourceId", "locale", "code"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "unpublishedChanges": { "type": "boolean" },
+                    "validation": {
+                      "properties": {
+                        "blockers": {
+                          "items": {
+                            "properties": {
+                              "code": { "type": "string" },
+                              "message": { "type": "string" },
+                              "path": { "type": "string" },
+                              "severity": {
+                                "enum": ["blocker"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["code", "path", "message", "severity"],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "warnings": {
+                          "items": {
+                            "properties": {
+                              "code": { "type": "string" },
+                              "message": { "type": "string" },
+                              "path": { "type": "string" },
+                              "severity": {
+                                "enum": ["warning"],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["code", "path", "message", "severity"],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "required": ["blockers", "warnings"],
+                      "type": "object"
+                    },
+                    "workspaceId": { "format": "uuid", "type": "string" }
+                  },
+                  "required": [
+                    "operationId",
+                    "affectedResources",
+                    "workspaceId",
+                    "draftVersion",
+                    "activeReleaseId",
+                    "activeReleaseNumber",
+                    "candidateFingerprint",
+                    "candidate",
+                    "unpublishedChanges",
+                    "validation",
+                    "comparisons",
+                    "managedTranslations",
+                    "rejected"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
             "content": {
               "application/problem+json": {
                 "schema": {

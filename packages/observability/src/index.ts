@@ -38,6 +38,18 @@ export type TelemetryEvent =
       provider: ProviderName;
       outcome: 'error' | 'ok';
       durationMs: number;
+    }
+  | {
+      name: 'translation.generation.completed';
+      adapter: 'google-cloud-translation-advanced';
+      adapterVersion: string;
+      model?: string;
+      glossaryRevision: string;
+      locale: 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+      segmentCount: number;
+      rejectedCount: number;
+      outcome: 'error' | 'ok' | 'rejected';
+      durationMs: number;
     };
 
 export type Telemetry = {
@@ -82,6 +94,9 @@ const routes = new Set([
   'unknown',
 ]);
 const providers = new Set<string>(providerNames);
+const adapters = new Set(['google-cloud-translation-advanced']);
+const managedLocales = new Set(['es-US', 'pt-BR', 'fr-CA', 'ht-HT']);
+const generationOutcomes = new Set(['error', 'ok', 'rejected']);
 
 function safeNumber(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
@@ -105,6 +120,36 @@ export function createTelemetry(write: (line: string) => void): Telemetry {
         return;
       }
 
+      if (event.name === 'translation.generation.completed') {
+        if (!adapters.has(event.adapter)) return;
+        write(
+          JSON.stringify({
+            name: event.name,
+            adapter: event.adapter,
+            adapterVersion:
+              typeof event.adapterVersion === 'string'
+                ? event.adapterVersion.slice(0, 80)
+                : 'unknown',
+            ...(typeof event.model === 'string'
+              ? { model: event.model.slice(0, 80) }
+              : {}),
+            glossaryRevision:
+              typeof event.glossaryRevision === 'string'
+                ? event.glossaryRevision.slice(0, 80)
+                : 'unknown',
+            locale: managedLocales.has(event.locale) ? event.locale : 'es-US',
+            segmentCount: safeNumber(event.segmentCount),
+            rejectedCount: safeNumber(event.rejectedCount),
+            outcome: generationOutcomes.has(event.outcome)
+              ? event.outcome
+              : 'error',
+            durationMs: safeNumber(event.durationMs),
+          }),
+        );
+        return;
+      }
+
+      if (event.name !== 'provider.smoke.completed') return;
       if (!providers.has(event.provider)) return;
       write(
         JSON.stringify({
