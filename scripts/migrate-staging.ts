@@ -97,6 +97,10 @@ try {
          to ${runtimeRoleIdentifier}`,
   );
   await client.query(
+    `grant execute on function identity_access.operator_workspace_catalog()
+         to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
     `grant select, insert, update, delete on intake.intake_drafts
        to ${runtimeRoleIdentifier}`,
   );

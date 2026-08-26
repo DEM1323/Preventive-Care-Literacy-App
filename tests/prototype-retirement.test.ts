@@ -60,6 +60,7 @@ test('browser exposes only the server-authoritative Student access routes', () =
   );
 
   expect(routes).toEqual([
+    '/operator',
     '/staff/sign-in',
     '/staff',
     '/student/invitation',
@@ -69,6 +70,38 @@ test('browser exposes only the server-authoritative Student access routes', () =
     '/staff/configuration',
     '*',
   ]);
+});
+
+test('operator console keeps the provisioning credential out of browser storage', () => {
+  const source = readFileSync(
+    new URL(
+      '../src/features/operator/OperatorConsolePage.tsx',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  expect(source).toContain("'/api/v1/auth/operator/sign-in'");
+  expect(source).toContain("'/api/v1/operator/workspaces'");
+  expect(source).not.toContain('localStorage');
+  expect(source).not.toContain('sessionStorage');
+  expect(source).not.toContain('VITE_');
+});
+
+test('an empty Staff workspace can install the bundled synthetic draft', () => {
+  const source = readFileSync(
+    new URL(
+      '../src/features/admin/SchoolConfigurationPage.tsx',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  expect(source).toContain('Install synthetic demo draft');
+  expect(source).toContain(
+    "'/api/v1/administration/school-configuration/draft-imports'",
+  );
+  expect(source).toContain(
+    'workspace: { ...fixtureWorkspace, id: workspaceId }',
+  );
 });
 
 test('clinical Intake Record reveal stays memory-only and suppresses application print', () => {

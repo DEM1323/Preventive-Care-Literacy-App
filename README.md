@@ -23,16 +23,17 @@ Keep local configuration outside the repository. For example, place it at `~/.co
 
 ## Routes
 
-| Route                             | Description                                                                  |
-| --------------------------------- | ---------------------------------------------------------------------------- |
-| `/staff/sign-in`                  | Staff password and mandatory TOTP authentication                             |
-| `/staff`                          | Permission-filtered staff workspace, including clinical Intake Record reveal |
-| `/student/invitation`             | Delivered Invitation Code redemption                                         |
-| `/student`                        | Server-authoritative Student access restoration                              |
-| `/student/intake`                 | Synthetic Student Intake Draft and submission                                |
-| `/student/learning`               | Server-confirmed Item Completion for one item                                |
-| `/prototype/school-configuration` | Local-only school configuration UI exploration                               |
-| All other routes                  | Prototype retirement notice                                                  |
+| Route                  | Description                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| `/operator`            | Technical Operator workspace catalog, creation, and Staff provisioning       |
+| `/staff/sign-in`       | Staff password and mandatory TOTP authentication                             |
+| `/staff`               | Permission-filtered staff workspace, including clinical Intake Record reveal |
+| `/student/invitation`  | Delivered Invitation Code redemption                                         |
+| `/student`             | Server-authoritative Student access restoration                              |
+| `/student/intake`      | Synthetic Student Intake Draft and submission                                |
+| `/student/learning`    | Server-confirmed Item Completion for one item                                |
+| `/staff/configuration` | Shared draft initialization, preview, and freshness-gated publication        |
+| All other routes       | Prototype retirement notice                                                  |
 
 ## Verification
 

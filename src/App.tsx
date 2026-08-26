@@ -8,6 +8,7 @@ import {
 } from './features/student-access/StudentAccessPages';
 import { StudentIntakePage } from './features/intake/StudentIntakePage';
 import { StudentLearningPage } from './features/learning/StudentLearningPage';
+import { OperatorConsolePage } from './features/operator/OperatorConsolePage';
 
 function RetiredPrototypePage() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
       basename={import.meta.env.BASE_URL.replace(/\/$/, '') || undefined}
     >
       <Routes>
+        <Route path="/operator" element={<OperatorConsolePage />} />
         <Route path="/staff/sign-in" element={<StaffSignInPage />} />
         <Route path="/staff" element={<StaffHomePage />} />
         <Route

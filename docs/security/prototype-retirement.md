@@ -6,11 +6,11 @@ This record implements issue #21. The prototype cannot process Student data and 
 
 All values supplied through these names must be treated as exposed because Vite embedded them in public browser artifacts.
 
-| Former value | Disposition | Evidence |
-|---|---|---|
-| `VITE_GAS_EXECUTION_TOKEN` / Apps Script `EXECUTION_TOKEN` | Retired. The browser and Apps Script no longer send, read, or authorize with it. | Removed from source, deploy workflow, and GitHub Actions secrets on 2026-08-18. |
-| `VITE_DISTRICT_ENCRYPTION_PASSCODE` | Retired with the Student-facing application and all intake storage code. | Removed from source, templates, deploy workflow, and GitHub Actions secrets on 2026-08-18. |
-| `VITE_NURSE_DASHBOARD_PASSCODE` | Retired. The browser-authenticated bulk read and `/nurse` route were removed. | Removed from source, deploy workflow, and GitHub Actions secrets on 2026-08-18. |
+| Former value                                               | Disposition                                                                      | Evidence                                                                                   |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `VITE_GAS_EXECUTION_TOKEN` / Apps Script `EXECUTION_TOKEN` | Retired. The browser and Apps Script no longer send, read, or authorize with it. | Removed from source, deploy workflow, and GitHub Actions secrets on 2026-08-18.            |
+| `VITE_DISTRICT_ENCRYPTION_PASSCODE`                        | Retired with the Student-facing application and all intake storage code.         | Removed from source, templates, deploy workflow, and GitHub Actions secrets on 2026-08-18. |
+| `VITE_NURSE_DASHBOARD_PASSCODE`                            | Retired. The browser-authenticated bulk read and `/nurse` route were removed.    | Removed from source, deploy workflow, and GitHub Actions secrets on 2026-08-18.            |
 
 The Apps Script and published content-sheet URLs were also removed from browser deployment configuration. They are endpoints rather than credentials, but the retired browser has no reason to receive them.
 
@@ -27,7 +27,7 @@ On 2026-08-18, the ignored local environment file and untracked Google service-a
 - Prototype Google Student authentication, Student reads, and intake submissions remain deleted.
 - The replacement spine exposes server-authoritative synthetic Student invitation redemption, session restoration, Intake Draft / Intake Record Version, Learning Item Completion, and the separately authorized clinical current-Intake-Record reveal. They do not restore the retired prototype or production authority.
 - On first load after retirement, the browser deletes legacy Student email, intake, pending submission, and session state.
-- Prototype-only Student-facing routes render a retirement notice. Replacement routes `/student/invitation`, `/student`, `/student/intake`, and `/student/learning` serve synthetic Students. Authenticated `/staff` can reveal one current synthetic Intake Record in memory under Clinical Permission; it is not Student answer entry and not the retired `/nurse` dashboard.
+- Prototype-only Student-facing routes render a retirement notice. Replacement routes `/student/invitation`, `/student`, `/student/intake`, and `/student/learning` serve synthetic Students. Authenticated `/staff` can reveal one current synthetic Intake Record in memory under Clinical Permission; it is not Student answer entry and not the retired `/nurse` dashboard. `/operator` exchanges the server-only provisioning credential for a one-hour HttpOnly session and exposes only workspace setup metadata and commands; it does not expose Student or clinical records.
 
 `bun run check:security` enforces the repository and browser-artifact boundary.
 

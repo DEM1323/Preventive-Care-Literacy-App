@@ -6,7 +6,13 @@ import Fastify, {
   type FastifyReply,
   type FastifyRequest,
 } from 'fastify';
-import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  randomUUID,
+  timingSafeEqual,
+} from 'node:crypto';
 import { resolve } from 'node:path';
 import { Pool } from 'pg';
 import type {
@@ -93,6 +99,10 @@ import { createPostgresIntakeStore } from '../../../packages/postgres/src/intake
 import { createPostgresLearningProgressStore } from '../../../packages/postgres/src/learning-progress.ts';
 import { queryGoldenJourneyOperatorEvidence } from '../../../packages/postgres/src/golden-journey-evidence.ts';
 import {
+  listOperatorWorkspaces,
+  type OperatorWorkspaceSummary,
+} from '../../../packages/postgres/src/operator-workspaces.ts';
+import {
   BUILD_ATTESTATION_SCHEMA_VERSION,
   verifyBuildAttestationForHealth,
   type BuildAttestation,
@@ -100,6 +110,8 @@ import {
 
 const staffSessionCookie = '__Host-prevcare-staff-session' as const;
 const studentSessionCookie = '__Host-prevcare-student-session' as const;
+const operatorSessionCookie = '__Host-prevcare-operator-session' as const;
+const operatorSessionLifetimeSeconds = 60 * 60;
 
 const requestBodyLimit = 64 * 1024;
 const securityHeaders = {
@@ -145,6 +157,47 @@ const OperatorHeaders = Type.Object({
   authorization: Type.Optional(Type.String()),
   'x-prevcare-csrf': Type.Literal('1'),
 });
+
+const OperatorAuthenticationHeaders = Type.Object({
+  authorization: Type.Optional(Type.String()),
+});
+
+const OperatorSignInBody = Type.Object(
+  { token: Type.String({ minLength: 1, maxLength: 4096 }) },
+  { additionalProperties: false },
+);
+
+const OperatorSessionCreatedResponse = Type.Object({
+  outcome: Type.Literal('authenticated'),
+});
+
+const OperatorSessionEndedResponse = Type.Object({
+  outcome: Type.Literal('ended'),
+});
+
+const OperatorSessionResponse = Type.Object({ actorId: Type.String() });
+
+const OperatorWorkspaceSummaryResponse = Type.Object(
+  {
+    workspaceId: Type.String({ format: 'uuid' }),
+    displayName: Type.String(),
+    createdAt: Type.String({ format: 'date-time' }),
+    staffCount: Type.Integer({ minimum: 0 }),
+    configurationState: Type.Union([
+      Type.Literal('uninitialized'),
+      Type.Literal('draft'),
+      Type.Literal('active'),
+    ]),
+    draftVersion: Type.Union([Type.Integer({ minimum: 0 }), Type.Null()]),
+    activeReleaseId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
+  },
+  { additionalProperties: false },
+);
+
+const OperatorWorkspaceCatalogResponse = Type.Array(
+  OperatorWorkspaceSummaryResponse,
+  { maxItems: 500 },
+);
 
 const CreateSchoolWorkspaceResponse = Type.Object({
   operationId: Type.String({ format: 'uuid' }),
@@ -694,30 +747,75 @@ const BuildUnavailableResponse = Type.Object({
 type OperatorAuthenticator = {
   authenticate(
     authorization: string | undefined,
+    cookieHeader?: string,
   ): { type: 'technical_operator'; id: string } | undefined;
+  createSession(token: string): string | undefined;
 };
 
-function createOperatorAuthenticator(credentials: {
-  token: string;
-  actorId: string;
-}): OperatorAuthenticator {
+export function createOperatorAuthenticator(
+  credentials: { token: string; actorId: string },
+  clock: { now(): Date } = { now: () => new Date() },
+): OperatorAuthenticator {
   if (credentials.token.length < 32) {
     throw new Error(
       'OPERATOR_PROVISIONING_TOKEN must contain at least 32 characters',
     );
   }
-  const expected = Buffer.from(`Bearer ${credentials.token}`);
+  const digest = (value: string) => createHash('sha256').update(value).digest();
+  const expectedBearer = digest(`Bearer ${credentials.token}`);
+  const expectedToken = digest(credentials.token);
+  const actor = {
+    type: 'technical_operator',
+    id: credentials.actorId,
+  } as const;
+  const signatureFor = (message: string) =>
+    createHmac('sha256', credentials.token)
+      .update('prevcare-operator-session/v1\0')
+      .update(message)
+      .digest('base64url');
+
+  function matches(providedValue: string, expected: Buffer): boolean {
+    return timingSafeEqual(digest(providedValue), expected);
+  }
+
+  function resolveSession(cookieHeader: string | undefined) {
+    const value = readSecureOpaqueCookie(cookieHeader, operatorSessionCookie);
+    if (!value) return undefined;
+    const parts = value.split('.');
+    if (parts.length !== 4 || parts[0] !== 'v1') return undefined;
+    const [version, expiresAtValue, nonce, providedSignature] = parts;
+    if (
+      !expiresAtValue ||
+      !nonce ||
+      !providedSignature ||
+      !/^\d+$/.test(expiresAtValue)
+    ) {
+      return undefined;
+    }
+    const expiresAt = Number(expiresAtValue);
+    const now = Math.floor(clock.now().getTime() / 1000);
+    if (!Number.isSafeInteger(expiresAt) || expiresAt <= now) return undefined;
+    const message = `${version}.${expiresAtValue}.${nonce}`;
+    if (!matches(providedSignature, digest(signatureFor(message)))) {
+      return undefined;
+    }
+    return actor;
+  }
+
   return {
-    authenticate(authorization) {
-      if (!authorization) return undefined;
-      const provided = Buffer.from(authorization);
-      if (
-        provided.length !== expected.length ||
-        !timingSafeEqual(provided, expected)
-      ) {
-        return undefined;
+    authenticate(authorization, cookieHeader) {
+      if (authorization && matches(authorization, expectedBearer)) {
+        return actor;
       }
-      return { type: 'technical_operator', id: credentials.actorId };
+      return resolveSession(cookieHeader);
+    },
+    createSession(token) {
+      if (!matches(token, expectedToken)) return undefined;
+      const expiresAt =
+        Math.floor(clock.now().getTime() / 1000) +
+        operatorSessionLifetimeSeconds;
+      const message = `v1.${expiresAt}.${randomBytes(24).toString('base64url')}`;
+      return `${message}.${signatureFor(message)}`;
     },
   };
 }
@@ -747,6 +845,7 @@ export async function buildApp(
       studentId: string;
       startedAt: string;
     }) => Promise<unknown>;
+    listOperatorWorkspaces: () => Promise<OperatorWorkspaceSummary[]>;
   },
 ): Promise<FastifyInstance> {
   const publicOrigin = new URL(options.publicOrigin).origin;
@@ -758,6 +857,22 @@ export async function buildApp(
     logger: false,
   });
   if (options.onClose) app.addHook('onClose', options.onClose);
+
+  function authenticateOperator(request: FastifyRequest) {
+    return options.operatorAuthenticator.authenticate(
+      request.headers.authorization,
+      request.headers.cookie,
+    );
+  }
+
+  function operatorAuthenticationRequired(reply: FastifyReply) {
+    return reply.type('application/problem+json').code(401).send({
+      type: 'https://preventive-care-literacy.example/problems/operator-authentication',
+      title: 'Operator authentication required',
+      status: 401,
+      code: 'OPERATOR_AUTHENTICATION_REQUIRED',
+    });
+  }
 
   async function recordClinicalRevealBoundaryDenial(
     request: FastifyRequest,
@@ -1154,6 +1269,11 @@ export async function buildApp(
       components: {
         securitySchemes: {
           bearerAuth: { type: 'http', scheme: 'bearer' },
+          operatorSession: {
+            type: 'apiKey',
+            in: 'cookie',
+            name: operatorSessionCookie,
+          },
           staffSession: {
             type: 'apiKey',
             in: 'cookie',
@@ -1252,6 +1372,96 @@ export async function buildApp(
     },
   );
 
+  app.post<{ Body: Static<typeof OperatorSignInBody> }>(
+    '/api/v1/auth/operator/sign-in',
+    {
+      schema: {
+        operationId: 'operatorSignIn',
+        body: OperatorSignInBody,
+        response: {
+          200: OperatorSessionCreatedResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          413: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const session = options.operatorAuthenticator.createSession(
+        request.body.token,
+      );
+      if (!session) return operatorAuthenticationRequired(reply);
+      reply.header(
+        'set-cookie',
+        setSecureOpaqueCookie(operatorSessionCookie, session),
+      );
+      return { outcome: 'authenticated' as const };
+    },
+  );
+
+  app.get<{ Headers: Static<typeof OperatorAuthenticationHeaders> }>(
+    '/api/v1/operator/session',
+    {
+      schema: {
+        operationId: 'operatorSession',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorAuthenticationHeaders,
+        response: {
+          200: OperatorSessionResponse,
+          401: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      return { actorId: actor.id };
+    },
+  );
+
+  app.post(
+    '/api/v1/auth/operator/sign-out',
+    {
+      schema: {
+        operationId: 'operatorSignOut',
+        response: {
+          200: OperatorSessionEndedResponse,
+          403: ProblemResponse,
+        },
+      },
+    },
+    async (_request, reply) => {
+      reply.header(
+        'set-cookie',
+        expireSecureOpaqueCookie(operatorSessionCookie),
+      );
+      return { outcome: 'ended' as const };
+    },
+  );
+
+  app.get<{ Headers: Static<typeof OperatorAuthenticationHeaders> }>(
+    '/api/v1/operator/workspaces',
+    {
+      schema: {
+        operationId: 'listOperatorWorkspaces',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorAuthenticationHeaders,
+        response: {
+          200: OperatorWorkspaceCatalogResponse,
+          401: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!authenticateOperator(request)) {
+        return operatorAuthenticationRequired(reply);
+      }
+      return options.listOperatorWorkspaces();
+    },
+  );
+
   app.post<{
     Body: Static<typeof CreateSchoolWorkspaceBody>;
     Headers: Static<typeof OperatorHeaders>;
@@ -1260,7 +1470,7 @@ export async function buildApp(
     {
       schema: {
         operationId: 'createSchoolWorkspace',
-        security: [{ bearerAuth: [] }],
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
         headers: OperatorHeaders,
         body: CreateSchoolWorkspaceBody,
         response: {
@@ -1275,17 +1485,8 @@ export async function buildApp(
       },
     },
     async (request, reply) => {
-      const actor = options.operatorAuthenticator.authenticate(
-        request.headers.authorization,
-      );
-      if (!actor) {
-        return reply.type('application/problem+json').code(401).send({
-          type: 'https://preventive-care-literacy.example/problems/operator-authentication',
-          title: 'Operator authentication required',
-          status: 401,
-          code: 'OPERATOR_AUTHENTICATION_REQUIRED',
-        });
-      }
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
       const result = await identityAndAccess.createSchoolWorkspace({
         ...request.body,
         actor,
@@ -1302,7 +1503,7 @@ export async function buildApp(
     {
       schema: {
         operationId: 'provisionStaffIdentity',
-        security: [{ bearerAuth: [] }],
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
         headers: OperatorHeaders,
         body: ProvisionStaffIdentityBody,
         response: {
@@ -1317,17 +1518,8 @@ export async function buildApp(
       },
     },
     async (request, reply) => {
-      const actor = options.operatorAuthenticator.authenticate(
-        request.headers.authorization,
-      );
-      if (!actor) {
-        return reply.type('application/problem+json').code(401).send({
-          type: 'https://preventive-care-literacy.example/problems/operator-authentication',
-          title: 'Operator authentication required',
-          status: 401,
-          code: 'OPERATOR_AUTHENTICATION_REQUIRED',
-        });
-      }
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
       const result = await identityAndAccess.provisionStaffIdentity({
         ...request.body,
         actor,
@@ -2208,6 +2400,7 @@ export async function createServer(options: {
   return buildApp(identityAndAccess, {
     operatorAuthenticator: createOperatorAuthenticator(
       options.operatorCredentials,
+      clock,
     ),
     publicOrigin: options.publicOrigin,
     readiness: async () => {
@@ -2228,6 +2421,7 @@ export async function createServer(options: {
     },
     queryGoldenJourneyEvidence: (input) =>
       queryGoldenJourneyOperatorEvidence(pool, input),
+    listOperatorWorkspaces: () => listOperatorWorkspaces(pool),
     onClose: () => pool.end(),
   });
 }
