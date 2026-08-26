@@ -104,6 +104,26 @@ test('an empty Staff workspace can install the bundled synthetic draft', () => {
   );
 });
 
+test('configuration publication keeps its success confirmation after reloading the draft', () => {
+  const source = readFileSync(
+    new URL(
+      '../src/features/admin/SchoolConfigurationPage.tsx',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  const successStart = source.indexOf(
+    'if (result.response.status === 201 && result.data)',
+  );
+  const success = source.slice(
+    successStart,
+    source.indexOf('const problem = result.error', successStart),
+  );
+  expect(success.indexOf('await loadDraft()')).toBeLessThan(
+    success.indexOf('is active with one immutable package'),
+  );
+});
+
 test('clinical Intake Record reveal stays memory-only and suppresses application print', () => {
   const clinicalSource = readFileSync(
     new URL('../src/features/staff/ClinicalReviewSection.tsx', import.meta.url),

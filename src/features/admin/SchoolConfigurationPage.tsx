@@ -240,10 +240,10 @@ export function SchoolConfigurationPage() {
       setPublishOpen(false);
       setChangeDescription('');
       operationId.current = crypto.randomUUID();
+      await loadDraft();
       setStatus(
         `Release ${result.data.releaseNumber} is active with one immutable package.`,
       );
-      await loadDraft();
       return;
     }
     const problem = result.error as Problem | undefined;
