@@ -52,6 +52,7 @@ import type {
 } from '../../../modules/intake/index.ts';
 import {
   IntakeAlreadyAcceptedError,
+  IntakeDraftRevisionConflictError,
   IntakeIncompleteError,
   IntakeOperationReusedError,
   IntakeRecordNotFoundError,
@@ -917,8 +918,11 @@ const StudentIntakeSnapshotResponse = Type.Object({
   draft: Type.Union([
     Type.Null(),
     Type.Object({
+      draftRevision: Type.Integer({ minimum: 1 }),
       locale: IntakeLocaleSchema,
       updatedAt: Type.String({ format: 'date-time' }),
+      schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+      intakeForm: ExactResourceRevisionSchema,
       answers: IntakeAnswersSchema,
     }),
   ]),
@@ -926,6 +930,8 @@ const StudentIntakeSnapshotResponse = Type.Object({
 });
 const SaveIntakeDraftBody = Type.Object(
   {
+    operationId: Type.String({ format: 'uuid' }),
+    expectedDraftRevision: Type.Integer({ minimum: 0 }),
     expectedSchoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
     expectedIntakeForm: ExactResourceRevisionSchema,
     locale: IntakeLocaleSchema,
@@ -934,8 +940,11 @@ const SaveIntakeDraftBody = Type.Object(
   { additionalProperties: false },
 );
 const SaveIntakeDraftResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
   locale: IntakeLocaleSchema,
   updatedAt: Type.String({ format: 'date-time' }),
+  draftRevision: Type.Integer({ minimum: 1 }),
+  replayed: Type.Boolean(),
 });
 const SubmitIntakeRecordVersionBody = Type.Object(
   {
@@ -1441,6 +1450,7 @@ const ProblemDetails = Type.Object({
   status: Type.Integer(),
   code: Type.String(),
   draftVersion: Type.Optional(Type.Integer({ minimum: 0 })),
+  draftRevision: Type.Optional(Type.Integer({ minimum: 0 })),
   activeReleaseId: Type.Optional(
     Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
   ),
@@ -2363,15 +2373,22 @@ export async function buildApp(
     }
     if (
       error instanceof IntakeRevisionConflictError ||
+      error instanceof IntakeDraftRevisionConflictError ||
       error instanceof IntakeAlreadyAcceptedError ||
       error instanceof IntakeOperationReusedError
     ) {
-      return reply.type('application/problem+json').code(409).send({
-        type: 'https://preventive-care-literacy.example/problems/intake-conflict',
-        title: error.message,
-        status: 409,
-        code: error.code,
-      });
+      return reply
+        .type('application/problem+json')
+        .code(409)
+        .send({
+          type: 'https://preventive-care-literacy.example/problems/intake-conflict',
+          title: error.message,
+          status: 409,
+          code: error.code,
+          ...(error instanceof IntakeDraftRevisionConflictError
+            ? { draftRevision: error.draftRevision }
+            : {}),
+        });
     }
     if (error instanceof IntakeIncompleteError) {
       return reply.type('application/problem+json').code(422).send({

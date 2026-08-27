@@ -38,6 +38,7 @@ test('migrations apply in order and are repeatable', async () => {
         { name: '020_configuration_release_history.sql' },
         { name: '021_student_sign_in.sql' },
         { name: '022_student_access_administration.sql' },
+        { name: '023_intake_draft_revision.sql' },
       ]);
     } finally {
       await client.end();
