@@ -95,6 +95,15 @@ async function renderContracts() {
       closeClass: async () => {
         throw new Error('Contract generation does not execute commands');
       },
+      replaceStudentVerifiedEmail: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      disableStudentAccess: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      enableStudentAccess: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
       listClasses: async () => {
         throw new Error('Contract generation does not execute queries');
       },

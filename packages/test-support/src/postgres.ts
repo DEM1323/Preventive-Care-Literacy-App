@@ -99,6 +99,7 @@ export async function createRuntimeDatabaseUser(
            identity_access.class_memberships, identity_access.student_sessions,
            identity_access.staff_session_freshness,
            identity_access.students,
+           identity_access.verified_email_addresses,
            identity_access.sign_in_challenges,
            identity_access.sign_in_challenge_codes,
            identity_access.sign_in_deliveries,

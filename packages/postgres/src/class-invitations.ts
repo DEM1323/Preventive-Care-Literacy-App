@@ -951,6 +951,30 @@ export function createPostgresClassInvitationStore(options: {
            group by membership.class_id, membership.class_membership_id,
                     membership.student_id, membership.status
         `.execute(transaction);
+        const students = await sql<{
+          student_id: string;
+          status: 'active' | 'disabled';
+        }>`
+          select student_id, status
+            from identity_access.students
+           where workspace_id = ${request.workspaceId}
+           order by created_at, student_id
+        `.execute(transaction);
+        const emails = await sql<{
+          student_id: string;
+          recipient_digest: string;
+          status: 'current' | 'historical';
+          verified_at: Date;
+          retired_at: Date | null;
+          key_id: string;
+          ciphertext: string;
+        }>`
+          select student_id, recipient_digest, status, verified_at, retired_at,
+                 key_id, ciphertext
+            from identity_access.verified_email_addresses
+           where workspace_id = ${request.workspaceId}
+           order by verified_at desc, recipient_digest
+        `.execute(transaction);
         const snapshot: ClassDirectorySnapshot = {
           classes: classes.map((row) => ({
             classId: row.class_id,
@@ -978,6 +1002,20 @@ export function createPostgresClassInvitationStore(options: {
             studentId: row.student_id,
             status: row.status,
             emailDigests: row.email_digests ?? [],
+          })),
+          studentAccess: students.rows.map((student) => ({
+            studentId: student.student_id,
+            status: student.status,
+            emails: emails.rows
+              .filter((email) => email.student_id === student.student_id)
+              .map((email) => ({
+                recipientDigest: email.recipient_digest,
+                status: email.status,
+                verifiedAt: email.verified_at,
+                retiredAt: email.retired_at,
+                keyId: email.key_id,
+                ciphertext: email.ciphertext,
+              })),
           })),
         };
         return snapshot;

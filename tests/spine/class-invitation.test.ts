@@ -161,6 +161,10 @@ test('Administrator creates one Class and one protected purpose-bound Invitation
             studentId: null,
             classMembershipId: null,
             membershipStatus: 'none',
+            studentAccessStatus: null,
+            currentVerifiedEmail: null,
+            verifiedEmailHistory: [],
+            identityCollision: 'none',
             latestInvitation: {
               invitationId,
               purpose: 'join_class',
