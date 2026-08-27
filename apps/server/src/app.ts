@@ -43,6 +43,8 @@ import {
   ClassMembershipNotFoundError,
   InvitationNotSendableError,
   InvitationCsvRejectedError,
+  StudentNotFoundError,
+  StudentIdentityReviewRequiredError,
 } from '../../../modules/identity-access/index.ts';
 import type {
   Intake,
@@ -636,6 +638,66 @@ const CloseClassResponse = Type.Object({
   revokedInvitationCount: Type.Integer({ minimum: 0 }),
   deactivatedMembershipCount: Type.Integer({ minimum: 0 }),
 });
+const StudentVerifiedEmailReplacementReasonSchema = Type.Union([
+  Type.Literal('mailbox_loss'),
+  Type.Literal('school_issued_address_change'),
+  Type.Literal('incorrect_address'),
+]);
+const StudentIdentityVerificationSchema = Type.Union([
+  Type.Literal('in_person_school_id'),
+  Type.Literal('guardian_confirmed'),
+  Type.Literal('school_record_match'),
+]);
+const ReplaceStudentVerifiedEmailBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    studentId: Type.String({ format: 'uuid' }),
+    recipient: InvitationRecipientSchema,
+    reason: StudentVerifiedEmailReplacementReasonSchema,
+    identityVerification: StudentIdentityVerificationSchema,
+  },
+  { additionalProperties: false },
+);
+const ReplaceStudentVerifiedEmailResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  studentId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('replaced'),
+});
+const StudentDisablementReasonSchema = Type.Union([
+  Type.Literal('compromised_access'),
+  Type.Literal('safety_hold'),
+  Type.Literal('school_directed'),
+]);
+const DisableStudentAccessBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    studentId: Type.String({ format: 'uuid' }),
+    reason: StudentDisablementReasonSchema,
+  },
+  { additionalProperties: false },
+);
+const DisableStudentAccessResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  studentId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('disabled'),
+});
+const StudentReenablementReasonSchema = Type.Union([
+  Type.Literal('access_restored'),
+  Type.Literal('hold_released'),
+]);
+const EnableStudentAccessBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    studentId: Type.String({ format: 'uuid' }),
+    reason: StudentReenablementReasonSchema,
+  },
+  { additionalProperties: false },
+);
+const EnableStudentAccessResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  studentId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('enabled'),
+});
 const ClassDirectoryResponse = Type.Object({
   classes: Type.Array(
     Type.Object({
@@ -665,6 +727,30 @@ const ClassDirectoryResponse = Type.Object({
             Type.Literal('none'),
             Type.Literal('active'),
             Type.Literal('inactive'),
+          ]),
+          studentAccessStatus: Type.Union([
+            Type.Literal('active'),
+            Type.Literal('disabled'),
+            Type.Null(),
+          ]),
+          currentVerifiedEmail: Type.Union([Type.String(), Type.Null()]),
+          verifiedEmailHistory: Type.Array(
+            Type.Object({
+              recipient: Type.String(),
+              status: Type.Union([
+                Type.Literal('current'),
+                Type.Literal('historical'),
+              ]),
+              verifiedAt: Type.String({ format: 'date-time' }),
+              retiredAt: Type.Union([
+                Type.String({ format: 'date-time' }),
+                Type.Null(),
+              ]),
+            }),
+          ),
+          identityCollision: Type.Union([
+            Type.Literal('none'),
+            Type.Literal('historical_binding'),
           ]),
           latestInvitation: Type.Object({
             invitationId: Type.String({ format: 'uuid' }),
@@ -1934,7 +2020,8 @@ export async function buildApp(
                       ? 'clinical-directory'
                       : route === '/api/v1/clinical/intake-records/current'
                         ? 'clinical-intake-reveal'
-                        : route.startsWith('/api/v1/administration/classes')
+                        : route.startsWith('/api/v1/administration/classes') ||
+                            route.startsWith('/api/v1/administration/students')
                           ? 'classes'
                           : route === '/api/v1/auth/student/sign-in'
                             ? 'student-sign-in'
@@ -2097,6 +2184,23 @@ export async function buildApp(
         type: 'https://preventive-care-literacy.example/problems/invitation-csv-rejected',
         title: error.message,
         status: 422,
+        code: error.code,
+        reason: error.reason,
+      });
+    }
+    if (error instanceof StudentNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/student-not-found',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof StudentIdentityReviewRequiredError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/student-identity-review',
+        title: error.message,
+        status: 409,
         code: error.code,
         reason: error.reason,
       });
@@ -3377,6 +3481,93 @@ export async function buildApp(
       const sessionHandle = requireStaffCookie(request, reply);
       if (typeof sessionHandle !== 'string') return sessionHandle;
       return identityAndAccess.closeClass({
+        ...request.body,
+        sessionHandle,
+      });
+    },
+  );
+
+  app.post<{ Body: Static<typeof ReplaceStudentVerifiedEmailBody> }>(
+    '/api/v1/administration/students/verified-email-replacements',
+    {
+      schema: {
+        operationId: 'replaceStudentVerifiedEmail',
+        security: [{ staffSession: [] }],
+        body: ReplaceStudentVerifiedEmailBody,
+        response: {
+          200: ReplaceStudentVerifiedEmailResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = requireStaffCookie(request, reply);
+      if (typeof sessionHandle !== 'string') return sessionHandle;
+      return identityAndAccess.replaceStudentVerifiedEmail({
+        ...request.body,
+        sessionHandle,
+      });
+    },
+  );
+
+  app.post<{ Body: Static<typeof DisableStudentAccessBody> }>(
+    '/api/v1/administration/students/disablements',
+    {
+      schema: {
+        operationId: 'disableStudentAccess',
+        security: [{ staffSession: [] }],
+        body: DisableStudentAccessBody,
+        response: {
+          200: DisableStudentAccessResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = requireStaffCookie(request, reply);
+      if (typeof sessionHandle !== 'string') return sessionHandle;
+      return identityAndAccess.disableStudentAccess({
+        ...request.body,
+        sessionHandle,
+      });
+    },
+  );
+
+  app.post<{ Body: Static<typeof EnableStudentAccessBody> }>(
+    '/api/v1/administration/students/re-enablements',
+    {
+      schema: {
+        operationId: 'enableStudentAccess',
+        security: [{ staffSession: [] }],
+        body: EnableStudentAccessBody,
+        response: {
+          200: EnableStudentAccessResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = requireStaffCookie(request, reply);
+      if (typeof sessionHandle !== 'string') return sessionHandle;
+      return identityAndAccess.enableStudentAccess({
         ...request.body,
         sessionHandle,
       });

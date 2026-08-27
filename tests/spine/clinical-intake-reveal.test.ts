@@ -598,9 +598,13 @@ describe.serial('clinical directory and current Intake Record reveal', () => {
         );
         expect(adminRows.rowCount).toBe(0);
         const adminStudents = await runtime.query(
-          'select student_id from identity_access.students',
+          'select student_id, status from identity_access.students',
         );
-        expect(adminStudents.rowCount).toBe(0);
+        expect(adminStudents.rowCount).toBe(1);
+        expect(adminStudents.rows[0]).toEqual({
+          student_id: studentId,
+          status: 'active',
+        });
         await runtime.query(
           `select set_config('app.staff_identity_id', $1, true)`,
           [clinicianId],
