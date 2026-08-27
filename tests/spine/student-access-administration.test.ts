@@ -187,6 +187,7 @@ afterAll(async () => {
 
 test('Verified Email Address replacement preserves the Student and revokes sessions, old-address codes, and pending Invitations', async () => {
   const client = createApiClient(baseUrl);
+  const operationId = crypto.randomUUID();
   const oldAddress = 'jordan.lee@example.edu';
   const newAddress = 'jordan.lee.restored@example.edu';
   await createClassInvitation({
@@ -235,7 +236,7 @@ test('Verified Email Address replacement preserves the Student and revokes sessi
     {
       headers: { ...mutationHeaders, cookie: staffCookie() },
       body: {
-        operationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf7103',
+        operationId,
         studentId: access.studentId,
         recipient: newAddress,
         reason: 'mailbox_loss',
@@ -245,7 +246,7 @@ test('Verified Email Address replacement preserves the Student and revokes sessi
   );
   expect(replacement.response.status).toBe(200);
   expect(replacement.data).toEqual({
-    operationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf7103',
+    operationId,
     studentId: access.studentId,
     outcome: 'replaced',
   });
@@ -330,7 +331,7 @@ test('Verified Email Address replacement preserves the Student and revokes sessi
          audit.details
        from audit.evidence audit
       where audit.operation_id = $2`,
-      [access.studentId, '018f1f5e-7b76-7f70-8f4d-9dc17ecf7103'],
+      [access.studentId, operationId],
     );
     expect(records.rows).toEqual([
       {
@@ -587,6 +588,7 @@ test('recycled and currently bound addresses stop for identity review instead of
 
 test('Student Disablement revokes access immediately while preserving memberships and clinical location', async () => {
   const client = createApiClient(baseUrl);
+  const operationId = crypto.randomUUID();
   const address = 'disabled.student@example.edu';
   await createClassInvitation({
     classId: crypto.randomUUID(),
@@ -616,7 +618,7 @@ test('Student Disablement revokes access immediately while preserving membership
     {
       headers: { ...mutationHeaders, cookie: staffCookie() },
       body: {
-        operationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf7201',
+        operationId,
         studentId: access.studentId,
         reason: 'compromised_access',
       },
@@ -624,7 +626,7 @@ test('Student Disablement revokes access immediately while preserving membership
   );
   expect(disabled.response.status).toBe(200);
   expect(disabled.data).toEqual({
-    operationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf7201',
+    operationId,
     studentId: access.studentId,
     outcome: 'disabled',
   });
@@ -691,7 +693,7 @@ test('Student Disablement revokes access immediately while preserving membership
          from identity_access.students student
          join audit.evidence audit on audit.operation_id = $2
         where student.student_id = $1`,
-      [access.studentId, '018f1f5e-7b76-7f70-8f4d-9dc17ecf7201'],
+      [access.studentId, operationId],
     );
     expect(records.rows).toEqual([
       {
