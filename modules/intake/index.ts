@@ -10,6 +10,7 @@ import {
   StaffSessionExpiredError,
   StaffSessionRevokedError,
   StudentClassAccessRequiredError,
+  StudentNotFoundError,
 } from '../identity-access/index.ts';
 import {
   canonicalJson,
@@ -305,15 +306,58 @@ export type RevealCurrentIntakeRecordCommand = {
   studentId: string;
 };
 
+export const clinicalAccessPurposes = [
+  'care_coordination',
+  'historical_comparison',
+] as const;
+
+export type ClinicalAccessPurpose = (typeof clinicalAccessPurposes)[number];
+
+export type SelectClinicalStudentCommand = {
+  sessionHandle: string;
+  studentId: string;
+  purpose: ClinicalAccessPurpose;
+};
+
+export type RevealIntakeRecordVersionCommand = {
+  sessionHandle: string;
+  studentId: string;
+  intakeRecordVersionId: string;
+  purpose: ClinicalAccessPurpose;
+};
+
+export type ClinicalIntakeVersionSummary = {
+  intakeRecordVersionId: string;
+  versionNumber: number;
+  acceptedAt: string;
+  schoolConfigurationReleaseId: string;
+  locale: IntakeLocale;
+  intakeForm: ExactResourceRevision;
+  predecessorIntakeRecordVersionId: string | null;
+  status: 'current' | 'superseded';
+  supersededAt: string | null;
+};
+
+export type ClinicalStudentSelection = {
+  studentId: string;
+  versions: ClinicalIntakeVersionSummary[];
+  freshUntil: string;
+};
+
 export type RevealedCurrentIntakeRecord = {
   studentId: string;
   intakeRecordVersionId: string;
+  versionNumber: number;
   acceptedAt: string;
   schoolConfigurationReleaseId: string;
   locale: IntakeLocale;
   intakeForm: StudentIntakeForm['intakeForm'];
   answers: IntakeAnswerMap;
   intakeUpdateRequirement: IntakeUpdateRequirement | null;
+  predecessorIntakeRecordVersionId: string | null;
+  changedFields: IntakeChangedField[];
+  status: 'current' | 'superseded';
+  supersededAt: string | null;
   freshUntil: string;
 };
 
@@ -336,12 +380,27 @@ export type ClinicalRevealAttempt =
   | {
       outcome: 'revealed';
       intakeRecordVersionId: string;
+      versionNumber: number;
       acceptedAt: Date;
       schoolConfigurationReleaseId: string;
       locale: IntakeLocale;
       intakeForm: StudentIntakeForm['intakeForm'];
       answers: IntakeAnswerMap;
       intakeUpdateRequirement: IntakeUpdateRequirement | null;
+      predecessorIntakeRecordVersionId: string | null;
+      changedFields: IntakeChangedField[];
+      status: 'current' | 'superseded';
+      supersededAt: Date | null;
+      freshUntil: Date;
+    };
+
+export type ClinicalStudentSelectionAttempt =
+  | { outcome: 'missing_session' }
+  | { outcome: 'denied'; reason: ClinicalRevealDenialReason }
+  | { outcome: 'not_found' }
+  | {
+      outcome: 'selected';
+      versions: ClinicalIntakeVersionSummary[];
       freshUntil: Date;
     };
 
@@ -495,6 +554,9 @@ export type IntakeStore = {
   revealCurrent(input: {
     sessionHandleHash: string;
     studentId: string;
+    intakeRecordVersionId?: string;
+    purpose?: ClinicalAccessPurpose;
+    kind: 'current' | 'historical';
     now: () => Date;
     auditId: string;
     operationId: string;
@@ -506,7 +568,19 @@ export type IntakeStore = {
       sealed: SealedRecord,
       context: { workspaceId: string; studentId: string },
     ) => Promise<IntakeAnswerMap>;
+    summarizeChanges: (
+      previousAnswers: IntakeAnswerMap | undefined,
+      nextAnswers: IntakeAnswerMap,
+    ) => IntakeChangedField[];
   }): Promise<ClinicalRevealAttempt>;
+  selectStudent(input: {
+    sessionHandleHash: string;
+    studentId: string;
+    purpose: ClinicalAccessPurpose;
+    now: () => Date;
+    auditId: string;
+    operationId: string;
+  }): Promise<ClinicalStudentSelectionAttempt>;
   recordUnattributedRevealAttempt(input: {
     auditId: string;
     operationId: string;
@@ -1274,65 +1348,137 @@ export function createIntake(dependencies: {
       });
     },
 
-    async revealCurrent(command: RevealCurrentIntakeRecordCommand) {
-      const auditId = dependencies.ids.create();
-      const operationId = dependencies.ids.create();
-      const attempted = await dependencies.store.revealCurrent({
+    async selectStudent(command: SelectClinicalStudentCommand) {
+      const attempted = await dependencies.store.selectStudent({
         sessionHandleHash: dependencies.hashSessionHandle(
           command.sessionHandle,
         ),
         studentId: command.studentId,
+        purpose: command.purpose,
         now: () => dependencies.clock.now(),
-        auditId,
-        operationId,
-        projectForm: projectStudentIntakeForm,
-        openAnswers: async (sealed, context) =>
-          decodeAnswers(
-            await dependencies.keys.open(sealed, {
-              purpose: 'intake-record-version',
-              workspaceId: context.workspaceId,
-              studentId: context.studentId,
-            }),
-          ),
+        auditId: dependencies.ids.create(),
+        operationId: dependencies.ids.create(),
       });
       if (attempted.outcome === 'missing_session') {
         throw new StaffAuthenticationFailedError();
       }
       if (attempted.outcome === 'denied') {
-        if (attempted.reason === 'revoked')
-          throw new StaffSessionRevokedError();
-        if (attempted.reason === 'expired')
-          throw new StaffSessionExpiredError();
-        if (attempted.reason === 'permission') {
-          throw new StaffPermissionRequiredError('clinical');
-        }
-        if (attempted.reason === 'stale') {
-          throw new StaffAuthenticationStaleError();
-        }
-        throw new StaffAuthenticationFailedError();
+        throwClinicalRevealDenial(attempted.reason);
       }
       if (attempted.outcome === 'not_found') {
-        throw new IntakeRecordNotFoundError();
-      }
-      if (attempted.outcome === 'failed') {
-        if (attempted.cause === 'decrypt') {
-          throw new Error('Unable to open the current Intake Record Version');
-        }
-        throw new IntakeUnavailableError();
+        throw new StudentNotFoundError();
       }
       return {
         studentId: command.studentId,
-        intakeRecordVersionId: attempted.intakeRecordVersionId,
-        acceptedAt: new Date(attempted.acceptedAt).toISOString(),
-        schoolConfigurationReleaseId: attempted.schoolConfigurationReleaseId,
-        locale: attempted.locale,
-        intakeForm: attempted.intakeForm,
-        answers: attempted.answers,
-        intakeUpdateRequirement: attempted.intakeUpdateRequirement,
+        versions: attempted.versions,
         freshUntil: new Date(attempted.freshUntil).toISOString(),
-      } satisfies RevealedCurrentIntakeRecord;
+      } satisfies ClinicalStudentSelection;
+    },
+
+    async revealCurrent(command: RevealCurrentIntakeRecordCommand) {
+      return revealAuthorized({
+        sessionHandle: command.sessionHandle,
+        studentId: command.studentId,
+        kind: 'current',
+      });
+    },
+
+    async revealVersion(command: RevealIntakeRecordVersionCommand) {
+      return revealAuthorized({
+        sessionHandle: command.sessionHandle,
+        studentId: command.studentId,
+        intakeRecordVersionId: command.intakeRecordVersionId,
+        purpose: command.purpose,
+        kind: 'historical',
+      });
     },
   };
+
+  async function revealAuthorized(command: {
+    sessionHandle: string;
+    studentId: string;
+    intakeRecordVersionId?: string;
+    purpose?: ClinicalAccessPurpose;
+    kind: 'current' | 'historical';
+  }) {
+    const attempted = await dependencies.store.revealCurrent({
+      sessionHandleHash: dependencies.hashSessionHandle(command.sessionHandle),
+      studentId: command.studentId,
+      intakeRecordVersionId: command.intakeRecordVersionId,
+      purpose: command.purpose,
+      kind: command.kind,
+      now: () => dependencies.clock.now(),
+      auditId: dependencies.ids.create(),
+      operationId: dependencies.ids.create(),
+      projectForm: projectStudentIntakeForm,
+      openAnswers: async (sealed, context) =>
+        decodeAnswers(
+          await dependencies.keys.open(sealed, {
+            purpose: 'intake-record-version',
+            workspaceId: context.workspaceId,
+            studentId: context.studentId,
+          }),
+        ),
+      summarizeChanges: (previousAnswers, nextAnswers) =>
+        changedFieldSummary(previousAnswers, nextAnswers),
+    });
+    return mapRevealedRecord(command.studentId, attempted);
+  }
+
+  function throwClinicalRevealDenial(
+    reason: ClinicalRevealDenialReason,
+  ): never {
+    if (reason === 'revoked') throw new StaffSessionRevokedError();
+    if (reason === 'expired') throw new StaffSessionExpiredError();
+    if (reason === 'permission') {
+      throw new StaffPermissionRequiredError('clinical');
+    }
+    if (reason === 'stale') throw new StaffAuthenticationStaleError();
+    throw new StaffAuthenticationFailedError();
+  }
+
+  function mapRevealedRecord(
+    studentId: string,
+    attempted: ClinicalRevealAttempt,
+  ): RevealedCurrentIntakeRecord {
+    if (attempted.outcome === 'missing_session') {
+      throw new StaffAuthenticationFailedError();
+    }
+    if (attempted.outcome === 'denied') {
+      throwClinicalRevealDenial(attempted.reason);
+    }
+    if (attempted.outcome === 'not_found') {
+      throw new IntakeRecordNotFoundError();
+    }
+    if (attempted.outcome === 'failed') {
+      if (attempted.cause === 'decrypt') {
+        throw new Error('Unable to open the Intake Record Version');
+      }
+      throw new IntakeUnavailableError();
+    }
+    const orderedFields = [...attempted.intakeForm.fields].sort(
+      (left, right) => left.order - right.order,
+    );
+    return {
+      studentId,
+      intakeRecordVersionId: attempted.intakeRecordVersionId,
+      versionNumber: attempted.versionNumber,
+      acceptedAt: new Date(attempted.acceptedAt).toISOString(),
+      schoolConfigurationReleaseId: attempted.schoolConfigurationReleaseId,
+      locale: attempted.locale,
+      intakeForm: { ...attempted.intakeForm, fields: orderedFields },
+      answers: attempted.answers,
+      intakeUpdateRequirement: attempted.intakeUpdateRequirement,
+      predecessorIntakeRecordVersionId:
+        attempted.predecessorIntakeRecordVersionId,
+      changedFields: attempted.changedFields,
+      status: attempted.status,
+      supersededAt: attempted.supersededAt
+        ? new Date(attempted.supersededAt).toISOString()
+        : null,
+      freshUntil: new Date(attempted.freshUntil).toISOString(),
+    } satisfies RevealedCurrentIntakeRecord;
+  }
 }
 
 export type Intake = ReturnType<typeof createIntake>;

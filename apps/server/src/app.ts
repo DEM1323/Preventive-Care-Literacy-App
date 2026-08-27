@@ -1031,11 +1031,33 @@ const SubmitIntakeRecordVersionResponse = Type.Object({
   ]),
   changedFields: Type.Array(IntakeChangedFieldResponse),
 });
+const ClinicalDirectoryQuery = Type.Object({
+  classId: Type.Optional(Type.String({ format: 'uuid' })),
+});
+const ClinicalDirectoryStatusReasonSchema = Type.Union([
+  Type.Literal('disabled'),
+  Type.Literal('no_active_membership'),
+]);
 const ClinicalDirectoryResponse = Type.Object({
   students: Type.Array(
     Type.Object({
       studentId: Type.String({ format: 'uuid' }),
       createdAt: Type.String({ format: 'date-time' }),
+      studentStatus: Type.Union([
+        Type.Literal('active'),
+        Type.Literal('disabled'),
+      ]),
+      statusReasons: Type.Array(ClinicalDirectoryStatusReasonSchema),
+      classMemberships: Type.Array(
+        Type.Object({
+          classId: Type.String({ format: 'uuid' }),
+          name: Type.String(),
+          status: Type.Union([
+            Type.Literal('active'),
+            Type.Literal('inactive'),
+          ]),
+        }),
+      ),
       currentIntakeRecordVersion: Type.Union([
         Type.Null(),
         Type.Object({
@@ -1046,6 +1068,43 @@ const ClinicalDirectoryResponse = Type.Object({
       ]),
     }),
   ),
+  classes: Type.Array(
+    Type.Object({
+      classId: Type.String({ format: 'uuid' }),
+      name: Type.String(),
+      status: Type.Union([Type.Literal('open'), Type.Literal('closed')]),
+    }),
+  ),
+  freshUntil: Type.String({ format: 'date-time' }),
+});
+const ClinicalAccessPurposeSchema = Type.Union([
+  Type.Literal('care_coordination'),
+  Type.Literal('historical_comparison'),
+]);
+const SelectClinicalStudentBody = Type.Object(
+  {
+    studentId: Type.String({ format: 'uuid' }),
+    purpose: ClinicalAccessPurposeSchema,
+  },
+  { additionalProperties: false },
+);
+const ClinicalIntakeVersionSummaryResponse = Type.Object({
+  intakeRecordVersionId: Type.String({ format: 'uuid' }),
+  versionNumber: Type.Integer({ minimum: 1 }),
+  acceptedAt: Type.String({ format: 'date-time' }),
+  schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+  locale: IntakeLocaleSchema,
+  intakeForm: ExactResourceRevisionSchema,
+  predecessorIntakeRecordVersionId: Type.Union([
+    Type.String({ format: 'uuid' }),
+    Type.Null(),
+  ]),
+  status: Type.Union([Type.Literal('current'), Type.Literal('superseded')]),
+  supersededAt: Type.Union([Type.String({ format: 'date-time' }), Type.Null()]),
+});
+const ClinicalStudentSelectionResponse = Type.Object({
+  studentId: Type.String({ format: 'uuid' }),
+  versions: Type.Array(ClinicalIntakeVersionSummaryResponse),
   freshUntil: Type.String({ format: 'date-time' }),
 });
 const RevealCurrentIntakeRecordBody = Type.Object(
@@ -1054,9 +1113,18 @@ const RevealCurrentIntakeRecordBody = Type.Object(
   },
   { additionalProperties: false },
 );
+const RevealIntakeRecordVersionBody = Type.Object(
+  {
+    studentId: Type.String({ format: 'uuid' }),
+    intakeRecordVersionId: Type.String({ format: 'uuid' }),
+    purpose: ClinicalAccessPurposeSchema,
+  },
+  { additionalProperties: false },
+);
 const RevealedCurrentIntakeRecordResponse = Type.Object({
   studentId: Type.String({ format: 'uuid' }),
   intakeRecordVersionId: Type.String({ format: 'uuid' }),
+  versionNumber: Type.Integer({ minimum: 1 }),
   acceptedAt: Type.String({ format: 'date-time' }),
   schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
   locale: IntakeLocaleSchema,
@@ -1075,6 +1143,13 @@ const RevealedCurrentIntakeRecordResponse = Type.Object({
       impactedFieldIds: Type.Array(Type.String({ format: 'uuid' })),
     }),
   ]),
+  predecessorIntakeRecordVersionId: Type.Union([
+    Type.String({ format: 'uuid' }),
+    Type.Null(),
+  ]),
+  changedFields: Type.Array(IntakeChangedFieldResponse),
+  status: Type.Union([Type.Literal('current'), Type.Literal('superseded')]),
+  supersededAt: Type.Union([Type.String({ format: 'date-time' }), Type.Null()]),
   freshUntil: Type.String({ format: 'date-time' }),
 });
 const StudentLearningQuery = Type.Object({
@@ -2100,7 +2175,10 @@ export async function buildApp(
   ): Promise<boolean> {
     if (
       request.method !== 'POST' ||
-      request.routeOptions.url !== '/api/v1/clinical/intake-records/current'
+      (request.routeOptions.url !== '/api/v1/clinical/intake-records/current' &&
+        request.routeOptions.url !==
+          '/api/v1/clinical/intake-records/versions' &&
+        request.routeOptions.url !== '/api/v1/clinical/students/selection')
     ) {
       return true;
     }
@@ -2166,39 +2244,49 @@ export async function buildApp(
                     ? 'staff-session'
                     : route === '/api/v1/clinical/review-directory'
                       ? 'clinical-directory'
-                      : route === '/api/v1/clinical/intake-records/current'
-                        ? 'clinical-intake-reveal'
-                        : route.startsWith('/api/v1/administration/classes') ||
-                            route.startsWith('/api/v1/administration/students')
-                          ? 'classes'
-                          : route === '/api/v1/auth/student/sign-in'
-                            ? 'student-sign-in'
-                            : route === '/api/v1/auth/student/sign-in/verify'
-                              ? 'student-sign-in-verify'
-                              : route === '/api/v1/student/session'
-                                ? 'student-session'
-                                : route === '/api/v1/student/language'
-                                  ? 'student-language'
-                                  : route === '/api/v1/student/intake'
-                                    ? 'student-intake'
-                                    : route === '/api/v1/student/intake/draft'
-                                      ? 'student-intake-draft'
-                                      : route ===
-                                          '/api/v1/student/intake/reopen'
-                                        ? 'student-intake-reopen'
+                      : route === '/api/v1/clinical/students/selection'
+                        ? 'clinical-student-selection'
+                        : route === '/api/v1/clinical/intake-records/current'
+                          ? 'clinical-intake-reveal'
+                          : route === '/api/v1/clinical/intake-records/versions'
+                            ? 'clinical-intake-version-reveal'
+                            : route.startsWith(
+                                  '/api/v1/administration/classes',
+                                ) ||
+                                route.startsWith(
+                                  '/api/v1/administration/students',
+                                )
+                              ? 'classes'
+                              : route === '/api/v1/auth/student/sign-in'
+                                ? 'student-sign-in'
+                                : route ===
+                                    '/api/v1/auth/student/sign-in/verify'
+                                  ? 'student-sign-in-verify'
+                                  : route === '/api/v1/student/session'
+                                    ? 'student-session'
+                                    : route === '/api/v1/student/language'
+                                      ? 'student-language'
+                                      : route === '/api/v1/student/intake'
+                                        ? 'student-intake'
                                         : route ===
-                                            '/api/v1/student/intake/rebase'
-                                          ? 'student-intake-rebase'
+                                            '/api/v1/student/intake/draft'
+                                          ? 'student-intake-draft'
                                           : route ===
-                                              '/api/v1/student/intake/submissions'
-                                            ? 'student-intake-submission'
+                                              '/api/v1/student/intake/reopen'
+                                            ? 'student-intake-reopen'
                                             : route ===
-                                                '/api/v1/student/learning'
-                                              ? 'student-learning'
+                                                '/api/v1/student/intake/rebase'
+                                              ? 'student-intake-rebase'
                                               : route ===
-                                                  '/api/v1/student/learning/acknowledgements'
-                                                ? 'student-learning-acknowledgement'
-                                                : 'unknown';
+                                                  '/api/v1/student/intake/submissions'
+                                                ? 'student-intake-submission'
+                                                : route ===
+                                                    '/api/v1/student/learning'
+                                                  ? 'student-learning'
+                                                  : route ===
+                                                      '/api/v1/student/learning/acknowledgements'
+                                                    ? 'student-learning-acknowledgement'
+                                                    : 'unknown';
       telemetry.record({
         name: 'http.request.completed',
         method: ['DELETE', 'GET', 'PATCH', 'POST', 'PUT'].includes(
@@ -3199,12 +3287,13 @@ export async function buildApp(
     },
   );
 
-  app.get(
+  app.get<{ Querystring: Static<typeof ClinicalDirectoryQuery> }>(
     '/api/v1/clinical/review-directory',
     {
       schema: {
         operationId: 'openClinicalDirectory',
         security: [{ staffSession: [] }],
+        querystring: ClinicalDirectoryQuery,
         response: {
           200: ClinicalDirectoryResponse,
           401: ProblemResponse,
@@ -3231,12 +3320,17 @@ export async function buildApp(
       }
       const directory = await identityAndAccess.openClinicalDirectory({
         sessionHandle: sessionHandle as string,
+        classId: request.query.classId,
       });
       return {
         freshUntil: directory.freshUntil.toISOString(),
+        classes: directory.classes,
         students: directory.students.map((student) => ({
           studentId: student.studentId,
           createdAt: student.createdAt.toISOString(),
+          studentStatus: student.studentStatus,
+          statusReasons: student.statusReasons,
+          classMemberships: student.classMemberships,
           currentIntakeRecordVersion: student.currentIntakeRecordVersion && {
             intakeRecordVersionId:
               student.currentIntakeRecordVersion.intakeRecordVersionId,
@@ -3246,6 +3340,66 @@ export async function buildApp(
           },
         })),
       };
+    },
+  );
+
+  app.post<{ Body: Static<typeof SelectClinicalStudentBody> }>(
+    '/api/v1/clinical/students/selection',
+    {
+      schema: {
+        operationId: 'selectClinicalStudent',
+        security: [{ staffSession: [] }],
+        body: SelectClinicalStudentBody,
+        response: {
+          200: ClinicalStudentSelectionResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        staffSessionCookie,
+      );
+      if (!sessionHandle) {
+        if (!options.intake) {
+          return reply.type('application/problem+json').code(401).send({
+            type: 'https://preventive-care-literacy.example/problems/staff-session',
+            title: 'Staff session required',
+            status: 401,
+            code: 'STAFF_SESSION_REQUIRED',
+          });
+        }
+        await options.intake.reportUnauthenticatedReveal({
+          outcome: 'denied_unauthenticated',
+          studentId: request.body.studentId,
+        });
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      if (!options.intake) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      reply.header('cache-control', 'no-store');
+      return options.intake.selectStudent({
+        sessionHandle,
+        studentId: request.body.studentId,
+        purpose: request.body.purpose,
+      });
     },
   );
 
@@ -3304,6 +3458,67 @@ export async function buildApp(
       return options.intake.revealCurrent({
         sessionHandle,
         studentId: request.body.studentId,
+      });
+    },
+  );
+
+  app.post<{ Body: Static<typeof RevealIntakeRecordVersionBody> }>(
+    '/api/v1/clinical/intake-records/versions',
+    {
+      schema: {
+        operationId: 'revealIntakeRecordVersion',
+        security: [{ staffSession: [] }],
+        body: RevealIntakeRecordVersionBody,
+        response: {
+          200: RevealedCurrentIntakeRecordResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        staffSessionCookie,
+      );
+      if (!sessionHandle) {
+        if (!options.intake) {
+          return reply.type('application/problem+json').code(401).send({
+            type: 'https://preventive-care-literacy.example/problems/staff-session',
+            title: 'Staff session required',
+            status: 401,
+            code: 'STAFF_SESSION_REQUIRED',
+          });
+        }
+        await options.intake.reportUnauthenticatedReveal({
+          outcome: 'denied_unauthenticated',
+          studentId: request.body.studentId,
+        });
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      if (!options.intake) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      reply.header('cache-control', 'no-store');
+      return options.intake.revealVersion({
+        sessionHandle,
+        studentId: request.body.studentId,
+        intakeRecordVersionId: request.body.intakeRecordVersionId,
+        purpose: request.body.purpose,
       });
     },
   );

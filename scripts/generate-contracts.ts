@@ -172,6 +172,12 @@ async function renderContracts() {
         revealCurrent: async () => {
           throw new Error('Contract generation does not execute queries');
         },
+        revealVersion: async () => {
+          throw new Error('Contract generation does not execute queries');
+        },
+        selectStudent: async () => {
+          throw new Error('Contract generation does not execute queries');
+        },
         reportUnauthenticatedReveal: async () => {
           throw new Error('Contract generation does not execute commands');
         },

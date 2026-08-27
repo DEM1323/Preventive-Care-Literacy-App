@@ -267,7 +267,7 @@ async function collectClinicalClearing(
 ): Promise<AccessibilitySnapshot> {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(`${origin}/staff`, { waitUntil: 'networkidle' });
-  await page.getByRole('heading', { name: 'Intake review' }).waitFor();
+  await page.getByRole('heading', { name: 'Intake Records' }).waitFor();
   const reveal = page.getByRole('button', { name: 'Reveal current record' });
   await reveal.first().waitFor({ timeout: 15_000 });
   await page.locator('#student-filter').fill(studentId);
@@ -307,7 +307,7 @@ async function collectClinicalClearing(
     locale: 'en-US',
     viewport: { width: 1280, height: 800, zoom: 1 },
     expectedFocus: [...goldenJourneyBrowserControls.staffHome],
-    expectedTranslatedText: ['Intake review'],
+    expectedTranslatedText: ['Intake Records'],
     expectedAnnouncementText: [
       'Clinical access is being rechecked. Sensitive values were cleared.',
     ],

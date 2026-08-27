@@ -24,3 +24,7 @@ body,
     display: none !important;
   }
 }
+
+.clinical-sensitive {
+  user-select: none;
+}

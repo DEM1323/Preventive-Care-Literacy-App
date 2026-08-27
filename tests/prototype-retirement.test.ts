@@ -235,7 +235,16 @@ test('clinical Intake Record reveal stays memory-only and suppresses application
   expect(clinicalSource).not.toContain('searchParams');
   expect(clinicalSource).not.toContain('navigate(`/');
   expect(clinicalSource).toContain("'/api/v1/clinical/intake-records/current'");
+  expect(clinicalSource).toContain("'/api/v1/clinical/students/selection'");
+  expect(clinicalSource).toContain(
+    "'/api/v1/clinical/intake-records/versions'",
+  );
+  expect(clinicalSource).toContain('Intake Records');
+  expect(clinicalSource).not.toContain('Intake review');
   expect(clinicalSource).toContain('clinical-sensitive');
+  expect(clinicalSource).toContain('onCopy');
+  expect(css).toContain('user-select: none');
+  expect(clinicalSource).toContain('invalidateInFlightClinicalWork');
   expect(clinicalSource).toContain('visibilitychange');
   expect(clinicalSource).toContain('setInterval');
   expect(clinicalSource).toContain('AbortController');
@@ -271,6 +280,7 @@ test('clinical Intake Record reveal stays memory-only and suppresses application
   expect(css).toContain('@media print');
   expect(css).toContain('.clinical-sensitive');
   expect(retirement).toContain('/api/v1/clinical/intake-records/current');
+  expect(retirement).toContain('/api/v1/clinical/intake-records/versions');
   expect(retirement).not.toContain(
     'Authenticated staff routes still contain no Student answer entry',
   );

@@ -74,7 +74,7 @@ export type IdentityAndAccess = {
     command: StaffSessionCommand,
   ): Promise<ClinicalSessionContext>;
   openClinicalDirectory(
-    command: StaffSessionCommand,
+    command: OpenClinicalDirectoryCommand,
   ): Promise<ClinicalDirectory>;
   createClass(command: CreateClassCommand): Promise<CreateClassResult>;
   createClassInvitation(
@@ -950,6 +950,18 @@ export type StaffSessionCommand = {
   sessionHandle: string;
 };
 
+export type OpenClinicalDirectoryCommand = StaffSessionCommand & {
+  classId?: string;
+};
+
+export const clinicalDirectoryStatusReasons = [
+  'disabled',
+  'no_active_membership',
+] as const;
+
+export type ClinicalDirectoryStatusReason =
+  (typeof clinicalDirectoryStatusReasons)[number];
+
 export type StaffDirectoryEntry = {
   staffIdentityId: string;
   displayName: string;
@@ -959,9 +971,24 @@ export type StaffDirectoryEntry = {
   createdAt: Date;
 };
 
+export type ClinicalDirectoryClass = {
+  classId: string;
+  name: string;
+  status: 'open' | 'closed';
+};
+
+export type ClinicalDirectoryMembership = {
+  classId: string;
+  name: string;
+  status: 'active' | 'inactive';
+};
+
 export type ClinicalDirectoryStudent = {
   studentId: string;
   createdAt: Date;
+  studentStatus: 'active' | 'disabled';
+  statusReasons: ClinicalDirectoryStatusReason[];
+  classMemberships: ClinicalDirectoryMembership[];
   currentIntakeRecordVersion: {
     intakeRecordVersionId: string;
     acceptedAt: Date;
@@ -971,6 +998,7 @@ export type ClinicalDirectoryStudent = {
 
 export type ClinicalDirectory = {
   students: ClinicalDirectoryStudent[];
+  classes: ClinicalDirectoryClass[];
   freshUntil: Date;
 };
 
@@ -1235,7 +1263,11 @@ export type StaffAccessStore = {
   listClinicalDirectory(request: {
     staffIdentityId: string;
     workspaceId: string;
-  }): Promise<ClinicalDirectoryStudent[]>;
+    classId?: string;
+  }): Promise<{
+    students: ClinicalDirectoryStudent[];
+    classes: ClinicalDirectoryClass[];
+  }>;
 };
 
 export type InvitationPreviewFacts = {
@@ -2719,11 +2751,14 @@ export function createIdentityAndAccess(dependencies: {
     async openClinicalDirectory(command) {
       const { staffStore } = requireStaffSeams();
       const session = await requireFreshClinicalSession(command.sessionHandle);
+      const directory = await staffStore.listClinicalDirectory({
+        staffIdentityId: session.staffIdentityId,
+        workspaceId: session.workspaceId,
+        classId: command.classId,
+      });
       return {
-        students: await staffStore.listClinicalDirectory({
-          staffIdentityId: session.staffIdentityId,
-          workspaceId: session.workspaceId,
-        }),
+        students: directory.students,
+        classes: directory.classes,
         freshUntil: new Date(
           session.authenticationFreshAt.getTime() +
             staffAuthenticationFreshnessMs,

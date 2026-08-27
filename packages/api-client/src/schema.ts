@@ -548,6 +548,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/clinical/intake-records/versions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['revealIntakeRecordVersion'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/clinical/review-directory': {
     parameters: {
       query?: never;
@@ -558,6 +574,22 @@ export interface paths {
     get: operations['openClinicalDirectory'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/clinical/students/selection': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['selectClinicalStudent'];
     delete?: never;
     options?: never;
     head?: never;
@@ -10684,6 +10716,11 @@ export interface operations {
             answers: {
               [key: string]: string;
             };
+            changedFields: {
+              change: 'added' | 'removed' | 'changed';
+              /** Format: uuid */
+              fieldId: string;
+            }[];
             /** Format: date-time */
             freshUntil: string;
             intakeForm: {
@@ -10762,10 +10799,369 @@ export interface operations {
               impactedFieldIds: string[];
             };
             locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+            predecessorIntakeRecordVersionId: string | null;
             /** Format: uuid */
             schoolConfigurationReleaseId: string;
+            status: 'current' | 'superseded';
             /** Format: uuid */
             studentId: string;
+            supersededAt: string | null;
+            versionNumber: number;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  revealIntakeRecordVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          intakeRecordVersionId: string;
+          purpose: 'care_coordination' | 'historical_comparison';
+          /** Format: uuid */
+          studentId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: date-time */
+            acceptedAt: string;
+            answers: {
+              [key: string]: string;
+            };
+            changedFields: {
+              change: 'added' | 'removed' | 'changed';
+              /** Format: uuid */
+              fieldId: string;
+            }[];
+            /** Format: date-time */
+            freshUntil: string;
+            intakeForm: {
+              fields: {
+                /** Format: uuid */
+                id: string;
+                key: string;
+                label: string;
+                options: {
+                  code: string;
+                  label: string;
+                }[];
+                order: number;
+                required: boolean;
+                requiredWhenVisible: boolean;
+                revision: number;
+                /** Format: uuid */
+                sectionId: string;
+                type:
+                  | 'text'
+                  | 'date'
+                  | 'tel'
+                  | 'yes-no'
+                  | 'textarea'
+                  | 'email'
+                  | 'single-choice'
+                  | 'multiple-choice'
+                  | 'acknowledgement';
+                visibility: null | {
+                  equalsOptionCode: string;
+                  /** Format: uuid */
+                  fieldId: string;
+                };
+              }[];
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+              sections: {
+                /** Format: uuid */
+                id: string;
+                order: number;
+                revision: number;
+                title: string;
+              }[];
+              title: string;
+            };
+            /** Format: uuid */
+            intakeRecordVersionId: string;
+            intakeUpdateRequirement: null | {
+              activeIntakeForm: {
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+              };
+              /** Format: uuid */
+              activeSchoolConfigurationReleaseId: string;
+              activeSubmissionAttestation: {
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+              };
+              currentIntakeForm: {
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+              };
+              /** Format: uuid */
+              currentIntakeRecordVersionId: string;
+              /** Format: uuid */
+              currentSchoolConfigurationReleaseId: string;
+              currentSubmissionAttestation: {
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+              };
+              impactedFieldIds: string[];
+            };
+            locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+            predecessorIntakeRecordVersionId: string | null;
+            /** Format: uuid */
+            schoolConfigurationReleaseId: string;
+            status: 'current' | 'superseded';
+            /** Format: uuid */
+            studentId: string;
+            supersededAt: string | null;
+            versionNumber: number;
           };
         };
       };
@@ -11001,7 +11397,9 @@ export interface operations {
   };
   openClinicalDirectory: {
     parameters: {
-      query?: never;
+      query?: {
+        classId?: string;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -11015,9 +11413,21 @@ export interface operations {
         };
         content: {
           'application/json': {
+            classes: {
+              /** Format: uuid */
+              classId: string;
+              name: string;
+              status: 'open' | 'closed';
+            }[];
             /** Format: date-time */
             freshUntil: string;
             students: {
+              classMemberships: {
+                /** Format: uuid */
+                classId: string;
+                name: string;
+                status: 'active' | 'inactive';
+              }[];
               /** Format: date-time */
               createdAt: string;
               currentIntakeRecordVersion: null | {
@@ -11027,8 +11437,10 @@ export interface operations {
                 intakeRecordVersionId: string;
                 locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
               };
+              statusReasons: ('disabled' | 'no_active_membership')[];
               /** Format: uuid */
               studentId: string;
+              studentStatus: 'active' | 'disabled';
             }[];
           };
         };
@@ -11073,6 +11485,285 @@ export interface operations {
       };
       /** @description Default Response */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  selectClinicalStudent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          purpose: 'care_coordination' | 'historical_comparison';
+          /** Format: uuid */
+          studentId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: date-time */
+            freshUntil: string;
+            /** Format: uuid */
+            studentId: string;
+            versions: {
+              /** Format: date-time */
+              acceptedAt: string;
+              intakeForm: {
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+              };
+              /** Format: uuid */
+              intakeRecordVersionId: string;
+              locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+              predecessorIntakeRecordVersionId: string | null;
+              /** Format: uuid */
+              schoolConfigurationReleaseId: string;
+              status: 'current' | 'superseded';
+              supersededAt: string | null;
+              versionNumber: number;
+            }[];
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
         headers: {
           [name: string]: unknown;
         };

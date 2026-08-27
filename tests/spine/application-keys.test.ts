@@ -133,6 +133,7 @@ test('tracked envelope threat model names the selected adapter and its limits', 
   expect(doc).toContain('unrecoverable');
   expect(doc).toContain('process secret');
   expect(doc).toContain('/api/v1/clinical/intake-records/current');
+  expect(doc).toContain('/api/v1/clinical/intake-records/versions');
   expect(doc).toContain('/api/v1/student/intake');
   expect(doc).toContain('Student-private draft restore');
   expect(doc).toContain(
