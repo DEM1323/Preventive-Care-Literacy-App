@@ -17,8 +17,10 @@ import {
 } from '../school-configuration/index.ts';
 import type { SupportedIntakeFieldType } from '../intake-answers/index.ts';
 import {
+  compareIntakeCanonicalMeaning,
   intakeFieldIsVisible,
   isSupportedIntakeFieldType,
+  rebaseIntakeAnswers,
   selectedIntakeOptionCodes,
 } from '../intake-answers/index.ts';
 
@@ -112,6 +114,7 @@ export type CurrentIntakeRecordVersion = {
 export type StudentIntakeSnapshot = {
   learningUnlocked: boolean;
   currentIntakeRecordVersion: CurrentIntakeRecordVersion | null;
+  intakeUpdateRequirement: IntakeUpdateRequirement | null;
   draft: {
     draftRevision: number;
     locale: IntakeLocale;
@@ -119,8 +122,35 @@ export type StudentIntakeSnapshot = {
     schoolConfigurationReleaseId: string;
     intakeForm: ExactResourceRevision;
     answers: IntakeAnswerMap;
+    compatibility: IntakeDraftCompatibility;
+    reviewFieldIds: string[];
   } | null;
   form: StudentIntakeForm;
+};
+
+export type IntakeDraftCompatibility =
+  'current' | 'presentation-equivalent' | 'canonical-change';
+
+export type IntakeUpdateRequirement = {
+  currentIntakeRecordVersionId: string;
+  currentSchoolConfigurationReleaseId: string;
+  currentIntakeForm: ExactResourceRevision;
+  currentSubmissionAttestation: ExactResourceRevision;
+  activeSchoolConfigurationReleaseId: string;
+  activeIntakeForm: ExactResourceRevision;
+  activeSubmissionAttestation: ExactResourceRevision;
+  impactedFieldIds: string[];
+};
+
+export type IntakeReconciliationGuidance = {
+  activeSchoolConfigurationReleaseId: string;
+  activeIntakeForm: ExactResourceRevision;
+  activeSubmissionAttestation: ExactResourceRevision;
+  compatibility: 'presentation-equivalent' | 'canonical-change';
+  rebaseRequired: boolean;
+  impactedFieldIds: string[];
+  draftRevision?: number;
+  currentIntakeRecordVersionId?: string;
 };
 
 export type SaveIntakeDraftCommand = {
@@ -187,6 +217,23 @@ export type ReopenIntakeRecordResult = {
   replayed: boolean;
 };
 
+export type RebaseIntakeDraftCommand = {
+  sessionHandle: string;
+  operationId: string;
+  expectedDraftRevision: number;
+  locale: IntakeLocale;
+};
+
+export type RebaseIntakeDraftResult = {
+  operationId: string;
+  locale: IntakeLocale;
+  updatedAt: string;
+  draftRevision: number;
+  replayed: boolean;
+  reviewFieldIds: string[];
+  omittedFieldIds: string[];
+};
+
 export class IntakeUnavailableError extends Error {
   readonly code = 'INTAKE_UNAVAILABLE';
   constructor() {
@@ -197,7 +244,7 @@ export class IntakeUnavailableError extends Error {
 
 export class IntakeRevisionConflictError extends Error {
   readonly code = 'INTAKE_REVISION_CONFLICT';
-  constructor() {
+  constructor(readonly guidance?: IntakeReconciliationGuidance) {
     super('The expected configuration or form revision changed');
     this.name = 'IntakeRevisionConflictError';
   }
@@ -266,6 +313,7 @@ export type RevealedCurrentIntakeRecord = {
   locale: IntakeLocale;
   intakeForm: StudentIntakeForm['intakeForm'];
   answers: IntakeAnswerMap;
+  intakeUpdateRequirement: IntakeUpdateRequirement | null;
   freshUntil: string;
 };
 
@@ -293,6 +341,7 @@ export type ClinicalRevealAttempt =
       locale: IntakeLocale;
       intakeForm: StudentIntakeForm['intakeForm'];
       answers: IntakeAnswerMap;
+      intakeUpdateRequirement: IntakeUpdateRequirement | null;
       freshUntil: Date;
     };
 
@@ -316,6 +365,8 @@ export type StoredIntakeDraft = {
   draftRevision: number;
   schoolConfigurationReleaseId: string;
   intakeForm: ExactResourceRevision;
+  reviewFieldIds: string[];
+  formPayload: Record<string, unknown> | undefined;
   sealed: SealedRecord;
 };
 
@@ -327,6 +378,8 @@ export type StoredIntakeRecordVersion = {
   intakeForm: ExactResourceRevision;
   submissionAttestation: ExactResourceRevision;
   locale: IntakeLocale;
+  formPayload: Record<string, unknown> | undefined;
+  attestationPayload: Record<string, unknown> | undefined;
   sealed: SealedRecord;
 };
 
@@ -349,6 +402,7 @@ export type IntakeStore = {
     expectedSchoolConfigurationReleaseId: string;
     expectedIntakeForm: ExactResourceRevision;
     sealed: SealedRecord;
+    reviewFieldIds: string[];
     updatedAt: Date;
   }): Promise<
     | {
@@ -367,7 +421,11 @@ export type IntakeStore = {
     locale: IntakeLocale;
     expectedCurrentIntakeRecordVersionId: string;
     updatedAt: Date;
-    seedDraft: (currentSealed: SealedRecord) => Promise<SealedRecord>;
+    seedDraft: (
+      currentSealed: SealedRecord,
+      currentFormPayload: Record<string, unknown> | undefined,
+      release: ActiveIntakeRelease,
+    ) => Promise<{ sealed: SealedRecord; reviewFieldIds: string[] }>;
   }): Promise<
     | {
         outcome: 'saved';
@@ -376,6 +434,34 @@ export type IntakeStore = {
         updatedAt: Date;
       }
     | { outcome: 'replayed'; result: ReopenIntakeRecordResult }
+  >;
+  rebase(input: {
+    studentId: string;
+    workspaceId: string;
+    operationId: string;
+    requestBinding: string;
+    locale: IntakeLocale;
+    expectedDraftRevision: number;
+    updatedAt: Date;
+    propose: (
+      currentSealed: SealedRecord,
+      draftFormPayload: Record<string, unknown> | undefined,
+      release: ActiveIntakeRelease,
+    ) => Promise<{
+      sealed: SealedRecord;
+      reviewFieldIds: string[];
+      omittedFieldIds: string[];
+    }>;
+  }): Promise<
+    | {
+        outcome: 'saved';
+        draftRevision: number;
+        locale: IntakeLocale;
+        updatedAt: Date;
+        reviewFieldIds: string[];
+        omittedFieldIds: string[];
+      }
+    | { outcome: 'replayed'; result: RebaseIntakeDraftResult }
   >;
   submit(input: {
     studentId: string;
@@ -637,13 +723,78 @@ function changedFieldSummary(
   return summary;
 }
 
-function assertExpectedRelease(
+function activeRevisions(release: ActiveIntakeRelease) {
+  return {
+    activeSchoolConfigurationReleaseId: release.schoolConfigurationReleaseId,
+    activeIntakeForm: {
+      resourceId: release.intakeForm.resourceId,
+      revisionNumber: release.intakeForm.revisionNumber,
+    },
+    activeSubmissionAttestation: {
+      resourceId: release.submissionAttestation.resourceId,
+      revisionNumber: release.submissionAttestation.revisionNumber,
+    },
+  };
+}
+
+function compareToActive(
+  previousForm: unknown,
+  release: ActiveIntakeRelease,
+  previousAttestation?: unknown,
+) {
+  return compareIntakeCanonicalMeaning({
+    previousForm,
+    nextForm: release.intakeForm.payload,
+    previousAttestation,
+    nextAttestation: previousAttestation
+      ? release.submissionAttestation.payload
+      : undefined,
+  });
+}
+
+function reconciliationGuidance(
+  release: ActiveIntakeRelease,
+  previousForm: unknown,
+  extras: {
+    previousAttestation?: unknown;
+    draftRevision?: number;
+    currentIntakeRecordVersionId?: string;
+  } = {},
+): IntakeReconciliationGuidance {
+  const comparison = compareToActive(
+    previousForm,
+    release,
+    extras.previousAttestation,
+  );
+  return {
+    ...activeRevisions(release),
+    compatibility: comparison.compatibility,
+    rebaseRequired: comparison.compatibility === 'canonical-change',
+    impactedFieldIds: comparison.impactedFieldIds,
+    ...(extras.draftRevision === undefined
+      ? {}
+      : { draftRevision: extras.draftRevision }),
+    ...(extras.currentIntakeRecordVersionId
+      ? {
+          currentIntakeRecordVersionId: extras.currentIntakeRecordVersionId,
+        }
+      : {}),
+  };
+}
+
+function assertMatchingActiveRelease(
   release: ActiveIntakeRelease,
   expected: {
     schoolConfigurationReleaseId: string;
     intakeForm: ExactResourceRevision;
     submissionAttestation?: ExactResourceRevision;
   },
+  previousForm: unknown,
+  extras: {
+    previousAttestation?: unknown;
+    draftRevision?: number;
+    currentIntakeRecordVersionId?: string;
+  } = {},
 ): void {
   if (
     release.schoolConfigurationReleaseId !==
@@ -658,8 +809,50 @@ function assertExpectedRelease(
         revisionNumber: release.submissionAttestation.revisionNumber,
       }))
   ) {
-    throw new IntakeRevisionConflictError();
+    throw new IntakeRevisionConflictError(
+      reconciliationGuidance(release, previousForm, extras),
+    );
   }
+}
+
+function draftCompatibilityFor(
+  draft: StoredIntakeDraft,
+  release: ActiveIntakeRelease,
+): IntakeDraftCompatibility {
+  if (
+    sameRevision(draft.intakeForm, {
+      resourceId: release.intakeForm.resourceId,
+      revisionNumber: release.intakeForm.revisionNumber,
+    })
+  ) {
+    return 'current';
+  }
+  if (!draft.formPayload) return 'canonical-change';
+  return compareToActive(draft.formPayload, release).compatibility ===
+    'presentation-equivalent'
+    ? 'presentation-equivalent'
+    : 'canonical-change';
+}
+
+export function intakeUpdateRequirementFor(
+  current: StoredIntakeRecordVersion,
+  release: ActiveIntakeRelease,
+): IntakeUpdateRequirement | null {
+  if (!current.formPayload) return null;
+  const comparison = compareToActive(
+    current.formPayload,
+    release,
+    current.attestationPayload,
+  );
+  if (comparison.compatibility === 'presentation-equivalent') return null;
+  return {
+    currentIntakeRecordVersionId: current.intakeRecordVersionId,
+    currentSchoolConfigurationReleaseId: current.schoolConfigurationReleaseId,
+    currentIntakeForm: current.intakeForm,
+    currentSubmissionAttestation: current.submissionAttestation,
+    ...activeRevisions(release),
+    impactedFieldIds: comparison.impactedFieldIds,
+  };
 }
 
 export function createIntake(dependencies: {
@@ -718,10 +911,15 @@ export function createIntake(dependencies: {
                 studentId: session.studentId,
               }),
             ),
+            compatibility: draftCompatibilityFor(state.draft, state.release),
+            reviewFieldIds: state.draft.reviewFieldIds,
           };
       return {
         learningUnlocked: current !== null,
         currentIntakeRecordVersion: current,
+        intakeUpdateRequirement: state.currentVersion
+          ? intakeUpdateRequirementFor(state.currentVersion, state.release)
+          : null,
         draft,
         form,
       } satisfies StudentIntakeSnapshot;
@@ -735,11 +933,36 @@ export function createIntake(dependencies: {
         workspaceId: session.workspaceId,
       });
       if (!state.release) throw new IntakeUnavailableError();
-      assertExpectedRelease(state.release, {
-        schoolConfigurationReleaseId:
-          command.expectedSchoolConfigurationReleaseId,
-        intakeForm: command.expectedIntakeForm,
-      });
+      assertMatchingActiveRelease(
+        state.release,
+        {
+          schoolConfigurationReleaseId:
+            command.expectedSchoolConfigurationReleaseId,
+          intakeForm: command.expectedIntakeForm,
+        },
+        state.draft?.formPayload ?? state.release.intakeForm.payload,
+        {
+          draftRevision: state.draft?.draftRevision,
+          currentIntakeRecordVersionId:
+            state.currentVersion?.intakeRecordVersionId,
+        },
+      );
+      if (
+        state.draft &&
+        draftCompatibilityFor(state.draft, state.release) === 'canonical-change'
+      ) {
+        throw new IntakeRevisionConflictError(
+          reconciliationGuidance(
+            state.release,
+            state.draft.formPayload ?? state.release.intakeForm.payload,
+            {
+              draftRevision: state.draft.draftRevision,
+              currentIntakeRecordVersionId:
+                state.currentVersion?.intakeRecordVersionId,
+            },
+          ),
+        );
+      }
       const updatedAt = dependencies.clock.now();
       const requestBinding = dependencies.keys.bind(
         Buffer.from(
@@ -773,6 +996,7 @@ export function createIntake(dependencies: {
           workspaceId: session.workspaceId,
           studentId: session.studentId,
         }),
+        reviewFieldIds: state.draft?.reviewFieldIds ?? [],
         updatedAt,
       });
       if (saved.outcome === 'replayed') return saved.result;
@@ -812,19 +1036,28 @@ export function createIntake(dependencies: {
         expectedCurrentIntakeRecordVersionId:
           command.expectedCurrentIntakeRecordVersionId,
         updatedAt,
-        seedDraft: async (currentSealed) =>
-          dependencies.keys.seal(
+        seedDraft: async (currentSealed, currentFormPayload, release) => {
+          const previousAnswers = decodeAnswers(
             await dependencies.keys.open(currentSealed, {
               purpose: 'intake-record-version',
               workspaceId: session.workspaceId,
               studentId: session.studentId,
             }),
-            {
+          );
+          const rebased = rebaseIntakeAnswers({
+            previousForm: currentFormPayload ?? release.intakeForm.payload,
+            nextForm: release.intakeForm.payload,
+            answers: previousAnswers,
+          });
+          return {
+            sealed: dependencies.keys.seal(encodeAnswers(rebased.answers), {
               purpose: 'intake-draft',
               workspaceId: session.workspaceId,
               studentId: session.studentId,
-            },
-          ),
+            }),
+            reviewFieldIds: rebased.reviewFieldIds,
+          };
+        },
       });
       if (reopened.outcome === 'replayed') return reopened.result;
       return {
@@ -833,6 +1066,67 @@ export function createIntake(dependencies: {
         updatedAt: reopened.updatedAt.toISOString(),
         draftRevision: reopened.draftRevision,
         replayed: false,
+      };
+    },
+
+    async rebase(command: RebaseIntakeDraftCommand) {
+      const session = await requireStudent(command.sessionHandle);
+      if (!session) return undefined;
+      const updatedAt = dependencies.clock.now();
+      const requestBinding = dependencies.keys.bind(
+        Buffer.from(
+          canonicalJson({
+            expectedDraftRevision: command.expectedDraftRevision,
+            locale: command.locale,
+          }),
+          'utf8',
+        ),
+        {
+          workspaceId: session.workspaceId,
+          studentId: session.studentId,
+        },
+      );
+      const rebased = await dependencies.store.rebase({
+        studentId: session.studentId,
+        workspaceId: session.workspaceId,
+        operationId: command.operationId,
+        requestBinding,
+        locale: command.locale,
+        expectedDraftRevision: command.expectedDraftRevision,
+        updatedAt,
+        propose: async (currentSealed, draftFormPayload, release) => {
+          const previousAnswers = decodeAnswers(
+            await dependencies.keys.open(currentSealed, {
+              purpose: 'intake-draft',
+              workspaceId: session.workspaceId,
+              studentId: session.studentId,
+            }),
+          );
+          const proposal = rebaseIntakeAnswers({
+            previousForm: draftFormPayload ?? release.intakeForm.payload,
+            nextForm: release.intakeForm.payload,
+            answers: previousAnswers,
+          });
+          return {
+            sealed: dependencies.keys.seal(encodeAnswers(proposal.answers), {
+              purpose: 'intake-draft',
+              workspaceId: session.workspaceId,
+              studentId: session.studentId,
+            }),
+            reviewFieldIds: proposal.reviewFieldIds,
+            omittedFieldIds: proposal.omittedFieldIds,
+          };
+        },
+      });
+      if (rebased.outcome === 'replayed') return rebased.result;
+      return {
+        operationId: command.operationId,
+        locale: rebased.locale,
+        updatedAt: rebased.updatedAt.toISOString(),
+        draftRevision: rebased.draftRevision,
+        replayed: false,
+        reviewFieldIds: rebased.reviewFieldIds,
+        omittedFieldIds: rebased.omittedFieldIds,
       };
     },
 
@@ -845,12 +1139,40 @@ export function createIntake(dependencies: {
       });
       if (!state.release) throw new IntakeUnavailableError();
       const form = projectStudentIntakeForm(state.release, command.locale);
-      assertExpectedRelease(state.release, {
-        schoolConfigurationReleaseId:
-          command.expectedSchoolConfigurationReleaseId,
-        intakeForm: command.expectedIntakeForm,
-        submissionAttestation: command.expectedSubmissionAttestation,
-      });
+      assertMatchingActiveRelease(
+        state.release,
+        {
+          schoolConfigurationReleaseId:
+            command.expectedSchoolConfigurationReleaseId,
+          intakeForm: command.expectedIntakeForm,
+          submissionAttestation: command.expectedSubmissionAttestation,
+        },
+        state.draft?.formPayload ??
+          state.currentVersion?.formPayload ??
+          state.release.intakeForm.payload,
+        {
+          previousAttestation: state.currentVersion?.attestationPayload,
+          draftRevision: state.draft?.draftRevision,
+          currentIntakeRecordVersionId:
+            state.currentVersion?.intakeRecordVersionId,
+        },
+      );
+      if (
+        state.draft &&
+        draftCompatibilityFor(state.draft, state.release) === 'canonical-change'
+      ) {
+        throw new IntakeRevisionConflictError(
+          reconciliationGuidance(
+            state.release,
+            state.draft.formPayload ?? state.release.intakeForm.payload,
+            {
+              draftRevision: state.draft.draftRevision,
+              currentIntakeRecordVersionId:
+                state.currentVersion?.intakeRecordVersionId,
+            },
+          ),
+        );
+      }
       if (
         command.attestation.locale !== command.locale ||
         !sameRevision(
@@ -1006,6 +1328,7 @@ export function createIntake(dependencies: {
         locale: attempted.locale,
         intakeForm: attempted.intakeForm,
         answers: attempted.answers,
+        intakeUpdateRequirement: attempted.intakeUpdateRequirement,
         freshUntil: new Date(attempted.freshUntil).toISOString(),
       } satisfies RevealedCurrentIntakeRecord;
     },

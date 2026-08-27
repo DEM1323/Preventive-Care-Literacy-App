@@ -660,6 +660,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/student/intake/rebase': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['rebaseIntakeDraft'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/student/intake/reopen': {
     parameters: {
       query?: never;
@@ -1053,16 +1069,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1076,16 +1107,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1099,16 +1145,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1164,16 +1225,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1187,16 +1263,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1210,16 +1301,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1233,16 +1339,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1256,16 +1377,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1317,16 +1453,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1340,16 +1491,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1363,16 +1529,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1386,16 +1567,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1409,16 +1605,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1432,16 +1643,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1455,16 +1681,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1515,16 +1756,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1538,16 +1794,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1561,16 +1832,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1584,16 +1870,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1607,16 +1908,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1712,16 +2028,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1735,16 +2066,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1758,16 +2104,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1781,16 +2142,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1804,16 +2180,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1827,16 +2218,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1850,16 +2256,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1971,16 +2392,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -1994,16 +2430,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2017,16 +2468,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2040,16 +2506,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2063,16 +2544,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2086,16 +2582,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2109,16 +2620,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2132,16 +2658,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2206,16 +2747,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2229,16 +2785,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2252,16 +2823,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2275,16 +2861,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2298,16 +2899,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2321,16 +2937,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2386,16 +3017,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2409,16 +3055,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2432,16 +3093,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2455,16 +3131,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2478,16 +3169,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2501,16 +3207,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2524,16 +3245,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2582,16 +3318,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2605,16 +3356,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2628,16 +3394,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2651,16 +3432,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2674,16 +3470,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2697,16 +3508,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2761,16 +3587,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2784,16 +3625,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2807,16 +3663,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2830,16 +3701,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2853,16 +3739,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2876,16 +3777,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2899,16 +3815,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2958,16 +3889,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -2981,16 +3927,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3004,16 +3965,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3027,16 +4003,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3050,16 +4041,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3073,16 +4079,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3209,16 +4230,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3232,16 +4268,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3255,16 +4306,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3278,16 +4344,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3506,16 +4587,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3529,16 +4625,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3552,16 +4663,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3575,16 +4701,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3598,16 +4739,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3621,16 +4777,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3644,16 +4815,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3706,16 +4892,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3729,16 +4930,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3752,16 +4968,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3775,16 +5006,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3798,16 +5044,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3821,16 +5082,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -3844,16 +5120,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4003,16 +5294,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4026,16 +5332,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4049,16 +5370,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4072,16 +5408,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4095,16 +5446,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4118,16 +5484,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4141,16 +5522,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4205,16 +5601,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4228,16 +5639,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4251,16 +5677,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4322,16 +5763,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4345,16 +5801,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4368,16 +5839,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4391,16 +5877,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4414,16 +5915,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4437,16 +5953,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4460,16 +5991,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4538,16 +6084,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4561,16 +6122,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4584,16 +6160,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4607,16 +6198,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4669,16 +6275,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4692,16 +6313,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4715,16 +6351,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4738,16 +6389,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4761,16 +6427,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4784,16 +6465,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4838,16 +6534,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4861,16 +6572,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4884,16 +6610,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4956,16 +6697,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -4979,16 +6735,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5002,16 +6773,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5025,16 +6811,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5048,16 +6849,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5071,16 +6887,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5094,16 +6925,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5159,16 +7005,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5182,16 +7043,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5205,16 +7081,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5228,16 +7119,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5251,16 +7157,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5274,16 +7195,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5297,16 +7233,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5320,16 +7271,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5387,16 +7353,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5410,16 +7391,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5433,16 +7429,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5456,16 +7467,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5479,16 +7505,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5502,16 +7543,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5525,16 +7581,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5548,16 +7619,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5614,16 +7700,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5637,16 +7738,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5660,16 +7776,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5683,16 +7814,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5706,16 +7852,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5729,16 +7890,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5752,16 +7928,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5775,16 +7966,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5835,16 +8041,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5858,16 +8079,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5881,16 +8117,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5904,16 +8155,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5927,16 +8193,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5950,16 +8231,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -5973,16 +8269,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6033,16 +8344,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6056,16 +8382,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6079,16 +8420,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6102,16 +8458,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6125,16 +8496,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6148,16 +8534,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6171,16 +8572,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6239,16 +8655,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6262,16 +8693,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6285,16 +8731,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6308,16 +8769,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6331,16 +8807,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6354,16 +8845,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6377,16 +8883,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6429,16 +8950,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6452,16 +8988,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6475,16 +9026,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6498,16 +9064,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6544,16 +9125,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6601,16 +9197,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6624,16 +9235,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6647,16 +9273,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6670,16 +9311,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6693,16 +9349,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6739,16 +9410,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6762,16 +9448,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6785,16 +9486,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6808,16 +9524,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6861,16 +9592,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6884,16 +9630,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6907,16 +9668,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6930,16 +9706,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6953,16 +9744,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -6976,16 +9782,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7029,16 +9850,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7052,16 +9888,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7075,16 +9926,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7098,16 +9964,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7121,16 +10002,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7174,16 +10070,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7197,16 +10108,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7220,16 +10146,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7243,16 +10184,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7266,16 +10222,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7318,16 +10289,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7341,16 +10327,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7364,16 +10365,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7387,16 +10403,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7440,16 +10471,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7463,16 +10509,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7486,16 +10547,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7509,16 +10585,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7532,16 +10623,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7626,6 +10732,35 @@ export interface operations {
             };
             /** Format: uuid */
             intakeRecordVersionId: string;
+            intakeUpdateRequirement: null | {
+              activeIntakeForm: {
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+              };
+              /** Format: uuid */
+              activeSchoolConfigurationReleaseId: string;
+              activeSubmissionAttestation: {
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+              };
+              currentIntakeForm: {
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+              };
+              /** Format: uuid */
+              currentIntakeRecordVersionId: string;
+              /** Format: uuid */
+              currentSchoolConfigurationReleaseId: string;
+              currentSubmissionAttestation: {
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+              };
+              impactedFieldIds: string[];
+            };
             locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
             /** Format: uuid */
             schoolConfigurationReleaseId: string;
@@ -7641,16 +10776,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7664,16 +10814,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7687,16 +10852,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7710,16 +10890,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7733,16 +10928,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7756,16 +10966,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7815,16 +11040,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7838,16 +11078,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7861,16 +11116,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7946,16 +11216,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -7969,16 +11254,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8014,16 +11314,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8078,16 +11393,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8101,16 +11431,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8153,16 +11498,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8176,16 +11536,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8235,6 +11610,8 @@ export interface operations {
               answers: {
                 [key: string]: string;
               };
+              compatibility:
+                'current' | 'presentation-equivalent' | 'canonical-change';
               draftRevision: number;
               intakeForm: {
                 /** Format: uuid */
@@ -8242,6 +11619,7 @@ export interface operations {
                 revisionNumber: number;
               };
               locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+              reviewFieldIds: string[];
               /** Format: uuid */
               schoolConfigurationReleaseId: string;
               /** Format: date-time */
@@ -8302,6 +11680,35 @@ export interface operations {
                 text: string;
               };
             };
+            intakeUpdateRequirement: null | {
+              activeIntakeForm: {
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+              };
+              /** Format: uuid */
+              activeSchoolConfigurationReleaseId: string;
+              activeSubmissionAttestation: {
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+              };
+              currentIntakeForm: {
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+              };
+              /** Format: uuid */
+              currentIntakeRecordVersionId: string;
+              /** Format: uuid */
+              currentSchoolConfigurationReleaseId: string;
+              currentSubmissionAttestation: {
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+              };
+              impactedFieldIds: string[];
+            };
             learningUnlocked: boolean;
           };
         };
@@ -8313,16 +11720,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8336,16 +11758,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8359,16 +11796,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8382,16 +11834,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8452,16 +11919,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8475,16 +11957,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8498,16 +11995,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8521,16 +12033,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8544,16 +12071,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8567,16 +12109,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8590,16 +12147,336 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  rebaseIntakeDraft: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          expectedDraftRevision: number;
+          locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            draftRevision: number;
+            locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+            omittedFieldIds: string[];
+            /** Format: uuid */
+            operationId: string;
+            replayed: boolean;
+            reviewFieldIds: string[];
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8651,16 +12528,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8674,16 +12566,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8697,16 +12604,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8720,16 +12642,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8743,16 +12680,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8766,16 +12718,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8789,16 +12756,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8882,16 +12864,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8905,16 +12902,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8928,16 +12940,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8951,16 +12978,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8974,16 +13016,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -8997,16 +13054,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9020,16 +13092,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9043,16 +13130,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9094,16 +13196,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9117,16 +13234,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9140,16 +13272,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9163,16 +13310,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9186,16 +13348,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9254,16 +13431,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9277,16 +13469,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9300,16 +13507,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9323,16 +13545,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9391,16 +13628,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9414,16 +13666,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9437,16 +13704,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9460,16 +13742,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9483,16 +13780,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9506,16 +13818,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9529,16 +13856,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9583,16 +13925,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;
@@ -9606,16 +13963,31 @@ export interface operations {
         };
         content: {
           'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
             /** Format: uuid */
             currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
+            impactedFieldIds?: string[];
             outcome?: string;
             reason?: string;
+            rebaseRequired?: boolean;
             status: number;
             title: string;
             type: string;

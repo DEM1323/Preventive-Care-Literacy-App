@@ -7,10 +7,12 @@ import {
   IntakeRecordNotFoundError,
   IntakeRevisionConflictError,
   IntakeUnavailableError,
+  intakeUpdateRequirementFor,
   type ClinicalRevealDenialReason,
   type ExactResourceRevision,
   type IntakeAnswerMap,
   type IntakeStore,
+  type RebaseIntakeDraftResult,
   type ReopenIntakeRecordResult,
   type SaveIntakeDraftResult,
   type SealedRecord,
@@ -269,12 +271,13 @@ export function createPostgresIntakeStore(options: {
           school_configuration_release_id: string;
           intake_form_resource_id: string;
           intake_form_revision_number: number;
+          review_field_ids: string[];
           wrapping_key_id: string;
           wrapped_data_key: string;
           ciphertext: string;
         }>(
           `select locale, updated_at, draft_revision, school_configuration_release_id,
-                  intake_form_resource_id, intake_form_revision_number,
+                  intake_form_resource_id, intake_form_revision_number, review_field_ids,
                   wrapping_key_id, wrapped_data_key, ciphertext
              from intake.intake_drafts
             where student_id = $1 and workspace_id = $2`,
@@ -305,6 +308,27 @@ export function createPostgresIntakeStore(options: {
         );
         const draftRow = draft.rows[0];
         const currentRow = current.rows[0];
+        const draftFormPayload = draftRow
+          ? await readFrozenRevision(client, {
+              workspaceId: input.workspaceId,
+              resourceId: draftRow.intake_form_resource_id,
+              revisionNumber: draftRow.intake_form_revision_number,
+            })
+          : undefined;
+        const currentFormPayload = currentRow
+          ? await readFrozenRevision(client, {
+              workspaceId: input.workspaceId,
+              resourceId: currentRow.intake_form_resource_id,
+              revisionNumber: currentRow.intake_form_revision_number,
+            })
+          : undefined;
+        const currentAttestationPayload = currentRow
+          ? await readFrozenRevision(client, {
+              workspaceId: input.workspaceId,
+              resourceId: currentRow.submission_attestation_resource_id,
+              revisionNumber: currentRow.submission_attestation_revision_number,
+            })
+          : undefined;
         return {
           release,
           draft: draftRow
@@ -318,6 +342,8 @@ export function createPostgresIntakeStore(options: {
                   resourceId: draftRow.intake_form_resource_id,
                   revisionNumber: draftRow.intake_form_revision_number,
                 },
+                reviewFieldIds: draftRow.review_field_ids ?? [],
+                formPayload: draftFormPayload,
                 sealed: sealedFrom(draftRow),
               }
             : undefined,
@@ -338,6 +364,8 @@ export function createPostgresIntakeStore(options: {
                     currentRow.submission_attestation_revision_number,
                 },
                 locale: currentRow.locale,
+                formPayload: currentFormPayload,
+                attestationPayload: currentAttestationPayload,
                 sealed: sealedFrom(currentRow),
               }
             : undefined,
@@ -413,8 +441,8 @@ export function createPostgresIntakeStore(options: {
              (student_id, workspace_id, school_configuration_release_id,
               intake_form_resource_id, intake_form_revision_number, locale,
               wrapping_key_id, wrapped_data_key, ciphertext, updated_at,
-              draft_revision, record_owner, record_classification, disposal_class)
-           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+              draft_revision, review_field_ids, record_owner, record_classification, disposal_class)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
                    'school', 'student_record', 'intake_draft')
            on conflict (student_id, workspace_id) do update
              set school_configuration_release_id = excluded.school_configuration_release_id,
@@ -425,7 +453,8 @@ export function createPostgresIntakeStore(options: {
                  wrapped_data_key = excluded.wrapped_data_key,
                  ciphertext = excluded.ciphertext,
                  updated_at = excluded.updated_at,
-                 draft_revision = excluded.draft_revision`,
+                 draft_revision = excluded.draft_revision,
+                 review_field_ids = excluded.review_field_ids`,
           [
             input.studentId,
             input.workspaceId,
@@ -438,6 +467,7 @@ export function createPostgresIntakeStore(options: {
             input.sealed.ciphertext,
             input.updatedAt,
             nextRevision,
+            input.reviewFieldIds,
           ],
         );
         await client.query(
@@ -502,11 +532,14 @@ export function createPostgresIntakeStore(options: {
         if (!release) throw new IntakeUnavailableError();
         const current = await client.query<{
           intake_record_version_id: string;
+          intake_form_resource_id: string;
+          intake_form_revision_number: number;
           wrapping_key_id: string;
           wrapped_data_key: string;
           ciphertext: string;
         }>(
-          `select intake_record_version_id, wrapping_key_id, wrapped_data_key,
+          `select intake_record_version_id, intake_form_resource_id,
+                  intake_form_revision_number, wrapping_key_id, wrapped_data_key,
                   ciphertext
              from intake.intake_record_versions
             where student_id = $1 and workspace_id = $2 and superseded_at is null`,
@@ -532,7 +565,15 @@ export function createPostgresIntakeStore(options: {
             existingDraft.rows[0].draft_revision,
           );
         }
-        const sealed = await input.seedDraft(sealedFrom(currentRow));
+        const sealed = await input.seedDraft(
+          sealedFrom(currentRow),
+          await readFrozenRevision(client, {
+            workspaceId: input.workspaceId,
+            resourceId: currentRow.intake_form_resource_id,
+            revisionNumber: currentRow.intake_form_revision_number,
+          }),
+          release,
+        );
         const result: ReopenIntakeRecordResult = {
           operationId: input.operationId,
           locale: input.locale,
@@ -545,8 +586,8 @@ export function createPostgresIntakeStore(options: {
              (student_id, workspace_id, school_configuration_release_id,
               intake_form_resource_id, intake_form_revision_number, locale,
               wrapping_key_id, wrapped_data_key, ciphertext, updated_at,
-              draft_revision, record_owner, record_classification, disposal_class)
-           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1,
+              draft_revision, review_field_ids, record_owner, record_classification, disposal_class)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1, $11,
                    'school', 'student_record', 'intake_draft')`,
           [
             input.studentId,
@@ -555,10 +596,11 @@ export function createPostgresIntakeStore(options: {
             release.intakeForm.resourceId,
             release.intakeForm.revisionNumber,
             input.locale,
-            sealed.wrappingKeyId,
-            sealed.wrappedDataKey,
-            sealed.ciphertext,
+            sealed.sealed.wrappingKeyId,
+            sealed.sealed.wrappedDataKey,
+            sealed.sealed.ciphertext,
             input.updatedAt,
+            sealed.reviewFieldIds,
           ],
         );
         await client.query(
@@ -582,6 +624,134 @@ export function createPostgresIntakeStore(options: {
           draftRevision: 1,
           locale: input.locale,
           updatedAt: input.updatedAt,
+        };
+      });
+    },
+
+    async rebase(input) {
+      return transaction(options.pool, async (client) => {
+        await setStudentScope(client, input);
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`intake:${input.studentId}`],
+        );
+        const receipt = await client.query<{
+          command_name: string;
+          request_binding: string;
+          result: RebaseIntakeDraftResult;
+        }>(
+          `select command_name, request_binding, result
+             from intake.intake_operation_receipts
+            where workspace_id = $1 and student_id = $2 and operation_id = $3`,
+          [input.workspaceId, input.studentId, input.operationId],
+        );
+        if (receipt.rows[0]) {
+          if (
+            receipt.rows[0].command_name !== 'rebaseIntakeDraft' ||
+            receipt.rows[0].request_binding !== input.requestBinding
+          ) {
+            throw new IntakeOperationReusedError();
+          }
+          return {
+            outcome: 'replayed' as const,
+            result: receipt.rows[0].result,
+          };
+        }
+        await lockSchoolConfigurationWorkspace(client, input.workspaceId);
+        const release = await readActiveIntakeRelease(
+          client,
+          input.workspaceId,
+        );
+        if (!release) throw new IntakeUnavailableError();
+        const current = await client.query<{
+          draft_revision: number;
+          intake_form_resource_id: string;
+          intake_form_revision_number: number;
+          wrapping_key_id: string;
+          wrapped_data_key: string;
+          ciphertext: string;
+        }>(
+          `select draft_revision, intake_form_resource_id, intake_form_revision_number,
+                  wrapping_key_id, wrapped_data_key, ciphertext
+             from intake.intake_drafts
+            where student_id = $1 and workspace_id = $2`,
+          [input.studentId, input.workspaceId],
+        );
+        const currentRow = current.rows[0];
+        if (!currentRow) throw new IntakeRecordNotFoundError();
+        if (currentRow.draft_revision !== input.expectedDraftRevision) {
+          throw new IntakeDraftRevisionConflictError(currentRow.draft_revision);
+        }
+        const proposed = await input.propose(
+          sealedFrom(currentRow),
+          await readFrozenRevision(client, {
+            workspaceId: input.workspaceId,
+            resourceId: currentRow.intake_form_resource_id,
+            revisionNumber: currentRow.intake_form_revision_number,
+          }),
+          release,
+        );
+        const nextRevision = currentRow.draft_revision + 1;
+        const result: RebaseIntakeDraftResult = {
+          operationId: input.operationId,
+          locale: input.locale,
+          updatedAt: input.updatedAt.toISOString(),
+          draftRevision: nextRevision,
+          replayed: true,
+          reviewFieldIds: proposed.reviewFieldIds,
+          omittedFieldIds: proposed.omittedFieldIds,
+        };
+        await client.query(
+          `update intake.intake_drafts
+              set school_configuration_release_id = $3,
+                  intake_form_resource_id = $4,
+                  intake_form_revision_number = $5,
+                  locale = $6,
+                  wrapping_key_id = $7,
+                  wrapped_data_key = $8,
+                  ciphertext = $9,
+                  updated_at = $10,
+                  draft_revision = $11,
+                  review_field_ids = $12
+            where student_id = $1 and workspace_id = $2`,
+          [
+            input.studentId,
+            input.workspaceId,
+            release.schoolConfigurationReleaseId,
+            release.intakeForm.resourceId,
+            release.intakeForm.revisionNumber,
+            input.locale,
+            proposed.sealed.wrappingKeyId,
+            proposed.sealed.wrappedDataKey,
+            proposed.sealed.ciphertext,
+            input.updatedAt,
+            nextRevision,
+            proposed.reviewFieldIds,
+          ],
+        );
+        await client.query(
+          `insert into intake.intake_operation_receipts
+             (workspace_id, student_id, operation_id, command_name, result,
+              request_binding, recorded_at, record_owner,
+              record_classification, disposal_class)
+           values ($1, $2, $3, 'rebaseIntakeDraft', $4, $5, $6,
+                   'school', 'operational_evidence', 'operation_receipt')`,
+          [
+            input.workspaceId,
+            input.studentId,
+            input.operationId,
+            result,
+            input.requestBinding,
+            input.updatedAt,
+          ],
+        );
+        return {
+          outcome: 'saved' as const,
+          draftRevision: nextRevision,
+          locale: input.locale,
+          updatedAt: input.updatedAt,
+          reviewFieldIds: proposed.reviewFieldIds,
+          omittedFieldIds: proposed.omittedFieldIds,
         };
       });
     },
@@ -1034,6 +1204,35 @@ export function createPostgresIntakeStore(options: {
             intakeRecordVersionId: currentVersion.intake_record_version_id,
           },
         });
+        const activeRelease = await readActiveIntakeRelease(
+          client,
+          current.workspace_id,
+        );
+        const intakeUpdateRequirement = activeRelease
+          ? intakeUpdateRequirementFor(
+              {
+                intakeRecordVersionId: currentVersion.intake_record_version_id,
+                versionNumber: 0,
+                acceptedAt: new Date(currentVersion.accepted_at),
+                schoolConfigurationReleaseId:
+                  currentVersion.school_configuration_release_id,
+                intakeForm: {
+                  resourceId: currentVersion.intake_form_resource_id,
+                  revisionNumber: currentVersion.intake_form_revision_number,
+                },
+                submissionAttestation: {
+                  resourceId: currentVersion.submission_attestation_resource_id,
+                  revisionNumber:
+                    currentVersion.submission_attestation_revision_number,
+                },
+                locale: currentVersion.locale,
+                formPayload,
+                attestationPayload,
+                sealed: sealedFrom(currentVersion),
+              },
+              activeRelease,
+            )
+          : null;
         return {
           outcome: 'revealed' as const,
           intakeRecordVersionId: currentVersion.intake_record_version_id,
@@ -1043,6 +1242,7 @@ export function createPostgresIntakeStore(options: {
             currentVersion.school_configuration_release_id,
           intakeForm: form.intakeForm,
           answers,
+          intakeUpdateRequirement,
           freshUntil: new Date(
             authenticationFreshAt.getTime() + staffAuthenticationFreshnessMs,
           ),
