@@ -52,6 +52,38 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/administration/classes/invitation-csv-previews': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['previewClassInvitationCsv'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/classes/invitation-csv-sends': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['sendClassInvitationCsv'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/administration/classes/invitation-previews': {
     parameters: {
       query?: never;
@@ -905,6 +937,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -924,6 +957,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -943,6 +977,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1004,6 +1039,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1023,6 +1059,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1042,6 +1079,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1061,6 +1099,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1080,6 +1119,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1137,6 +1177,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1156,6 +1197,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1175,6 +1217,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1194,6 +1237,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1213,6 +1257,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1232,6 +1277,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1251,6 +1297,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1307,6 +1354,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1326,6 +1374,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1345,6 +1394,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1364,6 +1414,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1383,6 +1434,487 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  previewClassInvitationCsv: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          classId: string;
+          csv: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            classId: string;
+            rows: (
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'ready';
+                  reuse: 'none' | 'existing_student' | 'inactive_membership';
+                }
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'malformed';
+                }
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'duplicate_in_file';
+                }
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'already_a_member';
+                }
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'already_invited';
+                }
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'identity_review';
+                  /** @enum {string} */
+                  reason: 'historical_binding';
+                }
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'class_closed';
+                }
+            )[];
+            summary: {
+              ready: number;
+              skipped: number;
+            };
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  sendClassInvitationCsv: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          classId: string;
+          csv: string;
+          /** Format: uuid */
+          operationId: string;
+          selectedLineNumbers: number[];
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            classId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'applied';
+            rows: (
+              | {
+                  field: string;
+                  /** Format: uuid */
+                  invitationId: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'sent';
+                  reuse: 'none' | 'existing_student' | 'inactive_membership';
+                }
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'malformed';
+                }
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'duplicate_in_file';
+                }
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'already_a_member';
+                }
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'already_invited';
+                }
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'identity_review';
+                  /** @enum {string} */
+                  reason: 'historical_binding';
+                }
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'class_closed';
+                }
+              | {
+                  field: string;
+                  lineNumber: number;
+                  /** @enum {string} */
+                  outcome: 'not_selected';
+                }
+            )[];
+            summary: {
+              deliveryProblems: number;
+              sent: number;
+              skipped: number;
+            };
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1453,6 +1985,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1472,6 +2005,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1491,6 +2025,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1510,6 +2045,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1529,6 +2065,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1548,6 +2085,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1609,6 +2147,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1628,6 +2167,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1647,6 +2187,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1666,6 +2207,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1685,6 +2227,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1704,6 +2247,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1723,6 +2267,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1777,6 +2322,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1796,6 +2342,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1815,6 +2362,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1834,6 +2382,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1853,6 +2402,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1872,6 +2422,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1932,6 +2483,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1951,6 +2503,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1970,6 +2523,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -1989,6 +2543,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2008,6 +2563,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2027,6 +2583,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2046,6 +2603,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2101,6 +2659,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2120,6 +2679,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2139,6 +2699,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2158,6 +2719,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2177,6 +2739,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2196,6 +2759,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2328,6 +2892,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2347,6 +2912,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2366,6 +2932,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2385,6 +2952,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2609,6 +3177,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2628,6 +3197,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2647,6 +3217,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2666,6 +3237,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2685,6 +3257,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2704,6 +3277,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2723,6 +3297,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2781,6 +3356,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2800,6 +3376,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2819,6 +3396,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2838,6 +3416,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2857,6 +3436,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2876,6 +3456,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -2895,6 +3476,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3050,6 +3632,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3069,6 +3652,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3088,6 +3672,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3107,6 +3692,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3126,6 +3712,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3145,6 +3732,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3164,6 +3752,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3224,6 +3813,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3243,6 +3833,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3262,6 +3853,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3329,6 +3921,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3348,6 +3941,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3367,6 +3961,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3386,6 +3981,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3405,6 +4001,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3424,6 +4021,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3443,6 +4041,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3517,6 +4116,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3536,6 +4136,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3555,6 +4156,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3574,6 +4176,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3632,6 +4235,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3651,6 +4255,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3670,6 +4275,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3689,6 +4295,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3708,6 +4315,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3727,6 +4335,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3777,6 +4386,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3796,6 +4406,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3815,6 +4426,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3883,6 +4495,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3902,6 +4515,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3921,6 +4535,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3940,6 +4555,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3959,6 +4575,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3978,6 +4595,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -3997,6 +4615,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4058,6 +4677,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4077,6 +4697,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4096,6 +4717,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4115,6 +4737,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4134,6 +4757,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4153,6 +4777,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4172,6 +4797,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4191,6 +4817,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4254,6 +4881,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4273,6 +4901,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4292,6 +4921,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4311,6 +4941,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4330,6 +4961,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4349,6 +4981,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4368,6 +5001,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4387,6 +5021,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4449,6 +5084,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4468,6 +5104,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4487,6 +5124,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4506,6 +5144,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4525,6 +5164,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4544,6 +5184,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4563,6 +5204,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4582,6 +5224,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4630,6 +5273,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4649,6 +5293,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4668,6 +5313,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4687,6 +5333,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4729,6 +5376,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4782,6 +5430,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4801,6 +5450,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4820,6 +5470,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4839,6 +5490,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4858,6 +5510,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4900,6 +5553,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4919,6 +5573,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4938,6 +5593,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -4957,6 +5613,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5006,6 +5663,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5025,6 +5683,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5044,6 +5703,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5063,6 +5723,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5082,6 +5743,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5101,6 +5763,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5150,6 +5813,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5169,6 +5833,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5188,6 +5853,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5207,6 +5873,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5226,6 +5893,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5275,6 +5943,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5294,6 +5963,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5313,6 +5983,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5332,6 +6003,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5351,6 +6023,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5456,6 +6129,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5475,6 +6149,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5494,6 +6169,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5513,6 +6189,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5532,6 +6209,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5551,6 +6229,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5606,6 +6285,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5625,6 +6305,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5644,6 +6325,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5725,6 +6407,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5744,6 +6427,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5785,6 +6469,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5845,6 +6530,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5864,6 +6550,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5912,6 +6599,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -5931,6 +6619,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6056,6 +6745,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6075,6 +6765,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6094,6 +6785,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6153,6 +6845,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6172,6 +6865,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6191,6 +6885,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6210,6 +6905,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6229,6 +6925,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6248,6 +6945,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6328,6 +7026,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6347,6 +7046,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6366,6 +7066,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6385,6 +7086,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6404,6 +7106,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6423,6 +7126,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6442,6 +7146,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6506,6 +7211,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6525,6 +7231,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6544,6 +7251,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6608,6 +7316,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6627,6 +7336,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6646,6 +7356,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6665,6 +7376,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6684,6 +7396,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6703,6 +7416,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6722,6 +7436,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6771,6 +7486,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;
@@ -6790,6 +7506,7 @@ export interface operations {
             code: string;
             draftVersion?: number;
             outcome?: string;
+            reason?: string;
             status: number;
             title: string;
             type: string;

@@ -41,6 +41,7 @@ import {
   InvitationNotFoundError,
   ClassMembershipNotFoundError,
   InvitationNotSendableError,
+  InvitationCsvRejectedError,
 } from '../../../modules/identity-access/index.ts';
 import type {
   Intake,
@@ -443,6 +444,132 @@ const PreviewClassInvitationResponse = Type.Union([
   }),
   Type.Object({ outcome: Type.Literal('class_closed') }),
 ]);
+const InvitationCsvReuseSchema = Type.Union([
+  Type.Literal('none'),
+  Type.Literal('existing_student'),
+  Type.Literal('inactive_membership'),
+]);
+const PreviewClassInvitationCsvBody = Type.Object(
+  {
+    classId: Type.String({ format: 'uuid' }),
+    csv: Type.String({ maxLength: 64 * 1024 }),
+  },
+  { additionalProperties: false },
+);
+const ClassInvitationCsvPreviewRow = Type.Union([
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('ready'),
+    reuse: InvitationCsvReuseSchema,
+  }),
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('malformed'),
+  }),
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('duplicate_in_file'),
+  }),
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('already_a_member'),
+  }),
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('already_invited'),
+  }),
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('identity_review'),
+    reason: Type.Literal('historical_binding'),
+  }),
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('class_closed'),
+  }),
+]);
+const PreviewClassInvitationCsvResponse = Type.Object({
+  classId: Type.String({ format: 'uuid' }),
+  rows: Type.Array(ClassInvitationCsvPreviewRow, { maxItems: 500 }),
+  summary: Type.Object({
+    ready: Type.Integer({ minimum: 0 }),
+    skipped: Type.Integer({ minimum: 0 }),
+  }),
+});
+const SendClassInvitationCsvBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    classId: Type.String({ format: 'uuid' }),
+    csv: Type.String({ maxLength: 64 * 1024 }),
+    selectedLineNumbers: Type.Array(Type.Integer({ minimum: 1 }), {
+      maxItems: 500,
+    }),
+  },
+  { additionalProperties: false },
+);
+const ClassInvitationCsvSendRow = Type.Union([
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('sent'),
+    invitationId: Type.String({ format: 'uuid' }),
+    reuse: InvitationCsvReuseSchema,
+  }),
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('malformed'),
+  }),
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('duplicate_in_file'),
+  }),
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('already_a_member'),
+  }),
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('already_invited'),
+  }),
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('identity_review'),
+    reason: Type.Literal('historical_binding'),
+  }),
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('class_closed'),
+  }),
+  Type.Object({
+    lineNumber: Type.Integer({ minimum: 1 }),
+    field: Type.String({ maxLength: 322 }),
+    outcome: Type.Literal('not_selected'),
+  }),
+]);
+const SendClassInvitationCsvResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  classId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('applied'),
+  summary: Type.Object({
+    sent: Type.Integer({ minimum: 0 }),
+    skipped: Type.Integer({ minimum: 0 }),
+    deliveryProblems: Type.Integer({ minimum: 0 }),
+  }),
+  rows: Type.Array(ClassInvitationCsvSendRow, { maxItems: 500 }),
+});
 const SendClassInvitationBody = Type.Object(
   {
     operationId: Type.String({ format: 'uuid' }),
@@ -1209,6 +1336,7 @@ const ProblemDetails = Type.Object({
   candidateFingerprint: Type.Optional(Type.String()),
   affectedValue: Type.Optional(Type.String()),
   outcome: Type.Optional(Type.String()),
+  reason: Type.Optional(Type.String()),
 });
 
 const ProblemResponse = {
@@ -1928,6 +2056,15 @@ export async function buildApp(
         status: 409,
         code: error.code,
         outcome: error.outcome,
+      });
+    }
+    if (error instanceof InvitationCsvRejectedError) {
+      return reply.type('application/problem+json').code(422).send({
+        type: 'https://preventive-care-literacy.example/problems/invitation-csv-rejected',
+        title: error.message,
+        status: 422,
+        code: error.code,
+        reason: error.reason,
       });
     }
     if (error instanceof StaffAuthenticationFailedError) {
@@ -2996,6 +3133,66 @@ export async function buildApp(
         ...request.body,
         sessionHandle,
       });
+    },
+  );
+
+  app.post<{ Body: Static<typeof PreviewClassInvitationCsvBody> }>(
+    '/api/v1/administration/classes/invitation-csv-previews',
+    {
+      schema: {
+        operationId: 'previewClassInvitationCsv',
+        security: [{ staffSession: [] }],
+        body: PreviewClassInvitationCsvBody,
+        response: {
+          200: PreviewClassInvitationCsvResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          413: ProblemResponse,
+          422: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = requireStaffCookie(request, reply);
+      if (typeof sessionHandle !== 'string') return sessionHandle;
+      return identityAndAccess.previewClassInvitationCsv({
+        ...request.body,
+        sessionHandle,
+      });
+    },
+  );
+
+  app.post<{ Body: Static<typeof SendClassInvitationCsvBody> }>(
+    '/api/v1/administration/classes/invitation-csv-sends',
+    {
+      schema: {
+        operationId: 'sendClassInvitationCsv',
+        security: [{ staffSession: [] }],
+        body: SendClassInvitationCsvBody,
+        response: {
+          201: SendClassInvitationCsvResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          422: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = requireStaffCookie(request, reply);
+      if (typeof sessionHandle !== 'string') return sessionHandle;
+      const result = await identityAndAccess.sendClassInvitationCsv({
+        ...request.body,
+        sessionHandle,
+      });
+      return reply.code(201).send(result);
     },
   );
 

@@ -5,7 +5,10 @@ import type {
   IdGenerator,
   IdentityAndAccess,
 } from '../identity-access/index.ts';
-import { staffAuthenticationFreshnessMs } from '../identity-access/index.ts';
+import {
+  AuthenticationFreshnessRequiredError,
+  staffAuthenticationFreshnessMs,
+} from '../identity-access/index.ts';
 import {
   isChoiceIntakeFieldType,
   isSupportedIntakeFieldType,
@@ -423,13 +426,7 @@ export class OperationIdReusedError extends Error {
   }
 }
 
-export class AuthenticationFreshnessRequiredError extends Error {
-  readonly code = 'AUTHENTICATION_FRESHNESS_REQUIRED';
-  constructor() {
-    super('Fresh password and authenticator verification is required');
-    this.name = 'AuthenticationFreshnessRequiredError';
-  }
-}
+export { AuthenticationFreshnessRequiredError };
 
 export class InvalidSchoolConfigurationError extends Error {
   readonly code = 'INVALID_SCHOOL_CONFIGURATION';

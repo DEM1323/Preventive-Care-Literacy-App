@@ -74,7 +74,13 @@ async function renderContracts() {
       previewClassInvitation: async () => {
         throw new Error('Contract generation does not execute queries');
       },
+      previewClassInvitationCsv: async () => {
+        throw new Error('Contract generation does not execute queries');
+      },
       sendClassInvitation: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      sendClassInvitationCsv: async () => {
         throw new Error('Contract generation does not execute commands');
       },
       resendClassInvitation: async () => {

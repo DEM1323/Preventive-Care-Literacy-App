@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { createBrowserApiClient } from '../../../packages/api-client/src/index.ts';
 
 const client = createBrowserApiClient();
@@ -54,7 +54,30 @@ type InvitationPreview =
   | { outcome: 'identity_review'; reason: 'historical_binding' }
   | { outcome: 'class_closed' };
 
+type CsvPreviewRow =
+  | {
+      lineNumber: number;
+      field: string;
+      outcome: 'ready';
+      reuse: 'none' | 'existing_student' | 'inactive_membership';
+    }
+  | { lineNumber: number; field: string; outcome: 'malformed' }
+  | { lineNumber: number; field: string; outcome: 'duplicate_in_file' }
+  | { lineNumber: number; field: string; outcome: 'already_a_member' }
+  | { lineNumber: number; field: string; outcome: 'already_invited' }
+  | {
+      lineNumber: number;
+      field: string;
+      outcome: 'identity_review';
+      reason: 'historical_binding';
+    }
+  | { lineNumber: number; field: string; outcome: 'class_closed' };
+
+type Problem = { code?: string; reason?: string };
+
 type ConfirmKind = 'revoke' | 'deactivate' | 'close';
+
+const invitationCsvMaxBytes = 32 * 1024;
 
 function previewMessage(preview: InvitationPreview): string {
   if (preview.outcome === 'ready' && preview.reuse === 'none') {
@@ -76,6 +99,44 @@ function previewMessage(preview: InvitationPreview): string {
     return 'Blocked for identity review. Historical email binding needs staff remediation.';
   }
   return 'This Class is closed.';
+}
+
+function csvRowMessage(row: CsvPreviewRow): string {
+  if (row.outcome === 'ready' && row.reuse === 'none') {
+    return 'Ready to send. New email address.';
+  }
+  if (row.outcome === 'ready' && row.reuse === 'existing_student') {
+    return 'Ready to send. Existing Student will be reused for this Class.';
+  }
+  if (row.outcome === 'ready' && row.reuse === 'inactive_membership') {
+    return 'Ready to send. A fresh Invitation will reactivate this Class Membership.';
+  }
+  if (row.outcome === 'malformed') {
+    return 'Malformed. Not an email address.';
+  }
+  if (row.outcome === 'duplicate_in_file') {
+    return 'Duplicate in file. This address already appears above.';
+  }
+  if (row.outcome === 'already_a_member') {
+    return 'Already a member. Active in this Class.';
+  }
+  if (row.outcome === 'already_invited') {
+    return 'Already invited. Pending in this Class.';
+  }
+  if (row.outcome === 'identity_review') {
+    return 'Blocked for identity review. Historical email binding needs staff remediation.';
+  }
+  return 'This Class is closed.';
+}
+
+function csvRejectionMessage(reason: string | undefined): string {
+  if (reason === 'too_many_rows') {
+    return 'This CSV has too many rows. Use at most 500 rows.';
+  }
+  if (reason === 'empty') {
+    return 'This CSV does not contain any Invitation rows.';
+  }
+  return 'This CSV is too large. Use at most 500 rows and 32 KB.';
 }
 
 const RESENDABLE_STATUSES: InvitationStatus[] = [
@@ -109,6 +170,7 @@ function ConfirmDialog(props: {
   confirmLabel: string;
   onConfirm: () => void;
   onCancel: () => void;
+  busy?: boolean;
   children?: ReactNode;
 }) {
   return (
@@ -127,15 +189,17 @@ function ConfirmDialog(props: {
         <div className="mt-6 flex gap-3">
           <button
             type="button"
+            disabled={props.busy}
             onClick={props.onConfirm}
-            className="rounded bg-sky-400 px-4 py-2 font-black text-slate-950"
+            className="rounded bg-sky-400 px-4 py-2 font-black text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
           >
             {props.confirmLabel}
           </button>
           <button
             type="button"
+            disabled={props.busy}
             onClick={props.onCancel}
-            className="rounded border border-slate-600 px-4 py-2 font-bold"
+            className="rounded border border-slate-600 px-4 py-2 font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
           >
             Cancel
           </button>
@@ -172,6 +236,18 @@ export function ClassWorkspace(props: {
     | { kind: ConfirmKind; invitationId?: string; classMembershipId?: string }
     | undefined
   >();
+  const [emptyChoice, setEmptyChoice] = useState<'email' | 'csv' | undefined>();
+  const [csvOpen, setCsvOpen] = useState(false);
+  const [csvText, setCsvText] = useState('');
+  const [csvRows, setCsvRows] = useState<CsvPreviewRow[]>([]);
+  const [csvSummary, setCsvSummary] = useState<
+    { ready: number; skipped: number } | undefined
+  >();
+  const [selectedLines, setSelectedLines] = useState<number[]>([]);
+  const [csvConfirmOpen, setCsvConfirmOpen] = useState(false);
+  const [csvOperationId, setCsvOperationId] = useState('');
+  const [csvPassword, setCsvPassword] = useState('');
+  const [csvTotp, setCsvTotp] = useState('');
 
   const followUp = useMemo(
     () => selected?.relationships.filter(needsFollowUp) ?? [],
@@ -186,6 +262,18 @@ export function ClassWorkspace(props: {
   );
   const rows = tab === 'active' ? active : followUp;
   const canInvite = Boolean(selected);
+  const isEmptyClass = Boolean(selected && selected.relationships.length === 0);
+
+  function resetCsv() {
+    setCsvText('');
+    setCsvRows([]);
+    setCsvSummary(undefined);
+    setSelectedLines([]);
+    setCsvConfirmOpen(false);
+    setCsvOperationId('');
+    setCsvPassword('');
+    setCsvTotp('');
+  }
 
   async function createClass(event: FormEvent) {
     event.preventDefault();
@@ -208,7 +296,12 @@ export function ClassWorkspace(props: {
     }
     setClassName('');
     setSelectedClassId(result.data.classId);
-    setMessage('Empty Class created. Add one email address to invite.');
+    setEmptyChoice(undefined);
+    setCsvOpen(false);
+    resetCsv();
+    setMessage(
+      'Empty Class created. Choose adding one email address or importing a CSV.',
+    );
     await props.onReload();
   }
 
@@ -251,6 +344,130 @@ export function ClassWorkspace(props: {
     setRecipient('');
     setPreview(undefined);
     setMessage('Invitation sent. Delivery is pending.');
+    await props.onReload();
+  }
+
+  async function previewCsvFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!selected || !file) return;
+    if (file.size > invitationCsvMaxBytes) {
+      resetCsv();
+      setMessage(csvRejectionMessage('too_large'));
+      return;
+    }
+    setBusy(true);
+    setMessage('');
+    const csv = await file.text();
+    const result = await client.POST(
+      '/api/v1/administration/classes/invitation-csv-previews',
+      { body: { classId: selected.classId, csv } },
+    );
+    setBusy(false);
+    if (result.response.status === 422) {
+      resetCsv();
+      setMessage(
+        csvRejectionMessage((result.error as Problem | undefined)?.reason),
+      );
+      return;
+    }
+    if (result.response.status !== 200 || !result.data) {
+      resetCsv();
+      setMessage('The CSV could not be checked.');
+      return;
+    }
+    setCsvText(csv);
+    setCsvRows(result.data.rows);
+    setCsvSummary(result.data.summary);
+    setSelectedLines(
+      result.data.rows
+        .filter((row) => row.outcome === 'ready')
+        .map((row) => row.lineNumber),
+    );
+    setMessage(
+      `Preview ready. ${result.data.summary.ready} ready to send · ${result.data.summary.skipped} skipped. Nothing has been sent.`,
+    );
+  }
+
+  function toggleCsvRow(lineNumber: number, ready: boolean) {
+    if (!ready) return;
+    setSelectedLines((current) =>
+      current.includes(lineNumber)
+        ? current.filter((line) => line !== lineNumber)
+        : [...current, lineNumber],
+    );
+  }
+
+  async function sendCsvInvitations() {
+    if (!selected || csvRows.length === 0 || busy) return;
+    const operationId = csvOperationId || crypto.randomUUID();
+    if (!csvOperationId) setCsvOperationId(operationId);
+    setBusy(true);
+    setMessage('Confirming both authentication factors...');
+    let stepUp;
+    try {
+      stepUp = await client.POST('/api/v1/auth/staff/step-up', {
+        body: { password: csvPassword, totp: csvTotp },
+      });
+    } catch {
+      setBusy(false);
+      setCsvPassword('');
+      setCsvTotp('');
+      setMessage(
+        'Authentication could not be checked. Retry without losing this preview.',
+      );
+      return;
+    }
+    setCsvPassword('');
+    setCsvTotp('');
+    if (stepUp.response.status !== 200) {
+      setBusy(false);
+      const problem = stepUp.error as Problem | undefined;
+      if (problem?.code === 'STEP_UP_REJECTED') {
+        setMessage(
+          'Password or authenticator code was not accepted. Try both factors again.',
+        );
+      } else if (problem?.code === 'STEP_UP_INCOMPLETE') {
+        setMessage('Enter a password and six-digit authenticator code.');
+      } else {
+        setMessage(
+          'Authentication could not be checked. Retry without losing this preview.',
+        );
+      }
+      return;
+    }
+    const result = await client.POST(
+      '/api/v1/administration/classes/invitation-csv-sends',
+      {
+        body: {
+          operationId,
+          classId: selected.classId,
+          csv: csvText,
+          selectedLineNumbers: selectedLines,
+        },
+      },
+    );
+    setBusy(false);
+    if (result.response.status === 409) {
+      const problem = result.error as Problem | undefined;
+      if (problem?.code === 'AUTHENTICATION_FRESHNESS_REQUIRED') {
+        setMessage(
+          'Authentication freshness expired. Confirm both factors again; this preview is preserved.',
+        );
+        return;
+      }
+    }
+    if (result.response.status !== 201 || !result.data) {
+      setMessage('The approved Invitations could not be sent.');
+      return;
+    }
+    setCsvConfirmOpen(false);
+    setCsvOpen(false);
+    resetCsv();
+    setEmptyChoice(undefined);
+    setMessage(
+      `Sent ${result.data.summary.sent} Invitations. ${result.data.summary.skipped} skipped. Delivery is pending.`,
+    );
     await props.onReload();
   }
 
@@ -425,6 +642,9 @@ export function ClassWorkspace(props: {
                   setSelectedClassId(entry.classId);
                   setPreview(undefined);
                   setTab('follow-up');
+                  setEmptyChoice(undefined);
+                  setCsvOpen(false);
+                  resetCsv();
                 }}
                 className={`rounded border p-3 text-left ${
                   entry.classId === selected?.classId
@@ -451,14 +671,105 @@ export function ClassWorkspace(props: {
                     Invitation and access group
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setConfirm({ kind: 'close' })}
-                  className="rounded border border-rose-400 px-3 py-2 text-sm font-bold text-rose-200"
-                >
-                  Close Class
-                </button>
+                <div className="flex flex-wrap gap-3">
+                  {!isEmptyClass || emptyChoice === 'csv' || csvOpen ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCsvOpen(true);
+                        setEmptyChoice('csv');
+                      }}
+                      className="rounded border border-slate-600 px-3 py-2 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
+                      Import CSV
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setConfirm({ kind: 'close' })}
+                    className="rounded border border-rose-400 px-3 py-2 text-sm font-bold text-rose-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >
+                    Close Class
+                  </button>
+                </div>
               </div>
+
+              {csvOpen || emptyChoice === 'csv' ? (
+                <section className="mt-6 border border-slate-700 bg-slate-950 p-4">
+                  <h4 className="font-black">Preview CSV import</h4>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Nothing is sent until you select ready rows and confirm with
+                    password and authenticator.
+                  </p>
+                  <label
+                    className="mt-4 grid gap-2 font-bold"
+                    htmlFor="invitation-csv-file"
+                  >
+                    Invitation CSV
+                    <input
+                      id="invitation-csv-file"
+                      type="file"
+                      accept=".csv,text/csv"
+                      disabled={busy}
+                      onChange={(event) => void previewCsvFile(event)}
+                      className="font-normal file:mr-3 file:rounded file:border-0 file:bg-sky-400 file:px-3 file:py-2 file:font-black file:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    />
+                  </label>
+                  {csvSummary ? (
+                    <div className="mt-4">
+                      <p className="text-sm font-bold">
+                        {csvSummary.ready} ready to send · {csvSummary.skipped}{' '}
+                        skipped
+                      </p>
+                      <div className="mt-3 divide-y divide-slate-800 border border-slate-700">
+                        {csvRows.map((row) => {
+                          const ready = row.outcome === 'ready';
+                          const checkboxId = `csv-row-${row.lineNumber}`;
+                          return (
+                            <div
+                              key={row.lineNumber}
+                              className="grid gap-2 p-3 sm:grid-cols-[auto_1fr_auto] sm:items-center"
+                            >
+                              <input
+                                id={checkboxId}
+                                type="checkbox"
+                                disabled={!ready || busy}
+                                checked={selectedLines.includes(row.lineNumber)}
+                                onChange={() =>
+                                  toggleCsvRow(row.lineNumber, ready)
+                                }
+                                className="h-4 w-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                              />
+                              <label htmlFor={checkboxId} className="min-w-0">
+                                <span className="block truncate font-bold">
+                                  {row.field || '(empty)'}
+                                </span>
+                                <span className="block text-xs text-slate-400">
+                                  {csvRowMessage(row)}
+                                </span>
+                              </label>
+                              <span className="w-fit rounded px-2 py-1 text-xs font-bold uppercase tracking-wide text-slate-200">
+                                {row.outcome.replaceAll('_', ' ')}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={busy || selectedLines.length === 0}
+                        onClick={() => {
+                          setCsvOperationId(crypto.randomUUID());
+                          setCsvConfirmOpen(true);
+                        }}
+                        className="mt-4 rounded bg-emerald-400 px-4 py-2 font-black text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+                      >
+                        Continue with {selectedLines.length} valid rows
+                      </button>
+                    </div>
+                  ) : null}
+                </section>
+              ) : null}
 
               {selected.relationships.length > 0 ? (
                 <>
@@ -585,14 +896,39 @@ export function ClassWorkspace(props: {
                   </div>
                 </>
               ) : (
-                <p className="mt-6 text-sm text-slate-400">
-                  Add one email address to invite a Student.
-                </p>
+                <div className="mt-6 grid gap-3">
+                  <p className="text-sm text-slate-400">
+                    This Class is empty. Choose how to invite Students.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmptyChoice('email');
+                        setCsvOpen(false);
+                        resetCsv();
+                      }}
+                      className="rounded bg-sky-400 px-4 py-2 font-black text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
+                      Add one email address
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmptyChoice('csv');
+                        setCsvOpen(true);
+                      }}
+                      className="rounded border border-slate-600 px-4 py-2 font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                    >
+                      Import a CSV
+                    </button>
+                  </div>
+                </div>
               )}
             </>
           ) : (
             <p className="text-sm text-slate-400">
-              Create a Class, then add one email address.
+              Create a Class, then add one email address or import a CSV.
             </p>
           )}
         </div>
@@ -647,6 +983,45 @@ export function ClassWorkspace(props: {
         {message}
       </p>
 
+      {csvConfirmOpen ? (
+        <ConfirmDialog
+          title="Confirm bulk Invitation send"
+          body="Re-enter password and authenticator code. Only selected ready rows will create Invitations. Delivery is pending and is not Invitation state."
+          confirmLabel={`Confirm and send ${selectedLines.length} Invitations`}
+          busy={busy}
+          onConfirm={() => void sendCsvInvitations()}
+          onCancel={() => {
+            setCsvConfirmOpen(false);
+            setCsvPassword('');
+            setCsvTotp('');
+          }}
+        >
+          <div className="mt-4 grid gap-3">
+            <label className="grid gap-2 font-bold" htmlFor="csv-step-up-password">
+              Password
+              <input
+                id="csv-step-up-password"
+                type="password"
+                autoComplete="current-password"
+                value={csvPassword}
+                onChange={(event) => setCsvPassword(event.target.value)}
+                className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              />
+            </label>
+            <label className="grid gap-2 font-bold" htmlFor="csv-step-up-totp">
+              Authenticator code
+              <input
+                id="csv-step-up-totp"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={csvTotp}
+                onChange={(event) => setCsvTotp(event.target.value)}
+                className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              />
+            </label>
+          </div>
+        </ConfirmDialog>
+      ) : null}
       {confirm?.kind === 'revoke' ? (
         <ConfirmDialog
           title="Revoke Invitation"

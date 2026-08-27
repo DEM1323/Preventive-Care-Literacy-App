@@ -718,5 +718,6 @@ test('Administrator Class workspace keeps singular roster rows and confirmation 
   expect(source).toContain(
     'This closes the Class. Pending Invitations are revoked and active Class Memberships are deactivated. History is preserved. Reuse requires creating a new Class.',
   );
-  expect(source).not.toContain('CSV');
+  expect(source).toContain('Import a CSV');
+  expect(source).toContain('id="invitation-csv-file"');
 });

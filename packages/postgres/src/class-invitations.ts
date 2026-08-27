@@ -1,6 +1,7 @@
 import { Kysely, PostgresDialect, sql } from 'kysely';
 import {
   invitationIsSendable,
+  invitationPreviewFrom,
   type ClassDefinitionCommit,
   type ClassDirectorySnapshot,
   type ClassInvitationStore,
@@ -12,6 +13,8 @@ import {
   type ResendClassInvitationResult,
   type RevokeClassInvitationResult,
   type SendClassInvitationCommit,
+  type SendClassInvitationCsvResult,
+  type ClassInvitationCsvSendRow,
 } from '../../../modules/identity-access/index.ts';
 import type { Pool } from 'pg';
 import type { Database } from './database.ts';
@@ -57,6 +60,7 @@ export function createPostgresClassInvitationStore(options: {
       commandName: string;
       eventType: string;
       records: SendClassInvitationCommit;
+      includeReceipt?: boolean;
     },
   ) {
     await transaction
@@ -104,19 +108,21 @@ export function createPostgresClassInvitationStore(options: {
         delivered_at: null,
       })
       .execute();
-    await transaction
-      .insertInto('infrastructure.operation_receipts')
-      .values({
-        workspace_id: request.workspaceId,
-        operation_id: request.operationId,
-        command_name: request.commandName,
-        result: request.records.receipt.result,
-        recorded_at: request.records.receipt.recordedAt,
-        record_owner: 'school',
-        record_classification: 'operational_evidence',
-        disposal_class: 'operation_receipt',
-      })
-      .execute();
+    if (request.includeReceipt !== false) {
+      await transaction
+        .insertInto('infrastructure.operation_receipts')
+        .values({
+          workspace_id: request.workspaceId,
+          operation_id: request.operationId,
+          command_name: request.commandName,
+          result: request.records.receipt.result,
+          recorded_at: request.records.receipt.recordedAt,
+          record_owner: 'school',
+          record_classification: 'operational_evidence',
+          disposal_class: 'operation_receipt',
+        })
+        .execute();
+    }
     await transaction
       .insertInto('audit.evidence')
       .values({
@@ -388,6 +394,165 @@ export function createPostgresClassInvitationStore(options: {
           outcome: 'created' as const,
           result: records.receipt.result as CreateClassInvitationResult,
         };
+      });
+    },
+
+    sendMany(request) {
+      return database.transaction().execute(async (transaction) => {
+        await scope(transaction, request.workspaceId, request.staffIdentityId);
+        await sql`select pg_advisory_xact_lock(hashtextextended(${`${request.workspaceId}:${request.operationId}`}, 0))`.execute(
+          transaction,
+        );
+        const existing = await readReceipt<SendClassInvitationCsvResult>(
+          transaction,
+          {
+            workspaceId: request.workspaceId,
+            operationId: request.operationId,
+            commandName: 'sendClassInvitationCsv',
+          },
+        );
+        if (existing) {
+          return { outcome: 'replayed' as const, result: existing };
+        }
+        const classRow = await transaction
+          .selectFrom('identity_access.classes')
+          .select(['status'])
+          .where('class_id', '=', request.classId)
+          .where('workspace_id', '=', request.workspaceId)
+          .executeTakeFirst();
+        if (!classRow) return { outcome: 'class_missing' as const };
+
+        const rows: ClassInvitationCsvSendRow[] = [];
+        let recordedAt = request.now;
+        for (const row of request.rows) {
+          if (row.kind === 'malformed') {
+            rows.push({
+              lineNumber: row.lineNumber,
+              field: row.field,
+              outcome: 'malformed',
+            });
+            continue;
+          }
+          if (row.kind === 'duplicate_in_file') {
+            rows.push({
+              lineNumber: row.lineNumber,
+              field: row.field,
+              outcome: 'duplicate_in_file',
+            });
+            continue;
+          }
+          if (!row.selected) {
+            rows.push({
+              lineNumber: row.lineNumber,
+              field: row.field,
+              outcome: 'not_selected',
+            });
+            continue;
+          }
+          if (!row.recipient || !row.recipientDigest) {
+            rows.push({
+              lineNumber: row.lineNumber,
+              field: row.field,
+              outcome: 'malformed',
+            });
+            continue;
+          }
+          await sql`select pg_advisory_xact_lock(hashtextextended(${`${request.workspaceId}:${request.classId}:${row.recipientDigest}`}, 0))`.execute(
+            transaction,
+          );
+          const facts = await loadPreviewFacts(transaction, {
+            workspaceId: request.workspaceId,
+            classId: request.classId,
+            recipientDigest: row.recipientDigest,
+            now: request.now,
+          });
+          const preview = invitationPreviewFrom(facts);
+          if (!invitationIsSendable(facts) || preview.outcome !== 'ready') {
+            if (preview.outcome === 'identity_review') {
+              rows.push({
+                lineNumber: row.lineNumber,
+                field: row.field,
+                outcome: 'identity_review',
+                reason: preview.reason,
+              });
+            } else if (
+              preview.outcome === 'already_a_member' ||
+              preview.outcome === 'already_invited' ||
+              preview.outcome === 'class_closed'
+            ) {
+              rows.push({
+                lineNumber: row.lineNumber,
+                field: row.field,
+                outcome: preview.outcome,
+              });
+            } else {
+              rows.push({
+                lineNumber: row.lineNumber,
+                field: row.field,
+                outcome: 'malformed',
+              });
+            }
+            continue;
+          }
+          const records = request.createInvitation(row.recipient);
+          recordedAt = records.receipt.recordedAt;
+          await insertInvitationRecords(transaction, {
+            workspaceId: request.workspaceId,
+            operationId: request.operationId,
+            commandName: 'sendClassInvitationCsv',
+            eventType: 'class_invitation.created',
+            records,
+            includeReceipt: false,
+          });
+          rows.push({
+            lineNumber: row.lineNumber,
+            field: row.field,
+            outcome: 'sent',
+            invitationId: records.invitation.invitationId,
+            reuse: preview.reuse,
+          });
+        }
+        const sentCount = rows.filter((row) => row.outcome === 'sent').length;
+        const result: SendClassInvitationCsvResult = {
+          operationId: request.operationId,
+          classId: request.classId,
+          outcome: 'applied',
+          summary: {
+            sent: sentCount,
+            skipped: rows.length - sentCount,
+            deliveryProblems: 0,
+          },
+          rows,
+        };
+        await transaction
+          .insertInto('infrastructure.operation_receipts')
+          .values({
+            workspace_id: request.workspaceId,
+            operation_id: request.operationId,
+            command_name: 'sendClassInvitationCsv',
+            result,
+            recorded_at: recordedAt,
+            record_owner: 'school',
+            record_classification: 'operational_evidence',
+            disposal_class: 'operation_receipt',
+          })
+          .execute();
+        await transaction
+          .insertInto('audit.evidence')
+          .values({
+            audit_id: request.auditId,
+            workspace_id: request.workspaceId,
+            operation_id: request.operationId,
+            event_type: 'class_invitation.csv_sent',
+            actor_type: 'staff',
+            actor_id: request.actorId,
+            occurred_at: recordedAt,
+            record_owner: 'school',
+            record_classification: 'audit_evidence',
+            disposal_class: 'workspace_audit_evidence',
+          })
+          .execute();
+        return { outcome: 'applied' as const, result };
       });
     },
 
