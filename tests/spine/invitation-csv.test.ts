@@ -181,10 +181,11 @@ afterAll(async () => {
 });
 
 test('CSV parser classifies malformed and duplicate-in-file rows without guessing identity', () => {
+  const paddedDuplicate = '  SOFIA.ORTIZ@EXAMPLE.EDU  ';
   const parsed = parseInvitationCsv(`email
 sofia.ortiz@example.edu
 not-an-email
-  SOFIA.ORTIZ@EXAMPLE.EDU  
+${paddedDuplicate}
 noah.williams@example.edu
 `);
   expect(parsed).toEqual({
