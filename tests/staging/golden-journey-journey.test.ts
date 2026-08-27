@@ -84,6 +84,7 @@ function intakeSnapshot(overrides: Record<string, unknown> = {}) {
   return {
     learningUnlocked: false,
     currentIntakeRecordVersion: null,
+    intakeUpdateRequirement: null,
     draft: null,
     form: {
       schoolConfigurationReleaseId: releaseId,

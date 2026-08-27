@@ -19,7 +19,7 @@ export function StudentIntakePage() {
   const [attested, setAttested] = useState(false);
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState<
-    'load' | 'save' | 'submit' | 'reopen' | undefined
+    'load' | 'save' | 'submit' | 'reopen' | 'rebase' | undefined
   >('load');
   const [conflict, setConflict] = useState<{
     savedAnswers: Record<string, string>;
@@ -27,6 +27,7 @@ export function StudentIntakePage() {
   const operationId = useRef(crypto.randomUUID());
   const saveOperationId = useRef(crypto.randomUUID());
   const reopenOperationId = useRef(crypto.randomUUID());
+  const rebaseOperationId = useRef(crypto.randomUUID());
 
   useEffect(() => {
     let active = true;
@@ -137,6 +138,8 @@ export function StudentIntakePage() {
                     revisionNumber: current.form.intakeForm.revisionNumber,
                   },
                   answers,
+                  compatibility: 'current' as const,
+                  reviewFieldIds: current.draft?.reviewFieldIds ?? [],
                 },
               }
             : current,
@@ -145,17 +148,26 @@ export function StudentIntakePage() {
       }
       if (
         response.status === 409 &&
-        problem?.code === 'INTAKE_DRAFT_REVISION_CONFLICT'
+        (problem?.code === 'INTAKE_DRAFT_REVISION_CONFLICT' ||
+          problem?.code === 'INTAKE_REVISION_CONFLICT')
       ) {
         const confirmed = await client.GET('/api/v1/student/intake', {
           params: { query: { locale: 'en-US' } },
         });
         if (confirmed.response.status === 200 && confirmed.data) {
           setSnapshot(confirmed.data);
-          setConflict({
-            savedAnswers: confirmed.data.draft?.answers ?? {},
-          });
           saveOperationId.current = crypto.randomUUID();
+          if (problem.code === 'INTAKE_DRAFT_REVISION_CONFLICT') {
+            setConflict({
+              savedAnswers: confirmed.data.draft?.answers ?? {},
+            });
+            return;
+          }
+          setError(
+            confirmed.data.draft?.compatibility === 'canonical-change'
+              ? 'The Intake Form changed. Review the marked questions before continuing. Your unsaved answers were not overwritten.'
+              : 'The published Intake Form changed. Reload the current form before saving. Your unsaved answers were not overwritten.',
+          );
           return;
         }
       }
@@ -185,46 +197,47 @@ export function StudentIntakePage() {
     setBusy('submit');
     setError(undefined);
     try {
-      const {
-        response,
-        error: problem,
-      } = await client.POST('/api/v1/student/intake/submissions', {
-        body: {
-          operationId: operationId.current,
-          expectedSchoolConfigurationReleaseId:
-            snapshot.form.schoolConfigurationReleaseId,
-          expectedIntakeForm: {
-            resourceId: snapshot.form.intakeForm.resourceId,
-            revisionNumber: snapshot.form.intakeForm.revisionNumber,
-          },
-          expectedSubmissionAttestation: {
-            resourceId: snapshot.form.submissionAttestation.resourceId,
-            revisionNumber:
-              snapshot.form.submissionAttestation.revisionNumber,
-          },
-          ...(snapshot.currentIntakeRecordVersion
-            ? {
-                expectedDraftRevision: snapshot.draft?.draftRevision ?? 0,
-                expectedCurrentIntakeRecordVersionId:
-                  snapshot.currentIntakeRecordVersion.intakeRecordVersionId,
-              }
-            : {}),
-          locale: 'en-US',
-          answers,
-          attestation: {
-            locale: 'en-US',
-            notice: {
+      const { response, error: problem } = await client.POST(
+        '/api/v1/student/intake/submissions',
+        {
+          body: {
+            operationId: operationId.current,
+            expectedSchoolConfigurationReleaseId:
+              snapshot.form.schoolConfigurationReleaseId,
+            expectedIntakeForm: {
+              resourceId: snapshot.form.intakeForm.resourceId,
+              revisionNumber: snapshot.form.intakeForm.revisionNumber,
+            },
+            expectedSubmissionAttestation: {
               resourceId: snapshot.form.submissionAttestation.resourceId,
               revisionNumber:
                 snapshot.form.submissionAttestation.revisionNumber,
             },
+            ...(snapshot.currentIntakeRecordVersion
+              ? {
+                  expectedDraftRevision: snapshot.draft?.draftRevision ?? 0,
+                  expectedCurrentIntakeRecordVersionId:
+                    snapshot.currentIntakeRecordVersion.intakeRecordVersionId,
+                }
+              : {}),
+            locale: 'en-US',
+            answers,
+            attestation: {
+              locale: 'en-US',
+              notice: {
+                resourceId: snapshot.form.submissionAttestation.resourceId,
+                revisionNumber:
+                  snapshot.form.submissionAttestation.revisionNumber,
+              },
+            },
           },
         },
-      });
+      );
       if (
         response.status === 409 &&
         (problem?.code === 'INTAKE_DRAFT_REVISION_CONFLICT' ||
-          problem?.code === 'INTAKE_CURRENT_REVISION_CONFLICT')
+          problem?.code === 'INTAKE_CURRENT_REVISION_CONFLICT' ||
+          problem?.code === 'INTAKE_REVISION_CONFLICT')
       ) {
         const confirmed = await client.GET('/api/v1/student/intake', {
           params: { query: { locale: 'en-US' } },
@@ -240,7 +253,9 @@ export function StudentIntakePage() {
             return;
           }
           setError(
-            'The current Intake Record Version changed. Review the latest record before continuing. Your unsaved answers were not overwritten.',
+            problem.code === 'INTAKE_REVISION_CONFLICT'
+              ? 'The published Intake Form changed. Review the current form before submitting. Your unsaved answers were not overwritten.'
+              : 'The current Intake Record Version changed. Review the latest record before continuing. Your unsaved answers were not overwritten.',
           );
           return;
         }
@@ -305,6 +320,47 @@ export function StudentIntakePage() {
     }
   }
 
+  async function rebase() {
+    if (!snapshot?.draft) return;
+    setBusy('rebase');
+    setError(undefined);
+    try {
+      const { response, error: problem } = await client.POST(
+        '/api/v1/student/intake/rebase',
+        {
+          body: {
+            operationId: rebaseOperationId.current,
+            expectedDraftRevision: snapshot.draft.draftRevision,
+            locale: 'en-US',
+          },
+        },
+      );
+      if (
+        response.status !== 200 &&
+        problem?.code !== 'INTAKE_DRAFT_REVISION_CONFLICT'
+      ) {
+        setError(
+          'Your answers could not be reviewed against the current form.',
+        );
+        return;
+      }
+      rebaseOperationId.current = crypto.randomUUID();
+      const rebased = await client.GET('/api/v1/student/intake', {
+        params: { query: { locale: 'en-US' } },
+      });
+      if (rebased.response.status === 200 && rebased.data) {
+        const restored = rebased.data;
+        setSnapshot(restored);
+        setAnswers(restored.draft?.answers ?? {});
+        setAttested(false);
+      }
+    } catch {
+      setError('Your answers could not be reviewed against the current form.');
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
   if (snapshot?.learningUnlocked && !snapshot.draft) {
     return (
       <main className="min-h-full bg-[#17332d] px-5 py-12 text-[#fffaf0] sm:py-20">
@@ -319,6 +375,16 @@ export function StudentIntakePage() {
             The school confirmed your Intake Record Version. You can continue to
             your learning space.
           </p>
+          {snapshot.intakeUpdateRequirement ? (
+            <p
+              id="intake-update-requirement"
+              className="mt-5 max-w-xl text-base leading-7 text-[#e6af2e]"
+            >
+              The Intake Form changed. Your current Intake Record Version is
+              still accepted and learning stays available. Review the current
+              form when you can.
+            </p>
+          ) : null}
           <Link
             id="back-to-learning-space"
             to="/student"
@@ -359,6 +425,26 @@ export function StudentIntakePage() {
             Answer every visible question. Your draft stays private until you
             submit and the school confirms it.
           </p>
+          {snapshot?.draft?.compatibility === 'canonical-change' ? (
+            <div
+              id="intake-rebase-required"
+              className="mt-6 border-l-4 border-[#b43c2c] bg-[#f9ded5] p-4 text-sm font-bold leading-6"
+            >
+              <p>
+                The Intake Form changed. Review preserved answers against the
+                current questions before saving or submitting.
+              </p>
+              <button
+                id="rebase-intake-draft"
+                type="button"
+                disabled={busy !== undefined}
+                onClick={() => void rebase()}
+                className="mt-3 border-2 border-[#17332d] bg-white px-4 py-2 font-black uppercase tracking-wide"
+              >
+                {busy === 'rebase' ? 'Reviewing...' : 'Review current form'}
+              </button>
+            </div>
+          ) : null}
 
           {busy === 'load' ? (
             <p className="mt-8 text-lg text-[#38544d]">Loading your form...</p>
@@ -385,6 +471,11 @@ export function StudentIntakePage() {
                           className="block text-sm font-black uppercase tracking-wide"
                         >
                           {field.label}
+                          {snapshot.draft?.reviewFieldIds.includes(field.id) ? (
+                            <span className="ml-2 font-medium normal-case tracking-normal text-[#b43c2c]">
+                              Review this question
+                            </span>
+                          ) : null}
                           {field.type === 'textarea' ? (
                             <textarea
                               required={
@@ -503,7 +594,10 @@ export function StudentIntakePage() {
                 <button
                   id="save-draft"
                   type="button"
-                  disabled={busy !== undefined}
+                  disabled={
+                    busy !== undefined ||
+                    snapshot.draft?.compatibility === 'canonical-change'
+                  }
                   onClick={() => void saveDraft()}
                   className="border-2 border-[#17332d] bg-white px-5 py-3 font-black uppercase tracking-wide shadow-[4px_4px_0_#17332d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
                 >
@@ -512,7 +606,11 @@ export function StudentIntakePage() {
                 <button
                   id="submit-intake"
                   type="submit"
-                  disabled={busy !== undefined || !attested}
+                  disabled={
+                    busy !== undefined ||
+                    !attested ||
+                    snapshot.draft?.compatibility === 'canonical-change'
+                  }
                   className="border-2 border-[#17332d] bg-[#e6af2e] px-5 py-3 font-black uppercase tracking-wide shadow-[4px_4px_0_#17332d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
                 >
                   {busy === 'submit' ? 'Submitting...' : 'Submit intake'}

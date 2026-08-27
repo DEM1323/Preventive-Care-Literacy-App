@@ -916,6 +916,19 @@ const StudentIntakeSnapshotResponse = Type.Object({
       locale: IntakeLocaleSchema,
     }),
   ]),
+  intakeUpdateRequirement: Type.Union([
+    Type.Null(),
+    Type.Object({
+      currentIntakeRecordVersionId: Type.String({ format: 'uuid' }),
+      currentSchoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+      currentIntakeForm: ExactResourceRevisionSchema,
+      currentSubmissionAttestation: ExactResourceRevisionSchema,
+      activeSchoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+      activeIntakeForm: ExactResourceRevisionSchema,
+      activeSubmissionAttestation: ExactResourceRevisionSchema,
+      impactedFieldIds: Type.Array(Type.String({ format: 'uuid' })),
+    }),
+  ]),
   draft: Type.Union([
     Type.Null(),
     Type.Object({
@@ -925,6 +938,12 @@ const StudentIntakeSnapshotResponse = Type.Object({
       schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
       intakeForm: ExactResourceRevisionSchema,
       answers: IntakeAnswersSchema,
+      compatibility: Type.Union([
+        Type.Literal('current'),
+        Type.Literal('presentation-equivalent'),
+        Type.Literal('canonical-change'),
+      ]),
+      reviewFieldIds: Type.Array(Type.String({ format: 'uuid' })),
     }),
   ]),
   form: StudentIntakeFormResponse,
@@ -956,6 +975,23 @@ const ReopenIntakeRecordBody = Type.Object(
   { additionalProperties: false },
 );
 const ReopenIntakeRecordResponse = SaveIntakeDraftResponse;
+const RebaseIntakeDraftBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    expectedDraftRevision: Type.Integer({ minimum: 1 }),
+    locale: IntakeLocaleSchema,
+  },
+  { additionalProperties: false },
+);
+const RebaseIntakeDraftResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  locale: IntakeLocaleSchema,
+  updatedAt: Type.String({ format: 'date-time' }),
+  draftRevision: Type.Integer({ minimum: 1 }),
+  replayed: Type.Boolean(),
+  reviewFieldIds: Type.Array(Type.String({ format: 'uuid' })),
+  omittedFieldIds: Type.Array(Type.String({ format: 'uuid' })),
+});
 const SubmitIntakeRecordVersionBody = Type.Object(
   {
     operationId: Type.String({ format: 'uuid' }),
@@ -1026,6 +1062,19 @@ const RevealedCurrentIntakeRecordResponse = Type.Object({
   locale: IntakeLocaleSchema,
   intakeForm: StudentIntakeFormResponse.properties.intakeForm,
   answers: IntakeAnswersSchema,
+  intakeUpdateRequirement: Type.Union([
+    Type.Null(),
+    Type.Object({
+      currentIntakeRecordVersionId: Type.String({ format: 'uuid' }),
+      currentSchoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+      currentIntakeForm: ExactResourceRevisionSchema,
+      currentSubmissionAttestation: ExactResourceRevisionSchema,
+      activeSchoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+      activeIntakeForm: ExactResourceRevisionSchema,
+      activeSubmissionAttestation: ExactResourceRevisionSchema,
+      impactedFieldIds: Type.Array(Type.String({ format: 'uuid' })),
+    }),
+  ]),
   freshUntil: Type.String({ format: 'date-time' }),
 });
 const StudentLearningQuery = Type.Object({
@@ -1482,6 +1531,19 @@ const ProblemDetails = Type.Object({
   activeReleaseId: Type.Optional(
     Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
   ),
+  activeSchoolConfigurationReleaseId: Type.Optional(
+    Type.String({ format: 'uuid' }),
+  ),
+  activeIntakeForm: Type.Optional(ExactResourceRevisionSchema),
+  activeSubmissionAttestation: Type.Optional(ExactResourceRevisionSchema),
+  compatibility: Type.Optional(
+    Type.Union([
+      Type.Literal('presentation-equivalent'),
+      Type.Literal('canonical-change'),
+    ]),
+  ),
+  rebaseRequired: Type.Optional(Type.Boolean()),
+  impactedFieldIds: Type.Optional(Type.Array(Type.String({ format: 'uuid' }))),
   candidateFingerprint: Type.Optional(Type.String()),
   affectedValue: Type.Optional(Type.String()),
   outcome: Type.Optional(Type.String()),
@@ -2077,14 +2139,18 @@ export async function buildApp(
                                           '/api/v1/student/intake/reopen'
                                         ? 'student-intake-reopen'
                                         : route ===
-                                            '/api/v1/student/intake/submissions'
-                                          ? 'student-intake-submission'
-                                          : route === '/api/v1/student/learning'
-                                            ? 'student-learning'
+                                            '/api/v1/student/intake/rebase'
+                                          ? 'student-intake-rebase'
+                                          : route ===
+                                              '/api/v1/student/intake/submissions'
+                                            ? 'student-intake-submission'
                                             : route ===
-                                                '/api/v1/student/learning/acknowledgements'
-                                              ? 'student-learning-acknowledgement'
-                                              : 'unknown';
+                                                '/api/v1/student/learning'
+                                              ? 'student-learning'
+                                              : route ===
+                                                  '/api/v1/student/learning/acknowledgements'
+                                                ? 'student-learning-acknowledgement'
+                                                : 'unknown';
       telemetry.record({
         name: 'http.request.completed',
         method: ['DELETE', 'GET', 'PATCH', 'POST', 'PUT'].includes(
@@ -2425,6 +2491,9 @@ export async function buildApp(
                 currentIntakeRecordVersionId:
                   error.currentIntakeRecordVersionId,
               }
+            : {}),
+          ...(error instanceof IntakeRevisionConflictError && error.guidance
+            ? error.guidance
             : {}),
         });
     }
@@ -4183,6 +4252,42 @@ export async function buildApp(
         return studentSessionRequired(reply);
       }
       const result = await options.intake.reopen({
+        sessionHandle,
+        ...request.body,
+      });
+      if (!result) return studentSessionRequired(reply);
+      return result;
+    },
+  );
+
+  app.post<{ Body: Static<typeof RebaseIntakeDraftBody> }>(
+    '/api/v1/student/intake/rebase',
+    {
+      schema: {
+        operationId: 'rebaseIntakeDraft',
+        security: [{ studentSession: [] }],
+        body: RebaseIntakeDraftBody,
+        response: {
+          200: RebaseIntakeDraftResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        studentSessionCookie,
+      );
+      if (!sessionHandle || !options.intake) {
+        return studentSessionRequired(reply);
+      }
+      const result = await options.intake.rebase({
         sessionHandle,
         ...request.body,
       });
