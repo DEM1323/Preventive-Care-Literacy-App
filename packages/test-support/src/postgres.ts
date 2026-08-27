@@ -127,7 +127,7 @@ export async function createRuntimeDatabaseUser(
       `grant select, insert, update, delete on intake.intake_drafts to ${role}`,
     );
     await client.query(
-      `grant select, insert on intake.intake_record_versions to ${role}`,
+      `grant select, insert, update on intake.intake_record_versions to ${role}`,
     );
     await client.query(
       `grant select, insert on intake.intake_operation_receipts to ${role}`,

@@ -1,14 +1,17 @@
 import type { Pool, PoolClient } from 'pg';
 import {
   IntakeAlreadyAcceptedError,
+  IntakeCurrentRevisionConflictError,
   IntakeDraftRevisionConflictError,
   IntakeOperationReusedError,
+  IntakeRecordNotFoundError,
   IntakeRevisionConflictError,
   IntakeUnavailableError,
   type ClinicalRevealDenialReason,
   type ExactResourceRevision,
   type IntakeAnswerMap,
   type IntakeStore,
+  type ReopenIntakeRecordResult,
   type SaveIntakeDraftResult,
   type SealedRecord,
   type StoredIntakeDraft,
@@ -279,6 +282,7 @@ export function createPostgresIntakeStore(options: {
         );
         const current = await client.query<{
           intake_record_version_id: string;
+          version_number: number;
           accepted_at: Date;
           school_configuration_release_id: string;
           intake_form_resource_id: string;
@@ -286,11 +290,15 @@ export function createPostgresIntakeStore(options: {
           submission_attestation_resource_id: string;
           submission_attestation_revision_number: number;
           locale: StoredIntakeRecordVersion['locale'];
+          wrapping_key_id: string;
+          wrapped_data_key: string;
+          ciphertext: string;
         }>(
-          `select intake_record_version_id, accepted_at, school_configuration_release_id,
-                  intake_form_resource_id, intake_form_revision_number,
-                  submission_attestation_resource_id,
-                  submission_attestation_revision_number, locale
+          `select intake_record_version_id, version_number, accepted_at,
+                  school_configuration_release_id, intake_form_resource_id,
+                  intake_form_revision_number, submission_attestation_resource_id,
+                  submission_attestation_revision_number, locale,
+                  wrapping_key_id, wrapped_data_key, ciphertext
              from intake.intake_record_versions
             where student_id = $1 and workspace_id = $2 and superseded_at is null`,
           [input.studentId, input.workspaceId],
@@ -316,6 +324,7 @@ export function createPostgresIntakeStore(options: {
           currentVersion: currentRow
             ? {
                 intakeRecordVersionId: currentRow.intake_record_version_id,
+                versionNumber: currentRow.version_number,
                 acceptedAt: currentRow.accepted_at,
                 schoolConfigurationReleaseId:
                   currentRow.school_configuration_release_id,
@@ -329,6 +338,7 @@ export function createPostgresIntakeStore(options: {
                     currentRow.submission_attestation_revision_number,
                 },
                 locale: currentRow.locale,
+                sealed: sealedFrom(currentRow),
               }
             : undefined,
         };
@@ -378,12 +388,14 @@ export function createPostgresIntakeStore(options: {
             where student_id = $1 and workspace_id = $2 and superseded_at is null`,
           [input.studentId, input.workspaceId],
         );
-        if (accepted.rowCount === 1) throw new IntakeAlreadyAcceptedError();
         const current = await client.query<{ draft_revision: number }>(
           `select draft_revision from intake.intake_drafts
             where student_id = $1 and workspace_id = $2`,
           [input.studentId, input.workspaceId],
         );
+        if (accepted.rowCount === 1 && !current.rows[0]) {
+          throw new IntakeAlreadyAcceptedError();
+        }
         const currentRevision = current.rows[0]?.draft_revision ?? 0;
         if (currentRevision !== input.expectedDraftRevision) {
           throw new IntakeDraftRevisionConflictError(currentRevision);
@@ -453,6 +465,127 @@ export function createPostgresIntakeStore(options: {
       });
     },
 
+    async reopen(input) {
+      return transaction(options.pool, async (client) => {
+        await setStudentScope(client, input);
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`intake:${input.studentId}`],
+        );
+        const receipt = await client.query<{
+          command_name: string;
+          request_binding: string;
+          result: ReopenIntakeRecordResult;
+        }>(
+          `select command_name, request_binding, result
+             from intake.intake_operation_receipts
+            where workspace_id = $1 and student_id = $2 and operation_id = $3`,
+          [input.workspaceId, input.studentId, input.operationId],
+        );
+        if (receipt.rows[0]) {
+          if (
+            receipt.rows[0].command_name !== 'reopenIntakeRecord' ||
+            receipt.rows[0].request_binding !== input.requestBinding
+          ) {
+            throw new IntakeOperationReusedError();
+          }
+          return {
+            outcome: 'replayed' as const,
+            result: receipt.rows[0].result,
+          };
+        }
+        await lockSchoolConfigurationWorkspace(client, input.workspaceId);
+        const release = await readActiveIntakeRelease(
+          client,
+          input.workspaceId,
+        );
+        if (!release) throw new IntakeUnavailableError();
+        const current = await client.query<{
+          intake_record_version_id: string;
+          wrapping_key_id: string;
+          wrapped_data_key: string;
+          ciphertext: string;
+        }>(
+          `select intake_record_version_id, wrapping_key_id, wrapped_data_key,
+                  ciphertext
+             from intake.intake_record_versions
+            where student_id = $1 and workspace_id = $2 and superseded_at is null`,
+          [input.studentId, input.workspaceId],
+        );
+        const currentRow = current.rows[0];
+        if (!currentRow) throw new IntakeRecordNotFoundError();
+        if (
+          currentRow.intake_record_version_id !==
+          input.expectedCurrentIntakeRecordVersionId
+        ) {
+          throw new IntakeCurrentRevisionConflictError(
+            currentRow.intake_record_version_id,
+          );
+        }
+        const existingDraft = await client.query<{ draft_revision: number }>(
+          `select draft_revision from intake.intake_drafts
+            where student_id = $1 and workspace_id = $2`,
+          [input.studentId, input.workspaceId],
+        );
+        if (existingDraft.rows[0]) {
+          throw new IntakeDraftRevisionConflictError(
+            existingDraft.rows[0].draft_revision,
+          );
+        }
+        const sealed = await input.seedDraft(sealedFrom(currentRow));
+        const result: ReopenIntakeRecordResult = {
+          operationId: input.operationId,
+          locale: input.locale,
+          updatedAt: input.updatedAt.toISOString(),
+          draftRevision: 1,
+          replayed: true,
+        };
+        await client.query(
+          `insert into intake.intake_drafts
+             (student_id, workspace_id, school_configuration_release_id,
+              intake_form_resource_id, intake_form_revision_number, locale,
+              wrapping_key_id, wrapped_data_key, ciphertext, updated_at,
+              draft_revision, record_owner, record_classification, disposal_class)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1,
+                   'school', 'student_record', 'intake_draft')`,
+          [
+            input.studentId,
+            input.workspaceId,
+            release.schoolConfigurationReleaseId,
+            release.intakeForm.resourceId,
+            release.intakeForm.revisionNumber,
+            input.locale,
+            sealed.wrappingKeyId,
+            sealed.wrappedDataKey,
+            sealed.ciphertext,
+            input.updatedAt,
+          ],
+        );
+        await client.query(
+          `insert into intake.intake_operation_receipts
+             (workspace_id, student_id, operation_id, command_name, result,
+              request_binding, recorded_at, record_owner,
+              record_classification, disposal_class)
+           values ($1, $2, $3, 'reopenIntakeRecord', $4, $5, $6,
+                   'school', 'operational_evidence', 'operation_receipt')`,
+          [
+            input.workspaceId,
+            input.studentId,
+            input.operationId,
+            result,
+            input.requestBinding,
+            input.updatedAt,
+          ],
+        );
+        return {
+          outcome: 'saved' as const,
+          draftRevision: 1,
+          locale: input.locale,
+          updatedAt: input.updatedAt,
+        };
+      });
+    },
+
     async submit(input) {
       return transaction(options.pool, async (client) => {
         await setStudentScope(client, input);
@@ -488,20 +621,73 @@ export function createPostgresIntakeStore(options: {
             submissionAttestation: input.expectedSubmissionAttestation,
           },
         );
-        const current = await client.query(
-          `select 1 from intake.intake_record_versions
+        const current = await client.query<{
+          intake_record_version_id: string;
+          version_number: number;
+          wrapping_key_id: string;
+          wrapped_data_key: string;
+          ciphertext: string;
+        }>(
+          `select intake_record_version_id, version_number, wrapping_key_id,
+                  wrapped_data_key, ciphertext
+             from intake.intake_record_versions
             where student_id = $1 and workspace_id = $2 and superseded_at is null`,
           [input.studentId, input.workspaceId],
         );
-        if (current.rowCount === 1) throw new IntakeAlreadyAcceptedError();
+        const currentRow = current.rows[0];
+        if (currentRow) {
+          if (!input.expectedCurrentIntakeRecordVersionId) {
+            throw new IntakeAlreadyAcceptedError();
+          }
+          if (
+            currentRow.intake_record_version_id !==
+            input.expectedCurrentIntakeRecordVersionId
+          ) {
+            throw new IntakeCurrentRevisionConflictError(
+              currentRow.intake_record_version_id,
+            );
+          }
+          const draft = await client.query<{ draft_revision: number }>(
+            `select draft_revision from intake.intake_drafts
+              where student_id = $1 and workspace_id = $2`,
+            [input.studentId, input.workspaceId],
+          );
+          const draftRevision = draft.rows[0]?.draft_revision ?? 0;
+          if (draftRevision !== (input.expectedDraftRevision ?? -1)) {
+            throw new IntakeDraftRevisionConflictError(draftRevision);
+          }
+        }
 
+        const versionNumber = currentRow ? currentRow.version_number + 1 : 1;
+        const predecessorIntakeRecordVersionId = currentRow
+          ? currentRow.intake_record_version_id
+          : null;
+        const changedFields = await input.summarizeChanges(
+          currentRow ? sealedFrom(currentRow) : undefined,
+        );
         const result: SubmitIntakeRecordVersionResult = {
           operationId: input.operationId,
           intakeRecordVersionId: input.proposedVersionId,
           acceptedAt: input.acceptedAt.toISOString(),
           learningUnlocked: true,
           replayed: true,
+          predecessorIntakeRecordVersionId,
+          changedFields,
         };
+        if (currentRow) {
+          await client.query(
+            `update intake.intake_record_versions
+                set superseded_at = $3
+              where intake_record_version_id = $1
+                and student_id = $2
+                and superseded_at is null`,
+            [
+              currentRow.intake_record_version_id,
+              input.studentId,
+              input.acceptedAt,
+            ],
+          );
+        }
         await client.query(
           `insert into intake.intake_record_versions
              (intake_record_version_id, student_id, workspace_id, version_number,
@@ -510,12 +696,13 @@ export function createPostgresIntakeStore(options: {
               submission_attestation_revision_number, locale, wrapping_key_id,
               wrapped_data_key, ciphertext, accepted_at, superseded_at,
               record_owner, record_classification, disposal_class)
-           values ($1, $2, $3, 1, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, null,
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, null,
                    'school', 'student_record', 'intake_record_version')`,
           [
             input.proposedVersionId,
             input.studentId,
             input.workspaceId,
+            versionNumber,
             release.schoolConfigurationReleaseId,
             release.intakeForm.resourceId,
             release.intakeForm.revisionNumber,
@@ -566,6 +753,8 @@ export function createPostgresIntakeStore(options: {
               intakeRecordVersionId: input.proposedVersionId,
               schoolConfigurationReleaseId:
                 release.schoolConfigurationReleaseId,
+              predecessorIntakeRecordVersionId,
+              changedFields,
             },
           ],
         );
@@ -584,6 +773,8 @@ export function createPostgresIntakeStore(options: {
               intakeRecordVersionId: input.proposedVersionId,
               schoolConfigurationReleaseId:
                 release.schoolConfigurationReleaseId,
+              predecessorIntakeRecordVersionId,
+              changedFields,
             },
             input.acceptedAt,
           ],
@@ -592,6 +783,8 @@ export function createPostgresIntakeStore(options: {
           outcome: 'accepted' as const,
           intakeRecordVersionId: input.proposedVersionId,
           acceptedAt: input.acceptedAt,
+          predecessorIntakeRecordVersionId,
+          changedFields,
         };
       });
     },

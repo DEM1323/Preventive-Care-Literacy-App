@@ -160,6 +160,9 @@ async function renderContracts() {
         saveDraft: async () => {
           throw new Error('Contract generation does not execute commands');
         },
+        reopen: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
         submit: async () => {
           throw new Error('Contract generation does not execute commands');
         },

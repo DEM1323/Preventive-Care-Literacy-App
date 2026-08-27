@@ -660,6 +660,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/student/intake/reopen': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['reopenIntakeRecord'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/student/intake/submissions': {
     parameters: {
       query?: never;
@@ -1041,6 +1057,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1062,6 +1080,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1083,6 +1103,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1146,6 +1168,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1167,6 +1191,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1188,6 +1214,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1209,6 +1237,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1230,6 +1260,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1289,6 +1321,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1310,6 +1344,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1331,6 +1367,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1352,6 +1390,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1373,6 +1413,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1394,6 +1436,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1415,6 +1459,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1473,6 +1519,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1494,6 +1542,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1515,6 +1565,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1536,6 +1588,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1557,6 +1611,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1660,6 +1716,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1681,6 +1739,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1702,6 +1762,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1723,6 +1785,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1744,6 +1808,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1765,6 +1831,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1786,6 +1854,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1905,6 +1975,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1926,6 +1998,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1947,6 +2021,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1968,6 +2044,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -1989,6 +2067,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2010,6 +2090,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2031,6 +2113,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2052,6 +2136,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2124,6 +2210,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2145,6 +2233,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2166,6 +2256,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2187,6 +2279,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2208,6 +2302,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2229,6 +2325,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2292,6 +2390,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2313,6 +2413,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2334,6 +2436,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2355,6 +2459,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2376,6 +2482,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2397,6 +2505,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2418,6 +2528,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2474,6 +2586,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2495,6 +2609,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2516,6 +2632,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2537,6 +2655,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2558,6 +2678,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2579,6 +2701,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2641,6 +2765,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2662,6 +2788,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2683,6 +2811,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2704,6 +2834,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2725,6 +2857,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2746,6 +2880,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2767,6 +2903,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2824,6 +2962,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2845,6 +2985,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2866,6 +3008,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2887,6 +3031,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2908,6 +3054,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -2929,6 +3077,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3063,6 +3213,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3084,6 +3236,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3105,6 +3259,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3126,6 +3282,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3352,6 +3510,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3373,6 +3533,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3394,6 +3556,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3415,6 +3579,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3436,6 +3602,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3457,6 +3625,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3478,6 +3648,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3538,6 +3710,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3559,6 +3733,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3580,6 +3756,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3601,6 +3779,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3622,6 +3802,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3643,6 +3825,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3664,6 +3848,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3821,6 +4007,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3842,6 +4030,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3863,6 +4053,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3884,6 +4076,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3905,6 +4099,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3926,6 +4122,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -3947,6 +4145,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4009,6 +4209,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4030,6 +4232,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4051,6 +4255,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4120,6 +4326,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4141,6 +4349,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4162,6 +4372,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4183,6 +4395,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4204,6 +4418,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4225,6 +4441,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4246,6 +4464,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4322,6 +4542,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4343,6 +4565,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4364,6 +4588,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4385,6 +4611,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4445,6 +4673,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4466,6 +4696,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4487,6 +4719,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4508,6 +4742,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4529,6 +4765,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4550,6 +4788,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4602,6 +4842,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4623,6 +4865,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4644,6 +4888,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4714,6 +4960,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4735,6 +4983,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4756,6 +5006,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4777,6 +5029,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4798,6 +5052,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4819,6 +5075,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4840,6 +5098,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4903,6 +5163,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4924,6 +5186,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4945,6 +5209,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4966,6 +5232,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -4987,6 +5255,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5008,6 +5278,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5029,6 +5301,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5050,6 +5324,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5115,6 +5391,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5136,6 +5414,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5157,6 +5437,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5178,6 +5460,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5199,6 +5483,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5220,6 +5506,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5241,6 +5529,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5262,6 +5552,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5326,6 +5618,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5347,6 +5641,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5368,6 +5664,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5389,6 +5687,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5410,6 +5710,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5431,6 +5733,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5452,6 +5756,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5473,6 +5779,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5531,6 +5839,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5552,6 +5862,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5573,6 +5885,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5594,6 +5908,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5615,6 +5931,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5636,6 +5954,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5657,6 +5977,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5715,6 +6037,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5736,6 +6060,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5757,6 +6083,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5778,6 +6106,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5799,6 +6129,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5820,6 +6152,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5841,6 +6175,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5907,6 +6243,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5928,6 +6266,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5949,6 +6289,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5970,6 +6312,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -5991,6 +6335,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6012,6 +6358,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6033,6 +6381,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6083,6 +6433,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6104,6 +6456,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6125,6 +6479,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6146,6 +6502,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6190,6 +6548,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6245,6 +6605,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6266,6 +6628,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6287,6 +6651,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6308,6 +6674,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6329,6 +6697,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6373,6 +6743,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6394,6 +6766,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6415,6 +6789,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6436,6 +6812,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6487,6 +6865,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6508,6 +6888,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6529,6 +6911,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6550,6 +6934,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6571,6 +6957,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6592,6 +6980,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6643,6 +7033,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6664,6 +7056,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6685,6 +7079,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6706,6 +7102,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6727,6 +7125,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6778,6 +7178,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6799,6 +7201,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6820,6 +7224,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6841,6 +7247,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6862,6 +7270,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6912,6 +7322,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6933,6 +7345,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6954,6 +7368,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -6975,6 +7391,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7026,6 +7444,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7047,6 +7467,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7068,6 +7490,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7089,6 +7513,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7110,6 +7536,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7217,6 +7645,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7238,6 +7668,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7259,6 +7691,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7280,6 +7714,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7301,6 +7737,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7322,6 +7760,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7379,6 +7819,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7400,6 +7842,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7421,6 +7865,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7504,6 +7950,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7525,6 +7973,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7568,6 +8018,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7630,6 +8082,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7651,6 +8105,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7701,6 +8157,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7722,6 +8180,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7857,6 +8317,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7878,6 +8340,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7899,6 +8363,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7920,6 +8386,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -7988,6 +8456,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8009,6 +8479,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8030,6 +8502,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8051,6 +8525,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8072,6 +8548,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8093,6 +8571,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8114,6 +8594,207 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  reopenIntakeRecord: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          expectedCurrentIntakeRecordVersionId: string;
+          locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            draftRevision: number;
+            locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+            /** Format: uuid */
+            operationId: string;
+            replayed: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8147,6 +8828,9 @@ export interface operations {
               revisionNumber: number;
             };
           };
+          /** Format: uuid */
+          expectedCurrentIntakeRecordVersionId?: string;
+          expectedDraftRevision?: number;
           expectedIntakeForm: {
             /** Format: uuid */
             resourceId: string;
@@ -8175,12 +8859,18 @@ export interface operations {
           'application/json': {
             /** Format: date-time */
             acceptedAt: string;
+            changedFields: {
+              change: 'added' | 'removed' | 'changed';
+              /** Format: uuid */
+              fieldId: string;
+            }[];
             /** Format: uuid */
             intakeRecordVersionId: string;
             /** @enum {boolean} */
             learningUnlocked: true;
             /** Format: uuid */
             operationId: string;
+            predecessorIntakeRecordVersionId: string | null;
             replayed: boolean;
           };
         };
@@ -8196,6 +8886,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8217,6 +8909,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8238,6 +8932,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8259,6 +8955,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8280,6 +8978,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8301,6 +9001,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8322,6 +9024,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8343,6 +9047,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8392,6 +9098,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8413,6 +9121,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8434,6 +9144,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8455,6 +9167,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8476,6 +9190,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8542,6 +9258,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8563,6 +9281,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8584,6 +9304,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8605,6 +9327,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8671,6 +9395,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8692,6 +9418,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8713,6 +9441,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8734,6 +9464,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8755,6 +9487,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8776,6 +9510,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8797,6 +9533,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8849,6 +9587,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;
@@ -8870,6 +9610,8 @@ export interface operations {
             affectedValue?: string;
             candidateFingerprint?: string;
             code: string;
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
             draftRevision?: number;
             draftVersion?: number;
             outcome?: string;

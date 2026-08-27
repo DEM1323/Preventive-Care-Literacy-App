@@ -30,6 +30,7 @@ export type TelemetryEvent =
         | 'student-language'
         | 'student-intake'
         | 'student-intake-draft'
+        | 'student-intake-reopen'
         | 'student-intake-submission'
         | 'student-learning'
         | 'student-learning-acknowledgement'
@@ -96,6 +97,7 @@ const routes = new Set([
   'student-language',
   'student-intake',
   'student-intake-draft',
+  'student-intake-reopen',
   'student-intake-submission',
   'student-learning',
   'student-learning-acknowledgement',

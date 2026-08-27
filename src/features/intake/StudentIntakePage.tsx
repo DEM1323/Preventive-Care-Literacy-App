@@ -18,14 +18,15 @@ export function StudentIntakePage() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [attested, setAttested] = useState(false);
   const [error, setError] = useState<string>();
-  const [busy, setBusy] = useState<'load' | 'save' | 'submit' | undefined>(
-    'load',
-  );
+  const [busy, setBusy] = useState<
+    'load' | 'save' | 'submit' | 'reopen' | undefined
+  >('load');
   const [conflict, setConflict] = useState<{
     savedAnswers: Record<string, string>;
   }>();
   const operationId = useRef(crypto.randomUUID());
   const saveOperationId = useRef(crypto.randomUUID());
+  const reopenOperationId = useRef(crypto.randomUUID());
 
   useEffect(() => {
     let active = true;
@@ -184,35 +185,66 @@ export function StudentIntakePage() {
     setBusy('submit');
     setError(undefined);
     try {
-      const { response } = await client.POST(
-        '/api/v1/student/intake/submissions',
-        {
-          body: {
-            operationId: operationId.current,
-            expectedSchoolConfigurationReleaseId:
-              snapshot.form.schoolConfigurationReleaseId,
-            expectedIntakeForm: {
-              resourceId: snapshot.form.intakeForm.resourceId,
-              revisionNumber: snapshot.form.intakeForm.revisionNumber,
-            },
-            expectedSubmissionAttestation: {
+      const {
+        response,
+        error: problem,
+      } = await client.POST('/api/v1/student/intake/submissions', {
+        body: {
+          operationId: operationId.current,
+          expectedSchoolConfigurationReleaseId:
+            snapshot.form.schoolConfigurationReleaseId,
+          expectedIntakeForm: {
+            resourceId: snapshot.form.intakeForm.resourceId,
+            revisionNumber: snapshot.form.intakeForm.revisionNumber,
+          },
+          expectedSubmissionAttestation: {
+            resourceId: snapshot.form.submissionAttestation.resourceId,
+            revisionNumber:
+              snapshot.form.submissionAttestation.revisionNumber,
+          },
+          ...(snapshot.currentIntakeRecordVersion
+            ? {
+                expectedDraftRevision: snapshot.draft?.draftRevision ?? 0,
+                expectedCurrentIntakeRecordVersionId:
+                  snapshot.currentIntakeRecordVersion.intakeRecordVersionId,
+              }
+            : {}),
+          locale: 'en-US',
+          answers,
+          attestation: {
+            locale: 'en-US',
+            notice: {
               resourceId: snapshot.form.submissionAttestation.resourceId,
               revisionNumber:
                 snapshot.form.submissionAttestation.revisionNumber,
             },
-            locale: 'en-US',
-            answers,
-            attestation: {
-              locale: 'en-US',
-              notice: {
-                resourceId: snapshot.form.submissionAttestation.resourceId,
-                revisionNumber:
-                  snapshot.form.submissionAttestation.revisionNumber,
-              },
-            },
           },
         },
-      );
+      });
+      if (
+        response.status === 409 &&
+        (problem?.code === 'INTAKE_DRAFT_REVISION_CONFLICT' ||
+          problem?.code === 'INTAKE_CURRENT_REVISION_CONFLICT')
+      ) {
+        const confirmed = await client.GET('/api/v1/student/intake', {
+          params: { query: { locale: 'en-US' } },
+        });
+        if (confirmed.response.status === 200 && confirmed.data) {
+          const restored = confirmed.data;
+          setSnapshot(restored);
+          operationId.current = crypto.randomUUID();
+          if (problem.code === 'INTAKE_DRAFT_REVISION_CONFLICT') {
+            setConflict({
+              savedAnswers: restored.draft?.answers ?? {},
+            });
+            return;
+          }
+          setError(
+            'The current Intake Record Version changed. Review the latest record before continuing. Your unsaved answers were not overwritten.',
+          );
+          return;
+        }
+      }
       if (response.status !== 201) {
         setError(
           'Your intake could not be accepted. Check your answers and try again.',
@@ -233,7 +265,47 @@ export function StudentIntakePage() {
     }
   }
 
-  if (snapshot?.learningUnlocked) {
+  async function reopen() {
+    if (!snapshot?.currentIntakeRecordVersion) return;
+    setBusy('reopen');
+    setError(undefined);
+    try {
+      const { response, error: problem } = await client.POST(
+        '/api/v1/student/intake/reopen',
+        {
+          body: {
+            operationId: reopenOperationId.current,
+            expectedCurrentIntakeRecordVersionId:
+              snapshot.currentIntakeRecordVersion.intakeRecordVersionId,
+            locale: 'en-US',
+          },
+        },
+      );
+      if (
+        response.status !== 200 &&
+        problem?.code !== 'INTAKE_DRAFT_REVISION_CONFLICT'
+      ) {
+        setError('Your Intake Record could not be reopened. Try again.');
+        return;
+      }
+      reopenOperationId.current = crypto.randomUUID();
+      const confirmed = await client.GET('/api/v1/student/intake', {
+        params: { query: { locale: 'en-US' } },
+      });
+      if (confirmed.response.status === 200 && confirmed.data) {
+        const restored = confirmed.data;
+        setSnapshot(restored);
+        setAnswers(restored.draft?.answers ?? {});
+        setAttested(false);
+      }
+    } catch {
+      setError('Your Intake Record could not be reopened. Try again.');
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  if (snapshot?.learningUnlocked && !snapshot.draft) {
     return (
       <main className="min-h-full bg-[#17332d] px-5 py-12 text-[#fffaf0] sm:py-20">
         <section className="mx-auto max-w-2xl">
@@ -254,6 +326,15 @@ export function StudentIntakePage() {
           >
             Back to learning space
           </Link>
+          <button
+            id="reopen-intake"
+            type="button"
+            disabled={busy !== undefined}
+            onClick={() => void reopen()}
+            className="mt-4 block border-2 border-[#fffaf0] bg-transparent px-5 py-3 font-black uppercase tracking-wide text-[#fffaf0] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+          >
+            {busy === 'reopen' ? 'Opening draft...' : 'Update intake answers'}
+          </button>
         </section>
       </main>
     );
