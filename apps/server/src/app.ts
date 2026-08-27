@@ -852,6 +852,30 @@ const SchoolConfigurationDraftResponse = Type.Object({
         path: Type.String(),
         message: Type.String(),
         severity: Type.Literal('blocker'),
+        location: Type.Object({
+          editorResource: Type.Union([
+            Type.Literal('branding'),
+            Type.Literal('modules'),
+            Type.Literal('intake'),
+            Type.Literal('translations'),
+          ]),
+          previewScreen: Type.Union([
+            Type.Literal('home'),
+            Type.Literal('module'),
+            Type.Literal('intake'),
+          ]),
+          locale: Type.Optional(
+            Type.Union([
+              Type.Literal('en-US'),
+              Type.Literal('es-US'),
+              Type.Literal('pt-BR'),
+              Type.Literal('fr-CA'),
+              Type.Literal('ht-HT'),
+            ]),
+          ),
+          moduleId: Type.Optional(Type.String({ format: 'uuid' })),
+          resourceId: Type.Optional(Type.String({ format: 'uuid' })),
+        }),
       }),
     ),
     warnings: Type.Array(
@@ -860,16 +884,50 @@ const SchoolConfigurationDraftResponse = Type.Object({
         path: Type.String(),
         message: Type.String(),
         severity: Type.Literal('warning'),
+        location: Type.Object({
+          editorResource: Type.Union([
+            Type.Literal('branding'),
+            Type.Literal('modules'),
+            Type.Literal('intake'),
+            Type.Literal('translations'),
+          ]),
+          previewScreen: Type.Union([
+            Type.Literal('home'),
+            Type.Literal('module'),
+            Type.Literal('intake'),
+          ]),
+          locale: Type.Optional(
+            Type.Union([
+              Type.Literal('en-US'),
+              Type.Literal('es-US'),
+              Type.Literal('pt-BR'),
+              Type.Literal('fr-CA'),
+              Type.Literal('ht-HT'),
+            ]),
+          ),
+          moduleId: Type.Optional(Type.String({ format: 'uuid' })),
+          resourceId: Type.Optional(Type.String({ format: 'uuid' })),
+        }),
       }),
     ),
   }),
   comparisons: Type.Array(
     Type.Object({
       resourceId: Type.String({ format: 'uuid' }),
-      draftRevision: Type.Integer({ minimum: 1 }),
+      kind: Type.String(),
+      slot: Type.String(),
+      label: Type.String(),
+      draftRevision: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
       activeRevision: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
       differs: Type.Boolean(),
+      change: Type.Union([
+        Type.Literal('added'),
+        Type.Literal('removed'),
+        Type.Literal('changed'),
+        Type.Literal('unchanged'),
+      ]),
       discardEligible: Type.Boolean(),
+      archiveEligible: Type.Boolean(),
     }),
   ),
   managedTranslations: Type.Object({
@@ -963,10 +1021,13 @@ const DraftEditBody = Type.Object(
       Type.Literal('create-intake-option'),
       Type.Literal('restore-active-revision'),
       Type.Literal('discard-authored-resource'),
+      Type.Literal('archive-authored-resource'),
+      Type.Literal('restore-release-assembly'),
       Type.Literal('save-managed-translation'),
       Type.Literal('review-managed-translation'),
     ]),
     resourceId: Type.Optional(Type.String({ format: 'uuid' })),
+    releaseId: Type.Optional(Type.String({ format: 'uuid' })),
     moduleId: Type.Optional(Type.String({ format: 'uuid' })),
     fieldId: Type.Optional(Type.String({ format: 'uuid' })),
     sectionId: Type.Optional(Type.String({ format: 'uuid' })),
@@ -1106,6 +1167,34 @@ const PublishSchoolConfigurationReleaseResponse = Type.Object({
     byteLength: Type.Integer({ minimum: 1 }),
   }),
   replayed: Type.Boolean(),
+});
+const SchoolConfigurationReleaseComponentResponse = Type.Object({
+  resourceId: Type.String({ format: 'uuid' }),
+  revisionNumber: Type.Integer({ minimum: 1 }),
+  slot: Type.String(),
+  kind: Type.String(),
+  position: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
+});
+const SchoolConfigurationReleaseSummaryResponse = Type.Object({
+  releaseId: Type.String({ format: 'uuid' }),
+  releaseNumber: Type.Integer({ minimum: 1 }),
+  candidateFingerprint: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  changeDescription: Type.String(),
+  publishedAt: Type.String({ format: 'date-time' }),
+  publishedBy: Type.String({ format: 'uuid' }),
+  active: Type.Boolean(),
+  components: Type.Array(SchoolConfigurationReleaseComponentResponse),
+});
+const ListSchoolConfigurationReleasesResponse = Type.Object({
+  releases: Type.Array(SchoolConfigurationReleaseSummaryResponse),
+});
+const SchoolConfigurationReleaseDetailResponse = Type.Object({
+  ...SchoolConfigurationReleaseSummaryResponse.properties,
+  candidate: Type.Unknown(),
+  comparisons: SchoolConfigurationDraftResponse.properties.comparisons,
+});
+const SchoolConfigurationReleaseParams = Type.Object({
+  releaseId: Type.String({ format: 'uuid' }),
 });
 
 const ProblemDetails = Type.Object({
@@ -1502,6 +1591,18 @@ function parseDraftEdit(body: Static<typeof DraftEditBody>): DraftEdit {
     }
     return { type: body.type, resourceId: body.resourceId };
   }
+  if (body.type === 'archive-authored-resource') {
+    if (!body.resourceId) {
+      throw new InvalidSchoolConfigurationError('archive');
+    }
+    return { type: body.type, resourceId: body.resourceId };
+  }
+  if (body.type === 'restore-release-assembly') {
+    if (!body.releaseId) {
+      throw new InvalidSchoolConfigurationError('release');
+    }
+    return { type: body.type, releaseId: body.releaseId };
+  }
   if (body.type === 'save-managed-translation') {
     if (!body.resourceId || !body.locale || body.text === undefined) {
       throw new InvalidSchoolConfigurationError('managedTranslation');
@@ -1527,6 +1628,28 @@ function parseDraftEdit(body: Static<typeof DraftEditBody>): DraftEdit {
     throw new InvalidSchoolConfigurationError('discard');
   }
   return { type: 'discard-authored-resource', resourceId: body.resourceId };
+}
+
+function presentReleaseSummary(release: {
+  releaseId: string;
+  releaseNumber: number;
+  candidateFingerprint: string;
+  changeDescription: string;
+  publishedAt: Date;
+  publishedBy: string;
+  active: boolean;
+  components: {
+    resourceId: string;
+    revisionNumber: number;
+    slot: string;
+    kind: string;
+    position: number | null;
+  }[];
+}) {
+  return {
+    ...release,
+    publishedAt: release.publishedAt.toISOString(),
+  };
 }
 
 export async function buildApp(
@@ -3251,6 +3374,79 @@ export async function buildApp(
           sessionHandle,
         });
         return reply.code(201).send(result);
+      },
+    );
+
+    app.get(
+      '/api/v1/administration/school-configuration/releases',
+      {
+        schema: {
+          operationId: 'listSchoolConfigurationReleases',
+          security: [{ staffSession: [] }],
+          response: {
+            200: ListSchoolConfigurationReleasesResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request) => {
+        const sessionHandle = readSecureOpaqueCookie(
+          request.headers.cookie,
+          staffSessionCookie,
+        );
+        if (!sessionHandle) throw new StaffAuthenticationFailedError();
+        const result = await schoolConfiguration.listReleases({
+          sessionHandle,
+        });
+        return {
+          releases: result.releases.map(presentReleaseSummary),
+        };
+      },
+    );
+
+    app.get<{
+      Params: Static<typeof SchoolConfigurationReleaseParams>;
+    }>(
+      '/api/v1/administration/school-configuration/releases/:releaseId',
+      {
+        schema: {
+          operationId: 'readSchoolConfigurationRelease',
+          security: [{ staffSession: [] }],
+          params: SchoolConfigurationReleaseParams,
+          response: {
+            200: SchoolConfigurationReleaseDetailResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = readSecureOpaqueCookie(
+          request.headers.cookie,
+          staffSessionCookie,
+        );
+        if (!sessionHandle) throw new StaffAuthenticationFailedError();
+        const release = await schoolConfiguration.readRelease({
+          sessionHandle,
+          releaseId: request.params.releaseId,
+        });
+        if (!release) {
+          return reply.type('application/problem+json').code(404).send({
+            type: 'https://preventive-care-literacy.example/problems/school-configuration-release',
+            title: 'School Configuration Release not found',
+            status: 404,
+            code: 'SCHOOL_CONFIGURATION_RELEASE_NOT_FOUND',
+          });
+        }
+        return {
+          ...presentReleaseSummary(release),
+          candidate: release.candidate,
+          comparisons: release.comparisons,
+        };
       },
     );
   }

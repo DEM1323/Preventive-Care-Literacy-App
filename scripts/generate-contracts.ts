@@ -124,6 +124,12 @@ async function renderContracts() {
         publish: async () => {
           throw new Error('Contract generation does not execute commands');
         },
+        listReleases: async () => {
+          throw new Error('Contract generation does not execute queries');
+        },
+        readRelease: async () => {
+          throw new Error('Contract generation does not execute queries');
+        },
       },
       intake: {
         read: async () => {

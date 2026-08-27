@@ -2191,17 +2191,39 @@
                               { "type": "null" }
                             ]
                           },
+                          "archiveEligible": { "type": "boolean" },
+                          "change": {
+                            "anyOf": [
+                              { "enum": ["added"], "type": "string" },
+                              { "enum": ["removed"], "type": "string" },
+                              { "enum": ["changed"], "type": "string" },
+                              { "enum": ["unchanged"], "type": "string" }
+                            ]
+                          },
                           "differs": { "type": "boolean" },
                           "discardEligible": { "type": "boolean" },
-                          "draftRevision": { "minimum": 1, "type": "integer" },
-                          "resourceId": { "format": "uuid", "type": "string" }
+                          "draftRevision": {
+                            "anyOf": [
+                              { "minimum": 1, "type": "integer" },
+                              { "type": "null" }
+                            ]
+                          },
+                          "kind": { "type": "string" },
+                          "label": { "type": "string" },
+                          "resourceId": { "format": "uuid", "type": "string" },
+                          "slot": { "type": "string" }
                         },
                         "required": [
                           "resourceId",
+                          "kind",
+                          "slot",
+                          "label",
                           "draftRevision",
                           "activeRevision",
                           "differs",
-                          "discardEligible"
+                          "change",
+                          "discardEligible",
+                          "archiveEligible"
                         ],
                         "type": "object"
                       },
@@ -2332,6 +2354,50 @@
                           "items": {
                             "properties": {
                               "code": { "type": "string" },
+                              "location": {
+                                "properties": {
+                                  "editorResource": {
+                                    "anyOf": [
+                                      {
+                                        "enum": ["branding"],
+                                        "type": "string"
+                                      },
+                                      { "enum": ["modules"], "type": "string" },
+                                      { "enum": ["intake"], "type": "string" },
+                                      {
+                                        "enum": ["translations"],
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "locale": {
+                                    "anyOf": [
+                                      { "enum": ["en-US"], "type": "string" },
+                                      { "enum": ["es-US"], "type": "string" },
+                                      { "enum": ["pt-BR"], "type": "string" },
+                                      { "enum": ["fr-CA"], "type": "string" },
+                                      { "enum": ["ht-HT"], "type": "string" }
+                                    ]
+                                  },
+                                  "moduleId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  },
+                                  "previewScreen": {
+                                    "anyOf": [
+                                      { "enum": ["home"], "type": "string" },
+                                      { "enum": ["module"], "type": "string" },
+                                      { "enum": ["intake"], "type": "string" }
+                                    ]
+                                  },
+                                  "resourceId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["editorResource", "previewScreen"],
+                                "type": "object"
+                              },
                               "message": { "type": "string" },
                               "path": { "type": "string" },
                               "severity": {
@@ -2339,7 +2405,13 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["code", "path", "message", "severity"],
+                            "required": [
+                              "code",
+                              "path",
+                              "message",
+                              "severity",
+                              "location"
+                            ],
                             "type": "object"
                           },
                           "type": "array"
@@ -2348,6 +2420,50 @@
                           "items": {
                             "properties": {
                               "code": { "type": "string" },
+                              "location": {
+                                "properties": {
+                                  "editorResource": {
+                                    "anyOf": [
+                                      {
+                                        "enum": ["branding"],
+                                        "type": "string"
+                                      },
+                                      { "enum": ["modules"], "type": "string" },
+                                      { "enum": ["intake"], "type": "string" },
+                                      {
+                                        "enum": ["translations"],
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "locale": {
+                                    "anyOf": [
+                                      { "enum": ["en-US"], "type": "string" },
+                                      { "enum": ["es-US"], "type": "string" },
+                                      { "enum": ["pt-BR"], "type": "string" },
+                                      { "enum": ["fr-CA"], "type": "string" },
+                                      { "enum": ["ht-HT"], "type": "string" }
+                                    ]
+                                  },
+                                  "moduleId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  },
+                                  "previewScreen": {
+                                    "anyOf": [
+                                      { "enum": ["home"], "type": "string" },
+                                      { "enum": ["module"], "type": "string" },
+                                      { "enum": ["intake"], "type": "string" }
+                                    ]
+                                  },
+                                  "resourceId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["editorResource", "previewScreen"],
+                                "type": "object"
+                              },
                               "message": { "type": "string" },
                               "path": { "type": "string" },
                               "severity": {
@@ -2355,7 +2471,13 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["code", "path", "message", "severity"],
+                            "required": [
+                              "code",
+                              "path",
+                              "message",
+                              "severity",
+                              "location"
+                            ],
                             "type": "object"
                           },
                           "type": "array"
@@ -2598,6 +2720,7 @@
                     "type": "array"
                   },
                   "primaryColor": { "maxLength": 7, "type": "string" },
+                  "releaseId": { "format": "uuid", "type": "string" },
                   "required": { "type": "boolean" },
                   "requiredWhenVisible": { "type": "boolean" },
                   "resourceId": { "format": "uuid", "type": "string" },
@@ -2674,6 +2797,14 @@
                       { "enum": ["restore-active-revision"], "type": "string" },
                       {
                         "enum": ["discard-authored-resource"],
+                        "type": "string"
+                      },
+                      {
+                        "enum": ["archive-authored-resource"],
+                        "type": "string"
+                      },
+                      {
+                        "enum": ["restore-release-assembly"],
                         "type": "string"
                       },
                       {
@@ -2758,17 +2889,39 @@
                               { "type": "null" }
                             ]
                           },
+                          "archiveEligible": { "type": "boolean" },
+                          "change": {
+                            "anyOf": [
+                              { "enum": ["added"], "type": "string" },
+                              { "enum": ["removed"], "type": "string" },
+                              { "enum": ["changed"], "type": "string" },
+                              { "enum": ["unchanged"], "type": "string" }
+                            ]
+                          },
                           "differs": { "type": "boolean" },
                           "discardEligible": { "type": "boolean" },
-                          "draftRevision": { "minimum": 1, "type": "integer" },
-                          "resourceId": { "format": "uuid", "type": "string" }
+                          "draftRevision": {
+                            "anyOf": [
+                              { "minimum": 1, "type": "integer" },
+                              { "type": "null" }
+                            ]
+                          },
+                          "kind": { "type": "string" },
+                          "label": { "type": "string" },
+                          "resourceId": { "format": "uuid", "type": "string" },
+                          "slot": { "type": "string" }
                         },
                         "required": [
                           "resourceId",
+                          "kind",
+                          "slot",
+                          "label",
                           "draftRevision",
                           "activeRevision",
                           "differs",
-                          "discardEligible"
+                          "change",
+                          "discardEligible",
+                          "archiveEligible"
                         ],
                         "type": "object"
                       },
@@ -2900,6 +3053,50 @@
                           "items": {
                             "properties": {
                               "code": { "type": "string" },
+                              "location": {
+                                "properties": {
+                                  "editorResource": {
+                                    "anyOf": [
+                                      {
+                                        "enum": ["branding"],
+                                        "type": "string"
+                                      },
+                                      { "enum": ["modules"], "type": "string" },
+                                      { "enum": ["intake"], "type": "string" },
+                                      {
+                                        "enum": ["translations"],
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "locale": {
+                                    "anyOf": [
+                                      { "enum": ["en-US"], "type": "string" },
+                                      { "enum": ["es-US"], "type": "string" },
+                                      { "enum": ["pt-BR"], "type": "string" },
+                                      { "enum": ["fr-CA"], "type": "string" },
+                                      { "enum": ["ht-HT"], "type": "string" }
+                                    ]
+                                  },
+                                  "moduleId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  },
+                                  "previewScreen": {
+                                    "anyOf": [
+                                      { "enum": ["home"], "type": "string" },
+                                      { "enum": ["module"], "type": "string" },
+                                      { "enum": ["intake"], "type": "string" }
+                                    ]
+                                  },
+                                  "resourceId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["editorResource", "previewScreen"],
+                                "type": "object"
+                              },
                               "message": { "type": "string" },
                               "path": { "type": "string" },
                               "severity": {
@@ -2907,7 +3104,13 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["code", "path", "message", "severity"],
+                            "required": [
+                              "code",
+                              "path",
+                              "message",
+                              "severity",
+                              "location"
+                            ],
                             "type": "object"
                           },
                           "type": "array"
@@ -2916,6 +3119,50 @@
                           "items": {
                             "properties": {
                               "code": { "type": "string" },
+                              "location": {
+                                "properties": {
+                                  "editorResource": {
+                                    "anyOf": [
+                                      {
+                                        "enum": ["branding"],
+                                        "type": "string"
+                                      },
+                                      { "enum": ["modules"], "type": "string" },
+                                      { "enum": ["intake"], "type": "string" },
+                                      {
+                                        "enum": ["translations"],
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "locale": {
+                                    "anyOf": [
+                                      { "enum": ["en-US"], "type": "string" },
+                                      { "enum": ["es-US"], "type": "string" },
+                                      { "enum": ["pt-BR"], "type": "string" },
+                                      { "enum": ["fr-CA"], "type": "string" },
+                                      { "enum": ["ht-HT"], "type": "string" }
+                                    ]
+                                  },
+                                  "moduleId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  },
+                                  "previewScreen": {
+                                    "anyOf": [
+                                      { "enum": ["home"], "type": "string" },
+                                      { "enum": ["module"], "type": "string" },
+                                      { "enum": ["intake"], "type": "string" }
+                                    ]
+                                  },
+                                  "resourceId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["editorResource", "previewScreen"],
+                                "type": "object"
+                              },
                               "message": { "type": "string" },
                               "path": { "type": "string" },
                               "severity": {
@@ -2923,7 +3170,13 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["code", "path", "message", "severity"],
+                            "required": [
+                              "code",
+                              "path",
+                              "message",
+                              "severity",
+                              "location"
+                            ],
                             "type": "object"
                           },
                           "type": "array"
@@ -3474,17 +3727,39 @@
                               { "type": "null" }
                             ]
                           },
+                          "archiveEligible": { "type": "boolean" },
+                          "change": {
+                            "anyOf": [
+                              { "enum": ["added"], "type": "string" },
+                              { "enum": ["removed"], "type": "string" },
+                              { "enum": ["changed"], "type": "string" },
+                              { "enum": ["unchanged"], "type": "string" }
+                            ]
+                          },
                           "differs": { "type": "boolean" },
                           "discardEligible": { "type": "boolean" },
-                          "draftRevision": { "minimum": 1, "type": "integer" },
-                          "resourceId": { "format": "uuid", "type": "string" }
+                          "draftRevision": {
+                            "anyOf": [
+                              { "minimum": 1, "type": "integer" },
+                              { "type": "null" }
+                            ]
+                          },
+                          "kind": { "type": "string" },
+                          "label": { "type": "string" },
+                          "resourceId": { "format": "uuid", "type": "string" },
+                          "slot": { "type": "string" }
                         },
                         "required": [
                           "resourceId",
+                          "kind",
+                          "slot",
+                          "label",
                           "draftRevision",
                           "activeRevision",
                           "differs",
-                          "discardEligible"
+                          "change",
+                          "discardEligible",
+                          "archiveEligible"
                         ],
                         "type": "object"
                       },
@@ -3638,6 +3913,50 @@
                           "items": {
                             "properties": {
                               "code": { "type": "string" },
+                              "location": {
+                                "properties": {
+                                  "editorResource": {
+                                    "anyOf": [
+                                      {
+                                        "enum": ["branding"],
+                                        "type": "string"
+                                      },
+                                      { "enum": ["modules"], "type": "string" },
+                                      { "enum": ["intake"], "type": "string" },
+                                      {
+                                        "enum": ["translations"],
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "locale": {
+                                    "anyOf": [
+                                      { "enum": ["en-US"], "type": "string" },
+                                      { "enum": ["es-US"], "type": "string" },
+                                      { "enum": ["pt-BR"], "type": "string" },
+                                      { "enum": ["fr-CA"], "type": "string" },
+                                      { "enum": ["ht-HT"], "type": "string" }
+                                    ]
+                                  },
+                                  "moduleId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  },
+                                  "previewScreen": {
+                                    "anyOf": [
+                                      { "enum": ["home"], "type": "string" },
+                                      { "enum": ["module"], "type": "string" },
+                                      { "enum": ["intake"], "type": "string" }
+                                    ]
+                                  },
+                                  "resourceId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["editorResource", "previewScreen"],
+                                "type": "object"
+                              },
                               "message": { "type": "string" },
                               "path": { "type": "string" },
                               "severity": {
@@ -3645,7 +3964,13 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["code", "path", "message", "severity"],
+                            "required": [
+                              "code",
+                              "path",
+                              "message",
+                              "severity",
+                              "location"
+                            ],
                             "type": "object"
                           },
                           "type": "array"
@@ -3654,6 +3979,50 @@
                           "items": {
                             "properties": {
                               "code": { "type": "string" },
+                              "location": {
+                                "properties": {
+                                  "editorResource": {
+                                    "anyOf": [
+                                      {
+                                        "enum": ["branding"],
+                                        "type": "string"
+                                      },
+                                      { "enum": ["modules"], "type": "string" },
+                                      { "enum": ["intake"], "type": "string" },
+                                      {
+                                        "enum": ["translations"],
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "locale": {
+                                    "anyOf": [
+                                      { "enum": ["en-US"], "type": "string" },
+                                      { "enum": ["es-US"], "type": "string" },
+                                      { "enum": ["pt-BR"], "type": "string" },
+                                      { "enum": ["fr-CA"], "type": "string" },
+                                      { "enum": ["ht-HT"], "type": "string" }
+                                    ]
+                                  },
+                                  "moduleId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  },
+                                  "previewScreen": {
+                                    "anyOf": [
+                                      { "enum": ["home"], "type": "string" },
+                                      { "enum": ["module"], "type": "string" },
+                                      { "enum": ["intake"], "type": "string" }
+                                    ]
+                                  },
+                                  "resourceId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["editorResource", "previewScreen"],
+                                "type": "object"
+                              },
                               "message": { "type": "string" },
                               "path": { "type": "string" },
                               "severity": {
@@ -3661,7 +4030,13 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["code", "path", "message", "severity"],
+                            "required": [
+                              "code",
+                              "path",
+                              "message",
+                              "severity",
+                              "location"
+                            ],
                             "type": "object"
                           },
                           "type": "array"
@@ -3887,6 +4262,168 @@
       }
     },
     "/api/v1/administration/school-configuration/releases": {
+      "get": {
+        "operationId": "listSchoolConfigurationReleases",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "releases": {
+                      "items": {
+                        "properties": {
+                          "active": { "type": "boolean" },
+                          "candidateFingerprint": {
+                            "pattern": "^[0-9a-f]{64}$",
+                            "type": "string"
+                          },
+                          "changeDescription": { "type": "string" },
+                          "components": {
+                            "items": {
+                              "properties": {
+                                "kind": { "type": "string" },
+                                "position": {
+                                  "anyOf": [
+                                    { "minimum": 1, "type": "integer" },
+                                    { "type": "null" }
+                                  ]
+                                },
+                                "resourceId": {
+                                  "format": "uuid",
+                                  "type": "string"
+                                },
+                                "revisionNumber": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "slot": { "type": "string" }
+                              },
+                              "required": [
+                                "resourceId",
+                                "revisionNumber",
+                                "slot",
+                                "kind",
+                                "position"
+                              ],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "publishedAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "publishedBy": { "format": "uuid", "type": "string" },
+                          "releaseId": { "format": "uuid", "type": "string" },
+                          "releaseNumber": { "minimum": 1, "type": "integer" }
+                        },
+                        "required": [
+                          "releaseId",
+                          "releaseNumber",
+                          "candidateFingerprint",
+                          "changeDescription",
+                          "publishedAt",
+                          "publishedBy",
+                          "active",
+                          "components"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["releases"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      },
       "post": {
         "operationId": "publishSchoolConfigurationRelease",
         "requestBody": {
@@ -4106,6 +4643,237 @@
             "description": "Default Response"
           },
           "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/school-configuration/releases/{releaseId}": {
+      "get": {
+        "operationId": "readSchoolConfigurationRelease",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "releaseId",
+            "required": true,
+            "schema": { "format": "uuid", "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "active": { "type": "boolean" },
+                    "candidate": {},
+                    "candidateFingerprint": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    },
+                    "changeDescription": { "type": "string" },
+                    "comparisons": {
+                      "items": {
+                        "properties": {
+                          "activeRevision": {
+                            "anyOf": [
+                              { "minimum": 1, "type": "integer" },
+                              { "type": "null" }
+                            ]
+                          },
+                          "archiveEligible": { "type": "boolean" },
+                          "change": {
+                            "anyOf": [
+                              { "enum": ["added"], "type": "string" },
+                              { "enum": ["removed"], "type": "string" },
+                              { "enum": ["changed"], "type": "string" },
+                              { "enum": ["unchanged"], "type": "string" }
+                            ]
+                          },
+                          "differs": { "type": "boolean" },
+                          "discardEligible": { "type": "boolean" },
+                          "draftRevision": {
+                            "anyOf": [
+                              { "minimum": 1, "type": "integer" },
+                              { "type": "null" }
+                            ]
+                          },
+                          "kind": { "type": "string" },
+                          "label": { "type": "string" },
+                          "resourceId": { "format": "uuid", "type": "string" },
+                          "slot": { "type": "string" }
+                        },
+                        "required": [
+                          "resourceId",
+                          "kind",
+                          "slot",
+                          "label",
+                          "draftRevision",
+                          "activeRevision",
+                          "differs",
+                          "change",
+                          "discardEligible",
+                          "archiveEligible"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "components": {
+                      "items": {
+                        "properties": {
+                          "kind": { "type": "string" },
+                          "position": {
+                            "anyOf": [
+                              { "minimum": 1, "type": "integer" },
+                              { "type": "null" }
+                            ]
+                          },
+                          "resourceId": { "format": "uuid", "type": "string" },
+                          "revisionNumber": { "minimum": 1, "type": "integer" },
+                          "slot": { "type": "string" }
+                        },
+                        "required": [
+                          "resourceId",
+                          "revisionNumber",
+                          "slot",
+                          "kind",
+                          "position"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "publishedAt": { "format": "date-time", "type": "string" },
+                    "publishedBy": { "format": "uuid", "type": "string" },
+                    "releaseId": { "format": "uuid", "type": "string" },
+                    "releaseNumber": { "minimum": 1, "type": "integer" }
+                  },
+                  "required": [
+                    "releaseId",
+                    "releaseNumber",
+                    "candidateFingerprint",
+                    "changeDescription",
+                    "publishedAt",
+                    "publishedBy",
+                    "active",
+                    "components",
+                    "candidate",
+                    "comparisons"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
             "content": {
               "application/problem+json": {
                 "schema": {

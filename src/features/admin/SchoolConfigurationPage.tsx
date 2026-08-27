@@ -59,6 +59,11 @@ type Candidate = {
   };
 };
 type Draft = Omit<DraftResponse, 'candidate'> & { candidate: Candidate };
+type ReadinessLocation = Draft['validation']['blockers'][number]['location'];
+type ReleaseSummary =
+  paths['/api/v1/administration/school-configuration/releases']['get']['responses']['200']['content']['application/json']['releases'][number];
+type ReleaseDetail =
+  paths['/api/v1/administration/school-configuration/releases/{releaseId}']['get']['responses']['200']['content']['application/json'];
 type Problem = { code?: string; affectedValue?: string; draftVersion?: number };
 type BrandingFields = {
   displayName: string;
@@ -320,6 +325,19 @@ function asDraft(value: DraftResponse): Draft {
   return value as Draft;
 }
 
+function isVisibleAssemblyComparison(comparison: { kind: string }): boolean {
+  return ![
+    'displayName',
+    'shortName',
+    'title',
+    'label',
+    'text',
+    'helpText',
+    'knowledgeIntroduction',
+    'description',
+  ].includes(comparison.kind);
+}
+
 export function SchoolConfigurationPage() {
   const navigate = useNavigate();
   const [draft, setDraft] = useState<Draft>();
@@ -336,9 +354,17 @@ export function SchoolConfigurationPage() {
     Record<string, string>
   >({});
   const [publishOpen, setPublishOpen] = useState(false);
+  const [publishStage, setPublishStage] = useState<'review' | 'confirm'>(
+    'review',
+  );
+  const [credentialsRequired, setCredentialsRequired] = useState(false);
   const [changeDescription, setChangeDescription] = useState('');
   const [password, setPassword] = useState('');
   const [totp, setTotp] = useState('');
+  const [releases, setReleases] = useState<ReleaseSummary[]>([]);
+  const [selectedRelease, setSelectedRelease] = useState<ReleaseDetail>();
+  const [readinessTarget, setReadinessTarget] = useState<string>();
+  const [authorityName, setAuthorityName] = useState('');
   const [status, setStatus] = useState('Loading the shared draft...');
   const [saveState, setSaveState] = useState('Saved to the shared draft.');
   const [conflict, setConflict] = useState(false);
@@ -425,6 +451,44 @@ export function SchoolConfigurationPage() {
     setSaveState('Saved to the shared draft.');
     setStatus('');
     resetEditorBuffers();
+    void loadReleases();
+    try {
+      const session = await client.GET('/api/v1/staff/session');
+      if (session.response.status === 200 && session.data) {
+        setAuthorityName(session.data.displayName);
+      }
+    } catch {
+      setAuthorityName('');
+    }
+  }
+
+  async function loadReleases() {
+    try {
+      const listed = await client.GET(
+        '/api/v1/administration/school-configuration/releases',
+      );
+      if (listed.response.status === 200 && listed.data) {
+        setReleases(listed.data.releases);
+      }
+    } catch {
+      setReleases([]);
+    }
+  }
+
+  async function loadRelease(releaseId: string) {
+    try {
+      const detail = await client.GET(
+        '/api/v1/administration/school-configuration/releases/{releaseId}',
+        { params: { path: { releaseId } } },
+      );
+      if (detail.response.status === 200 && detail.data) {
+        setSelectedRelease(detail.data);
+      }
+    } catch {
+      setStatus(
+        'That School Configuration Release could not be loaded. Retry this review.',
+      );
+    }
   }
 
   async function installDemoDraft() {
@@ -977,46 +1041,27 @@ export function SchoolConfigurationPage() {
     return () => window.clearTimeout(saveTimer.current);
   }, []);
 
-  async function publish() {
-    if (!draft) return;
-    setStatus('Confirming both authentication factors...');
-    let stepUp;
-    try {
-      stepUp = await client.POST('/api/v1/auth/staff/step-up', {
-        body: { password, totp },
-      });
-    } catch {
-      setStatus(
-        'Authentication could not be checked. Retry without losing this review.',
-      );
-      return;
-    } finally {
-      setPassword('');
-      setTotp('');
+  useEffect(() => {
+    if (!readinessTarget) return;
+    const target = document.querySelector(
+      `[data-readiness-target="${readinessTarget}"]`,
+    );
+    if (target instanceof HTMLElement) {
+      target.scrollIntoView({ block: 'center' });
+      target.focus({ preventScroll: true });
     }
-    if (stepUp.response.status !== 200) {
-      const problem = stepUp.error as Problem | undefined;
-      if (problem?.code === 'STEP_UP_REJECTED') {
-        setStatus(
-          'Password or authenticator code was not accepted. Try both factors again.',
-        );
-      } else if (problem?.code === 'STEP_UP_INCOMPLETE') {
-        setStatus('Enter a password and six-digit authenticator code.');
-      } else if (
-        stepUp.response.status === 401 ||
-        stepUp.response.status === 403
-      ) {
-        setPublishOpen(false);
-        setChangeDescription('');
-        setStatus(
-          'Your session or Administrative Permission changed. Sign in and review again.',
-        );
-      } else {
-        setStatus('Authentication could not be refreshed. Retry this review.');
-      }
-      return;
-    }
+  }, [readinessTarget, resource, inspectorTab, moduleId, locale]);
 
+  function openPublishReview() {
+    setPublishStage('review');
+    setCredentialsRequired(false);
+    setPassword('');
+    setTotp('');
+    setPublishOpen(true);
+  }
+
+  async function activatePublication() {
+    if (!draft) return;
     setStatus('Packaging and atomically activating the exact candidate...');
     let result;
     try {
@@ -1040,6 +1085,8 @@ export function SchoolConfigurationPage() {
     }
     if (result.response.status === 201 && result.data) {
       setPublishOpen(false);
+      setPublishStage('review');
+      setCredentialsRequired(false);
       setChangeDescription('');
       operationId.current = crypto.randomUUID();
       await loadDraft();
@@ -1050,8 +1097,16 @@ export function SchoolConfigurationPage() {
     }
     const problem = result.error as Problem | undefined;
     if (problem?.code === 'AUTHENTICATION_FRESHNESS_REQUIRED') {
+      setPublishStage('confirm');
+      setCredentialsRequired(true);
       setStatus(
         'Authentication freshness expired. Confirm both factors again; this review is preserved.',
+      );
+    } else if (problem?.code === 'INVALID_SCHOOL_CONFIGURATION') {
+      setStatus(
+        problem.affectedValue === 'unpublishedChanges'
+          ? 'This draft matches the active release. Publication requires unpublished changes.'
+          : 'Publication failed without activation. Resolve readiness results and retry this review.',
       );
     } else if (problem?.code?.endsWith('_CONFLICT')) {
       setPublishOpen(false);
@@ -1074,6 +1129,52 @@ export function SchoolConfigurationPage() {
         'Publication failed without activation. Retry with the same operation when the service recovers.',
       );
     }
+  }
+
+  async function publish() {
+    if (!draft) return;
+    if (credentialsRequired) {
+      setStatus('Confirming both authentication factors...');
+      let stepUp;
+      try {
+        stepUp = await client.POST('/api/v1/auth/staff/step-up', {
+          body: { password, totp },
+        });
+      } catch {
+        setStatus(
+          'Authentication could not be checked. Retry without losing this review.',
+        );
+        return;
+      } finally {
+        setPassword('');
+        setTotp('');
+      }
+      if (stepUp.response.status !== 200) {
+        const problem = stepUp.error as Problem | undefined;
+        if (problem?.code === 'STEP_UP_REJECTED') {
+          setStatus(
+            'Password or authenticator code was not accepted. Try both factors again.',
+          );
+        } else if (problem?.code === 'STEP_UP_INCOMPLETE') {
+          setStatus('Enter a password and six-digit authenticator code.');
+        } else if (
+          stepUp.response.status === 401 ||
+          stepUp.response.status === 403
+        ) {
+          setPublishOpen(false);
+          setChangeDescription('');
+          setStatus(
+            'Your session or Administrative Permission changed. Sign in and review again.',
+          );
+        } else {
+          setStatus(
+            'Authentication could not be refreshed. Retry this review.',
+          );
+        }
+        return;
+      }
+    }
+    await activatePublication();
   }
 
   if (!draft) {
@@ -1118,6 +1219,14 @@ export function SchoolConfigurationPage() {
         ? comparison.resourceId === candidate.release.intakeForm.id
         : comparison.resourceId === selectedModule?.id,
   );
+  const changedComparisons = draft.comparisons.filter(
+    (comparison) => comparison.change !== 'unchanged',
+  );
+  const structuralComparisons = changedComparisons.filter(
+    isVisibleAssemblyComparison,
+  );
+  const localizedChangeCount =
+    changedComparisons.length - structuralComparisons.length;
   const previewScreen =
     resource === 'branding' || resource === 'translations'
       ? 'home'
@@ -1164,6 +1273,26 @@ export function SchoolConfigurationPage() {
     setMobileSurface('edit');
   }
 
+  function jumpTo(
+    location: ReadinessLocation,
+    surface: 'edit' | 'preview' = 'edit',
+  ) {
+    setResource(location.editorResource);
+    if (location.moduleId) setModuleId(location.moduleId);
+    if (location.locale) setLocale(location.locale);
+    setReadinessTarget(
+      surface === 'preview' && location.previewScreen === 'module'
+        ? location.moduleId
+        : location.resourceId ?? location.moduleId,
+    );
+    if (surface === 'preview') {
+      setMobileSurface('preview');
+      return;
+    }
+    setInspectorTab('edit');
+    setMobileSurface('edit');
+  }
+
   function chooseSurface(surface: 'edit' | 'preview' | 'readiness') {
     setMobileSurface(surface);
     if (surface !== 'preview') setInspectorTab(surface);
@@ -1200,7 +1329,7 @@ export function SchoolConfigurationPage() {
             <button
               type="button"
               disabled={publishDisabled}
-              onClick={() => setPublishOpen(true)}
+              onClick={openPublishReview}
               className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {draft.unpublishedChanges
@@ -1388,7 +1517,7 @@ export function SchoolConfigurationPage() {
             </div>
             <div className="p-6 sm:p-8">
               {previewScreen === 'home' ? (
-                <>
+                <div data-readiness-target={branding.id} tabIndex={-1}>
                   <p className="text-xs font-black uppercase tracking-widest text-emerald-700">
                     Student home
                   </p>
@@ -1399,9 +1528,12 @@ export function SchoolConfigurationPage() {
                     Students still see the active School Configuration Release
                     until this candidate is published atomically.
                   </p>
-                </>
+                </div>
               ) : previewScreen === 'module' && selectedModule ? (
-                <>
+                <div
+                  data-readiness-target={selectedModule.id}
+                  tabIndex={-1}
+                >
                   <p className="text-xs font-black uppercase tracking-widest text-emerald-700">
                     Knowledge · Skills · Application
                   </p>
@@ -1436,9 +1568,12 @@ export function SchoolConfigurationPage() {
                       </article>
                     ))}
                   </div>
-                </>
+                </div>
               ) : (
-                <>
+                <div
+                  data-readiness-target={candidate.release.intakeForm.id}
+                  tabIndex={-1}
+                >
                   <p className="text-xs font-black uppercase tracking-widest text-emerald-700">
                     Synthetic Intake preview
                   </p>
@@ -1468,6 +1603,8 @@ export function SchoolConfigurationPage() {
                               <div
                                 key={field.id}
                                 className="rounded-lg border bg-white p-3"
+                                data-readiness-target={field.id}
+                                tabIndex={-1}
                               >
                                 <p className="text-sm font-bold">
                                   {localized(field.label, locale)}
@@ -1570,7 +1707,7 @@ export function SchoolConfigurationPage() {
                       locale,
                     )}
                   </div>
-                </>
+                </div>
               )}
             </div>
           </div>
@@ -1624,6 +1761,15 @@ export function SchoolConfigurationPage() {
               onDiscard={(resourceId, revisionNumber) =>
                 void editDraft({
                   type: 'discard-authored-resource',
+                  resourceId,
+                  expectedResourceRevisions: [
+                    { resourceId, revisionNumber },
+                  ],
+                })
+              }
+              onArchive={(resourceId, revisionNumber) =>
+                void editDraft({
+                  type: 'archive-authored-resource',
                   resourceId,
                   expectedResourceRevisions: [
                     { resourceId, revisionNumber },
@@ -1786,17 +1932,27 @@ export function SchoolConfigurationPage() {
           ) : (
             <ReadinessPane
               draft={draft}
+              releases={releases}
+              selectedRelease={selectedRelease}
               publishDisabled={publishDisabled}
-              onOpenPublish={() => setPublishOpen(true)}
-              onJump={(path) => {
-                if (path.includes('branding')) chooseResource('branding');
-                else if (path.includes('modules')) chooseResource('modules');
-                else if (
-                  path.includes('intake') ||
-                  path.includes('submissionAttestation')
-                )
-                  chooseResource('intake');
-                else chooseResource('translations');
+              onOpenPublish={openPublishReview}
+              onJump={jumpTo}
+              onSelectRelease={(releaseId) => {
+                void loadRelease(releaseId);
+              }}
+              onCloneRelease={async (release) => {
+                const cloned = await editDraft({
+                  type: 'restore-release-assembly',
+                  releaseId: release.releaseId,
+                });
+                if (!cloned) return;
+                setChangeDescription(
+                  `Roll back to release ${release.releaseNumber} as a new release.`,
+                );
+                setStatus(
+                  `Release ${release.releaseNumber} is cloned into the shared draft. Review the resource-level diff, then publish a new higher-numbered release.`,
+                );
+                openPublishReview();
               }}
             />
           )}
@@ -1808,65 +1964,140 @@ export function SchoolConfigurationPage() {
             role="dialog"
             aria-modal="true"
             aria-label="Publish School Configuration Release"
-            className="w-full max-w-xl rounded-t-3xl bg-white p-6 sm:rounded-3xl"
+            className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-white p-6 sm:rounded-3xl"
           >
-            <h2 className="text-2xl font-black">
-              Authorize atomic publication
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Describe this immutable release, then confirm fresh
-              password-plus-TOTP authentication.
-            </p>
-            <textarea
-              aria-label="Change description"
-              value={changeDescription}
-              onChange={(event) => setChangeDescription(event.target.value)}
-              rows={3}
-              placeholder="Required change description"
-              className="mt-5 w-full rounded-xl border px-3 py-2"
-            />
-            <input
-              aria-label="Password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Password"
-              className="mt-3 w-full rounded-xl border px-3 py-2"
-            />
-            <input
-              aria-label="Authenticator code"
-              inputMode="numeric"
-              value={totp}
-              onChange={(event) => setTotp(event.target.value)}
-              placeholder="6-digit authenticator code"
-              className="mt-3 w-full rounded-xl border px-3 py-2"
-            />
-            <div className="mt-5 flex gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setPublishOpen(false);
-                  setPassword('');
-                  setTotp('');
-                }}
-                className="flex-1 rounded-xl border px-4 py-3 font-bold"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={
-                  publishDisabled ||
-                  !changeDescription.trim() ||
-                  !password ||
-                  !/^[0-9]{6}$/.test(totp)
-                }
-                onClick={() => void publish()}
-                className="flex-1 rounded-xl bg-emerald-700 px-4 py-3 font-bold text-white disabled:opacity-50"
-              >
-                Publish atomically
-              </button>
-            </div>
+            {publishStage === 'review' ? (
+              <>
+                <h2 className="text-2xl font-black">
+                  Review the resource-level diff
+                </h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  Publication requires unpublished changes, no blockers, this
+                  exact resource-level diff, and a change description.
+                </p>
+                <ul className="mt-5 max-h-48 space-y-2 overflow-y-auto">
+                  {structuralComparisons.map((comparison) => (
+                    <li
+                      key={comparison.resourceId}
+                      className="rounded-xl bg-slate-50 p-3 text-sm"
+                    >
+                      <strong className="capitalize">{comparison.change}</strong>
+                      <span className="mt-1 block font-bold text-slate-800">
+                        {comparison.label || comparison.kind}
+                      </span>
+                      <span className="mt-1 block font-mono text-[11px] text-slate-500">
+                        {comparison.slot}
+                        {comparison.draftRevision
+                          ? ` · draft ${comparison.draftRevision}`
+                          : ''}
+                        {comparison.activeRevision
+                          ? ` · active ${comparison.activeRevision}`
+                          : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {localizedChangeCount > 0 ? (
+                  <p className="mt-3 text-xs text-slate-500">
+                    {localizedChangeCount} localized string
+                    {localizedChangeCount === 1 ? ' change' : ' changes'} in
+                    this exact assembly.
+                  </p>
+                ) : null}
+                <textarea
+                  aria-label="Change description"
+                  value={changeDescription}
+                  onChange={(event) => setChangeDescription(event.target.value)}
+                  rows={3}
+                  placeholder="Required change description"
+                  className="mt-5 w-full rounded-xl border px-3 py-2"
+                />
+                <div className="mt-5 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPublishOpen(false);
+                      setPassword('');
+                      setTotp('');
+                    }}
+                    className="flex-1 rounded-xl border px-4 py-3 font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={publishDisabled || !changeDescription.trim()}
+                    onClick={() => setPublishStage('confirm')}
+                    className="flex-1 rounded-xl bg-emerald-700 px-4 py-3 font-bold text-white disabled:opacity-50"
+                  >
+                    Continue to confirmation
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-black">
+                  Authorize atomic publication
+                </h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  {credentialsRequired
+                    ? 'Confirm fresh password-plus-TOTP authentication. The entered change description is preserved.'
+                    : 'Authentication is still fresh, or the server will ask for both factors if it is not. Final confirmation publishes this exact candidate as the next immutable release.'}
+                </p>
+                <p className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
+                  Current authority:{' '}
+                  <strong>{authorityName || 'this Administrator'}</strong> with
+                  Administrative Permission. Fresh authentication is required
+                  when this session is no longer fresh.
+                </p>
+                {credentialsRequired ? (
+                  <>
+                    <input
+                      aria-label="Password"
+                      type="password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="Password"
+                      className="mt-5 w-full rounded-xl border px-3 py-2"
+                    />
+                    <input
+                      aria-label="Authenticator code"
+                      inputMode="numeric"
+                      value={totp}
+                      onChange={(event) => setTotp(event.target.value)}
+                      placeholder="6-digit authenticator code"
+                      className="mt-3 w-full rounded-xl border px-3 py-2"
+                    />
+                  </>
+                ) : null}
+                <div className="mt-5 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPublishStage('review');
+                      setPassword('');
+                      setTotp('');
+                    }}
+                    className="flex-1 rounded-xl border px-4 py-3 font-bold"
+                  >
+                    Back to review
+                  </button>
+                  <button
+                    type="button"
+                    disabled={
+                      publishDisabled ||
+                      !changeDescription.trim() ||
+                      (credentialsRequired &&
+                        (!password || !/^[0-9]{6}$/.test(totp)))
+                    }
+                    onClick={() => void publish()}
+                    className="flex-1 rounded-xl bg-emerald-700 px-4 py-3 font-bold text-white disabled:opacity-50"
+                  >
+                    Publish atomically
+                  </button>
+                </div>
+              </>
+            )}
             <p aria-live="polite" className="mt-3 text-sm text-slate-600">
               {status}
             </p>
@@ -1888,6 +2119,7 @@ function EditorPane(props: {
   onReload(): void;
   onRestore(resourceId: string, revisionNumber: number): void;
   onDiscard(resourceId: string, revisionNumber: number): void;
+  onArchive(resourceId: string, revisionNumber: number): void;
   onPatchBranding(patch: Partial<BrandingFields>): void;
   onPatchModule(patch: Partial<ModuleFields>): void;
   onPatchItem(item: ModuleItem, patch: Partial<ItemFields>): void;
@@ -1972,33 +2204,56 @@ function EditorPane(props: {
       {comparison ? (
         <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
           <p>
-            Draft revision {comparison.draftRevision}
+            Draft revision {comparison.draftRevision ?? 'removed'}
             {comparison.activeRevision
               ? ` · active revision ${comparison.activeRevision}`
               : ' · never published'}
-            {comparison.differs ? ' · differs from active' : ''}
+            {comparison.differs ? ` · ${comparison.change} from active` : ''}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            {comparison.activeRevision ? (
+            {comparison.activeRevision && comparison.draftRevision ? (
               <button
                 type="button"
-                onClick={() =>
-                  props.onRestore(comparison.resourceId, comparison.draftRevision)
-                }
+                onClick={() => {
+                  if (comparison.draftRevision == null) return;
+                  props.onRestore(
+                    comparison.resourceId,
+                    comparison.draftRevision,
+                  );
+                }}
                 className="rounded-lg border bg-white px-3 py-1.5 font-bold"
               >
                 Restore active revision
               </button>
             ) : null}
-            {comparison.discardEligible ? (
+            {comparison.discardEligible && comparison.draftRevision ? (
               <button
                 type="button"
-                onClick={() =>
-                  props.onDiscard(comparison.resourceId, comparison.draftRevision)
-                }
+                onClick={() => {
+                  if (comparison.draftRevision == null) return;
+                  props.onDiscard(
+                    comparison.resourceId,
+                    comparison.draftRevision,
+                  );
+                }}
                 className="rounded-lg border bg-white px-3 py-1.5 font-bold"
               >
                 Discard never-published
+              </button>
+            ) : null}
+            {comparison.archiveEligible && comparison.draftRevision ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (comparison.draftRevision == null) return;
+                  props.onArchive(
+                    comparison.resourceId,
+                    comparison.draftRevision,
+                  );
+                }}
+                className="rounded-lg border bg-white px-3 py-1.5 font-bold"
+              >
+                Remove from next release
               </button>
             ) : null}
           </div>
@@ -2006,7 +2261,11 @@ function EditorPane(props: {
       ) : null}
 
       {props.resource === 'branding' ? (
-        <div className="mt-6 space-y-4">
+        <div
+          className="mt-6 space-y-4"
+          data-readiness-target={branding.id}
+          tabIndex={-1}
+        >
           <label className="block text-sm font-bold">
             School display name
             <input
@@ -2064,7 +2323,11 @@ function EditorPane(props: {
       ) : null}
 
       {props.resource === 'modules' && module ? (
-        <div className="mt-6 space-y-4">
+        <div
+          className="mt-6 space-y-4"
+          data-readiness-target={module.id}
+          tabIndex={-1}
+        >
           <p className="text-xs text-slate-500">Stable ID: {module.id}</p>
           <label className="block text-sm font-bold">
             English title
@@ -2121,7 +2384,12 @@ function EditorPane(props: {
                 </div>
                 <div className="mt-3 grid gap-2">
                   {module[collection].map((item, index) => (
-                    <div key={item.id} className="rounded-lg bg-slate-50 p-2">
+                    <div
+                      key={item.id}
+                      className="rounded-lg bg-slate-50 p-2"
+                      data-readiness-target={item.id}
+                      tabIndex={-1}
+                    >
                       <textarea
                         defaultValue={localized(item.text, 'en-US')}
                         rows={2}
@@ -2176,6 +2444,20 @@ function EditorPane(props: {
                             Discard
                           </button>
                         ) : null}
+                        {props.draft.comparisons.find(
+                          (itemComparison) =>
+                            itemComparison.resourceId === item.id,
+                        )?.archiveEligible ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              props.onArchive(item.id, item.revision)
+                            }
+                            className="text-xs font-bold"
+                          >
+                            Remove
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   ))}
@@ -2198,6 +2480,7 @@ function EditorPane(props: {
           onCreateField={props.onCreateIntakeField}
           onCreateOption={props.onCreateIntakeOption}
           onDiscard={props.onDiscard}
+          onArchive={props.onArchive}
         />
       ) : null}
 
@@ -2332,7 +2615,12 @@ function ManagedTranslationsEditor(props: {
           const current = textFor(item);
           const provenance = item.provenance;
           return (
-            <article key={item.path} className="rounded-xl border p-3">
+            <article
+              key={item.path}
+              className="rounded-xl border p-3"
+              data-readiness-target={item.sourceResourceId}
+              tabIndex={-1}
+            >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
@@ -2452,6 +2740,7 @@ function IntakeFormEditor(props: {
   onCreateField(sectionId: string, fieldType: string): void;
   onCreateOption(fieldId: string): void;
   onDiscard(resourceId: string, revisionNumber: number): void;
+  onArchive(resourceId: string, revisionNumber: number): void;
 }) {
   const form = props.draft.candidate.release.intakeForm;
   const attestation = props.draft.candidate.release.submissionAttestation;
@@ -2459,7 +2748,7 @@ function IntakeFormEditor(props: {
     isChoiceIntakeFieldType(field.type),
   );
   return (
-    <div className="mt-6 space-y-4">
+    <div className="mt-6 space-y-4" data-readiness-target={form.id} tabIndex={-1}>
       <p className="text-xs text-slate-500">Stable ID: {form.id}</p>
       <label className="block text-sm font-bold">
         English title
@@ -2526,6 +2815,17 @@ function IntakeFormEditor(props: {
                 Discard
               </button>
             ) : null}
+            {props.draft.comparisons.find(
+              (comparison) => comparison.resourceId === section.id,
+            )?.archiveEligible ? (
+              <button
+                type="button"
+                onClick={() => props.onArchive(section.id, section.revision)}
+                className="shrink-0 text-xs font-bold"
+              >
+                Remove
+              </button>
+            ) : null}
           </div>
           <p className="mt-1 font-mono text-[11px] text-slate-400">
             {section.id}
@@ -2543,7 +2843,12 @@ function IntakeFormEditor(props: {
                     fieldIndex,
                 );
                 return (
-                  <article key={field.id} className="rounded-lg bg-slate-50 p-2">
+                  <article
+                    key={field.id}
+                    className="rounded-lg bg-slate-50 p-2"
+                    data-readiness-target={field.id}
+                    tabIndex={-1}
+                  >
                     <input
                       defaultValue={localized(field.label, 'en-US')}
                       onChange={(event) =>
@@ -2728,6 +3033,20 @@ function IntakeFormEditor(props: {
                                   Discard
                                 </button>
                               ) : null}
+                              {props.draft.comparisons.find(
+                                (comparison) =>
+                                  comparison.resourceId === option.id,
+                              )?.archiveEligible ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    props.onArchive(option.id, option.revision)
+                                  }
+                                  className="text-[10px] font-bold"
+                                >
+                                  Remove
+                                </button>
+                              ) : null}
                             </div>
                           </div>
                         ))}
@@ -2762,6 +3081,19 @@ function IntakeFormEditor(props: {
                           Discard
                         </button>
                       ) : null}
+                      {props.draft.comparisons.find(
+                        (comparison) => comparison.resourceId === field.id,
+                      )?.archiveEligible ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            props.onArchive(field.id, field.revision)
+                          }
+                          className="text-xs font-bold"
+                        >
+                          Remove
+                        </button>
+                      ) : null}
                     </div>
                   </article>
                 );
@@ -2782,9 +3114,13 @@ function IntakeFormEditor(props: {
 
 function ReadinessPane(props: {
   draft: Draft;
+  releases: ReleaseSummary[];
+  selectedRelease?: ReleaseDetail;
   publishDisabled: boolean;
   onOpenPublish(): void;
-  onJump(path: string): void;
+  onJump(location: ReadinessLocation, surface?: 'edit' | 'preview'): void;
+  onSelectRelease(releaseId: string): void;
+  onCloneRelease(release: ReleaseSummary): void;
 }) {
   const blockers = props.draft.validation.blockers;
   const warnings = props.draft.validation.warnings;
@@ -2811,29 +3147,58 @@ function ReadinessPane(props: {
           </p>
         ) : (
           blockers.map((blocker) => (
-            <button
+            <div
               key={`${blocker.code}:${blocker.path}`}
-              type="button"
-              onClick={() => props.onJump(blocker.path)}
-              className="block w-full rounded-xl border border-rose-100 bg-rose-50 p-3 text-left text-sm"
+              className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-sm"
             >
-              <strong className="text-rose-900">{blocker.code}</strong>
-              <span className="mt-1 block text-xs text-rose-800">
-                {blocker.message}
-              </span>
-              <span className="mt-1 block font-mono text-[11px] text-rose-700">
-                {blocker.path}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => props.onJump(blocker.location)}
+                className="block w-full text-left"
+              >
+                <strong className="text-rose-900">{blocker.code}</strong>
+                <span className="mt-1 block text-xs text-rose-800">
+                  {blocker.message}
+                </span>
+                <span className="mt-1 block font-mono text-[11px] text-rose-700">
+                  {blocker.path} · {blocker.location.editorResource} editor ·{' '}
+                  {blocker.location.previewScreen} preview
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => props.onJump(blocker.location, 'preview')}
+                className="mt-2 text-xs font-bold text-emerald-800"
+              >
+                Open exact preview
+              </button>
+            </div>
           ))
         )}
         {warnings.map((warning) => (
-          <p
+          <div
             key={`${warning.code}:${warning.path}`}
             className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900"
           >
-            <strong>{warning.code}:</strong> {warning.message}
-          </p>
+            <button
+              type="button"
+              onClick={() => props.onJump(warning.location)}
+              className="block w-full text-left"
+            >
+              <strong>{warning.code}:</strong> {warning.message}
+              <span className="mt-1 block font-mono text-[11px]">
+                {warning.path} · {warning.location.editorResource} editor ·{' '}
+                {warning.location.previewScreen} preview
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => props.onJump(warning.location, 'preview')}
+              className="mt-2 text-xs font-bold text-emerald-800"
+            >
+              Open exact preview
+            </button>
+          </div>
         ))}
       </div>
       <button
@@ -2848,6 +3213,77 @@ function ReadinessPane(props: {
             : 'Review release and publish'
           : 'Release is current'}
       </button>
+      <section className="mt-8">
+        <h3 className="text-sm font-black uppercase tracking-widest text-slate-500">
+          Immutable release history
+        </h3>
+        <p className="mt-2 text-xs leading-5 text-slate-500">
+          Rollback clones an earlier assembly into the shared draft, validates
+          it under current rules, and publishes a new higher-numbered release.
+        </p>
+        <div className="mt-3 space-y-2">
+          {props.releases.length === 0 ? (
+            <p className="text-xs text-slate-500">
+              No School Configuration Releases have been published yet.
+            </p>
+          ) : (
+            props.releases.map((release) => (
+              <article
+                key={release.releaseId}
+                className={`rounded-xl border p-3 ${
+                  props.selectedRelease?.releaseId === release.releaseId
+                    ? 'border-emerald-700 bg-emerald-50'
+                    : 'border-slate-200 bg-white'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => props.onSelectRelease(release.releaseId)}
+                  className="w-full text-left"
+                >
+                  <p className="text-sm font-bold">
+                    Release {release.releaseNumber}
+                    {release.active ? ' · active' : ''}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-600">
+                    {release.changeDescription}
+                  </p>
+                </button>
+                {props.selectedRelease?.releaseId === release.releaseId ? (
+                  <div className="mt-3 space-y-2">
+                    {props.selectedRelease.comparisons
+                      .filter(
+                        (comparison) =>
+                          comparison.change !== 'unchanged' &&
+                          isVisibleAssemblyComparison(comparison),
+                      )
+                      .map((comparison) => (
+                        <p
+                          key={comparison.resourceId}
+                          className="rounded-lg bg-white p-2 text-xs text-slate-600"
+                        >
+                          <strong className="capitalize">
+                            {comparison.change}
+                          </strong>{' '}
+                          {comparison.label || comparison.kind}
+                        </p>
+                      ))}
+                    {!release.active ? (
+                      <button
+                        type="button"
+                        onClick={() => props.onCloneRelease(release)}
+                        className="w-full rounded-lg bg-white px-3 py-2 text-xs font-bold text-emerald-800"
+                      >
+                        Clone into the shared draft
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </article>
+            ))
+          )}
+        </div>
+      </section>
     </div>
   );
 }

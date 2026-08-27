@@ -40,6 +40,38 @@ let failedPackageAttempts = 0;
 const fakeAuth = createFakeStaffAuth();
 const packages = createMemoryReleasePackageStorage();
 
+async function unpublishedDraft() {
+  const client = createApiClient(baseUrl);
+  const current = await client.GET(
+    '/api/v1/administration/school-configuration',
+    { headers: { cookie } },
+  );
+  expect(current.response.status).toBe(200);
+  if (current.data?.unpublishedChanges) return current.data;
+  const candidate = current.data?.candidate as {
+    release: { modules: { id: string; revision: number }[] };
+  };
+  const modules = candidate.release.modules;
+  const edited = await client.POST(
+    '/api/v1/administration/school-configuration/draft-edits',
+    {
+      headers: { ...operatorHeaders, cookie },
+      body: {
+        operationId: crypto.randomUUID(),
+        expectedDraftVersion: current.data?.draftVersion ?? 0,
+        expectedResourceRevisions: modules.map((module) => ({
+          resourceId: module.id,
+          revisionNumber: module.revision,
+        })),
+        type: 'reorder-learning-modules',
+        orderedResourceIds: [...modules.map((module) => module.id)].reverse(),
+      },
+    },
+  );
+  expect(edited.response.status).toBe(200);
+  return edited.data;
+}
+
 beforeAll(async () => {
   candidate = JSON.parse(
     await readFile(
@@ -325,6 +357,7 @@ test('expiry during package upload is rechecked before activation', async () => 
     body: { password, totp: totpCode(fakeAuth.totpSecretFor(email)) },
   });
   expect(steppedUp.response.status).toBe(200);
+  const draft = await unpublishedDraft();
   advanceDuringUpload = true;
   const result = await client.POST(
     '/api/v1/administration/school-configuration/releases',
@@ -333,8 +366,8 @@ test('expiry during package upload is rechecked before activation', async () => 
       body: {
         operationId: crypto.randomUUID(),
         expectedActiveReleaseId: activeReleaseId,
-        expectedDraftVersion: 2,
-        candidateFingerprint,
+        expectedDraftVersion: draft?.draftVersion ?? 0,
+        candidateFingerprint: draft?.candidateFingerprint ?? '',
         changeDescription:
           'A package upload that outlives authentication freshness.',
       },
@@ -392,11 +425,12 @@ test('a deterministic package failure is retained without activation', async () 
   });
   expect(steppedUp.response.status).toBe(200);
   failPackageIntegrity = true;
+  const draft = await unpublishedDraft();
   const command = {
     operationId: crypto.randomUUID(),
     expectedActiveReleaseId: activeReleaseId,
-    expectedDraftVersion: 2,
-    candidateFingerprint,
+    expectedDraftVersion: draft?.draftVersion ?? 0,
+    candidateFingerprint: draft?.candidateFingerprint ?? '',
     changeDescription: 'A deterministic package-integrity failure.',
   };
   const failed = await client.POST(

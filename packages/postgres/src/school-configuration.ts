@@ -63,6 +63,88 @@ async function transaction<Result>(
 
 const publicationConnection = new AsyncLocalStorage<PoolClient>();
 
+async function readReleaseRows(
+  client: PoolClient,
+  workspaceId: string,
+  releaseId?: string,
+) {
+  const result = await client.query<{
+    release_id: string;
+    release_number: string;
+    candidate_fingerprint: string;
+    change_description: string;
+    published_at: Date;
+    published_by: string;
+    active: boolean;
+    resource_id: string | null;
+    revision_number: number | null;
+    slot: string | null;
+    resource_kind: string | null;
+    position: number | null;
+  }>(
+    `select release.release_id, release.release_number, release.candidate_fingerprint,
+            release.change_description, release.published_at, release.published_by,
+            release.release_id = state.active_release_id as active,
+            component.resource_id, component.revision_number, component.slot,
+            resource.resource_kind, component.position
+       from school_configuration.configuration_states state
+       join school_configuration.configuration_releases release
+         on release.workspace_id = state.workspace_id
+       left join school_configuration.release_components component
+         on component.release_id = release.release_id
+        and component.workspace_id = release.workspace_id
+       left join school_configuration.authored_resources resource
+         on resource.workspace_id = component.workspace_id
+        and resource.resource_id = component.resource_id
+      where state.workspace_id = $1
+        and ($2::uuid is null or release.release_id = $2)
+      order by release.release_number desc, component.slot, component.resource_id`,
+    [workspaceId, releaseId ?? null],
+  );
+  const releases = new Map<
+    string,
+    {
+      releaseId: string;
+      releaseNumber: number;
+      candidateFingerprint: string;
+      changeDescription: string;
+      publishedAt: Date;
+      publishedBy: string;
+      active: boolean;
+      components: {
+        resourceId: string;
+        revisionNumber: number;
+        slot: string;
+        kind: string;
+        position: number | null;
+      }[];
+    }
+  >();
+  for (const row of result.rows) {
+    const current = releases.get(row.release_id) ?? {
+      releaseId: row.release_id,
+      releaseNumber: Number(row.release_number),
+      candidateFingerprint: row.candidate_fingerprint,
+      changeDescription: row.change_description,
+      publishedAt: row.published_at,
+      publishedBy: row.published_by,
+      active: row.active,
+      components: [],
+    };
+    if (row.resource_id && row.revision_number != null && row.slot) {
+      current.components.push({
+        resourceId: row.resource_id,
+        revisionNumber: row.revision_number,
+        slot: row.slot,
+        kind: row.resource_kind ?? 'resource',
+        position: row.position,
+      });
+    }
+    releases.set(row.release_id, current);
+  }
+  return [...releases.values()];
+}
+
 export function createPostgresSchoolConfigurationStore(options: {
   pool: Pool;
   hashSessionHandle(handle: string): string;
@@ -175,6 +257,67 @@ export function createPostgresSchoolConfigurationStore(options: {
           position: row.position,
           payload: row.payload,
         }));
+      });
+    },
+
+    async readReferencedResourceIds(session) {
+      return transaction(options.pool, async (client) => {
+        await setScope(client, session.workspaceId, session.staffIdentityId);
+        const result = await client.query<{ resource_id: string }>(
+          `select distinct resource_id
+             from school_configuration.release_components
+            where workspace_id = $1`,
+          [session.workspaceId],
+        );
+        return result.rows.map((row) => row.resource_id);
+      });
+    },
+
+    async readOccupiedRevisions(session) {
+      return transaction(options.pool, async (client) => {
+        await setScope(client, session.workspaceId, session.staffIdentityId);
+        const result = await client.query<{
+          resource_id: string;
+          revision_number: number;
+        }>(
+          `select resource_id, revision_number
+             from school_configuration.authored_revisions
+            where workspace_id = $1`,
+          [session.workspaceId],
+        );
+        return result.rows.map((row) => ({
+          resourceId: row.resource_id,
+          revisionNumber: row.revision_number,
+        }));
+      });
+    },
+
+    async listReleases(session) {
+      return transaction(options.pool, async (client) => {
+        await setScope(client, session.workspaceId, session.staffIdentityId);
+        return readReleaseRows(client, session.workspaceId);
+      });
+    },
+
+    async readRelease(session, releaseId) {
+      return transaction(options.pool, async (client) => {
+        await setScope(client, session.workspaceId, session.staffIdentityId);
+        const releases = await readReleaseRows(
+          client,
+          session.workspaceId,
+          releaseId,
+        );
+        const summary = releases[0];
+        if (!summary) return undefined;
+        const assembly = await client.query<{ candidate: unknown }>(
+          `select candidate
+             from school_configuration.release_assemblies
+            where workspace_id = $1 and release_id = $2`,
+          [session.workspaceId, releaseId],
+        );
+        const candidate = assembly.rows[0]?.candidate;
+        if (candidate === undefined) return undefined;
+        return { ...summary, candidate };
       });
     },
 
@@ -350,6 +493,39 @@ export function createPostgresSchoolConfigurationStore(options: {
             [input.session.workspaceId, input.discardedResourceIds],
           );
         }
+        if (input.archivedResourceIds.length > 0) {
+          await client.query(
+            `update school_configuration.authored_resources
+                set archived_at = $3
+              where workspace_id = $1 and resource_id = any($2::uuid[])`,
+            [
+              input.session.workspaceId,
+              input.archivedResourceIds,
+              input.changedAt,
+            ],
+          );
+          await client.query(
+            `update school_configuration.authored_revisions
+                set lifecycle = 'frozen'
+              where workspace_id = $1
+                and resource_id = any($2::uuid[])
+                and lifecycle = 'working'`,
+            [input.session.workspaceId, input.archivedResourceIds],
+          );
+        }
+        if (input.resources.length > 0) {
+          await client.query(
+            `update school_configuration.authored_resources
+                set archived_at = null
+              where workspace_id = $1
+                and resource_id = any($2::uuid[])
+                and archived_at is not null`,
+            [
+              input.session.workspaceId,
+              input.resources.map((resource) => resource.resourceId),
+            ],
+          );
+        }
         if (input.reviews.length > 0) {
           await client.query(
             `insert into school_configuration.managed_translation_reviews
@@ -438,6 +614,7 @@ export function createPostgresSchoolConfigurationStore(options: {
             {
               candidateFingerprint: input.candidateFingerprint,
               discardedResourceIds: input.discardedResourceIds,
+              archivedResourceIds: input.archivedResourceIds,
             },
           ],
         );
@@ -858,6 +1035,17 @@ export function createPostgresSchoolConfigurationStore(options: {
             ],
           );
         }
+        await client.query(
+          `insert into school_configuration.release_assemblies
+             (release_id, workspace_id, candidate, recorded_at)
+           values ($1, $2, $3, $4)`,
+          [
+            input.releaseId,
+            input.session.workspaceId,
+            input.candidate,
+            input.publishedAt,
+          ],
+        );
         await client.query(
           `insert into school_configuration.release_packages
              (release_id, workspace_id, package_format,

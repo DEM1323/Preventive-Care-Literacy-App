@@ -109,6 +109,37 @@ async function markInvitationDelivered(deliveredInvitationId = invitationId) {
   }
 }
 
+async function unpublishedSuccessorDraft() {
+  const client = createApiClient(baseUrl);
+  const current = await client.GET(
+    '/api/v1/administration/school-configuration',
+    { headers: { cookie: administratorCookie } },
+  );
+  expect(current.response.status).toBe(200);
+  const draftCandidate = current.data?.candidate as {
+    release: { modules: { id: string; revision: number }[] };
+  };
+  const modules = draftCandidate.release.modules;
+  const edited = await client.POST(
+    '/api/v1/administration/school-configuration/draft-edits',
+    {
+      headers: { ...operatorHeaders, cookie: administratorCookie },
+      body: {
+        operationId: crypto.randomUUID(),
+        expectedDraftVersion: current.data?.draftVersion ?? 0,
+        expectedResourceRevisions: modules.map((module) => ({
+          resourceId: module.id,
+          revisionNumber: module.revision,
+        })),
+        type: 'reorder-learning-modules',
+        orderedResourceIds: [...modules.map((module) => module.id)].reverse(),
+      },
+    },
+  );
+  expect(edited.response.status).toBe(200);
+  return edited.data;
+}
+
 async function inviteAndRedeemStudent(input: {
   classId: string;
   invitationId: string;
@@ -761,18 +792,7 @@ test('a later School Configuration Release rejects a stale Student submission', 
   const snapshot = opened.data as StudentIntakeSnapshot;
   const staleReleaseId = snapshot.form.schoolConfigurationReleaseId;
 
-  const imported = await client.POST(
-    '/api/v1/administration/school-configuration/draft-imports',
-    {
-      headers: { ...operatorHeaders, cookie: administratorCookie },
-      body: {
-        operationId: crypto.randomUUID(),
-        expectedDraftVersion: 2,
-        candidate,
-      },
-    },
-  );
-  expect(imported.response.status).toBe(201);
+  const successor = await unpublishedSuccessorDraft();
   const steppedUp = await client.POST('/api/v1/auth/staff/step-up', {
     headers: { ...operatorHeaders, cookie: administratorCookie },
     body: {
@@ -788,8 +808,8 @@ test('a later School Configuration Release rejects a stale Student submission', 
       body: {
         operationId: crypto.randomUUID(),
         expectedActiveReleaseId: staleReleaseId,
-        expectedDraftVersion: imported.data?.draftVersion ?? 0,
-        candidateFingerprint: imported.data?.candidateFingerprint ?? '',
+        expectedDraftVersion: successor?.draftVersion ?? 0,
+        candidateFingerprint: successor?.candidateFingerprint ?? '',
         changeDescription: 'Publish a successor synthetic release.',
       },
     },

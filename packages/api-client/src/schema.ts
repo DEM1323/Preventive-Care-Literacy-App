@@ -203,9 +203,25 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    get: operations['listSchoolConfigurationReleases'];
     put?: never;
     post: operations['publishSchoolConfigurationRelease'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/school-configuration/releases/{releaseId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['readSchoolConfigurationRelease'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -2210,11 +2226,16 @@ export interface operations {
             candidateFingerprint: string;
             comparisons: {
               activeRevision: number | null;
+              archiveEligible: boolean;
+              change: 'added' | 'removed' | 'changed' | 'unchanged';
               differs: boolean;
               discardEligible: boolean;
-              draftRevision: number;
+              draftRevision: number | null;
+              kind: string;
+              label: string;
               /** Format: uuid */
               resourceId: string;
+              slot: string;
             }[];
             draftVersion: number;
             managedTranslations: {
@@ -2256,6 +2277,16 @@ export interface operations {
             validation: {
               blockers: {
                 code: string;
+                location: {
+                  editorResource:
+                    'branding' | 'modules' | 'intake' | 'translations';
+                  locale?: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+                  /** Format: uuid */
+                  moduleId?: string;
+                  previewScreen: 'home' | 'module' | 'intake';
+                  /** Format: uuid */
+                  resourceId?: string;
+                };
                 message: string;
                 path: string;
                 /** @enum {string} */
@@ -2263,6 +2294,16 @@ export interface operations {
               }[];
               warnings: {
                 code: string;
+                location: {
+                  editorResource:
+                    'branding' | 'modules' | 'intake' | 'translations';
+                  locale?: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+                  /** Format: uuid */
+                  moduleId?: string;
+                  previewScreen: 'home' | 'module' | 'intake';
+                  /** Format: uuid */
+                  resourceId?: string;
+                };
                 message: string;
                 path: string;
                 /** @enum {string} */
@@ -2395,6 +2436,8 @@ export interface operations {
           operationId: string;
           orderedResourceIds?: string[];
           primaryColor?: string;
+          /** Format: uuid */
+          releaseId?: string;
           required?: boolean;
           requiredWhenVisible?: boolean;
           /** Format: uuid */
@@ -2431,6 +2474,8 @@ export interface operations {
             | 'create-intake-option'
             | 'restore-active-revision'
             | 'discard-authored-resource'
+            | 'archive-authored-resource'
+            | 'restore-release-assembly'
             | 'save-managed-translation'
             | 'review-managed-translation';
           visibility?: null | {
@@ -2460,11 +2505,16 @@ export interface operations {
             candidateFingerprint: string;
             comparisons: {
               activeRevision: number | null;
+              archiveEligible: boolean;
+              change: 'added' | 'removed' | 'changed' | 'unchanged';
               differs: boolean;
               discardEligible: boolean;
-              draftRevision: number;
+              draftRevision: number | null;
+              kind: string;
+              label: string;
               /** Format: uuid */
               resourceId: string;
+              slot: string;
             }[];
             draftVersion: number;
             managedTranslations: {
@@ -2508,6 +2558,16 @@ export interface operations {
             validation: {
               blockers: {
                 code: string;
+                location: {
+                  editorResource:
+                    'branding' | 'modules' | 'intake' | 'translations';
+                  locale?: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+                  /** Format: uuid */
+                  moduleId?: string;
+                  previewScreen: 'home' | 'module' | 'intake';
+                  /** Format: uuid */
+                  resourceId?: string;
+                };
                 message: string;
                 path: string;
                 /** @enum {string} */
@@ -2515,6 +2575,16 @@ export interface operations {
               }[];
               warnings: {
                 code: string;
+                location: {
+                  editorResource:
+                    'branding' | 'modules' | 'intake' | 'translations';
+                  locale?: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+                  /** Format: uuid */
+                  moduleId?: string;
+                  previewScreen: 'home' | 'module' | 'intake';
+                  /** Format: uuid */
+                  resourceId?: string;
+                };
                 message: string;
                 path: string;
                 /** @enum {string} */
@@ -2870,11 +2940,16 @@ export interface operations {
             candidateFingerprint: string;
             comparisons: {
               activeRevision: number | null;
+              archiveEligible: boolean;
+              change: 'added' | 'removed' | 'changed' | 'unchanged';
               differs: boolean;
               discardEligible: boolean;
-              draftRevision: number;
+              draftRevision: number | null;
+              kind: string;
+              label: string;
               /** Format: uuid */
               resourceId: string;
+              slot: string;
             }[];
             draftVersion: number;
             managedTranslations: {
@@ -2924,6 +2999,16 @@ export interface operations {
             validation: {
               blockers: {
                 code: string;
+                location: {
+                  editorResource:
+                    'branding' | 'modules' | 'intake' | 'translations';
+                  locale?: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+                  /** Format: uuid */
+                  moduleId?: string;
+                  previewScreen: 'home' | 'module' | 'intake';
+                  /** Format: uuid */
+                  resourceId?: string;
+                };
                 message: string;
                 path: string;
                 /** @enum {string} */
@@ -2931,6 +3016,16 @@ export interface operations {
               }[];
               warnings: {
                 code: string;
+                location: {
+                  editorResource:
+                    'branding' | 'modules' | 'intake' | 'translations';
+                  locale?: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+                  /** Format: uuid */
+                  moduleId?: string;
+                  previewScreen: 'home' | 'module' | 'intake';
+                  /** Format: uuid */
+                  resourceId?: string;
+                };
                 message: string;
                 path: string;
                 /** @enum {string} */
@@ -3058,6 +3153,104 @@ export interface operations {
       };
       /** @description Default Response */
       503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  listSchoolConfigurationReleases: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            releases: {
+              active: boolean;
+              candidateFingerprint: string;
+              changeDescription: string;
+              components: {
+                kind: string;
+                position: number | null;
+                /** Format: uuid */
+                resourceId: string;
+                revisionNumber: number;
+                slot: string;
+              }[];
+              /** Format: date-time */
+              publishedAt: string;
+              /** Format: uuid */
+              publishedBy: string;
+              /** Format: uuid */
+              releaseId: string;
+              releaseNumber: number;
+            }[];
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
         headers: {
           [name: string]: unknown;
         };
@@ -3220,6 +3413,137 @@ export interface operations {
       };
       /** @description Default Response */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  readSchoolConfigurationRelease: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            active: boolean;
+            candidate: unknown;
+            candidateFingerprint: string;
+            changeDescription: string;
+            comparisons: {
+              activeRevision: number | null;
+              archiveEligible: boolean;
+              change: 'added' | 'removed' | 'changed' | 'unchanged';
+              differs: boolean;
+              discardEligible: boolean;
+              draftRevision: number | null;
+              kind: string;
+              label: string;
+              /** Format: uuid */
+              resourceId: string;
+              slot: string;
+            }[];
+            components: {
+              kind: string;
+              position: number | null;
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+              slot: string;
+            }[];
+            /** Format: date-time */
+            publishedAt: string;
+            /** Format: uuid */
+            publishedBy: string;
+            /** Format: uuid */
+            releaseId: string;
+            releaseNumber: number;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
         headers: {
           [name: string]: unknown;
         };

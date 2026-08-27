@@ -131,6 +131,20 @@ test('an empty Staff workspace can install the bundled synthetic draft', () => {
   expect(source).toContain('Generate suggestions');
   expect(source).toContain('Mark reviewed');
   expect(source).toContain('English is canonical');
+  expect(source).toContain('Open exact preview');
+  expect(source).toContain('Current authority:');
+  expect(source).toContain('Review the resource-level diff');
+  expect(source).toContain('localized string');
+  expect(source).toContain('archive-authored-resource');
+  expect(source).toContain('restore-release-assembly');
+  expect(source).toContain('Clone into the shared draft');
+  expect(source).toContain('Remove from next release');
+  expect(source).toContain('Immutable release history');
+  expect(source).toContain('data-readiness-target');
+  expect(source).toContain('blocker.location');
+  expect(source).toContain(
+    "'/api/v1/administration/school-configuration/releases'",
+  );
   expect(source).not.toContain('/api/v1/student/intake');
   expect(source).not.toContain(
     'Intake Form authoring is not part of this slice',
