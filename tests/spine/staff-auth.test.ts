@@ -781,6 +781,7 @@ describe.serial('independent permission enforcement', () => {
     expect(directory.response.status).toBe(200);
     expect(directory.data).toEqual({
       students: [],
+      classes: [],
       freshUntil: new Date(
         currentTime.getTime() + 15 * 60 * 1000,
       ).toISOString(),

@@ -3,6 +3,10 @@ import { Pool } from 'pg';
 import {
   FirstAdministratorRequiredError,
   StaffIdentityAlreadyExistsError,
+  type ClinicalDirectoryClass,
+  type ClinicalDirectoryMembership,
+  type ClinicalDirectoryStatusReason,
+  type ClinicalDirectoryStudent,
   type StaffAccessStore,
   type StaffDirectoryEntry,
   type StaffPermission,
@@ -733,36 +737,115 @@ export function createPostgresStaffAccessStore(options: {
         await sql`select set_config('app.staff_identity_id', ${request.staffIdentityId}, true)`.execute(
           transaction,
         );
+        const classRows = await sql<{
+          class_id: string;
+          name: string;
+          status: 'open' | 'closed';
+        }>`select class_id, name, status
+             from identity_access.classes
+            where workspace_id = ${request.workspaceId}
+            order by name, class_id`.execute(transaction);
+        const classes: ClinicalDirectoryClass[] = classRows.rows.map((row) => ({
+          classId: row.class_id,
+          name: row.name,
+          status: row.status,
+        }));
         const rows = await sql<{
           student_id: string;
           created_at: Date;
+          student_status: 'active' | 'disabled';
           intake_record_version_id: string | null;
           accepted_at: Date | null;
           locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT' | null;
-        }>`select student.student_id, student.created_at,
+          memberships: unknown;
+        }>`select student.student_id, student.created_at, student.status as student_status,
                   version.intake_record_version_id, version.accepted_at,
-                  version.locale
+                  version.locale,
+                  coalesce((
+                    select json_agg(json_build_object(
+                      'classId', membership.class_id,
+                      'name', class.name,
+                      'status', membership.status
+                    ) order by class.name, membership.class_id)
+                      from identity_access.class_memberships membership
+                      join identity_access.classes class
+                        on class.class_id = membership.class_id
+                       and class.workspace_id = membership.workspace_id
+                     where membership.student_id = student.student_id
+                       and membership.workspace_id = student.workspace_id
+                  ), '[]'::json) as memberships
              from identity_access.students student
              left join intake.intake_record_versions version
                on version.student_id = student.student_id
               and version.workspace_id = student.workspace_id
               and version.superseded_at is null
             where student.workspace_id = ${request.workspaceId}
+              and (
+                ${request.classId ?? null}::uuid is null
+                or exists (
+                  select 1
+                    from identity_access.class_memberships membership
+                   where membership.student_id = student.student_id
+                     and membership.workspace_id = student.workspace_id
+                     and membership.class_id = ${request.classId ?? null}::uuid
+                )
+              )
             order by student.created_at, student.student_id`.execute(
           transaction,
         );
-        return rows.rows.map((row) => ({
-          studentId: row.student_id,
-          createdAt: new Date(row.created_at),
-          currentIntakeRecordVersion:
-            row.intake_record_version_id && row.accepted_at && row.locale
-              ? {
-                  intakeRecordVersionId: row.intake_record_version_id,
-                  acceptedAt: new Date(row.accepted_at),
-                  locale: row.locale,
+        const students: ClinicalDirectoryStudent[] = rows.rows.map((row) => {
+          const parsed =
+            typeof row.memberships === 'string'
+              ? JSON.parse(row.memberships)
+              : row.memberships;
+          const classMemberships: ClinicalDirectoryMembership[] = Array.isArray(
+            parsed,
+          )
+            ? parsed.flatMap((entry) => {
+                if (
+                  !entry ||
+                  typeof entry !== 'object' ||
+                  typeof entry.classId !== 'string' ||
+                  typeof entry.name !== 'string' ||
+                  (entry.status !== 'active' && entry.status !== 'inactive')
+                ) {
+                  return [];
                 }
-              : null,
-        }));
+                return [
+                  {
+                    classId: entry.classId,
+                    name: entry.name,
+                    status: entry.status,
+                  },
+                ];
+              })
+            : [];
+          const statusReasons: ClinicalDirectoryStatusReason[] = [];
+          if (row.student_status === 'disabled') statusReasons.push('disabled');
+          if (
+            !classMemberships.some(
+              (membership) => membership.status === 'active',
+            )
+          ) {
+            statusReasons.push('no_active_membership');
+          }
+          return {
+            studentId: row.student_id,
+            createdAt: new Date(row.created_at),
+            studentStatus: row.student_status,
+            statusReasons,
+            classMemberships,
+            currentIntakeRecordVersion:
+              row.intake_record_version_id && row.accepted_at && row.locale
+                ? {
+                    intakeRecordVersionId: row.intake_record_version_id,
+                    acceptedAt: new Date(row.accepted_at),
+                    locale: row.locale,
+                  }
+                : null,
+          };
+        });
+        return { students, classes };
       });
     },
   };

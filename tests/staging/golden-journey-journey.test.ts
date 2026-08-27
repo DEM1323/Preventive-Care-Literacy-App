@@ -396,6 +396,7 @@ function createFetch() {
         return jsonResponse(200, {
           freshUntil: '2026-08-25T16:15:00.000Z',
           students: [],
+          classes: [],
         });
       }
       return jsonResponse(200, {
@@ -411,6 +412,7 @@ function createFetch() {
             },
           },
         ],
+        classes: [],
       });
     }
     if (path === '/api/v1/clinical/intake-records/current') {

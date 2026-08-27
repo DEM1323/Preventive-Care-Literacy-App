@@ -8,6 +8,7 @@ import {
   IntakeRevisionConflictError,
   IntakeUnavailableError,
   intakeUpdateRequirementFor,
+  type ClinicalIntakeVersionSummary,
   type ClinicalRevealDenialReason,
   type ExactResourceRevision,
   type IntakeAnswerMap,
@@ -193,7 +194,11 @@ async function insertRevealAudit(
     workspaceId: string;
     actorId: string;
     occurredAt: Date;
-    eventType: 'intake_record.revealed' | 'intake_record.reveal_denied';
+    eventType:
+      | 'intake_record.revealed'
+      | 'intake_record.reveal_denied'
+      | 'student_record.selected'
+      | 'student_record.selection_denied';
     details: Record<string, string>;
   },
 ): Promise<void> {
@@ -1061,7 +1066,9 @@ export function createPostgresIntakeStore(options: {
 
         const version = await client.query<{
           intake_record_version_id: string;
+          version_number: number;
           accepted_at: Date;
+          superseded_at: Date | null;
           school_configuration_release_id: string;
           intake_form_resource_id: string;
           intake_form_revision_number: number;
@@ -1072,14 +1079,29 @@ export function createPostgresIntakeStore(options: {
           wrapped_data_key: string;
           ciphertext: string;
         }>(
-          `select intake_record_version_id, accepted_at, school_configuration_release_id,
-                  intake_form_resource_id, intake_form_revision_number,
-                  submission_attestation_resource_id,
-                  submission_attestation_revision_number, locale,
-                  wrapping_key_id, wrapped_data_key, ciphertext
-             from intake.intake_record_versions
-            where student_id = $1 and workspace_id = $2 and superseded_at is null`,
-          [input.studentId, current.workspace_id],
+          input.intakeRecordVersionId
+            ? `select intake_record_version_id, version_number, accepted_at, superseded_at,
+                      school_configuration_release_id, intake_form_resource_id,
+                      intake_form_revision_number, submission_attestation_resource_id,
+                      submission_attestation_revision_number, locale,
+                      wrapping_key_id, wrapped_data_key, ciphertext
+                 from intake.intake_record_versions
+                where student_id = $1 and workspace_id = $2
+                  and intake_record_version_id = $3`
+            : `select intake_record_version_id, version_number, accepted_at, superseded_at,
+                      school_configuration_release_id, intake_form_resource_id,
+                      intake_form_revision_number, submission_attestation_resource_id,
+                      submission_attestation_revision_number, locale,
+                      wrapping_key_id, wrapped_data_key, ciphertext
+                 from intake.intake_record_versions
+                where student_id = $1 and workspace_id = $2 and superseded_at is null`,
+          input.intakeRecordVersionId
+            ? [
+                input.studentId,
+                current.workspace_id,
+                input.intakeRecordVersionId,
+              ]
+            : [input.studentId, current.workspace_id],
         );
         const currentVersion = version.rows[0];
         if (!currentVersion) {
@@ -1184,11 +1206,67 @@ export function createPostgresIntakeStore(options: {
           return { outcome: 'failed' as const, cause: 'decrypt' };
         }
 
+        const predecessor = await client.query<{
+          intake_record_version_id: string;
+          wrapping_key_id: string;
+          wrapped_data_key: string;
+          ciphertext: string;
+        }>(
+          `select intake_record_version_id, wrapping_key_id, wrapped_data_key, ciphertext
+             from intake.intake_record_versions
+            where student_id = $1 and workspace_id = $2 and version_number = $3`,
+          [
+            input.studentId,
+            current.workspace_id,
+            currentVersion.version_number - 1,
+          ],
+        );
+        const predecessorRow = predecessor.rows[0];
+        let previousAnswers: IntakeAnswerMap | undefined;
+        if (predecessorRow) {
+          try {
+            previousAnswers = await input.openAnswers(
+              sealedFrom(predecessorRow),
+              {
+                workspaceId: current.workspace_id,
+                studentId: input.studentId,
+              },
+            );
+          } catch {
+            await insertRevealAudit(client, {
+              auditId: input.auditId,
+              operationId: input.operationId,
+              workspaceId: current.workspace_id,
+              actorId: current.staff_identity_id,
+              occurredAt: input.now(),
+              eventType: 'intake_record.reveal_denied',
+              details: {
+                studentId: input.studentId,
+                outcome: 'failed_decrypt',
+                staffSessionId: current.session_id,
+              },
+            });
+            return { outcome: 'failed' as const, cause: 'decrypt' };
+          }
+        }
+
         const checkedAt = input.now();
         const laterDenial = authorityStillHolds(checkedAt);
         if (laterDenial) return deny(laterDenial);
         const authenticationFreshAt = current.authentication_fresh_at;
         if (!authenticationFreshAt) return deny('stale');
+
+        const changedFields = input.summarizeChanges(previousAnswers, answers);
+        const status =
+          currentVersion.superseded_at === null ? 'current' : 'superseded';
+        const revealedDetails: Record<string, string> = {
+          studentId: input.studentId,
+          outcome: 'revealed',
+          staffSessionId: current.session_id,
+          intakeRecordVersionId: currentVersion.intake_record_version_id,
+          kind: input.kind,
+        };
+        if (input.purpose) revealedDetails.purpose = input.purpose;
 
         await insertRevealAudit(client, {
           auditId: input.auditId,
@@ -1197,45 +1275,44 @@ export function createPostgresIntakeStore(options: {
           actorId: current.staff_identity_id,
           occurredAt: checkedAt,
           eventType: 'intake_record.revealed',
-          details: {
-            studentId: input.studentId,
-            outcome: 'revealed',
-            staffSessionId: current.session_id,
-            intakeRecordVersionId: currentVersion.intake_record_version_id,
-          },
+          details: revealedDetails,
         });
         const activeRelease = await readActiveIntakeRelease(
           client,
           current.workspace_id,
         );
-        const intakeUpdateRequirement = activeRelease
-          ? intakeUpdateRequirementFor(
-              {
-                intakeRecordVersionId: currentVersion.intake_record_version_id,
-                versionNumber: 0,
-                acceptedAt: new Date(currentVersion.accepted_at),
-                schoolConfigurationReleaseId:
-                  currentVersion.school_configuration_release_id,
-                intakeForm: {
-                  resourceId: currentVersion.intake_form_resource_id,
-                  revisionNumber: currentVersion.intake_form_revision_number,
+        const intakeUpdateRequirement =
+          status === 'current' && activeRelease
+            ? intakeUpdateRequirementFor(
+                {
+                  intakeRecordVersionId:
+                    currentVersion.intake_record_version_id,
+                  versionNumber: currentVersion.version_number,
+                  acceptedAt: new Date(currentVersion.accepted_at),
+                  schoolConfigurationReleaseId:
+                    currentVersion.school_configuration_release_id,
+                  intakeForm: {
+                    resourceId: currentVersion.intake_form_resource_id,
+                    revisionNumber: currentVersion.intake_form_revision_number,
+                  },
+                  submissionAttestation: {
+                    resourceId:
+                      currentVersion.submission_attestation_resource_id,
+                    revisionNumber:
+                      currentVersion.submission_attestation_revision_number,
+                  },
+                  locale: currentVersion.locale,
+                  formPayload,
+                  attestationPayload,
+                  sealed: sealedFrom(currentVersion),
                 },
-                submissionAttestation: {
-                  resourceId: currentVersion.submission_attestation_resource_id,
-                  revisionNumber:
-                    currentVersion.submission_attestation_revision_number,
-                },
-                locale: currentVersion.locale,
-                formPayload,
-                attestationPayload,
-                sealed: sealedFrom(currentVersion),
-              },
-              activeRelease,
-            )
-          : null;
+                activeRelease,
+              )
+            : null;
         return {
           outcome: 'revealed' as const,
           intakeRecordVersionId: currentVersion.intake_record_version_id,
+          versionNumber: currentVersion.version_number,
           acceptedAt: new Date(currentVersion.accepted_at),
           locale: currentVersion.locale,
           schoolConfigurationReleaseId:
@@ -1243,8 +1320,189 @@ export function createPostgresIntakeStore(options: {
           intakeForm: form.intakeForm,
           answers,
           intakeUpdateRequirement,
+          predecessorIntakeRecordVersionId:
+            predecessorRow?.intake_record_version_id ?? null,
+          changedFields,
+          status,
+          supersededAt: currentVersion.superseded_at
+            ? new Date(currentVersion.superseded_at)
+            : null,
           freshUntil: new Date(
             authenticationFreshAt.getTime() + staffAuthenticationFreshnessMs,
+          ),
+        };
+      });
+    },
+
+    async selectStudent(input) {
+      return transaction(options.pool, async (client) => {
+        await client.query(
+          "select set_config('app.session_handle_hash', $1, true)",
+          [input.sessionHandleHash],
+        );
+        const authority = await client.query<{
+          session_id: string;
+          workspace_id: string;
+          staff_identity_id: string;
+          authenticated_at: Date;
+          expires_at: Date;
+          idle_expires_at: Date;
+          revoked_at: Date | null;
+          identity_status: 'active' | 'disabled' | null;
+          authentication_fresh_at: Date | null;
+          has_clinical_permission: boolean;
+          workspace_found: boolean;
+        }>(
+          `select session_id, workspace_id, staff_identity_id, authenticated_at,
+                  expires_at, idle_expires_at, revoked_at, identity_status,
+                  authentication_fresh_at, has_clinical_permission, workspace_found
+             from identity_access.lock_clinical_reveal_authority($1)`,
+          [input.sessionHandleHash],
+        );
+        const locked = authority.rows[0];
+        if (!locked) {
+          await insertUnattributedRevealAttempt(client, {
+            auditId: input.auditId,
+            operationId: input.operationId,
+            occurredAt: input.now(),
+            outcome: 'denied_session_unknown',
+            studentId: input.studentId,
+          });
+          return { outcome: 'missing_session' as const };
+        }
+
+        await client.query("select set_config('app.workspace_id', $1, true)", [
+          locked.workspace_id,
+        ]);
+        await client.query(
+          "select set_config('app.staff_identity_id', $1, true)",
+          [locked.staff_identity_id],
+        );
+
+        const deny = async (reason: ClinicalRevealDenialReason) => {
+          await insertRevealAudit(client, {
+            auditId: input.auditId,
+            operationId: input.operationId,
+            workspaceId: locked.workspace_id,
+            actorId: locked.staff_identity_id,
+            occurredAt: input.now(),
+            eventType: 'student_record.selection_denied',
+            details: {
+              studentId: input.studentId,
+              outcome: denialOutcome(reason),
+              staffSessionId: locked.session_id,
+              purpose: input.purpose,
+            },
+          });
+          return { outcome: 'denied' as const, reason };
+        };
+
+        if (new Date(locked.idle_expires_at) <= input.now()) {
+          return deny('expired');
+        }
+        if (locked.revoked_at) return deny('revoked');
+        if (new Date(locked.expires_at) <= input.now()) return deny('expired');
+        if (locked.identity_status !== 'active' || !locked.workspace_found) {
+          return deny('disabled');
+        }
+        if (!locked.has_clinical_permission) return deny('permission');
+        if (
+          !locked.authentication_fresh_at ||
+          input.now().getTime() -
+            new Date(locked.authentication_fresh_at).getTime() >
+            staffAuthenticationFreshnessMs
+        ) {
+          return deny('stale');
+        }
+
+        const student = await client.query<{ student_id: string }>(
+          `select student_id from identity_access.students
+            where student_id = $1 and workspace_id = $2`,
+          [input.studentId, locked.workspace_id],
+        );
+        if (!student.rows[0]) {
+          await insertRevealAudit(client, {
+            auditId: input.auditId,
+            operationId: input.operationId,
+            workspaceId: locked.workspace_id,
+            actorId: locked.staff_identity_id,
+            occurredAt: input.now(),
+            eventType: 'student_record.selection_denied',
+            details: {
+              studentId: input.studentId,
+              outcome: 'not_found',
+              staffSessionId: locked.session_id,
+              purpose: input.purpose,
+            },
+          });
+          return { outcome: 'not_found' as const };
+        }
+
+        const versions = await client.query<{
+          intake_record_version_id: string;
+          version_number: number;
+          accepted_at: Date;
+          superseded_at: Date | null;
+          school_configuration_release_id: string;
+          intake_form_resource_id: string;
+          intake_form_revision_number: number;
+          locale: StoredIntakeRecordVersion['locale'];
+          predecessor_id: string | null;
+        }>(
+          `select version.intake_record_version_id, version.version_number,
+                  version.accepted_at, version.superseded_at,
+                  version.school_configuration_release_id,
+                  version.intake_form_resource_id, version.intake_form_revision_number,
+                  version.locale, predecessor.intake_record_version_id as predecessor_id
+             from intake.intake_record_versions version
+             left join intake.intake_record_versions predecessor
+               on predecessor.student_id = version.student_id
+              and predecessor.workspace_id = version.workspace_id
+              and predecessor.version_number = version.version_number - 1
+            where version.student_id = $1 and version.workspace_id = $2
+            order by version.version_number`,
+          [input.studentId, locked.workspace_id],
+        );
+
+        await insertRevealAudit(client, {
+          auditId: input.auditId,
+          operationId: input.operationId,
+          workspaceId: locked.workspace_id,
+          actorId: locked.staff_identity_id,
+          occurredAt: input.now(),
+          eventType: 'student_record.selected',
+          details: {
+            studentId: input.studentId,
+            outcome: 'selected',
+            staffSessionId: locked.session_id,
+            purpose: input.purpose,
+          },
+        });
+
+        const summaries: ClinicalIntakeVersionSummary[] = versions.rows.map(
+          (row) => ({
+            intakeRecordVersionId: row.intake_record_version_id,
+            versionNumber: row.version_number,
+            acceptedAt: new Date(row.accepted_at).toISOString(),
+            schoolConfigurationReleaseId: row.school_configuration_release_id,
+            locale: row.locale,
+            intakeForm: {
+              resourceId: row.intake_form_resource_id,
+              revisionNumber: row.intake_form_revision_number,
+            },
+            predecessorIntakeRecordVersionId: row.predecessor_id,
+            status: row.superseded_at ? 'superseded' : 'current',
+            supersededAt: row.superseded_at
+              ? new Date(row.superseded_at).toISOString()
+              : null,
+          }),
+        );
+        return {
+          outcome: 'selected' as const,
+          versions: summaries,
+          freshUntil: new Date(
+            new Date(locked.authentication_fresh_at).getTime() +
+              staffAuthenticationFreshnessMs,
           ),
         };
       });
