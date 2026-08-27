@@ -9,6 +9,7 @@ import {
   StaffPermissionRequiredError,
   StaffSessionExpiredError,
   StaffSessionRevokedError,
+  StudentClassAccessRequiredError,
 } from '../identity-access/index.ts';
 import {
   canonicalJson,
@@ -554,7 +555,12 @@ export function createIntake(dependencies: {
   hashSessionHandle: (sessionHandle: string) => string;
 }) {
   async function requireStudent(sessionHandle: string) {
-    return dependencies.resolveStudentSession({ sessionHandle });
+    const session = await dependencies.resolveStudentSession({ sessionHandle });
+    if (!session) return undefined;
+    if (session.activeClassMemberships.length === 0) {
+      throw new StudentClassAccessRequiredError();
+    }
+    return session;
   }
 
   return {

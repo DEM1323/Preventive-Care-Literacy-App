@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 import {
   PermanentInvitationDeliveryError,
   runInvitationDeliveryCycle,
+  runSignInCodeDeliveryCycle,
 } from '../../modules/invitation-delivery/index.ts';
 
 test('worker relays IDs only and retries delivery with a stable provider idempotency key', async () => {
@@ -165,4 +166,61 @@ test('worker suppresses a permanently rejected delivery instead of poisoning the
   expect(suppressed).toBe(true);
   expect(acknowledged).toBe(true);
   expect(retried).toBe(false);
+});
+
+test('Sign-In Code worker sends a distinct neutral template with a stable idempotency key', async () => {
+  const sent: { subject: string; text: string; idempotencyKey: string }[] = [];
+  await runSignInCodeDeliveryCycle({
+    outbox: {
+      async pending() {
+        return [{ outboxId: 'sign-in-outbox-1' }];
+      },
+    },
+    queue: {
+      async send() {},
+      async receive() {
+        return {
+          messageId: 'sign-in-message-1',
+          outboxId: 'sign-in-outbox-1',
+          attempt: 1,
+        };
+      },
+      async complete() {},
+      async retry() {},
+    },
+    deliveries: {
+      async claim() {
+        return {
+          outcome: 'deliver' as const,
+          outboxId: 'sign-in-outbox-1',
+          challengeId: 'challenge-1',
+          generation: 2,
+          purpose: 'sign_in' as const,
+          keyId: 'key-1',
+          ciphertext: 'protected',
+          providerIdempotencyKey: 'challenge-1:2',
+        };
+      },
+      async complete() {},
+      async suppress() {},
+    },
+    decrypt: () => ({ recipient: 'student@example.test', code: '555111' }),
+    mail: {
+      async sendInvitation(message) {
+        sent.push(message);
+        return { providerMessageId: 'resend-sign-in-1' };
+      },
+    },
+    clock: { now: () => new Date('2026-08-26T18:00:00.000Z') },
+  });
+  expect(sent).toEqual([
+    {
+      recipient: 'student@example.test',
+      code: '555111',
+      idempotencyKey: 'challenge-1:2',
+      subject: 'Your Sign-In Code',
+      text: 'Your Sign-In Code is 555111. It expires in 10 minutes.',
+    },
+  ]);
+  expect(JSON.stringify(sent[0]?.idempotencyKey)).not.toContain('555111');
 });

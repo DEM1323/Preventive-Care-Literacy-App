@@ -1,19 +1,30 @@
 import { Pool } from 'pg';
 import {
   runInvitationDeliveryCycle,
+  runSignInCodeDeliveryCycle,
   type InvitationDeliveryDependencies,
+  type SignInCodeDeliveryDependencies,
 } from '../../../modules/invitation-delivery/index.ts';
 import { APPLICATION_LAYER_ENVELOPE_V1 } from '../../../packages/application-keys/src/index.ts';
 import { verifyBuildAttestationAtStartup } from '../../../packages/build-attestation/src/index.ts';
 import { createResendInvitationMail } from '../../../packages/invitation-mail/src/index.ts';
-import { decryptInvitationDelivery } from '../../../packages/invitation-secrets/src/index.ts';
+import {
+  decryptInvitationDelivery,
+  decryptSignInDelivery,
+} from '../../../packages/invitation-secrets/src/index.ts';
 import {
   recordInvitationDeliveryAttestation,
   recordWorkerArtifactHeartbeat,
 } from '../../../packages/postgres/src/golden-journey-evidence.ts';
-import { createPostgresInvitationDeliveryPorts } from '../../../packages/postgres/src/invitation-delivery.ts';
+import {
+  createPostgresInvitationDeliveryPorts,
+  createPostgresSignInDeliveryPorts,
+} from '../../../packages/postgres/src/invitation-delivery.ts';
 import { assertRestrictedDatabaseRole } from '../../../packages/postgres/src/identity-access.ts';
-import { createSupabaseInvitationQueue } from '../../../packages/supabase-queue/src/index.ts';
+import {
+  createSupabaseInvitationQueue,
+  createSupabaseSignInQueue,
+} from '../../../packages/supabase-queue/src/index.ts';
 
 function required(name: string): string {
   const value = process.env[name];
@@ -38,6 +49,7 @@ const keys = {
   },
 };
 const ports = createPostgresInvitationDeliveryPorts(pool);
+const signInPorts = createPostgresSignInDeliveryPorts(pool);
 const deliveries: InvitationDeliveryDependencies['deliveries'] = {
   claim: (outboxId, now) => ports.deliveries.claim(outboxId, now),
   suppress: (input) => ports.deliveries.suppress(input),
@@ -51,17 +63,32 @@ const deliveries: InvitationDeliveryDependencies['deliveries'] = {
     });
   },
 };
-const dependencies = {
+const mail = createResendInvitationMail({
+  apiKey: required('RESEND_API_KEY'),
+  sender: required('INVITATION_EMAIL_FROM'),
+  controlledRecipient: process.env.INVITATION_CONTROLLED_MAILBOX,
+});
+const invitationDependencies = {
   ...ports,
   deliveries,
   queue: createSupabaseInvitationQueue(pool),
-  mail: createResendInvitationMail({
-    apiKey: required('RESEND_API_KEY'),
-    sender: required('INVITATION_EMAIL_FROM'),
-    controlledRecipient: process.env.INVITATION_CONTROLLED_MAILBOX,
-  }),
+  mail,
   decrypt: (input: Parameters<InvitationDeliveryDependencies['decrypt']>[0]) =>
     decryptInvitationDelivery({ ...input, keys }),
+  clock: { now: () => new Date() },
+};
+const signInDependencies: SignInCodeDeliveryDependencies = {
+  ...signInPorts,
+  queue: createSupabaseSignInQueue(pool),
+  mail,
+  decrypt: (input) =>
+    decryptSignInDelivery({
+      keys,
+      keyId: input.keyId,
+      ciphertext: input.ciphertext,
+      challengeId: input.challengeId,
+      generation: input.generation,
+    }),
   clock: { now: () => new Date() },
 };
 
@@ -73,10 +100,15 @@ await recordWorkerArtifactHeartbeat(pool, {
 
 for (;;) {
   try {
-    await runInvitationDeliveryCycle(dependencies);
+    await runInvitationDeliveryCycle(invitationDependencies);
   } catch {
     // Never include provider errors or delivery material in worker logs.
     console.error('Invitation delivery cycle failed');
+  }
+  try {
+    await runSignInCodeDeliveryCycle(signInDependencies);
+  } catch {
+    console.error('Sign-In Code delivery cycle failed');
   }
   await new Promise((resolve) => setTimeout(resolve, 1_000));
 }

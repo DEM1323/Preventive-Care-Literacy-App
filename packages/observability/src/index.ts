@@ -24,6 +24,10 @@ export type TelemetryEvent =
         | 'clinical-directory'
         | 'clinical-intake-reveal'
         | 'classes'
+        | 'student-sign-in'
+        | 'student-sign-in-verify'
+        | 'student-session'
+        | 'student-language'
         | 'student-intake'
         | 'student-intake-draft'
         | 'student-intake-submission'
@@ -86,6 +90,10 @@ const routes = new Set([
   'clinical-directory',
   'clinical-intake-reveal',
   'classes',
+  'student-sign-in',
+  'student-sign-in-verify',
+  'student-session',
+  'student-language',
   'student-intake',
   'student-intake-draft',
   'student-intake-submission',

@@ -55,6 +55,21 @@ test('Student learning shows Completed only from server-accepted Item Completion
   expect(learningSource).not.toContain('setCompleted(true)');
 });
 
+test('Student restoration uses Sign-In Codes rather than consumed Invitation Codes', () => {
+  const source = readFileSync(
+    new URL(
+      '../src/features/student-access/StudentAccessPages.tsx',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  expect(source).toContain('/api/v1/auth/student/sign-in');
+  expect(source).toContain('/student/sign-in');
+  expect(source).toContain('cannot restore this browser');
+  expect(source).not.toContain('localStorage');
+  expect(source).not.toContain('sessionStorage');
+});
+
 test('browser exposes only the server-authoritative Student access routes', () => {
   const appSource = readFileSync(
     new URL('../src/App.tsx', import.meta.url),
@@ -69,6 +84,7 @@ test('browser exposes only the server-authoritative Student access routes', () =
     '/staff/sign-in',
     '/staff',
     '/student/invitation',
+    '/student/sign-in',
     '/student',
     '/student/intake',
     '/student/learning',

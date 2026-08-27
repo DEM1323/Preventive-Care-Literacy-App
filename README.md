@@ -29,6 +29,7 @@ Keep local configuration outside the repository. For example, place it at `~/.co
 | `/staff/sign-in`       | Staff password and mandatory TOTP authentication                             |
 | `/staff`               | Permission-filtered staff workspace, including clinical Intake Record reveal |
 | `/student/invitation`  | Delivered Invitation Code redemption                                         |
+| `/student/sign-in`     | Sign-In Code starts a Student Session and restores durable school state      |
 | `/student`             | Server-authoritative Student access restoration                              |
 | `/student/intake`      | Synthetic Student Intake Draft and submission                                |
 | `/student/learning`    | Server-confirmed Item Completion for one item                                |
