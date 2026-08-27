@@ -19,7 +19,43 @@ export type DisplayedLearningItem = {
   revisionNumber: number;
   kind: LearningItemKind;
   text: string;
+  href: string | null;
+  moduleId: string;
   moduleTitle: string;
+};
+
+export type ItemCompletionView = {
+  itemCompletionId: string;
+  itemId: string;
+  revisionNumber: number;
+  schoolConfigurationReleaseId: string;
+  completedAt: string;
+};
+
+export type ProjectedLearningItem = DisplayedLearningItem & {
+  completion: ItemCompletionView | null;
+};
+
+export type LearningSectionProjection = {
+  kind: LearningItemKind;
+  completedCount: number;
+  totalCount: number;
+  percentComplete: number;
+  items: ProjectedLearningItem[];
+};
+
+export type LearningBadgeProjection = {
+  key: string;
+  name: string;
+  earned: boolean;
+};
+
+export type LearningModuleProjection = {
+  moduleId: string;
+  title: string;
+  completed: boolean;
+  badge: LearningBadgeProjection | null;
+  sections: LearningSectionProjection[];
 };
 
 export type StoredItemCompletion = {
@@ -35,14 +71,9 @@ export type StudentLearningSnapshot = {
   learningUnlocked: boolean;
   schoolConfigurationReleaseId: string | null;
   locale: LearningLocale;
+  modules: LearningModuleProjection[];
   item: DisplayedLearningItem | null;
-  completion: {
-    itemCompletionId: string;
-    itemId: string;
-    revisionNumber: number;
-    schoolConfigurationReleaseId: string;
-    completedAt: string;
-  } | null;
+  completion: ItemCompletionView | null;
 };
 
 export type AcknowledgeLearningItemCommand = {
@@ -131,6 +162,12 @@ export type LearningProgressStore = {
   >;
 };
 
+const sectionCollections = [
+  ['knowledgeItems', 'knowledge'],
+  ['skillItems', 'skill'],
+  ['applicationItems', 'application'],
+] as const;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -144,75 +181,192 @@ function localizedText(
   return typeof localized.value === 'string' ? localized.value : undefined;
 }
 
+function localizedTextWithFallback(
+  value: unknown,
+  locale: LearningLocale,
+): string | undefined {
+  return (
+    localizedText(value, locale) ??
+    (locale === 'en-US' ? undefined : localizedText(value, 'en-US'))
+  );
+}
+
 function authoredItems(
   module: Record<string, unknown>,
   collection: 'knowledgeItems' | 'skillItems' | 'applicationItems',
 ): Record<string, unknown>[] {
   const items = module[collection];
   if (!Array.isArray(items)) return [];
-  return items.flatMap((item) => (isRecord(item) ? [item] : []));
+  return items
+    .flatMap((item) => (isRecord(item) ? [item] : []))
+    .filter((item) => Number.isInteger(item.order))
+    .sort((left, right) => Number(left.order) - Number(right.order));
+}
+
+function releasedModules(release: ActiveLearningRelease) {
+  return release.modules
+    .map((module) => module.payload)
+    .filter(
+      (payload): payload is Record<string, unknown> & { id: string } =>
+        typeof payload.id === 'string' && Number.isInteger(payload.order),
+    )
+    .sort((left, right) => Number(left.order) - Number(right.order));
+}
+
+function itemHref(item: Record<string, unknown>): string | null {
+  return typeof item.href === 'string' && item.href.length > 0
+    ? item.href
+    : null;
 }
 
 function projectItem(
   item: Record<string, unknown>,
   kind: LearningItemKind,
+  moduleId: string,
   moduleTitle: string,
   locale: LearningLocale,
 ): DisplayedLearningItem | undefined {
   if (typeof item.id !== 'string' || !Number.isInteger(item.revision)) {
     return undefined;
   }
-  const text = localizedText(item.text, locale);
-  if (!text) return undefined;
+  const text = localizedTextWithFallback(item.text, locale) ?? '';
   return {
     itemId: item.id,
     revisionNumber: Number(item.revision),
     kind,
     text,
+    href: itemHref(item),
+    moduleId,
     moduleTitle,
   };
 }
 
-function selectDisplayedKnowledgeItem(release: ActiveLearningRelease):
-  | {
-      item: Record<string, unknown>;
-      module: Record<string, unknown>;
-    }
-  | undefined {
-  const modules = release.modules
-    .map((module) => module.payload)
-    .filter((payload) => Number.isInteger(payload.order))
-    .sort((left, right) => Number(left.order) - Number(right.order));
-  const module = modules[0];
-  if (!module) return undefined;
-  const items = authoredItems(module, 'knowledgeItems')
-    .filter((item) => Number.isInteger(item.order))
-    .sort((left, right) => Number(left.order) - Number(right.order));
-  const item = items[0];
-  return item ? { item, module } : undefined;
+function percentComplete(completedCount: number, totalCount: number): number {
+  if (totalCount === 0) return 0;
+  return Math.floor((completedCount * 100) / totalCount);
 }
 
-export function projectDisplayedLearningItem(
+function completionView(completion: StoredItemCompletion): ItemCompletionView {
+  return {
+    itemCompletionId: completion.itemCompletionId,
+    itemId: completion.itemId,
+    revisionNumber: completion.revisionNumber,
+    schoolConfigurationReleaseId: completion.schoolConfigurationReleaseId,
+    completedAt: completion.completedAt.toISOString(),
+  };
+}
+
+function matchingCompletion(
+  completions: StoredItemCompletion[],
+  item: DisplayedLearningItem,
+): ItemCompletionView | null {
+  const completion = completions.find(
+    (record) =>
+      record.itemId === item.itemId &&
+      record.revisionNumber === item.revisionNumber,
+  );
+  return completion ? completionView(completion) : null;
+}
+
+function projectBadge(
+  module: Record<string, unknown>,
+  locale: LearningLocale,
+  earned: boolean,
+): LearningBadgeProjection | null {
+  if (!isRecord(module.badge) || typeof module.badge.key !== 'string') {
+    return null;
+  }
+  const name = localizedTextWithFallback(module.badge.name, locale);
+  if (!name) return null;
+  return { key: module.badge.key, name, earned };
+}
+
+export function projectLearningProgress(
   release: ActiveLearningRelease,
   locale: LearningLocale,
-): DisplayedLearningItem | undefined {
-  const selected = selectDisplayedKnowledgeItem(release);
-  if (!selected) return undefined;
-  const moduleTitle = localizedText(selected.module.title, locale);
-  if (!moduleTitle) return undefined;
-  return projectItem(selected.item, 'knowledge', moduleTitle, locale);
+  completions: StoredItemCompletion[],
+): {
+  modules: LearningModuleProjection[];
+  item: DisplayedLearningItem | null;
+  completion: ItemCompletionView | null;
+} {
+  const modules = releasedModules(release).flatMap((module) => {
+    const moduleTitle = localizedTextWithFallback(module.title, locale);
+    if (!moduleTitle) return [];
+    const sections = sectionCollections.map(([collection, kind]) => {
+      const items = authoredItems(module, collection).flatMap((item) => {
+        const displayed = projectItem(
+          item,
+          kind,
+          module.id,
+          moduleTitle,
+          locale,
+        );
+        if (!displayed) return [];
+        return [
+          {
+            ...displayed,
+            completion: matchingCompletion(completions, displayed),
+          } satisfies ProjectedLearningItem,
+        ];
+      });
+      const completedCount = items.filter(
+        (item) => item.completion !== null,
+      ).length;
+      return {
+        kind,
+        completedCount,
+        totalCount: items.length,
+        percentComplete: percentComplete(completedCount, items.length),
+        items,
+      } satisfies LearningSectionProjection;
+    });
+    const completed = sections.every(
+      (section) => section.completedCount === section.totalCount,
+    );
+    return [
+      {
+        moduleId: module.id,
+        title: moduleTitle,
+        completed,
+        badge: projectBadge(module, locale, completed),
+        sections,
+      } satisfies LearningModuleProjection,
+    ];
+  });
+  const resume = modules
+    .flatMap((module) => module.sections.flatMap((section) => section.items))
+    .find((item) => item.completion === null);
+  if (!resume) {
+    return { modules, item: null, completion: null };
+  }
+  return {
+    modules,
+    item: {
+      itemId: resume.itemId,
+      revisionNumber: resume.revisionNumber,
+      kind: resume.kind,
+      text: resume.text,
+      href: resume.href,
+      moduleId: resume.moduleId,
+      moduleTitle: resume.moduleTitle,
+    },
+    completion: null,
+  };
 }
 
-export function displayedItemMatches(
+export function releasedItemMatches(
   release: ActiveLearningRelease,
   itemId: string,
   revisionNumber: number,
 ): boolean {
-  const selected = selectDisplayedKnowledgeItem(release);
-  return (
-    typeof selected?.item.id === 'string' &&
-    Number(selected.item.revision) === revisionNumber &&
-    selected.item.id === itemId
+  return releasedModules(release).some((module) =>
+    sectionCollections.some(([collection]) =>
+      authoredItems(module, collection).some(
+        (item) =>
+          item.id === itemId && Number(item.revision) === revisionNumber,
+      ),
+    ),
   );
 }
 
@@ -228,7 +382,7 @@ export function assertAcknowledgeable(input: {
   if (
     input.release.schoolConfigurationReleaseId !==
       input.expectedSchoolConfigurationReleaseId ||
-    !displayedItemMatches(input.release, input.itemId, input.revisionNumber)
+    !releasedItemMatches(input.release, input.itemId, input.revisionNumber)
   ) {
     throw new LearningRevisionConflictError();
   }
@@ -250,16 +404,6 @@ function requestBinding(command: {
       }),
     )
     .digest('hex');
-}
-
-function completionView(completion: StoredItemCompletion) {
-  return {
-    itemCompletionId: completion.itemCompletionId,
-    itemId: completion.itemId,
-    revisionNumber: completion.revisionNumber,
-    schoolConfigurationReleaseId: completion.schoolConfigurationReleaseId,
-    completedAt: completion.completedAt.toISOString(),
-  };
 }
 
 export function createLearningProgress(dependencies: {
@@ -284,23 +428,21 @@ export function createLearningProgress(dependencies: {
         workspaceId: session.workspaceId,
       });
       if (!state.release) throw new LearningUnavailableError();
-      const item = state.learningUnlocked
-        ? (projectDisplayedLearningItem(state.release, command.locale) ?? null)
-        : null;
-      const completion = item
-        ? (state.completions.find(
-            (record) =>
-              record.itemId === item.itemId &&
-              record.revisionNumber === item.revisionNumber,
-          ) ?? null)
-        : null;
+      const projection = state.learningUnlocked
+        ? projectLearningProgress(
+            state.release,
+            command.locale,
+            state.completions,
+          )
+        : { modules: [], item: null, completion: null };
       return {
         learningUnlocked: state.learningUnlocked,
         schoolConfigurationReleaseId:
           state.release.schoolConfigurationReleaseId,
         locale: command.locale,
-        item,
-        completion: completion ? completionView(completion) : null,
+        modules: projection.modules,
+        item: projection.item,
+        completion: projection.completion,
       } satisfies StudentLearningSnapshot;
     },
 

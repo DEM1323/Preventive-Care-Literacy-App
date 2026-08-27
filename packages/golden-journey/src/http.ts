@@ -74,3 +74,26 @@ export async function readJson(response: Response): Promise<unknown> {
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
+
+export function learningSnapshotContainsItemCompletion(
+  body: unknown,
+  itemCompletionId: string,
+): boolean {
+  if (!isRecord(body) || !Array.isArray(body.modules)) return false;
+  return body.modules.some(
+    (module) =>
+      isRecord(module) &&
+      Array.isArray(module.sections) &&
+      module.sections.some(
+        (section) =>
+          isRecord(section) &&
+          Array.isArray(section.items) &&
+          section.items.some(
+            (item) =>
+              isRecord(item) &&
+              isRecord(item.completion) &&
+              item.completion.itemCompletionId === itemCompletionId,
+          ),
+      ),
+  );
+}

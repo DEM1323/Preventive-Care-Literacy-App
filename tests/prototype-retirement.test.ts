@@ -64,8 +64,12 @@ test('Student learning shows Completed only from server-accepted Item Completion
   );
   expect(learningSource).not.toContain('localStorage');
   expect(learningSource).not.toContain('sessionStorage');
-  expect(learningSource).toContain("busy === 'save' ? 'Saving...'");
-  expect(learningSource).toContain('snapshot?.completion');
+  expect(learningSource).toContain('busy === item.itemId');
+  expect(learningSource).toContain('Saving...');
+  expect(learningSource).toContain('Mark as reviewed');
+  expect(learningSource).toContain('I can do this');
+  expect(learningSource).toContain('I did this');
+  expect(learningSource).toContain('item.completion');
   expect(learningSource).not.toContain('setCompleted(true)');
 });
 

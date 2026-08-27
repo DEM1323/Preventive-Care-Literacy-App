@@ -22960,6 +22960,12 @@
                         { "type": "null" },
                         {
                           "properties": {
+                            "href": {
+                              "anyOf": [
+                                { "type": "string" },
+                                { "type": "null" }
+                              ]
+                            },
                             "itemId": { "format": "uuid", "type": "string" },
                             "kind": {
                               "anyOf": [
@@ -22968,6 +22974,7 @@
                                 { "enum": ["application"], "type": "string" }
                               ]
                             },
+                            "moduleId": { "format": "uuid", "type": "string" },
                             "moduleTitle": { "type": "string" },
                             "revisionNumber": {
                               "minimum": 1,
@@ -22980,6 +22987,8 @@
                             "revisionNumber",
                             "kind",
                             "text",
+                            "href",
+                            "moduleId",
                             "moduleTitle"
                           ],
                           "type": "object"
@@ -22996,6 +23005,167 @@
                         { "enum": ["ht-HT"], "type": "string" }
                       ]
                     },
+                    "modules": {
+                      "items": {
+                        "properties": {
+                          "badge": {
+                            "anyOf": [
+                              { "type": "null" },
+                              {
+                                "properties": {
+                                  "earned": { "type": "boolean" },
+                                  "key": { "type": "string" },
+                                  "name": { "type": "string" }
+                                },
+                                "required": ["key", "name", "earned"],
+                                "type": "object"
+                              }
+                            ]
+                          },
+                          "completed": { "type": "boolean" },
+                          "moduleId": { "format": "uuid", "type": "string" },
+                          "sections": {
+                            "items": {
+                              "properties": {
+                                "completedCount": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "items": {
+                                  "items": {
+                                    "properties": {
+                                      "completion": {
+                                        "anyOf": [
+                                          { "type": "null" },
+                                          {
+                                            "properties": {
+                                              "completedAt": {
+                                                "format": "date-time",
+                                                "type": "string"
+                                              },
+                                              "itemCompletionId": {
+                                                "format": "uuid",
+                                                "type": "string"
+                                              },
+                                              "itemId": {
+                                                "format": "uuid",
+                                                "type": "string"
+                                              },
+                                              "revisionNumber": {
+                                                "minimum": 1,
+                                                "type": "integer"
+                                              },
+                                              "schoolConfigurationReleaseId": {
+                                                "format": "uuid",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "itemCompletionId",
+                                              "itemId",
+                                              "revisionNumber",
+                                              "schoolConfigurationReleaseId",
+                                              "completedAt"
+                                            ],
+                                            "type": "object"
+                                          }
+                                        ]
+                                      },
+                                      "href": {
+                                        "anyOf": [
+                                          { "type": "string" },
+                                          { "type": "null" }
+                                        ]
+                                      },
+                                      "itemId": {
+                                        "format": "uuid",
+                                        "type": "string"
+                                      },
+                                      "kind": {
+                                        "anyOf": [
+                                          {
+                                            "enum": ["knowledge"],
+                                            "type": "string"
+                                          },
+                                          {
+                                            "enum": ["skill"],
+                                            "type": "string"
+                                          },
+                                          {
+                                            "enum": ["application"],
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "moduleId": {
+                                        "format": "uuid",
+                                        "type": "string"
+                                      },
+                                      "moduleTitle": { "type": "string" },
+                                      "revisionNumber": {
+                                        "minimum": 1,
+                                        "type": "integer"
+                                      },
+                                      "text": { "type": "string" }
+                                    },
+                                    "required": [
+                                      "itemId",
+                                      "revisionNumber",
+                                      "kind",
+                                      "text",
+                                      "href",
+                                      "moduleId",
+                                      "moduleTitle",
+                                      "completion"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "type": "array"
+                                },
+                                "kind": {
+                                  "anyOf": [
+                                    { "enum": ["knowledge"], "type": "string" },
+                                    { "enum": ["skill"], "type": "string" },
+                                    {
+                                      "enum": ["application"],
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "percentComplete": {
+                                  "maximum": 100,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "totalCount": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "completedCount",
+                                "totalCount",
+                                "percentComplete",
+                                "items"
+                              ],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "title": { "type": "string" }
+                        },
+                        "required": [
+                          "moduleId",
+                          "title",
+                          "completed",
+                          "badge",
+                          "sections"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
                     "schoolConfigurationReleaseId": {
                       "anyOf": [
                         { "format": "uuid", "type": "string" },
@@ -23007,6 +23177,7 @@
                     "learningUnlocked",
                     "schoolConfigurationReleaseId",
                     "locale",
+                    "modules",
                     "item",
                     "completion"
                   ],

@@ -1085,6 +1085,53 @@ const LearningItemKindSchema = Type.Union([
   Type.Literal('skill'),
   Type.Literal('application'),
 ]);
+const LearningItemCompletionSchema = Type.Object({
+  itemCompletionId: Type.String({ format: 'uuid' }),
+  itemId: Type.String({ format: 'uuid' }),
+  revisionNumber: Type.Integer({ minimum: 1 }),
+  schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+  completedAt: Type.String({ format: 'date-time' }),
+});
+const LearningDisplayedItemSchema = Type.Object({
+  itemId: Type.String({ format: 'uuid' }),
+  revisionNumber: Type.Integer({ minimum: 1 }),
+  kind: LearningItemKindSchema,
+  text: Type.String(),
+  href: Type.Union([Type.String(), Type.Null()]),
+  moduleId: Type.String({ format: 'uuid' }),
+  moduleTitle: Type.String(),
+});
+const LearningProjectedItemSchema = Type.Object({
+  itemId: Type.String({ format: 'uuid' }),
+  revisionNumber: Type.Integer({ minimum: 1 }),
+  kind: LearningItemKindSchema,
+  text: Type.String(),
+  href: Type.Union([Type.String(), Type.Null()]),
+  moduleId: Type.String({ format: 'uuid' }),
+  moduleTitle: Type.String(),
+  completion: Type.Union([Type.Null(), LearningItemCompletionSchema]),
+});
+const LearningSectionProjectionSchema = Type.Object({
+  kind: LearningItemKindSchema,
+  completedCount: Type.Integer({ minimum: 0 }),
+  totalCount: Type.Integer({ minimum: 0 }),
+  percentComplete: Type.Integer({ minimum: 0, maximum: 100 }),
+  items: Type.Array(LearningProjectedItemSchema),
+});
+const LearningModuleProjectionSchema = Type.Object({
+  moduleId: Type.String({ format: 'uuid' }),
+  title: Type.String(),
+  completed: Type.Boolean(),
+  badge: Type.Union([
+    Type.Null(),
+    Type.Object({
+      key: Type.String(),
+      name: Type.String(),
+      earned: Type.Boolean(),
+    }),
+  ]),
+  sections: Type.Array(LearningSectionProjectionSchema),
+});
 const StudentLearningSnapshotResponse = Type.Object({
   learningUnlocked: Type.Boolean(),
   schoolConfigurationReleaseId: Type.Union([
@@ -1092,26 +1139,9 @@ const StudentLearningSnapshotResponse = Type.Object({
     Type.Null(),
   ]),
   locale: IntakeLocaleSchema,
-  item: Type.Union([
-    Type.Null(),
-    Type.Object({
-      itemId: Type.String({ format: 'uuid' }),
-      revisionNumber: Type.Integer({ minimum: 1 }),
-      kind: LearningItemKindSchema,
-      text: Type.String(),
-      moduleTitle: Type.String(),
-    }),
-  ]),
-  completion: Type.Union([
-    Type.Null(),
-    Type.Object({
-      itemCompletionId: Type.String({ format: 'uuid' }),
-      itemId: Type.String({ format: 'uuid' }),
-      revisionNumber: Type.Integer({ minimum: 1 }),
-      schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
-      completedAt: Type.String({ format: 'date-time' }),
-    }),
-  ]),
+  modules: Type.Array(LearningModuleProjectionSchema),
+  item: Type.Union([Type.Null(), LearningDisplayedItemSchema]),
+  completion: Type.Union([Type.Null(), LearningItemCompletionSchema]),
 });
 const AcknowledgeLearningItemBody = Type.Object(
   {

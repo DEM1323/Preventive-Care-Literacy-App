@@ -44,6 +44,25 @@ const mutationHeaders = {
   'content-type': 'application/json',
 } as const;
 const acceptedOperationId = '018f1f5e-7b76-7f70-8f4d-9dc17ecf61aa';
+const primaryCareModuleId = '16481542-3831-4d18-aa0c-f138fbc7a970';
+const primaryCareKnowledgeIds = [
+  '1fa49d99-82a5-4614-a11c-c5142b367632',
+  'f8b680c1-7280-493a-a3e6-be65f7a42990',
+  '3ad6aae0-9062-491d-a1cf-f531bba2f45b',
+] as const;
+const primaryCareSkillIds = [
+  'c328aa32-a628-4de4-9200-46406e17e6c3',
+  '1989eaa3-0d7f-4dd2-9ba4-61b839d5e83a',
+  'bdbe0506-49c8-423e-8a03-8915d29a004b',
+  'db0ba20b-df51-4f9b-9c60-7b5720e07467',
+  '4e0137e4-f20f-4b1f-8318-1e9b9b0cb78f',
+] as const;
+const primaryCareApplicationId = 'f1cf82bc-5075-49d1-9846-86be6abc9b75';
+const primaryCareItemIds = [
+  ...primaryCareKnowledgeIds,
+  ...primaryCareSkillIds,
+  primaryCareApplicationId,
+] as const;
 
 let now = new Date('2026-08-25T16:00:00.000Z');
 let postgres: EphemeralPostgres;
@@ -232,6 +251,30 @@ async function acknowledgeItem(
   });
 }
 
+function completionOf(snapshot: StudentLearningSnapshot, itemId: string) {
+  for (const module of snapshot.modules) {
+    for (const section of module.sections) {
+      const item = section.items.find((entry) => entry.itemId === itemId);
+      if (item) return item.completion;
+    }
+  }
+  return undefined;
+}
+
+function sectionOf(
+  snapshot: StudentLearningSnapshot,
+  moduleId: string,
+  kind: 'knowledge' | 'skill' | 'application',
+) {
+  return snapshot.modules
+    .find((module) => module.moduleId === moduleId)
+    ?.sections.find((section) => section.kind === kind);
+}
+
+function moduleOf(snapshot: StudentLearningSnapshot, moduleId: string) {
+  return snapshot.modules.find((module) => module.moduleId === moduleId);
+}
+
 beforeAll(async () => {
   candidate = JSON.parse(
     await readFile(
@@ -381,12 +424,13 @@ afterAll(async () => {
   await postgres?.stop();
 });
 
-test('learning stays locked until intake is accepted and then names one displayed item', async () => {
+test('learning stays locked until intake is accepted and then projects current-release progress', async () => {
   const locked = await readLearning(studentCookie);
   expect(locked.status).toBe(200);
   const lockedSnapshot = (await locked.json()) as StudentLearningSnapshot;
   expect(lockedSnapshot).toMatchObject({
     learningUnlocked: false,
+    modules: [],
     item: null,
     completion: null,
   });
@@ -407,13 +451,42 @@ test('learning stays locked until intake is accepted and then names one displaye
   const snapshot = (await opened.json()) as StudentLearningSnapshot;
   expect(snapshot.learningUnlocked).toBe(true);
   expect(snapshot.schoolConfigurationReleaseId).toBeString();
+  expect(snapshot.modules).toHaveLength(6);
+  expect(moduleOf(snapshot, primaryCareModuleId)).toMatchObject({
+    title: 'Primary & Preventive Care',
+    completed: false,
+    badge: {
+      key: 'primary-care',
+      name: 'Primary Care Champion',
+      earned: false,
+    },
+  });
+  expect(sectionOf(snapshot, primaryCareModuleId, 'knowledge')).toMatchObject({
+    completedCount: 0,
+    totalCount: 3,
+    percentComplete: 0,
+  });
+  expect(sectionOf(snapshot, primaryCareModuleId, 'skill')).toMatchObject({
+    completedCount: 0,
+    totalCount: 5,
+    percentComplete: 0,
+  });
+  expect(sectionOf(snapshot, primaryCareModuleId, 'application')).toMatchObject(
+    {
+      completedCount: 0,
+      totalCount: 1,
+      percentComplete: 0,
+    },
+  );
   expect(snapshot.item).toMatchObject({
+    itemId: primaryCareKnowledgeIds[0],
     kind: 'knowledge',
     revisionNumber: 1,
+    moduleId: primaryCareModuleId,
+    moduleTitle: 'Primary & Preventive Care',
+    href: null,
   });
-  expect(snapshot.item?.itemId).toBeString();
-  expect(snapshot.item?.text.length).toBeGreaterThan(0);
-  expect(snapshot.item?.moduleTitle.length).toBeGreaterThan(0);
+  expect(snapshot.item?.text).toContain('Routine Check-ups');
   expect(snapshot.completion).toBeNull();
 });
 
@@ -446,13 +519,23 @@ test('acknowledgement binds the Student, workspace, item, revision, release, and
 
   const confirmed = await readLearning(studentCookie);
   const restored = (await confirmed.json()) as StudentLearningSnapshot;
-  expect(restored.completion).toEqual({
+  expect(completionOf(restored, item.itemId)).toEqual({
     itemCompletionId: created.itemCompletionId,
     itemId: item.itemId,
     revisionNumber: item.revisionNumber,
     schoolConfigurationReleaseId: snapshot.schoolConfigurationReleaseId,
     completedAt: now.toISOString(),
   });
+  expect(sectionOf(restored, primaryCareModuleId, 'knowledge')).toMatchObject({
+    completedCount: 1,
+    totalCount: 3,
+    percentComplete: 33,
+  });
+  expect(restored.item).toMatchObject({
+    itemId: primaryCareKnowledgeIds[1],
+    kind: 'knowledge',
+  });
+  expect(restored.completion).toBeNull();
 
   const replay = await acknowledgeItem(studentCookie, command);
   expect(replay.status).toBe(201);
@@ -597,7 +680,7 @@ test('fresh-browser Sign-In restores Memberships, Intake Record status, and Lear
   expect(learning.status).toBe(200);
   const snapshot = (await learning.json()) as StudentLearningSnapshot;
   expect(snapshot.learningUnlocked).toBe(true);
-  expect(snapshot.completion).not.toBeNull();
+  expect(completionOf(snapshot, primaryCareKnowledgeIds[0])).not.toBeNull();
 });
 
 test('fresh Student authentication in another browser restores the Item Completion', async () => {
@@ -613,12 +696,15 @@ test('fresh Student authentication in another browser restores the Item Completi
   expect(restored.status).toBe(200);
   const snapshot = (await restored.json()) as StudentLearningSnapshot;
   expect(snapshot.learningUnlocked).toBe(true);
-  expect(snapshot.completion?.itemId).toBe(snapshot.item?.itemId);
-  expect(snapshot.completion?.itemCompletionId).toBeString();
+  expect(
+    completionOf(snapshot, primaryCareKnowledgeIds[0])?.itemCompletionId,
+  ).toBeString();
 
   const original = await readLearning(studentCookie);
   const originalSnapshot = (await original.json()) as StudentLearningSnapshot;
-  expect(snapshot.completion).toEqual(originalSnapshot.completion);
+  expect(completionOf(snapshot, primaryCareKnowledgeIds[0])).toEqual(
+    completionOf(originalSnapshot, primaryCareKnowledgeIds[0]),
+  );
 });
 
 test('staff cannot read or mutate Item Completions and no uncomplete path exists', async () => {
@@ -654,11 +740,22 @@ test('staff cannot read or mutate Item Completions and no uncomplete path exists
   );
   expect(clinical.response.status).toBe(200);
   expect(JSON.stringify(clinical.data)).not.toContain('itemCompletion');
+  expect(JSON.stringify(clinical.data)).not.toMatch(
+    /percentComplete|Primary Care Champion/,
+  );
   expect(clinical.data?.students).toEqual([
     expect.objectContaining({
       studentId: expect.any(String),
     }),
   ]);
+
+  const configuration = await createApiClient(baseUrl).GET(
+    '/api/v1/administration/school-configuration',
+    { headers: { cookie: administratorCookie } },
+  );
+  expect(configuration.response.status).toBe(200);
+  expect(JSON.stringify(configuration.data)).not.toContain('itemCompletion');
+  expect(JSON.stringify(configuration.data)).not.toContain('percentComplete');
 });
 
 test('one Student cannot replay another Student acknowledgement', async () => {
@@ -686,14 +783,14 @@ test('one Student cannot replay another Student acknowledgement', async () => {
   const firstStudent = await readLearning(studentCookie);
   const firstSnapshot = (await firstStudent.json()) as StudentLearningSnapshot;
   expect(created.itemCompletionId).not.toBe(
-    firstSnapshot.completion?.itemCompletionId,
+    completionOf(firstSnapshot, primaryCareKnowledgeIds[0])?.itemCompletionId,
   );
 
   const confirmed = await readLearning(peerCookie);
   const peerSnapshot = (await confirmed.json()) as StudentLearningSnapshot;
-  expect(peerSnapshot.completion?.itemCompletionId).toBe(
-    created.itemCompletionId,
-  );
+  expect(
+    completionOf(peerSnapshot, snapshot.item!.itemId)?.itemCompletionId,
+  ).toBe(created.itemCompletionId);
 });
 
 test('a later School Configuration Release rejects a stale acknowledgement', async () => {
@@ -764,4 +861,209 @@ test('a later School Configuration Release rejects a stale acknowledgement', asy
   expect(
     ((await accepted.json()) as AcknowledgeLearningItemResult).replayed,
   ).toBe(false);
+});
+
+test('Knowledge, Skill, and Application actions complete distinct current-release items', async () => {
+  const cookie = await inviteAndRedeemStudent({
+    classId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf6301',
+    invitationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf6302',
+    recipient: 'student.progress@example.test',
+    name: 'Health Literacy Progress',
+  });
+  await submitIntake(cookie);
+  const opened = await readLearning(cookie);
+  const snapshot = (await opened.json()) as StudentLearningSnapshot;
+  const releaseId = snapshot.schoolConfigurationReleaseId as string;
+
+  const knowledge = await acknowledgeItem(cookie, {
+    operationId: crypto.randomUUID(),
+    expectedSchoolConfigurationReleaseId: releaseId,
+    itemId: primaryCareKnowledgeIds[0],
+    revisionNumber: 1,
+  });
+  const skill = await acknowledgeItem(cookie, {
+    operationId: crypto.randomUUID(),
+    expectedSchoolConfigurationReleaseId: releaseId,
+    itemId: primaryCareSkillIds[0],
+    revisionNumber: 1,
+  });
+  const application = await acknowledgeItem(cookie, {
+    operationId: crypto.randomUUID(),
+    expectedSchoolConfigurationReleaseId: releaseId,
+    itemId: primaryCareApplicationId,
+    revisionNumber: 1,
+  });
+  expect(knowledge.status).toBe(201);
+  expect(skill.status).toBe(201);
+  expect(application.status).toBe(201);
+  const created = {
+    knowledge: (await knowledge.json()) as AcknowledgeLearningItemResult,
+    skill: (await skill.json()) as AcknowledgeLearningItemResult,
+    application: (await application.json()) as AcknowledgeLearningItemResult,
+  };
+  expect(created.knowledge.itemId).toBe(primaryCareKnowledgeIds[0]);
+  expect(created.skill.itemId).toBe(primaryCareSkillIds[0]);
+  expect(created.application.itemId).toBe(primaryCareApplicationId);
+  expect(
+    new Set(Object.values(created).map((item) => item.itemCompletionId)).size,
+  ).toBe(3);
+
+  const spanish = await readLearning(cookie, 'es-US');
+  const localized = (await spanish.json()) as StudentLearningSnapshot;
+  expect(localized.locale).toBe('es-US');
+  expect(moduleOf(localized, primaryCareModuleId)?.title).toBe(
+    'Atención Primaria y Preventiva',
+  );
+  expect(
+    sectionOf(localized, primaryCareModuleId, 'knowledge')?.items[0]?.text,
+  ).toContain('Chequeos de rutina');
+  expect(localized.item?.itemId).not.toBe(primaryCareKnowledgeIds[0]);
+  expect(localized.item?.itemId).not.toBe(primaryCareSkillIds[0]);
+  expect(localized.item?.itemId).not.toBe(primaryCareApplicationId);
+  expect(completionOf(localized, localized.item!.itemId)).toBeNull();
+  expect(sectionOf(localized, primaryCareModuleId, 'knowledge')).toMatchObject({
+    completedCount: 1,
+    totalCount: 3,
+    percentComplete: 33,
+  });
+  expect(sectionOf(localized, primaryCareModuleId, 'skill')).toMatchObject({
+    completedCount: 1,
+    totalCount: 5,
+    percentComplete: 20,
+  });
+  expect(
+    sectionOf(localized, primaryCareModuleId, 'application'),
+  ).toMatchObject({
+    completedCount: 1,
+    totalCount: 1,
+    percentComplete: 100,
+  });
+  expect(completionOf(localized, primaryCareKnowledgeIds[0])).toEqual({
+    itemCompletionId: created.knowledge.itemCompletionId,
+    itemId: primaryCareKnowledgeIds[0],
+    revisionNumber: 1,
+    schoolConfigurationReleaseId: releaseId,
+    completedAt: now.toISOString(),
+  });
+  expect(
+    completionOf(localized, primaryCareSkillIds[0])?.itemCompletionId,
+  ).toBe(created.skill.itemCompletionId);
+  expect(
+    completionOf(localized, primaryCareApplicationId)?.itemCompletionId,
+  ).toBe(created.application.itemCompletionId);
+  expect(moduleOf(localized, primaryCareModuleId)?.completed).toBe(false);
+  expect(moduleOf(localized, primaryCareModuleId)?.badge?.earned).toBe(false);
+});
+
+test('retry and concurrent clients union Item Completions without duplication', async () => {
+  const cookie = await inviteAndRedeemStudent({
+    classId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf6303',
+    invitationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf6304',
+    recipient: 'student.union@example.test',
+    name: 'Health Literacy Union',
+  });
+  await submitIntake(cookie);
+  const opened = await readLearning(cookie);
+  const snapshot = (await opened.json()) as StudentLearningSnapshot;
+  const releaseId = snapshot.schoolConfigurationReleaseId as string;
+  const knowledgeCommand = {
+    operationId: crypto.randomUUID(),
+    expectedSchoolConfigurationReleaseId: releaseId,
+    itemId: primaryCareKnowledgeIds[0],
+    revisionNumber: 1,
+  };
+  const skillCommand = {
+    operationId: crypto.randomUUID(),
+    expectedSchoolConfigurationReleaseId: releaseId,
+    itemId: primaryCareSkillIds[0],
+    revisionNumber: 1,
+  };
+
+  const concurrent = await Promise.all([
+    acknowledgeItem(cookie, knowledgeCommand),
+    acknowledgeItem(cookie, skillCommand),
+    acknowledgeItem(cookie, knowledgeCommand),
+  ]);
+  for (const response of concurrent) {
+    expect(response.status).toBe(201);
+  }
+  const bodies = (await Promise.all(
+    concurrent.map((response) => response.json()),
+  )) as AcknowledgeLearningItemResult[];
+  const knowledgeIds = new Set(
+    bodies
+      .filter((body) => body.itemId === primaryCareKnowledgeIds[0])
+      .map((body) => body.itemCompletionId),
+  );
+  const skillIds = new Set(
+    bodies
+      .filter((body) => body.itemId === primaryCareSkillIds[0])
+      .map((body) => body.itemCompletionId),
+  );
+  expect(knowledgeIds.size).toBe(1);
+  expect(skillIds.size).toBe(1);
+
+  const confirmed = await readLearning(cookie);
+  const restored = (await confirmed.json()) as StudentLearningSnapshot;
+  expect(
+    completionOf(restored, primaryCareKnowledgeIds[0])?.itemCompletionId,
+  ).toBe([...knowledgeIds][0]);
+  expect(completionOf(restored, primaryCareSkillIds[0])?.itemCompletionId).toBe(
+    [...skillIds][0],
+  );
+});
+
+test('completing every current item in a module earns its badge and clears resume', async () => {
+  const cookie = await inviteAndRedeemStudent({
+    classId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf6305',
+    invitationId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf6306',
+    recipient: 'student.badge@example.test',
+    name: 'Health Literacy Badge',
+  });
+  await submitIntake(cookie);
+  const opened = await readLearning(cookie);
+  const snapshot = (await opened.json()) as StudentLearningSnapshot;
+  const releaseId = snapshot.schoolConfigurationReleaseId as string;
+  for (const itemId of primaryCareItemIds) {
+    const accepted = await acknowledgeItem(cookie, {
+      operationId: crypto.randomUUID(),
+      expectedSchoolConfigurationReleaseId: releaseId,
+      itemId,
+      revisionNumber: 1,
+    });
+    expect(accepted.status).toBe(201);
+  }
+
+  const completed = await readLearning(cookie);
+  const projection = (await completed.json()) as StudentLearningSnapshot;
+  expect(moduleOf(projection, primaryCareModuleId)).toMatchObject({
+    completed: true,
+    badge: {
+      key: 'primary-care',
+      name: 'Primary Care Champion',
+      earned: true,
+    },
+  });
+  expect(sectionOf(projection, primaryCareModuleId, 'knowledge')).toMatchObject(
+    {
+      completedCount: 3,
+      totalCount: 3,
+      percentComplete: 100,
+    },
+  );
+  expect(sectionOf(projection, primaryCareModuleId, 'skill')).toMatchObject({
+    completedCount: 5,
+    totalCount: 5,
+    percentComplete: 100,
+  });
+  expect(
+    sectionOf(projection, primaryCareModuleId, 'application'),
+  ).toMatchObject({
+    completedCount: 1,
+    totalCount: 1,
+    percentComplete: 100,
+  });
+  expect(projection.item?.moduleId).not.toBe(primaryCareModuleId);
+  expect(projection.item?.kind).toBe('knowledge');
+  expect(projection.completion).toBeNull();
 });
