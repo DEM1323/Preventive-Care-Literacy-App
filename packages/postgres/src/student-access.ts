@@ -789,5 +789,457 @@ export function createPostgresStudentAccessStore(options: {
         client.release();
       }
     },
+
+    async replaceVerifiedEmail(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:${request.operationId}`],
+        );
+        const receipt = await client.query<{ result: unknown }>(
+          `select result from infrastructure.operation_receipts
+            where workspace_id = $1 and operation_id = $2
+              and command_name = 'replaceStudentVerifiedEmail'`,
+          [request.workspaceId, request.operationId],
+        );
+        if (receipt.rows[0]) {
+          await client.query('commit');
+          return {
+            outcome: 'replayed' as const,
+            result: receipt.rows[0].result as typeof request.result,
+          };
+        }
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:student:${request.studentId}`],
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:verified-email:${request.recipientDigest}`],
+        );
+        const student = await client.query<{ student_id: string }>(
+          `select student_id from identity_access.students
+            where student_id = $1 and workspace_id = $2 for update`,
+          [request.studentId, request.workspaceId],
+        );
+        if (!student.rows[0]) {
+          await client.query('rollback');
+          return { outcome: 'not_found' };
+        }
+        await setLocal(client, 'app.student_id', request.studentId);
+        const recordIdentityReview = async (
+          reason:
+            'historical_binding' | 'current_binding' | 'pending_invitation',
+        ) => {
+          await client.query(
+            `insert into audit.evidence
+               (audit_id, workspace_id, operation_id, event_type, actor_type,
+                actor_id, occurred_at, details, record_owner, record_classification,
+                disposal_class)
+             values ($1, $2, $3, 'student_verified_email.identity_review', 'staff',
+                     $4, $5, $6::jsonb, 'school', 'audit_evidence',
+                     'workspace_audit_evidence')`,
+            [
+              request.auditId,
+              request.workspaceId,
+              request.operationId,
+              request.staffIdentityId,
+              request.occurredAt,
+              JSON.stringify({
+                studentId: request.studentId,
+                reason: request.reason,
+                identityVerification: request.identityVerification,
+                reviewReason: reason,
+              }),
+            ],
+          );
+          await client.query('commit');
+          return { outcome: 'identity_review' as const, reason };
+        };
+        const collision = await client.query<{
+          student_id: string;
+          status: 'current' | 'historical';
+        }>(
+          `select student_id, status
+             from identity_access.verified_email_addresses
+            where workspace_id = $1 and recipient_digest = $2
+            for update`,
+          [request.workspaceId, request.recipientDigest],
+        );
+        const bound = collision.rows[0];
+        if (bound) {
+          return await recordIdentityReview(
+            bound.status === 'historical'
+              ? 'historical_binding'
+              : 'current_binding',
+          );
+        }
+        const pending = await client.query(
+          `select invitation_id from identity_access.invitations
+            where workspace_id = $1 and recipient_digest = $2
+              and status in ('pending_delivery', 'delivered')
+              and authorization_expires_at > $3
+            limit 1`,
+          [request.workspaceId, request.recipientDigest, request.occurredAt],
+        );
+        if (pending.rowCount !== 0) {
+          return await recordIdentityReview('pending_invitation');
+        }
+
+        const currentEmail = await client.query<{
+          recipient_digest: string;
+        }>(
+          `select recipient_digest
+             from identity_access.verified_email_addresses
+            where workspace_id = $1 and student_id = $2 and status = 'current'
+            for update`,
+          [request.workspaceId, request.studentId],
+        );
+        const oldDigest = currentEmail.rows[0]?.recipient_digest;
+        if (oldDigest) {
+          await client.query(
+            `update identity_access.verified_email_addresses
+                set status = 'historical', retired_at = $3
+              where workspace_id = $1 and student_id = $2 and status = 'current'`,
+            [request.workspaceId, request.studentId, request.occurredAt],
+          );
+        }
+        await client.query(
+          `insert into identity_access.verified_email_addresses
+             (verified_email_address_id, workspace_id, student_id,
+              recipient_digest, key_id, ciphertext, status, verified_at,
+              retired_at, record_owner, record_classification, disposal_class)
+           values ($1, $2, $3, $4, $5, $6, 'current', $7, null,
+                   'school', 'student_record', 'verified_email_address')`,
+          [
+            request.verifiedEmailAddressId,
+            request.workspaceId,
+            request.studentId,
+            request.recipientDigest,
+            request.protectedRecipient.keyId,
+            request.protectedRecipient.ciphertext,
+            request.occurredAt,
+          ],
+        );
+
+        const sessions = await client.query<{ count: string }>(
+          `with revoked as (
+             update identity_access.student_sessions
+                set revoked_at = $3
+              where workspace_id = $1 and student_id = $2 and revoked_at is null
+          returning session_id
+           )
+           select count(*)::text as count from revoked`,
+          [request.workspaceId, request.studentId, request.occurredAt],
+        );
+        if (oldDigest) {
+          await client.query(
+            `update identity_access.sign_in_challenge_codes code
+                set completed_at = $3
+               from identity_access.sign_in_challenges challenge
+              where challenge.sign_in_challenge_id = code.sign_in_challenge_id
+                and challenge.workspace_id = $1
+                and challenge.recipient_digest = $2
+                and code.completed_at is null`,
+            [request.workspaceId, oldDigest, request.occurredAt],
+          );
+        }
+        const invitations = await client.query<{ count: string }>(
+          `with revoked as (
+             update identity_access.invitations
+                set status = 'revoked'
+              where workspace_id = $1
+                and recipient_digest = $2
+                and status in ('pending_delivery', 'delivered', 'delivery_failed')
+          returning invitation_id
+           )
+           select count(*)::text as count from revoked`,
+          [request.workspaceId, oldDigest ?? ''],
+        );
+        await client.query(
+          `update identity_access.invitation_challenges challenge
+              set completed_at = $2
+             from identity_access.invitations invitation
+            where invitation.invitation_id = challenge.invitation_id
+              and invitation.workspace_id = $1
+              and invitation.status = 'revoked'
+              and challenge.completed_at is null`,
+          [request.workspaceId, request.occurredAt],
+        );
+        await client.query(
+          `update identity_access.invitation_deliveries delivery
+              set status = 'suppressed'
+             from identity_access.invitations invitation
+            where invitation.invitation_id = delivery.invitation_id
+              and invitation.workspace_id = $1
+              and invitation.status = 'revoked'
+              and delivery.status <> 'delivered'`,
+          [request.workspaceId],
+        );
+
+        await client.query(
+          `insert into infrastructure.operation_receipts
+             (workspace_id, operation_id, command_name, result, recorded_at,
+              record_owner, record_classification, disposal_class)
+           values ($1, $2, 'replaceStudentVerifiedEmail', $3::jsonb, $4,
+                   'school', 'operational_evidence', 'operation_receipt')`,
+          [
+            request.workspaceId,
+            request.operationId,
+            JSON.stringify(request.result),
+            request.occurredAt,
+          ],
+        );
+        await client.query(
+          `insert into audit.evidence
+             (audit_id, workspace_id, operation_id, event_type, actor_type,
+              actor_id, occurred_at, details, record_owner, record_classification,
+              disposal_class)
+           values ($1, $2, $3, 'student_verified_email.replaced', 'staff', $4, $5,
+                   $6::jsonb, 'school', 'audit_evidence', 'workspace_audit_evidence')`,
+          [
+            request.auditId,
+            request.workspaceId,
+            request.operationId,
+            request.staffIdentityId,
+            request.occurredAt,
+            JSON.stringify({
+              studentId: request.studentId,
+              reason: request.reason,
+              identityVerification: request.identityVerification,
+              revokedSessionCount: Number(sessions.rows[0]?.count ?? 0),
+              revokedInvitationCount: Number(invitations.rows[0]?.count ?? 0),
+            }),
+          ],
+        );
+        await client.query('commit');
+        return { outcome: 'applied', result: request.result };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async disableStudentAccess(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:${request.operationId}`],
+        );
+        const receipt = await client.query<{ result: unknown }>(
+          `select result from infrastructure.operation_receipts
+            where workspace_id = $1 and operation_id = $2
+              and command_name = 'disableStudentAccess'`,
+          [request.workspaceId, request.operationId],
+        );
+        if (receipt.rows[0]) {
+          await client.query('commit');
+          return {
+            outcome: 'replayed' as const,
+            result: receipt.rows[0].result as typeof request.result,
+          };
+        }
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:student:${request.studentId}`],
+        );
+        const student = await client.query<{ student_id: string }>(
+          `select student_id from identity_access.students
+            where student_id = $1 and workspace_id = $2 for update`,
+          [request.studentId, request.workspaceId],
+        );
+        if (!student.rows[0]) {
+          await client.query('rollback');
+          return { outcome: 'not_found' };
+        }
+        await setLocal(client, 'app.student_id', request.studentId);
+        await client.query(
+          `update identity_access.students
+              set status = 'disabled'
+            where student_id = $1 and workspace_id = $2`,
+          [request.studentId, request.workspaceId],
+        );
+        const sessions = await client.query<{ count: string }>(
+          `with revoked as (
+             update identity_access.student_sessions
+                set revoked_at = $3
+              where workspace_id = $1 and student_id = $2 and revoked_at is null
+          returning session_id
+           )
+           select count(*)::text as count from revoked`,
+          [request.workspaceId, request.studentId, request.occurredAt],
+        );
+        await client.query(
+          `update identity_access.sign_in_challenge_codes code
+              set completed_at = $3
+             from identity_access.sign_in_challenges challenge
+            where challenge.sign_in_challenge_id = code.sign_in_challenge_id
+              and challenge.workspace_id = $1
+              and challenge.student_id = $2
+              and code.completed_at is null`,
+          [request.workspaceId, request.studentId, request.occurredAt],
+        );
+        await client.query(
+          `update identity_access.invitation_challenges challenge
+              set completed_at = $3
+             from identity_access.invitations invitation
+             join identity_access.verified_email_addresses email
+               on email.workspace_id = invitation.workspace_id
+              and email.recipient_digest = invitation.recipient_digest
+            where invitation.invitation_id = challenge.invitation_id
+              and email.student_id = $2
+              and invitation.workspace_id = $1
+              and invitation.status in ('pending_delivery', 'delivered', 'delivery_failed')
+              and challenge.completed_at is null`,
+          [request.workspaceId, request.studentId, request.occurredAt],
+        );
+        await client.query(
+          `insert into infrastructure.operation_receipts
+             (workspace_id, operation_id, command_name, result, recorded_at,
+              record_owner, record_classification, disposal_class)
+           values ($1, $2, 'disableStudentAccess', $3::jsonb, $4,
+                   'school', 'operational_evidence', 'operation_receipt')`,
+          [
+            request.workspaceId,
+            request.operationId,
+            JSON.stringify(request.result),
+            request.occurredAt,
+          ],
+        );
+        await client.query(
+          `insert into audit.evidence
+             (audit_id, workspace_id, operation_id, event_type, actor_type,
+              actor_id, occurred_at, details, record_owner, record_classification,
+              disposal_class)
+           values ($1, $2, $3, 'student_access.disabled', 'staff', $4, $5,
+                   $6::jsonb, 'school', 'audit_evidence', 'workspace_audit_evidence')`,
+          [
+            request.auditId,
+            request.workspaceId,
+            request.operationId,
+            request.staffIdentityId,
+            request.occurredAt,
+            JSON.stringify({
+              studentId: request.studentId,
+              reason: request.reason,
+              revokedSessionCount: Number(sessions.rows[0]?.count ?? 0),
+            }),
+          ],
+        );
+        await client.query('commit');
+        return { outcome: 'applied', result: request.result };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async enableStudentAccess(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:${request.operationId}`],
+        );
+        const receipt = await client.query<{ result: unknown }>(
+          `select result from infrastructure.operation_receipts
+            where workspace_id = $1 and operation_id = $2
+              and command_name = 'enableStudentAccess'`,
+          [request.workspaceId, request.operationId],
+        );
+        if (receipt.rows[0]) {
+          await client.query('commit');
+          return {
+            outcome: 'replayed' as const,
+            result: receipt.rows[0].result as typeof request.result,
+          };
+        }
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:student:${request.studentId}`],
+        );
+        const student = await client.query<{ student_id: string }>(
+          `select student_id from identity_access.students
+            where student_id = $1 and workspace_id = $2 for update`,
+          [request.studentId, request.workspaceId],
+        );
+        if (!student.rows[0]) {
+          await client.query('rollback');
+          return { outcome: 'not_found' };
+        }
+        await client.query(
+          `update identity_access.students
+              set status = 'active'
+            where student_id = $1 and workspace_id = $2`,
+          [request.studentId, request.workspaceId],
+        );
+        await client.query(
+          `insert into infrastructure.operation_receipts
+             (workspace_id, operation_id, command_name, result, recorded_at,
+              record_owner, record_classification, disposal_class)
+           values ($1, $2, 'enableStudentAccess', $3::jsonb, $4,
+                   'school', 'operational_evidence', 'operation_receipt')`,
+          [
+            request.workspaceId,
+            request.operationId,
+            JSON.stringify(request.result),
+            request.occurredAt,
+          ],
+        );
+        await client.query(
+          `insert into audit.evidence
+             (audit_id, workspace_id, operation_id, event_type, actor_type,
+              actor_id, occurred_at, details, record_owner, record_classification,
+              disposal_class)
+           values ($1, $2, $3, 'student_access.enabled', 'staff', $4, $5,
+                   $6::jsonb, 'school', 'audit_evidence', 'workspace_audit_evidence')`,
+          [
+            request.auditId,
+            request.workspaceId,
+            request.operationId,
+            request.staffIdentityId,
+            request.occurredAt,
+            JSON.stringify({
+              studentId: request.studentId,
+              reason: request.reason,
+            }),
+          ],
+        );
+        await client.query('commit');
+        return { outcome: 'applied', result: request.result };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
   };
 }

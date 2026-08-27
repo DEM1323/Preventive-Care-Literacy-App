@@ -185,6 +185,29 @@ export function createInvitationSecretProtector(
         generation: input.generation,
       }).recipient;
     },
+    revealVerifiedEmailRecipient(input) {
+      const key = keys.encryptionKeys[input.keyId];
+      if (!key) throw new Error('Verified email key is unavailable');
+      const packed = Buffer.from(input.ciphertext, 'base64url');
+      const decipher = createDecipheriv(
+        'aes-256-gcm',
+        key,
+        packed.subarray(0, 12),
+      );
+      decipher.setAAD(
+        Buffer.from(
+          recipientContext({
+            workspaceId: input.workspaceId,
+            studentId: input.studentId,
+          }),
+        ),
+      );
+      decipher.setAuthTag(packed.subarray(12, 28));
+      return Buffer.concat([
+        decipher.update(packed.subarray(28)),
+        decipher.final(),
+      ]).toString('utf8');
+    },
   };
 }
 

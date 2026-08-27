@@ -1,4 +1,10 @@
-import { useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
+import {
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import { createBrowserApiClient } from '../../../packages/api-client/src/index.ts';
 
 const client = createBrowserApiClient();
@@ -30,6 +36,15 @@ export type ClassDirectoryEntry = {
     studentId: string | null;
     classMembershipId: string | null;
     membershipStatus: 'none' | 'active' | 'inactive';
+    studentAccessStatus: 'active' | 'disabled' | null;
+    currentVerifiedEmail: string | null;
+    verifiedEmailHistory: {
+      recipient: string;
+      status: 'current' | 'historical';
+      verifiedAt: string;
+      retiredAt: string | null;
+    }[];
+    identityCollision: 'none' | 'historical_binding';
     latestInvitation: {
       invitationId: string;
       purpose: 'join_class';
@@ -48,7 +63,10 @@ export type ClassDirectoryEntry = {
 };
 
 type InvitationPreview =
-  | { outcome: 'ready'; reuse: 'none' | 'existing_student' | 'inactive_membership' }
+  | {
+      outcome: 'ready';
+      reuse: 'none' | 'existing_student' | 'inactive_membership';
+    }
   | { outcome: 'already_a_member' }
   | { outcome: 'already_invited' }
   | { outcome: 'identity_review'; reason: 'historical_binding' }
@@ -75,7 +93,8 @@ type CsvPreviewRow =
 
 type Problem = { code?: string; reason?: string };
 
-type ConfirmKind = 'revoke' | 'deactivate' | 'close';
+type ConfirmKind =
+  'revoke' | 'deactivate' | 'close' | 'replace-email' | 'disable' | 'enable';
 
 const invitationCsvMaxBytes = 32 * 1024;
 
@@ -164,6 +183,46 @@ function lastTransitionLabel(
   return `${row.latestInvitation.status.replaceAll('_', ' ')} ${when}`;
 }
 
+function StudentAccessStepUpFields(props: {
+  password: string;
+  totp: string;
+  onPassword: (value: string) => void;
+  onTotp: (value: string) => void;
+}) {
+  return (
+    <>
+      <label
+        className="grid gap-2 font-bold"
+        htmlFor="student-access-step-up-password"
+      >
+        Password
+        <input
+          id="student-access-step-up-password"
+          type="password"
+          autoComplete="current-password"
+          value={props.password}
+          onChange={(event) => props.onPassword(event.target.value)}
+          className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        />
+      </label>
+      <label
+        className="grid gap-2 font-bold"
+        htmlFor="student-access-step-up-totp"
+      >
+        Authenticator code
+        <input
+          id="student-access-step-up-totp"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          value={props.totp}
+          onChange={(event) => props.onTotp(event.target.value)}
+          className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        />
+      </label>
+    </>
+  );
+}
+
 function ConfirmDialog(props: {
   title: string;
   body: string;
@@ -217,7 +276,9 @@ export function ClassWorkspace(props: {
   const closedClasses = props.classes.filter(
     (entry) => entry.status === 'closed',
   );
-  const [selectedClassId, setSelectedClassId] = useState(openClasses[0]?.classId);
+  const [selectedClassId, setSelectedClassId] = useState(
+    openClasses[0]?.classId,
+  );
   const [historyClassId, setHistoryClassId] = useState<string | undefined>();
   const selected =
     openClasses.find((entry) => entry.classId === selectedClassId) ??
@@ -233,7 +294,12 @@ export function ClassWorkspace(props: {
   const [busy, setBusy] = useState(false);
   const [historyOpen, setHistoryOpen] = useState<string | undefined>();
   const [confirm, setConfirm] = useState<
-    | { kind: ConfirmKind; invitationId?: string; classMembershipId?: string }
+    | {
+        kind: ConfirmKind;
+        invitationId?: string;
+        classMembershipId?: string;
+        studentId?: string;
+      }
     | undefined
   >();
   const [emptyChoice, setEmptyChoice] = useState<'email' | 'csv' | undefined>();
@@ -248,6 +314,24 @@ export function ClassWorkspace(props: {
   const [csvOperationId, setCsvOperationId] = useState('');
   const [csvPassword, setCsvPassword] = useState('');
   const [csvTotp, setCsvTotp] = useState('');
+  const [emailHistoryOpen, setEmailHistoryOpen] = useState<
+    string | undefined
+  >();
+  const [replacementRecipient, setReplacementRecipient] = useState('');
+  const [replacementReason, setReplacementReason] = useState<
+    'mailbox_loss' | 'school_issued_address_change' | 'incorrect_address'
+  >('mailbox_loss');
+  const [identityVerification, setIdentityVerification] = useState<
+    'in_person_school_id' | 'guardian_confirmed' | 'school_record_match'
+  >('in_person_school_id');
+  const [disableReason, setDisableReason] = useState<
+    'compromised_access' | 'safety_hold' | 'school_directed'
+  >('compromised_access');
+  const [enableReason, setEnableReason] = useState<
+    'access_restored' | 'hold_released'
+  >('access_restored');
+  const [studentPassword, setStudentPassword] = useState('');
+  const [studentTotp, setStudentTotp] = useState('');
 
   const followUp = useMemo(
     () => selected?.relationships.filter(needsFollowUp) ?? [],
@@ -488,7 +572,9 @@ export function ClassWorkspace(props: {
       setMessage('The replacement Invitation could not be sent.');
       return;
     }
-    setMessage('Replacement Invitation sent. The prior Invitation is superseded.');
+    setMessage(
+      'Replacement Invitation sent. The prior Invitation is superseded.',
+    );
     await props.onReload();
   }
 
@@ -547,9 +633,171 @@ export function ClassWorkspace(props: {
       }
       setMessage('Class closed. History is preserved in the read-only list.');
       setHistoryClassId(selected.classId);
+    } else if (
+      confirm.kind === 'replace-email' ||
+      confirm.kind === 'disable' ||
+      confirm.kind === 'enable'
+    ) {
+      await applyStudentAccess(confirm.kind, confirm.studentId);
+      return;
     } else {
       setBusy(false);
       setConfirm(undefined);
+    }
+    await props.onReload();
+  }
+
+  function clearStudentStepUp() {
+    setStudentPassword('');
+    setStudentTotp('');
+  }
+
+  async function stepUpStudentAccess(): Promise<boolean> {
+    setMessage('Confirming both authentication factors...');
+    let stepUp;
+    try {
+      stepUp = await client.POST('/api/v1/auth/staff/step-up', {
+        body: { password: studentPassword, totp: studentTotp },
+      });
+    } catch {
+      setBusy(false);
+      clearStudentStepUp();
+      setMessage(
+        'Authentication could not be checked. Retry without losing this form.',
+      );
+      return false;
+    }
+    clearStudentStepUp();
+    if (stepUp.response.status !== 200) {
+      setBusy(false);
+      const problem = stepUp.error as Problem | undefined;
+      if (problem?.code === 'STEP_UP_REJECTED') {
+        setMessage(
+          'Password or authenticator code was not accepted. Try both factors again.',
+        );
+      } else if (problem?.code === 'STEP_UP_INCOMPLETE') {
+        setMessage('Enter a password and six-digit authenticator code.');
+      } else {
+        setMessage(
+          'Authentication could not be checked. Retry without losing this form.',
+        );
+      }
+      return false;
+    }
+    return true;
+  }
+
+  async function applyStudentAccess(
+    kind: 'replace-email' | 'disable' | 'enable',
+    studentId: string | undefined,
+  ) {
+    if (!studentId) {
+      setBusy(false);
+      setConfirm(undefined);
+      return;
+    }
+    if (!(await stepUpStudentAccess())) return;
+    const operationId = crypto.randomUUID();
+    if (kind === 'replace-email') {
+      const result = await client.POST(
+        '/api/v1/administration/students/verified-email-replacements',
+        {
+          body: {
+            operationId,
+            studentId,
+            recipient: replacementRecipient,
+            reason: replacementReason,
+            identityVerification,
+          },
+        },
+      );
+      setBusy(false);
+      if (result.response.status === 409) {
+        const problem = result.error as Problem | undefined;
+        if (problem?.code === 'AUTHENTICATION_FRESHNESS_REQUIRED') {
+          setMessage(
+            'Authentication freshness expired. Confirm both factors again.',
+          );
+          return;
+        }
+        if (problem?.code === 'STUDENT_IDENTITY_REVIEW_REQUIRED') {
+          setMessage(
+            problem.reason === 'historical_binding'
+              ? 'Blocked for identity review. Historical email binding needs staff remediation.'
+              : problem.reason === 'pending_invitation'
+                ? 'Blocked for identity review. A pending Invitation already uses this address.'
+                : 'Blocked for identity review. This address is already current for a Student.',
+          );
+          return;
+        }
+      }
+      setConfirm(undefined);
+      setReplacementRecipient('');
+      if (result.response.status !== 200) {
+        setMessage('The Verified Email Address could not be replaced.');
+        return;
+      }
+      setMessage(
+        'Verified Email Address replaced. Sessions, old-address codes, and pending Invitations were revoked. The Student is unchanged.',
+      );
+    } else if (kind === 'disable') {
+      const result = await client.POST(
+        '/api/v1/administration/students/disablements',
+        {
+          body: {
+            operationId,
+            studentId,
+            reason: disableReason,
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status === 409) {
+        const problem = result.error as Problem | undefined;
+        if (problem?.code === 'AUTHENTICATION_FRESHNESS_REQUIRED') {
+          setMessage(
+            'Authentication freshness expired. Confirm both factors again.',
+          );
+          return;
+        }
+      }
+      if (result.response.status !== 200) {
+        setMessage('Student access could not be disabled.');
+        return;
+      }
+      setMessage(
+        'Student access disabled. Sessions and codes were revoked. Memberships remain.',
+      );
+    } else {
+      const result = await client.POST(
+        '/api/v1/administration/students/re-enablements',
+        {
+          body: {
+            operationId,
+            studentId,
+            reason: enableReason,
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status === 409) {
+        const problem = result.error as Problem | undefined;
+        if (problem?.code === 'AUTHENTICATION_FRESHNESS_REQUIRED') {
+          setMessage(
+            'Authentication freshness expired. Confirm both factors again.',
+          );
+          return;
+        }
+      }
+      if (result.response.status !== 200) {
+        setMessage('Student access could not be re-enabled.');
+        return;
+      }
+      setMessage(
+        'Student access re-enabled. Prior sessions, codes, and Invitations stay unusable.',
+      );
     }
     await props.onReload();
   }
@@ -815,56 +1063,117 @@ export function ClassWorkspace(props: {
                               {row.latestInvitation.status.replaceAll('_', ' ')}{' '}
                               · Delivery {row.deliveryStatus}
                             </p>
+                            {row.studentAccessStatus ? (
+                              <p className="mt-1 text-sm text-slate-300">
+                                Student access {row.studentAccessStatus}
+                                {row.currentVerifiedEmail
+                                  ? ` · Current Verified Email Address ${row.currentVerifiedEmail}`
+                                  : ''}
+                              </p>
+                            ) : null}
+                            {row.identityCollision === 'historical_binding' ? (
+                              <p className="mt-1 text-xs font-bold text-amber-300">
+                                Collision signal: historical_binding. This
+                                address needs staff remediation before reuse.
+                              </p>
+                            ) : null}
                             <p className="mt-1 text-xs text-slate-400">
                               {lastTransitionLabel(row)}
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-3">
-                              {row.membershipStatus === 'active' &&
-                              row.classMembershipId ? (
+                            {row.membershipStatus === 'active' &&
+                            row.classMembershipId ? (
+                              <button
+                                type="button"
+                                className="text-xs font-bold text-rose-300"
+                                onClick={() =>
+                                  setConfirm({
+                                    kind: 'deactivate',
+                                    classMembershipId: row.classMembershipId!,
+                                  })
+                                }
+                              >
+                                Deactivate Class Membership
+                              </button>
+                            ) : null}
+                            {row.membershipStatus !== 'active' &&
+                            RESENDABLE_STATUSES.includes(
+                              row.latestInvitation.status,
+                            ) ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="text-xs font-bold text-sky-300"
+                                  onClick={() =>
+                                    void resend(
+                                      row.latestInvitation.invitationId,
+                                    )
+                                  }
+                                >
+                                  Resend
+                                </button>
                                 <button
                                   type="button"
                                   className="text-xs font-bold text-rose-300"
                                   onClick={() =>
                                     setConfirm({
-                                      kind: 'deactivate',
-                                      classMembershipId: row.classMembershipId!,
+                                      kind: 'revoke',
+                                      invitationId:
+                                        row.latestInvitation.invitationId,
                                     })
                                   }
                                 >
-                                  Deactivate Class Membership
+                                  Revoke Invitation
                                 </button>
-                              ) : null}
-                              {row.membershipStatus !== 'active' &&
-                              RESENDABLE_STATUSES.includes(
-                                row.latestInvitation.status,
-                              ) ? (
-                                <>
-                                  <button
-                                    type="button"
-                                    className="text-xs font-bold text-sky-300"
-                                    onClick={() =>
-                                      void resend(row.latestInvitation.invitationId)
-                                    }
-                                  >
-                                    Resend
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="text-xs font-bold text-rose-300"
-                                    onClick={() =>
-                                      setConfirm({
-                                        kind: 'revoke',
-                                        invitationId:
-                                          row.latestInvitation.invitationId,
-                                      })
-                                    }
-                                  >
-                                    Revoke Invitation
-                                  </button>
-                                </>
-                              ) : null}
-                            </div>
+                              </>
+                            ) : null}
+                            {row.studentId &&
+                            row.studentAccessStatus === 'active' ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="text-xs font-bold text-sky-300"
+                                  onClick={() => {
+                                    setReplacementRecipient('');
+                                    setConfirm({
+                                      kind: 'replace-email',
+                                      studentId: row.studentId!,
+                                    });
+                                  }}
+                                >
+                                  Replace Verified Email Address
+                                </button>
+                                <button
+                                  type="button"
+                                  className="text-xs font-bold text-rose-300"
+                                  onClick={() =>
+                                    setConfirm({
+                                      kind: 'disable',
+                                      studentId: row.studentId!,
+                                    })
+                                  }
+                                >
+                                  Disable Student access
+                                </button>
+                              </>
+                            ) : null}
+                            {row.studentId &&
+                            row.studentAccessStatus === 'disabled' ? (
+                              <button
+                                type="button"
+                                className="text-xs font-bold text-sky-300"
+                                onClick={() =>
+                                  setConfirm({
+                                    kind: 'enable',
+                                    studentId: row.studentId!,
+                                  })
+                                }
+                              >
+                                Re-enable Student access
+                              </button>
+                            ) : null}
+                          </div>
                         </div>
                         <button
                           type="button"
@@ -890,6 +1199,40 @@ export function ClassWorkspace(props: {
                               </li>
                             ))}
                           </ul>
+                        ) : null}
+                        {row.verifiedEmailHistory.length > 0 ? (
+                          <>
+                            <button
+                              type="button"
+                              className="mt-2 text-xs font-bold text-slate-400"
+                              onClick={() =>
+                                setEmailHistoryOpen((current) =>
+                                  current === row.studentId
+                                    ? undefined
+                                    : (row.studentId ?? undefined),
+                                )
+                              }
+                            >
+                              {emailHistoryOpen === row.studentId
+                                ? 'Hide Verified Email Address history'
+                                : 'Show Verified Email Address history'}
+                            </button>
+                            {emailHistoryOpen === row.studentId ? (
+                              <ul className="mt-2 grid gap-1 text-xs text-slate-400">
+                                {row.verifiedEmailHistory.map((item) => (
+                                  <li
+                                    key={`${item.status}:${item.recipient}:${item.verifiedAt}`}
+                                  >
+                                    {item.status} · {item.recipient} ·{' '}
+                                    {item.verifiedAt}
+                                    {item.retiredAt
+                                      ? ` · retired ${item.retiredAt}`
+                                      : ''}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : null}
+                          </>
                         ) : null}
                       </article>
                     ))}
@@ -967,9 +1310,23 @@ export function ClassWorkspace(props: {
                 <p className="font-bold">{row.recipient}</p>
                 <p className="mt-1 text-sm text-slate-300">
                   Class Membership {row.membershipStatus.replaceAll('_', ' ')} ·
-                  Invitation {row.latestInvitation.status.replaceAll('_', ' ')} ·
-                  Delivery {row.deliveryStatus}
+                  Invitation {row.latestInvitation.status.replaceAll('_', ' ')}{' '}
+                  · Delivery {row.deliveryStatus}
                 </p>
+                {row.studentAccessStatus ? (
+                  <p className="mt-1 text-sm text-slate-300">
+                    Student access {row.studentAccessStatus}
+                    {row.currentVerifiedEmail
+                      ? ` · Current Verified Email Address ${row.currentVerifiedEmail}`
+                      : ''}
+                  </p>
+                ) : null}
+                {row.identityCollision === 'historical_binding' ? (
+                  <p className="mt-1 text-xs font-bold text-amber-300">
+                    Collision signal: historical_binding. This address needs
+                    staff remediation before reuse.
+                  </p>
+                ) : null}
                 <p className="mt-1 text-xs text-slate-400">
                   {lastTransitionLabel(row)}
                 </p>
@@ -997,7 +1354,10 @@ export function ClassWorkspace(props: {
           }}
         >
           <div className="mt-4 grid gap-3">
-            <label className="grid gap-2 font-bold" htmlFor="csv-step-up-password">
+            <label
+              className="grid gap-2 font-bold"
+              htmlFor="csv-step-up-password"
+            >
               Password
               <input
                 id="csv-step-up-password"
@@ -1048,6 +1408,167 @@ export function ClassWorkspace(props: {
           onConfirm={() => void confirmAction()}
           onCancel={() => setConfirm(undefined)}
         />
+      ) : null}
+      {confirm?.kind === 'replace-email' ? (
+        <ConfirmDialog
+          title="Replace Verified Email Address"
+          body="Re-enter password and authenticator code. The Student identity stays the same."
+          confirmLabel="Replace Verified Email Address"
+          busy={busy}
+          onConfirm={() => void confirmAction()}
+          onCancel={() => {
+            setConfirm(undefined);
+            clearStudentStepUp();
+            setReplacementRecipient('');
+          }}
+        >
+          <div className="mt-4 grid gap-3">
+            <label
+              className="grid gap-2 font-bold"
+              htmlFor="student-email-replacement-recipient"
+            >
+              New Verified Email Address
+              <input
+                id="student-email-replacement-recipient"
+                type="email"
+                required
+                maxLength={320}
+                value={replacementRecipient}
+                onChange={(event) =>
+                  setReplacementRecipient(event.target.value)
+                }
+                className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              />
+            </label>
+            <label
+              className="grid gap-2 font-bold"
+              htmlFor="student-email-replacement-reason"
+            >
+              Reason
+              <select
+                id="student-email-replacement-reason"
+                value={replacementReason}
+                onChange={(event) =>
+                  setReplacementReason(
+                    event.target.value as typeof replacementReason,
+                  )
+                }
+                className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                <option value="mailbox_loss">mailbox_loss</option>
+                <option value="school_issued_address_change">
+                  school_issued_address_change
+                </option>
+                <option value="incorrect_address">incorrect_address</option>
+              </select>
+            </label>
+            <label
+              className="grid gap-2 font-bold"
+              htmlFor="student-identity-verification"
+            >
+              Offline identity verification
+              <select
+                id="student-identity-verification"
+                value={identityVerification}
+                onChange={(event) =>
+                  setIdentityVerification(
+                    event.target.value as typeof identityVerification,
+                  )
+                }
+                className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                <option value="in_person_school_id">in_person_school_id</option>
+                <option value="guardian_confirmed">guardian_confirmed</option>
+                <option value="school_record_match">school_record_match</option>
+              </select>
+            </label>
+            <StudentAccessStepUpFields
+              password={studentPassword}
+              totp={studentTotp}
+              onPassword={setStudentPassword}
+              onTotp={setStudentTotp}
+            />
+          </div>
+        </ConfirmDialog>
+      ) : null}
+      {confirm?.kind === 'disable' ? (
+        <ConfirmDialog
+          title="Disable Student access"
+          body="Student access ends immediately. Class Memberships, Intake Records, and Learning Progress stay with this Student. School Nurse access is unchanged."
+          confirmLabel="Disable Student access"
+          busy={busy}
+          onConfirm={() => void confirmAction()}
+          onCancel={() => {
+            setConfirm(undefined);
+            clearStudentStepUp();
+          }}
+        >
+          <div className="mt-4 grid gap-3">
+            <label
+              className="grid gap-2 font-bold"
+              htmlFor="student-disable-reason"
+            >
+              Reason
+              <select
+                id="student-disable-reason"
+                value={disableReason}
+                onChange={(event) =>
+                  setDisableReason(event.target.value as typeof disableReason)
+                }
+                className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                <option value="compromised_access">compromised_access</option>
+                <option value="safety_hold">safety_hold</option>
+                <option value="school_directed">school_directed</option>
+              </select>
+            </label>
+            <StudentAccessStepUpFields
+              password={studentPassword}
+              totp={studentTotp}
+              onPassword={setStudentPassword}
+              onTotp={setStudentTotp}
+            />
+          </div>
+        </ConfirmDialog>
+      ) : null}
+      {confirm?.kind === 'enable' ? (
+        <ConfirmDialog
+          title="Re-enable Student access"
+          body="Eligibility returns through this same Student. Prior sessions, codes, and Invitations stay unusable."
+          confirmLabel="Re-enable Student access"
+          busy={busy}
+          onConfirm={() => void confirmAction()}
+          onCancel={() => {
+            setConfirm(undefined);
+            clearStudentStepUp();
+          }}
+        >
+          <div className="mt-4 grid gap-3">
+            <label
+              className="grid gap-2 font-bold"
+              htmlFor="student-enable-reason"
+            >
+              Reason
+              <select
+                id="student-enable-reason"
+                value={enableReason}
+                onChange={(event) =>
+                  setEnableReason(event.target.value as typeof enableReason)
+                }
+                className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                <option value="access_restored">access_restored</option>
+                <option value="hold_released">hold_released</option>
+              </select>
+            </label>
+            <StudentAccessStepUpFields
+              password={studentPassword}
+              totp={studentTotp}
+              onPassword={setStudentPassword}
+              onTotp={setStudentTotp}
+            />
+          </div>
+        </ConfirmDialog>
       ) : null}
     </div>
   );

@@ -102,6 +102,15 @@ export type IdentityAndAccess = {
     command: DeactivateClassMembershipCommand,
   ): Promise<DeactivateClassMembershipResult>;
   closeClass(command: CloseClassCommand): Promise<CloseClassResult>;
+  replaceStudentVerifiedEmail(
+    command: ReplaceStudentVerifiedEmailCommand,
+  ): Promise<ReplaceStudentVerifiedEmailResult>;
+  disableStudentAccess(
+    command: DisableStudentAccessCommand,
+  ): Promise<DisableStudentAccessResult>;
+  enableStudentAccess(
+    command: EnableStudentAccessCommand,
+  ): Promise<EnableStudentAccessResult>;
   listClasses(command: StaffSessionCommand): Promise<ClassDirectoryEntry[]>;
   redeemInvitation(
     command: RedeemInvitationCommand,
@@ -217,11 +226,61 @@ export type InvitationDeliveryStatus = 'delivered' | 'delayed' | 'failed';
 
 export type MembershipStatus = 'none' | 'active' | 'inactive';
 
+export type StudentAccessStatus = 'active' | 'disabled';
+
+export type IdentityCollision = 'none' | 'historical_binding';
+
+export type VerifiedEmailBinding = {
+  recipient: string;
+  status: 'current' | 'historical';
+  verifiedAt: Date;
+  retiredAt: Date | null;
+};
+
+export const studentVerifiedEmailReplacementReasons = [
+  'mailbox_loss',
+  'school_issued_address_change',
+  'incorrect_address',
+] as const;
+
+export type StudentVerifiedEmailReplacementReason =
+  (typeof studentVerifiedEmailReplacementReasons)[number];
+
+export const studentIdentityVerifications = [
+  'in_person_school_id',
+  'guardian_confirmed',
+  'school_record_match',
+] as const;
+
+export type StudentIdentityVerification =
+  (typeof studentIdentityVerifications)[number];
+
+export const studentDisablementReasons = [
+  'compromised_access',
+  'safety_hold',
+  'school_directed',
+] as const;
+
+export type StudentDisablementReason =
+  (typeof studentDisablementReasons)[number];
+
+export const studentReenablementReasons = [
+  'access_restored',
+  'hold_released',
+] as const;
+
+export type StudentReenablementReason =
+  (typeof studentReenablementReasons)[number];
+
 export type ClassDirectoryRelationship = {
   recipient: string;
   studentId: string | null;
   classMembershipId: string | null;
   membershipStatus: MembershipStatus;
+  studentAccessStatus: StudentAccessStatus | null;
+  currentVerifiedEmail: string | null;
+  verifiedEmailHistory: VerifiedEmailBinding[];
+  identityCollision: IdentityCollision;
   latestInvitation: {
     invitationId: string;
     purpose: 'join_class';
@@ -412,6 +471,68 @@ export type CloseClassResult = {
   deactivatedMembershipCount: number;
 };
 
+export type ReplaceStudentVerifiedEmailCommand = {
+  operationId: string;
+  studentId: string;
+  recipient: string;
+  reason: StudentVerifiedEmailReplacementReason;
+  identityVerification: StudentIdentityVerification;
+  sessionHandle: string;
+};
+
+export type ReplaceStudentVerifiedEmailResult = {
+  operationId: string;
+  studentId: string;
+  outcome: 'replaced';
+};
+
+export type DisableStudentAccessCommand = {
+  operationId: string;
+  studentId: string;
+  reason: StudentDisablementReason;
+  sessionHandle: string;
+};
+
+export type DisableStudentAccessResult = {
+  operationId: string;
+  studentId: string;
+  outcome: 'disabled';
+};
+
+export type EnableStudentAccessCommand = {
+  operationId: string;
+  studentId: string;
+  reason: StudentReenablementReason;
+  sessionHandle: string;
+};
+
+export type EnableStudentAccessResult = {
+  operationId: string;
+  studentId: string;
+  outcome: 'enabled';
+};
+
+export type StudentIdentityReviewReason =
+  'historical_binding' | 'current_binding' | 'pending_invitation';
+
+export class StudentNotFoundError extends Error {
+  readonly code = 'STUDENT_NOT_FOUND';
+
+  constructor() {
+    super('Student was not found');
+    this.name = 'StudentNotFoundError';
+  }
+}
+
+export class StudentIdentityReviewRequiredError extends Error {
+  readonly code = 'STUDENT_IDENTITY_REVIEW_REQUIRED';
+
+  constructor(readonly reason: StudentIdentityReviewReason) {
+    super('Student identity change needs staff remediation');
+    this.name = 'StudentIdentityReviewRequiredError';
+  }
+}
+
 export type InvitationSecretProtector = {
   createCode(): string;
   digestRecipient(recipient: string): string;
@@ -475,6 +596,12 @@ export type InvitationSecretProtector = {
     invitationId: string;
     purpose: 'join_class';
     generation: number;
+    keyId: string;
+    ciphertext: string;
+  }): string;
+  revealVerifiedEmailRecipient(input: {
+    workspaceId: string;
+    studentId: string;
     keyId: string;
     ciphertext: string;
   }): string;
@@ -1170,6 +1297,18 @@ export type ClassDirectorySnapshot = {
     status: 'active' | 'inactive';
     emailDigests: string[];
   }[];
+  studentAccess: {
+    studentId: string;
+    status: StudentAccessStatus;
+    emails: {
+      recipientDigest: string;
+      status: 'current' | 'historical';
+      verifiedAt: Date;
+      retiredAt: Date | null;
+      keyId: string;
+      ciphertext: string;
+    }[];
+  }[];
 };
 
 export type ClassInvitationStore = {
@@ -1394,6 +1533,53 @@ export type StudentAccessStore = {
     resolvedAt: Date;
     idleExpiresAt: Date;
   }): Promise<StudentSessionContext | undefined>;
+  replaceVerifiedEmail(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    studentId: string;
+    recipientDigest: string;
+    protectedRecipient: { keyId: string; ciphertext: string };
+    verifiedEmailAddressId: string;
+    reason: StudentVerifiedEmailReplacementReason;
+    identityVerification: StudentIdentityVerification;
+    occurredAt: Date;
+    auditId: string;
+    result: ReplaceStudentVerifiedEmailResult;
+  }): Promise<
+    | { outcome: 'applied'; result: ReplaceStudentVerifiedEmailResult }
+    | { outcome: 'replayed'; result: ReplaceStudentVerifiedEmailResult }
+    | { outcome: 'not_found' }
+    | { outcome: 'identity_review'; reason: StudentIdentityReviewReason }
+  >;
+  disableStudentAccess(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    studentId: string;
+    reason: StudentDisablementReason;
+    occurredAt: Date;
+    auditId: string;
+    result: DisableStudentAccessResult;
+  }): Promise<
+    | { outcome: 'applied'; result: DisableStudentAccessResult }
+    | { outcome: 'replayed'; result: DisableStudentAccessResult }
+    | { outcome: 'not_found' }
+  >;
+  enableStudentAccess(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    studentId: string;
+    reason: StudentReenablementReason;
+    occurredAt: Date;
+    auditId: string;
+    result: EnableStudentAccessResult;
+  }): Promise<
+    | { outcome: 'applied'; result: EnableStudentAccessResult }
+    | { outcome: 'replayed'; result: EnableStudentAccessResult }
+    | { outcome: 'not_found' }
+  >;
 };
 
 export type ClassInvitationCommit = {
@@ -1683,6 +1869,7 @@ export function createIdentityAndAccess(dependencies: {
   function assembleClassDirectory(
     snapshot: ClassDirectorySnapshot,
     secrets: InvitationSecretProtector,
+    workspaceId: string,
   ): ClassDirectoryEntry[] {
     const now = dependencies.clock.now();
     return snapshot.classes.map((classRecord) => {
@@ -1691,6 +1878,16 @@ export function createIdentityAndAccess(dependencies: {
       );
       const memberships = snapshot.memberships.filter(
         (membership) => membership.classId === classRecord.classId,
+      );
+      const studentById = new Map(
+        snapshot.studentAccess.map((student) => [student.studentId, student]),
+      );
+      const historicalDigests = new Set(
+        snapshot.studentAccess.flatMap((student) =>
+          student.emails
+            .filter((email) => email.status === 'historical')
+            .map((email) => email.recipientDigest),
+        ),
       );
       const grouped = new Map<string, typeof invitations>();
       for (const invitation of invitations) {
@@ -1714,12 +1911,48 @@ export function createIdentityAndAccess(dependencies: {
         const membership = memberships.find((entry) =>
           entry.emailDigests.includes(latest.recipientDigest),
         );
+        const student = membership
+          ? studentById.get(membership.studentId)
+          : snapshot.studentAccess.find((entry) =>
+              entry.emails.some(
+                (email) => email.recipientDigest === latest.recipientDigest,
+              ),
+            );
         let recipient = latest.recipientDigest;
         try {
           recipient = secrets.revealInvitationRecipient(latest);
         } catch {
           recipient = latest.recipientDigest;
         }
+        const verifiedEmailHistory = (student?.emails ?? [])
+          .map((email) => {
+            let boundRecipient = email.recipientDigest;
+            try {
+              boundRecipient = secrets.revealVerifiedEmailRecipient({
+                workspaceId,
+                studentId: student!.studentId,
+                keyId: email.keyId,
+                ciphertext: email.ciphertext,
+              });
+            } catch {
+              boundRecipient = email.recipientDigest;
+            }
+            return {
+              recipient: boundRecipient,
+              status: email.status,
+              verifiedAt: email.verifiedAt,
+              retiredAt: email.retiredAt,
+            } satisfies VerifiedEmailBinding;
+          })
+          .sort((left, right) => {
+            if (left.status !== right.status) {
+              return left.status === 'current' ? -1 : 1;
+            }
+            return right.verifiedAt.getTime() - left.verifiedAt.getTime();
+          });
+        const currentVerifiedEmail =
+          verifiedEmailHistory.find((email) => email.status === 'current')
+            ?.recipient ?? null;
         const status = effectiveInvitationStatus(
           latest.status,
           latest.expiresAt,
@@ -1727,9 +1960,15 @@ export function createIdentityAndAccess(dependencies: {
         );
         relationships.push({
           recipient,
-          studentId: membership?.studentId ?? null,
+          studentId: membership?.studentId ?? student?.studentId ?? null,
           classMembershipId: membership?.classMembershipId ?? null,
           membershipStatus: membership?.status ?? 'none',
+          studentAccessStatus: student?.status ?? null,
+          currentVerifiedEmail,
+          verifiedEmailHistory,
+          identityCollision: historicalDigests.has(latest.recipientDigest)
+            ? 'historical_binding'
+            : 'none',
           latestInvitation: {
             invitationId: latest.invitationId,
             purpose: 'join_class',
@@ -2901,6 +3140,83 @@ export function createIdentityAndAccess(dependencies: {
       return closed.result;
     },
 
+    async replaceStudentVerifiedEmail(command) {
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const { store, secrets } = requireStudentAccessSeams();
+      const result: ReplaceStudentVerifiedEmailResult = {
+        operationId: command.operationId,
+        studentId: command.studentId,
+        outcome: 'replaced',
+      };
+      const replaced = await store.replaceVerifiedEmail({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        studentId: command.studentId,
+        recipientDigest: secrets.digestRecipient(command.recipient),
+        protectedRecipient: secrets.protectRecipient({
+          workspaceId: session.workspaceId,
+          studentId: command.studentId,
+          recipient: command.recipient,
+        }),
+        verifiedEmailAddressId: dependencies.ids.create(),
+        reason: command.reason,
+        identityVerification: command.identityVerification,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        result,
+      });
+      if (replaced.outcome === 'replayed' || replaced.outcome === 'applied') {
+        return replaced.result;
+      }
+      if (replaced.outcome === 'not_found') throw new StudentNotFoundError();
+      throw new StudentIdentityReviewRequiredError(replaced.reason);
+    },
+
+    async disableStudentAccess(command) {
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const { store } = requireStudentAccessSeams();
+      const result: DisableStudentAccessResult = {
+        operationId: command.operationId,
+        studentId: command.studentId,
+        outcome: 'disabled',
+      };
+      const disabled = await store.disableStudentAccess({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        studentId: command.studentId,
+        reason: command.reason,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        result,
+      });
+      if (disabled.outcome === 'not_found') throw new StudentNotFoundError();
+      return disabled.result;
+    },
+
+    async enableStudentAccess(command) {
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const { store } = requireStudentAccessSeams();
+      const result: EnableStudentAccessResult = {
+        operationId: command.operationId,
+        studentId: command.studentId,
+        outcome: 'enabled',
+      };
+      const enabled = await store.enableStudentAccess({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        studentId: command.studentId,
+        reason: command.reason,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        result,
+      });
+      if (enabled.outcome === 'not_found') throw new StudentNotFoundError();
+      return enabled.result;
+    },
+
     async listClasses(command) {
       const session = await requireAdministrator(command.sessionHandle);
       const { store, secrets } = requireClassInvitationSeams();
@@ -2910,6 +3226,7 @@ export function createIdentityAndAccess(dependencies: {
           staffIdentityId: session.staffIdentityId,
         }),
         secrets,
+        session.workspaceId,
       );
     },
 
