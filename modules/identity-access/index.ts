@@ -1,3 +1,12 @@
+import { parseInvitationCsv } from './invitation-csv.ts';
+
+export {
+  invitationCsvMaxBytes,
+  invitationCsvMaxFieldLength,
+  invitationCsvMaxRows,
+  parseInvitationCsv,
+} from './invitation-csv.ts';
+
 export type StaffPermission = 'administrative' | 'clinical';
 
 export type CreateSchoolWorkspaceCommand = {
@@ -74,9 +83,15 @@ export type IdentityAndAccess = {
   previewClassInvitation(
     command: PreviewClassInvitationCommand,
   ): Promise<InvitationPreview>;
+  previewClassInvitationCsv(
+    command: PreviewClassInvitationCsvCommand,
+  ): Promise<ClassInvitationCsvPreview>;
   sendClassInvitation(
     command: SendClassInvitationCommand,
   ): Promise<CreateClassInvitationResult>;
+  sendClassInvitationCsv(
+    command: SendClassInvitationCsvCommand,
+  ): Promise<SendClassInvitationCsvResult>;
   resendClassInvitation(
     command: ResendClassInvitationCommand,
   ): Promise<ResendClassInvitationResult>;
@@ -210,6 +225,74 @@ export type InvitationPreview =
   | { outcome: 'already_invited' }
   | { outcome: 'identity_review'; reason: 'historical_binding' }
   | { outcome: 'class_closed' };
+
+export type PreviewClassInvitationCsvCommand = {
+  classId: string;
+  csv: string;
+  sessionHandle: string;
+};
+
+export type ClassInvitationCsvPreviewRow =
+  | {
+      lineNumber: number;
+      field: string;
+      outcome: 'ready';
+      reuse: 'none' | 'existing_student' | 'inactive_membership';
+    }
+  | { lineNumber: number; field: string; outcome: 'malformed' }
+  | { lineNumber: number; field: string; outcome: 'duplicate_in_file' }
+  | { lineNumber: number; field: string; outcome: 'already_a_member' }
+  | { lineNumber: number; field: string; outcome: 'already_invited' }
+  | {
+      lineNumber: number;
+      field: string;
+      outcome: 'identity_review';
+      reason: 'historical_binding';
+    }
+  | { lineNumber: number; field: string; outcome: 'class_closed' };
+
+export type ClassInvitationCsvPreview = {
+  classId: string;
+  rows: ClassInvitationCsvPreviewRow[];
+  summary: { ready: number; skipped: number };
+};
+
+export type SendClassInvitationCsvCommand = {
+  operationId: string;
+  classId: string;
+  csv: string;
+  selectedLineNumbers: readonly number[];
+  sessionHandle: string;
+};
+
+export type ClassInvitationCsvSendRow =
+  | {
+      lineNumber: number;
+      field: string;
+      outcome: 'sent';
+      invitationId: string;
+      reuse: 'none' | 'existing_student' | 'inactive_membership';
+    }
+  | { lineNumber: number; field: string; outcome: 'malformed' }
+  | { lineNumber: number; field: string; outcome: 'duplicate_in_file' }
+  | { lineNumber: number; field: string; outcome: 'already_a_member' }
+  | { lineNumber: number; field: string; outcome: 'already_invited' }
+  | {
+      lineNumber: number;
+      field: string;
+      outcome: 'identity_review';
+      reason: 'historical_binding';
+    }
+  | { lineNumber: number; field: string; outcome: 'class_closed' }
+  | { lineNumber: number; field: string; outcome: 'not_selected' };
+
+export type SendClassInvitationCsvResult = {
+  operationId: string;
+  classId: string;
+  outcome: 'applied';
+  summary: { sent: number; skipped: number; deliveryProblems: number };
+  rows: ClassInvitationCsvSendRow[];
+};
 
 export type SendClassInvitationCommand = {
   operationId: string;
@@ -383,6 +466,15 @@ export class StaffAuthenticationStaleError extends Error {
   }
 }
 
+export class AuthenticationFreshnessRequiredError extends Error {
+  readonly code = 'AUTHENTICATION_FRESHNESS_REQUIRED';
+
+  constructor() {
+    super('Fresh password and authenticator verification is required');
+    this.name = 'AuthenticationFreshnessRequiredError';
+  }
+}
+
 export class StepUpRejectedError extends Error {
   readonly code = 'STEP_UP_REJECTED';
 
@@ -501,6 +593,15 @@ export class InvitationNotSendableError extends Error {
   constructor(readonly outcome: InvitationPreview['outcome']) {
     super('Invitation cannot be sent');
     this.name = 'InvitationNotSendableError';
+  }
+}
+
+export class InvitationCsvRejectedError extends Error {
+  readonly code = 'INVITATION_CSV_REJECTED';
+
+  constructor(readonly reason: 'too_large' | 'too_many_rows' | 'empty') {
+    super('Invitation CSV cannot be imported');
+    this.name = 'InvitationCsvRejectedError';
   }
 }
 
@@ -1023,6 +1124,28 @@ export type ClassInvitationStore = {
     | { outcome: 'replayed'; result: CreateClassInvitationResult }
     | { outcome: 'not_sendable'; preview: InvitationPreviewFacts }
   >;
+  sendMany(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    classId: string;
+    now: Date;
+    actorId: string;
+    auditId: string;
+    rows: {
+      lineNumber: number;
+      field: string;
+      kind: 'malformed' | 'duplicate_in_file' | 'candidate';
+      recipient?: string;
+      recipientDigest?: string;
+      selected: boolean;
+    }[];
+    createInvitation(recipient: string): SendClassInvitationCommit;
+  }): Promise<
+    | { outcome: 'replayed'; result: SendClassInvitationCsvResult }
+    | { outcome: 'applied'; result: SendClassInvitationCsvResult }
+    | { outcome: 'class_missing' }
+  >;
   readInvitation(request: {
     workspaceId: string;
     staffIdentityId: string;
@@ -1540,6 +1663,18 @@ export function createIdentityAndAccess(dependencies: {
       ...session,
       authenticationFreshAt: resolved.authenticationFreshAt,
     };
+  }
+
+  async function requireFreshAdministrator(sessionHandle: string) {
+    const session = await requireAdministrator(sessionHandle);
+    const now = dependencies.clock.now();
+    if (
+      now.getTime() - session.authenticationFreshAt.getTime() >=
+      staffAuthenticationFreshnessMs
+    ) {
+      throw new AuthenticationFreshnessRequiredError();
+    }
+    return session;
   }
 
   async function requireFreshClinicalSession(
@@ -2335,6 +2470,138 @@ export function createIdentityAndAccess(dependencies: {
       });
       if (facts.classStatus === 'missing') throw new ClassNotFoundError();
       return invitationPreviewFrom(facts);
+    },
+
+    async previewClassInvitationCsv(command) {
+      const session = await requireAdministrator(command.sessionHandle);
+      const { store, secrets } = requireClassInvitationSeams();
+      const parsed = parseInvitationCsv(command.csv);
+      if (parsed.outcome === 'rejected') {
+        throw new InvitationCsvRejectedError(parsed.reason);
+      }
+      const existence = await store.preview({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        classId: command.classId,
+        recipientDigest: secrets.digestRecipient(''),
+        now: dependencies.clock.now(),
+      });
+      if (existence.classStatus === 'missing') throw new ClassNotFoundError();
+      const rows: ClassInvitationCsvPreviewRow[] = [];
+      for (const row of parsed.rows) {
+        if (row.kind === 'malformed') {
+          rows.push({
+            lineNumber: row.lineNumber,
+            field: row.field,
+            outcome: 'malformed',
+          });
+          continue;
+        }
+        if (row.kind === 'duplicate_in_file') {
+          rows.push({
+            lineNumber: row.lineNumber,
+            field: row.field,
+            outcome: 'duplicate_in_file',
+          });
+          continue;
+        }
+        const facts = await store.preview({
+          workspaceId: session.workspaceId,
+          staffIdentityId: session.staffIdentityId,
+          classId: command.classId,
+          recipientDigest: secrets.digestRecipient(row.recipient),
+          now: dependencies.clock.now(),
+        });
+        const preview = invitationPreviewFrom(facts);
+        if (preview.outcome === 'ready') {
+          rows.push({
+            lineNumber: row.lineNumber,
+            field: row.field,
+            outcome: 'ready',
+            reuse: preview.reuse,
+          });
+          continue;
+        }
+        if (preview.outcome === 'identity_review') {
+          rows.push({
+            lineNumber: row.lineNumber,
+            field: row.field,
+            outcome: 'identity_review',
+            reason: preview.reason,
+          });
+          continue;
+        }
+        rows.push({
+          lineNumber: row.lineNumber,
+          field: row.field,
+          outcome: preview.outcome,
+        });
+      }
+      const ready = rows.filter((row) => row.outcome === 'ready').length;
+      return {
+        classId: command.classId,
+        rows,
+        summary: { ready, skipped: rows.length - ready },
+      };
+    },
+
+    async sendClassInvitationCsv(command) {
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const { store, secrets } = requireClassInvitationSeams();
+      const parsed = parseInvitationCsv(command.csv);
+      if (parsed.outcome === 'rejected') {
+        throw new InvitationCsvRejectedError(parsed.reason);
+      }
+      const selected = new Set(command.selectedLineNumbers);
+      const sent = await store.sendMany({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        classId: command.classId,
+        now: dependencies.clock.now(),
+        actorId: session.staffIdentityId,
+        auditId: dependencies.ids.create(),
+        rows: parsed.rows.map((row) => ({
+          lineNumber: row.lineNumber,
+          field: row.field,
+          kind: row.kind,
+          recipient: row.kind === 'malformed' ? undefined : row.recipient,
+          recipientDigest:
+            row.kind === 'malformed'
+              ? undefined
+              : secrets.digestRecipient(row.recipient),
+          selected: selected.has(row.lineNumber),
+        })),
+        createInvitation(recipient) {
+          const invitationId = dependencies.ids.create();
+          const protectedSecrets = protectInvitationSecrets({
+            invitationId,
+            recipient,
+            secrets,
+          });
+          const result: CreateClassInvitationResult = {
+            operationId: command.operationId,
+            classId: command.classId,
+            invitationId,
+            outcome: 'created',
+          };
+          return {
+            invitation: {
+              ...protectedSecrets.invitation,
+              workspaceId: session.workspaceId,
+              classId: command.classId,
+            },
+            challenge: protectedSecrets.challenge,
+            delivery: protectedSecrets.delivery,
+            receipt: { result, recordedAt: protectedSecrets.createdAt },
+            auditId: dependencies.ids.create(),
+            outboxId: dependencies.ids.create(),
+            actorId: session.staffIdentityId,
+          };
+        },
+      });
+      if (sent.outcome === 'class_missing') throw new ClassNotFoundError();
+      return sent.result;
     },
 
     async sendClassInvitation(command) {
