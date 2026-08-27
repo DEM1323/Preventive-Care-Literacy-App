@@ -25,6 +25,7 @@ import {
   CookieJar,
   createOriginFetch,
   isRecord,
+  learningSnapshotContainsItemCompletion,
   readJson,
   type GoldenJourneyFetch,
 } from './http.ts';
@@ -1106,8 +1107,10 @@ export async function runGoldenJourney(
       !isRecord(restoredIntake.body) ||
       restoredIntake.body.learningUnlocked !== true ||
       !isRecord(restoredLearning.body) ||
-      !isRecord(restoredLearning.body.completion) ||
-      restoredLearning.body.completion.itemCompletionId !== itemCompletionId
+      !learningSnapshotContainsItemCompletion(
+        restoredLearning.body,
+        itemCompletionId,
+      )
     ) {
       throw new NonRetryableGoldenJourneyError(
         'Fresh-browser Student restoration failed',

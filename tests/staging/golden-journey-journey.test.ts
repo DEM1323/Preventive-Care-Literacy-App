@@ -329,28 +329,54 @@ function createFetch() {
     if (path === '/api/v1/student/learning' && method === 'GET') {
       const cookie = new Headers(init?.headers).get('cookie') ?? '';
       const restored = cookie.includes('student-handle-fresh');
+      const item = {
+        itemId,
+        revisionNumber: 1,
+        kind: 'knowledge' as const,
+        text: 'A learning item',
+        href: null,
+        moduleId: '018f1f5e-7b76-7f70-8f4d-9dc17ecf8106',
+        moduleTitle: 'Module',
+      };
+      const completion = {
+        itemCompletionId,
+        itemId,
+        revisionNumber: 1,
+        schoolConfigurationReleaseId: releaseId,
+        completedAt: '2026-08-25T16:06:00.000Z',
+      };
       return jsonResponse(200, {
         learningUnlocked: true,
         schoolConfigurationReleaseId: releaseId,
         locale: 'en-US',
-        item: restored
-          ? null
-          : {
-              itemId,
-              revisionNumber: 1,
-              kind: 'knowledge',
-              text: 'A learning item',
-              moduleTitle: 'Module',
+        modules: [
+          {
+            moduleId: item.moduleId,
+            title: item.moduleTitle,
+            completed: restored,
+            badge: {
+              key: 'module',
+              name: 'Module badge',
+              earned: restored,
             },
-        completion: restored
-          ? {
-              itemCompletionId,
-              itemId,
-              revisionNumber: 1,
-              schoolConfigurationReleaseId: releaseId,
-              completedAt: '2026-08-25T16:06:00.000Z',
-            }
-          : null,
+            sections: [
+              {
+                kind: 'knowledge',
+                completedCount: restored ? 1 : 0,
+                totalCount: 1,
+                percentComplete: restored ? 100 : 0,
+                items: [
+                  {
+                    ...item,
+                    completion: restored ? completion : null,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        item: restored ? null : item,
+        completion: null,
       });
     }
     if (path === '/api/v1/student/learning/acknowledgements') {

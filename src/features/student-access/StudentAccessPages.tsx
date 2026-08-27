@@ -446,10 +446,11 @@ export function StudentHomePage() {
                   LEARNING
                 </p>
                 <h2 className="mt-3 text-2xl font-black">
-                  Review one Learning Module item
+                  Continue your Learning Modules
                 </h2>
                 <p className="mt-5 text-sm font-bold text-[#49645c]">
-                  Completed appears only after the school confirms it
+                  Learning Progress for Knowledge, Skills, and Application is
+                  confirmed by the school
                 </p>
                 <Link
                   id="open-learning"

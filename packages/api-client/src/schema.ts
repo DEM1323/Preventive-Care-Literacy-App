@@ -13411,15 +13411,57 @@ export interface operations {
               schoolConfigurationReleaseId: string;
             };
             item: null | {
+              href: string | null;
               /** Format: uuid */
               itemId: string;
               kind: 'knowledge' | 'skill' | 'application';
+              /** Format: uuid */
+              moduleId: string;
               moduleTitle: string;
               revisionNumber: number;
               text: string;
             };
             learningUnlocked: boolean;
             locale: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+            modules: {
+              badge: null | {
+                earned: boolean;
+                key: string;
+                name: string;
+              };
+              completed: boolean;
+              /** Format: uuid */
+              moduleId: string;
+              sections: {
+                completedCount: number;
+                items: {
+                  completion: null | {
+                    /** Format: date-time */
+                    completedAt: string;
+                    /** Format: uuid */
+                    itemCompletionId: string;
+                    /** Format: uuid */
+                    itemId: string;
+                    revisionNumber: number;
+                    /** Format: uuid */
+                    schoolConfigurationReleaseId: string;
+                  };
+                  href: string | null;
+                  /** Format: uuid */
+                  itemId: string;
+                  kind: 'knowledge' | 'skill' | 'application';
+                  /** Format: uuid */
+                  moduleId: string;
+                  moduleTitle: string;
+                  revisionNumber: number;
+                  text: string;
+                }[];
+                kind: 'knowledge' | 'skill' | 'application';
+                percentComplete: number;
+                totalCount: number;
+              }[];
+              title: string;
+            }[];
             schoolConfigurationReleaseId: string | null;
           };
         };

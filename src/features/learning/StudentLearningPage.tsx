@@ -7,13 +7,35 @@ const client = createBrowserApiClient();
 
 type LearningSnapshot =
   paths['/api/v1/student/learning']['get']['responses']['200']['content']['application/json'];
+type ProjectedItem =
+  LearningSnapshot['modules'][number]['sections'][number]['items'][number];
+type LearningLocale = LearningSnapshot['locale'];
+
+const itemKindCopy = {
+  knowledge: {
+    section: 'Knowledge',
+    action: 'Mark as reviewed',
+    hint: 'Review this Knowledge key point.',
+  },
+  skill: {
+    section: 'Skills',
+    action: 'I can do this',
+    hint: 'Self-attest that you can do this Skill.',
+  },
+  application: {
+    section: 'Application',
+    action: 'I did this',
+    hint: 'Carry out this Application step.',
+  },
+} as const;
 
 export function StudentLearningPage() {
   const navigate = useNavigate();
   const [snapshot, setSnapshot] = useState<LearningSnapshot>();
+  const [locale, setLocale] = useState<LearningLocale>('en-US');
   const [error, setError] = useState<string>();
-  const [busy, setBusy] = useState<'load' | 'save' | undefined>('load');
-  const operationId = useRef(crypto.randomUUID());
+  const [busy, setBusy] = useState<'load' | string | undefined>('load');
+  const operationIds = useRef(new Map<string, string>());
 
   useEffect(() => {
     let active = true;
@@ -30,9 +52,11 @@ export function StudentLearningPage() {
           setBusy(undefined);
           return;
         }
+        const languageChoice = access.languageChoice;
+        setLocale(languageChoice);
         const { data, response } = await client.GET(
           '/api/v1/student/learning',
-          { params: { query: { locale: access.languageChoice } } },
+          { params: { query: { locale: languageChoice } } },
         );
         if (!active) return;
         if (response.status === 401) {
@@ -62,39 +86,37 @@ export function StudentLearningPage() {
     };
   }, [navigate]);
 
-  async function acknowledge() {
-    if (!snapshot?.item || !snapshot.schoolConfigurationReleaseId) return;
-    setBusy('save');
+  function operationIdFor(itemId: string) {
+    const existing = operationIds.current.get(itemId);
+    if (existing) return existing;
+    const created = crypto.randomUUID();
+    operationIds.current.set(itemId, created);
+    return created;
+  }
+
+  async function acknowledge(item: ProjectedItem) {
+    if (!snapshot?.schoolConfigurationReleaseId) return;
+    setBusy(item.itemId);
     setError(undefined);
     try {
-      const { response, data } = await client.POST(
+      const { response } = await client.POST(
         '/api/v1/student/learning/acknowledgements',
         {
           body: {
-            operationId: operationId.current,
+            operationId: operationIdFor(item.itemId),
             expectedSchoolConfigurationReleaseId:
               snapshot.schoolConfigurationReleaseId,
-            itemId: snapshot.item.itemId,
-            revisionNumber: snapshot.item.revisionNumber,
+            itemId: item.itemId,
+            revisionNumber: item.revisionNumber,
           },
         },
       );
-      if (response.status !== 201 || !data) {
+      if (response.status !== 201) {
         setError('This item could not be marked complete. Try again.');
         return;
       }
-      setSnapshot({
-        ...snapshot,
-        completion: {
-          itemCompletionId: data.itemCompletionId,
-          itemId: data.itemId,
-          revisionNumber: data.revisionNumber,
-          schoolConfigurationReleaseId: data.schoolConfigurationReleaseId,
-          completedAt: data.completedAt,
-        },
-      });
       const confirmed = await client.GET('/api/v1/student/learning', {
-        params: { query: { locale: 'en-US' } },
+        params: { query: { locale } },
       });
       if (confirmed.response.status === 200 && confirmed.data) {
         setSnapshot(confirmed.data);
@@ -106,7 +128,7 @@ export function StudentLearningPage() {
     }
   }
 
-  const completed = snapshot?.completion !== null && snapshot?.completion !== undefined;
+  const resumeItemId = snapshot?.item?.itemId;
 
   return (
     <main className="min-h-full bg-[#f3ecd9] px-5 py-12 text-[#17332d] sm:py-20">
@@ -121,11 +143,12 @@ export function StudentLearningPage() {
             STEP 03 / LEARNING
           </p>
           <h1 className="mt-3 text-4xl font-black leading-none tracking-tight sm:text-5xl">
-            {snapshot?.item?.moduleTitle ?? 'Your learning item'}
+            Your Learning Modules
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-[#38544d]">
-            Review this Knowledge key point. Completed appears only after the
-            school confirms your acknowledgement.
+            Review Knowledge key points, self-attest Skills, and carry out
+            Application steps. Completed appears only after the school confirms
+            your acknowledgement.
           </p>
 
           {busy === 'load' ? (
@@ -141,35 +164,126 @@ export function StudentLearningPage() {
               </p>
               <Link
                 to="/student/intake"
-                className="mt-4 inline-block border-2 border-[#17332d] bg-[#e6af2e] px-5 py-3 font-black uppercase tracking-wide"
+                className="mt-4 inline-block border-2 border-[#17332d] bg-[#e6af2e] px-5 py-3 font-black uppercase tracking-wide focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 Open intake
               </Link>
             </div>
           ) : null}
 
-          {snapshot?.item ? (
-            <article className="mt-8 space-y-6">
-              <p className="text-lg leading-8">{snapshot.item.text}</p>
-              {completed ? (
-                <p
-                  role="status"
-                  className="border-2 border-[#17332d] bg-[#e6af2e] px-5 py-3 font-black uppercase tracking-wide"
-                >
-                  Completed
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  disabled={busy !== undefined}
-                  onClick={() => void acknowledge()}
-                  className="border-2 border-[#17332d] bg-[#e6af2e] px-5 py-3 font-black uppercase tracking-wide shadow-[4px_4px_0_#17332d] disabled:opacity-50"
-                >
-                  {busy === 'save' ? 'Saving...' : 'Mark as reviewed'}
-                </button>
-              )}
-            </article>
+          {snapshot?.learningUnlocked && resumeItemId ? (
+            <a
+              href="#resume-item"
+              className="mt-6 inline-block text-sm font-black uppercase tracking-wide underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              Continue where you left off
+            </a>
           ) : null}
+
+          {snapshot?.modules.map((module) => (
+            <article
+              key={module.moduleId}
+              className="mt-10 border-t-2 border-[#17332d] pt-8"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <h2 className="text-3xl font-black tracking-tight">
+                  {module.title}
+                </h2>
+                {module.badge ? (
+                  <p
+                    role={module.badge.earned ? 'status' : undefined}
+                    className={
+                      module.badge.earned
+                        ? 'border-2 border-[#17332d] bg-[#e6af2e] px-4 py-2 font-black uppercase tracking-wide'
+                        : 'border-2 border-dashed border-[#17332d] px-4 py-2 font-black uppercase tracking-wide text-[#49645c]'
+                    }
+                  >
+                    {module.badge.earned
+                      ? `Earned: ${module.badge.name}`
+                      : `Badge: ${module.badge.name}`}
+                  </p>
+                ) : null}
+              </div>
+              {module.completed ? (
+                <p role="status" className="mt-3 text-sm font-bold">
+                  Module complete
+                </p>
+              ) : null}
+
+              {module.sections.map((section) => (
+                <section
+                  key={`${module.moduleId}-${section.kind}`}
+                  className="mt-6"
+                  aria-labelledby={`${module.moduleId}-${section.kind}-heading`}
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h3
+                      id={`${module.moduleId}-${section.kind}-heading`}
+                      className="text-xl font-black"
+                    >
+                      {itemKindCopy[section.kind].section}
+                    </h3>
+                    <p className="text-sm font-bold text-[#49645c]">
+                      {section.completedCount} of {section.totalCount} complete
+                      ({section.percentComplete}%)
+                    </p>
+                  </div>
+                  <ol className="mt-4 space-y-4">
+                    {section.items.map((item) => {
+                      const isResume = item.itemId === resumeItemId;
+                      const completed = item.completion !== null;
+                      return (
+                        <li
+                          key={item.itemId}
+                          id={isResume ? 'resume-item' : undefined}
+                          aria-current={isResume ? 'true' : undefined}
+                          className={
+                            isResume
+                              ? 'border-2 border-[#17332d] bg-white p-5'
+                              : 'border border-[#17332d] bg-white p-5'
+                          }
+                        >
+                          <p className="text-sm font-bold uppercase tracking-wide text-[#b43c2c]">
+                            {itemKindCopy[item.kind].hint}
+                          </p>
+                          <p className="mt-3 text-lg leading-8">{item.text}</p>
+                          {item.href ? (
+                            <a
+                              href={item.href}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-3 inline-block text-sm font-black uppercase tracking-wide underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                            >
+                              Open linked resource
+                            </a>
+                          ) : null}
+                          {completed ? (
+                            <p
+                              role="status"
+                              className="mt-4 border-2 border-[#17332d] bg-[#e6af2e] px-5 py-3 font-black uppercase tracking-wide"
+                            >
+                              Completed
+                            </p>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={busy !== undefined}
+                              onClick={() => void acknowledge(item)}
+                              className="mt-4 border-2 border-[#17332d] bg-[#e6af2e] px-5 py-3 font-black uppercase tracking-wide shadow-[4px_4px_0_#17332d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+                            >
+                              {busy === item.itemId
+                                ? 'Saving...'
+                                : itemKindCopy[item.kind].action}
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </section>
+              ))}
+            </article>
+          ))}
 
           {error ? (
             <p
