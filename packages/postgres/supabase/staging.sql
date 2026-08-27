@@ -136,3 +136,61 @@ grant execute on function infrastructure.complete_invitation_delivery_message(bi
 grant execute on function infrastructure.retry_invitation_delivery_message(bigint, integer) to __WORKER_ROLE__;
 grant execute on function infrastructure.record_worker_artifact_heartbeat(text, text, uuid, timestamptz) to __WORKER_ROLE__;
 grant execute on function infrastructure.record_invitation_delivery_attestation(uuid, text, text, timestamptz) to __WORKER_ROLE__;
+
+do $$
+begin
+  if not exists (
+    select 1 from pgmq.list_queues() where queue_name = 'sign-in-delivery'
+  ) then
+    perform pgmq.create('sign-in-delivery');
+  end if;
+end
+$$;
+
+create or replace function infrastructure.enqueue_sign_in_delivery(requested_outbox_id uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  update infrastructure.outbox set status = 'enqueued'
+   where outbox_id = requested_outbox_id
+     and topic = 'sign_in.delivery_requested' and status = 'pending';
+  if found then
+    perform pgmq.send('sign-in-delivery', jsonb_build_object('outboxId', requested_outbox_id));
+  end if;
+end
+$$;
+
+create or replace function infrastructure.read_sign_in_delivery()
+returns table (message_id bigint, outbox_id uuid, attempt integer)
+language sql security definer set search_path = '' as $$
+  select message.msg_id, (message.message->>'outboxId')::uuid, message.read_ct
+    from pgmq.read('sign-in-delivery', 60, 1) message
+$$;
+
+create or replace function infrastructure.complete_sign_in_delivery_message(requested_message_id bigint)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  perform pgmq.delete('sign-in-delivery', requested_message_id);
+end
+$$;
+
+create or replace function infrastructure.retry_sign_in_delivery_message(
+  requested_message_id bigint, requested_delay_seconds integer
+)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  perform pgmq.set_vt('sign-in-delivery', requested_message_id, requested_delay_seconds);
+end
+$$;
+
+revoke all on function infrastructure.enqueue_sign_in_delivery(uuid) from public;
+revoke all on function infrastructure.read_sign_in_delivery() from public;
+revoke all on function infrastructure.complete_sign_in_delivery_message(bigint) from public;
+revoke all on function infrastructure.retry_sign_in_delivery_message(bigint, integer) from public;
+grant execute on function infrastructure.pending_sign_in_outbox() to __WORKER_ROLE__;
+grant execute on function infrastructure.claim_sign_in_delivery(uuid, timestamptz) to __WORKER_ROLE__;
+grant execute on function infrastructure.complete_sign_in_delivery(uuid, uuid, integer, text, timestamptz) to __WORKER_ROLE__;
+grant execute on function infrastructure.suppress_sign_in_delivery(uuid, uuid, integer) to __WORKER_ROLE__;
+grant execute on function infrastructure.enqueue_sign_in_delivery(uuid) to __WORKER_ROLE__;
+grant execute on function infrastructure.read_sign_in_delivery() to __WORKER_ROLE__;
+grant execute on function infrastructure.complete_sign_in_delivery_message(bigint) to __WORKER_ROLE__;
+grant execute on function infrastructure.retry_sign_in_delivery_message(bigint, integer) to __WORKER_ROLE__;

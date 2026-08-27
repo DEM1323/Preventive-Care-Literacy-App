@@ -8470,6 +8470,339 @@
         }
       }
     },
+    "/api/v1/auth/student/sign-in": {
+      "post": {
+        "operationId": "requestStudentSignIn",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "recipient": {
+                    "maxLength": 322,
+                    "pattern": "^\\s*[^\\s@]+@[^\\s@]+\\s*$",
+                    "type": "string"
+                  }
+                },
+                "required": ["recipient"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "outcome": { "enum": ["accepted"], "type": "string" }
+                  },
+                  "required": ["outcome"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/student/sign-in/verify": {
+      "post": {
+        "operationId": "completeStudentSignIn",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "code": { "pattern": "^[0-9]{6}$", "type": "string" },
+                  "recipient": {
+                    "maxLength": 322,
+                    "pattern": "^\\s*[^\\s@]+@[^\\s@]+\\s*$",
+                    "type": "string"
+                  }
+                },
+                "required": ["recipient", "code"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "outcome": { "enum": ["authenticated"], "type": "string" }
+                  },
+                  "required": ["outcome"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/api/v1/clinical/intake-records/current": {
       "post": {
         "operationId": "revealCurrentIntakeRecord",
@@ -9896,6 +10229,34 @@
             },
             "description": "Default Response"
           },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -10059,6 +10420,34 @@
             "description": "Default Response"
           },
           "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -10371,6 +10760,34 @@
             },
             "description": "Default Response"
           },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -10456,6 +10873,199 @@
             "description": "Default Response"
           },
           "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "studentSession": [] }]
+      }
+    },
+    "/api/v1/student/language": {
+      "put": {
+        "operationId": "saveStudentLanguage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "languageChoice": {
+                    "anyOf": [
+                      { "enum": ["en-US"], "type": "string" },
+                      { "enum": ["es-US"], "type": "string" },
+                      { "enum": ["pt-BR"], "type": "string" },
+                      { "enum": ["fr-CA"], "type": "string" },
+                      { "enum": ["ht-HT"], "type": "string" }
+                    ]
+                  }
+                },
+                "required": ["languageChoice"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "languageChoice": {
+                      "anyOf": [
+                        { "enum": ["en-US"], "type": "string" },
+                        { "enum": ["es-US"], "type": "string" },
+                        { "enum": ["pt-BR"], "type": "string" },
+                        { "enum": ["fr-CA"], "type": "string" },
+                        { "enum": ["ht-HT"], "type": "string" }
+                      ]
+                    }
+                  },
+                  "required": ["languageChoice"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -10636,6 +11246,34 @@
             "description": "Default Response"
           },
           "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11004,12 +11642,22 @@
                       },
                       "type": "array"
                     },
+                    "languageChoice": {
+                      "anyOf": [
+                        { "enum": ["en-US"], "type": "string" },
+                        { "enum": ["es-US"], "type": "string" },
+                        { "enum": ["pt-BR"], "type": "string" },
+                        { "enum": ["fr-CA"], "type": "string" },
+                        { "enum": ["ht-HT"], "type": "string" }
+                      ]
+                    },
                     "studentId": { "format": "uuid", "type": "string" },
                     "workspaceId": { "format": "uuid", "type": "string" }
                   },
                   "required": [
                     "studentId",
                     "workspaceId",
+                    "languageChoice",
                     "activeClassMemberships"
                   ],
                   "type": "object"

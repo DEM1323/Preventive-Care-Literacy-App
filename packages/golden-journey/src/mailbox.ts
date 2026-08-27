@@ -24,12 +24,24 @@ export type InvitationMailbox = {
 
 const invitationCodePattern =
   /^Your Invitation Code is ([0-9]{6})\. It expires in 10 minutes\.$/;
+const signInCodePattern =
+  /^Your Sign-In Code is ([0-9]{6})\. It expires in 10 minutes\.$/;
 
 export function extractInvitationCode(text: string): string {
   const match = invitationCodePattern.exec(text.trim());
   if (!match?.[1]) {
     throw new NonRetryableGoldenJourneyError(
       'Invitation Code could not be read from the delivery template',
+    );
+  }
+  return match[1];
+}
+
+export function extractSignInCode(text: string): string {
+  const match = signInCodePattern.exec(text.trim());
+  if (!match?.[1]) {
+    throw new NonRetryableGoldenJourneyError(
+      'Sign-In Code could not be read from the delivery template',
     );
   }
   return match[1];
@@ -94,6 +106,37 @@ export async function waitForInvitationCode(
     excludeMessageIds?: readonly string[];
   },
 ): Promise<ObservedInvitationMail> {
+  return waitForCodeEmail(mailbox, {
+    ...options,
+    subject: 'Your Invitation Code',
+    extract: extractInvitationCode,
+    missing: 'Invitation delivery has not completed',
+    unobserved: 'Invitation delivery was not observed',
+  });
+}
+
+export async function waitForSignInCode(
+  mailbox: InvitationMailbox,
+  options: Parameters<typeof waitForInvitationCode>[1],
+): Promise<ObservedInvitationMail> {
+  return waitForCodeEmail(mailbox, {
+    ...options,
+    subject: 'Your Sign-In Code',
+    extract: extractSignInCode,
+    missing: 'Sign-In Code delivery has not completed',
+    unobserved: 'Sign-In Code delivery was not observed',
+  });
+}
+
+async function waitForCodeEmail(
+  mailbox: InvitationMailbox,
+  options: Parameters<typeof waitForInvitationCode>[1] & {
+    subject: string;
+    extract: (text: string) => string;
+    missing: string;
+    unobserved: string;
+  },
+): Promise<ObservedInvitationMail> {
   const expectedRecipient = normalizeMailboxRecipient(
     options.expectedRecipient,
   );
@@ -108,13 +151,13 @@ export async function waitForInvitationCode(
         const latest = now().getTime() + skewMs;
         const candidates = messages.filter((message) => {
           if (excluded.has(message.id)) return false;
-          if (message.subject !== 'Your Invitation Code') return false;
+          if (message.subject !== options.subject) return false;
           const createdAt = Date.parse(message.createdAt);
           if (Number.isNaN(createdAt)) return false;
           return createdAt >= earliest && createdAt <= latest;
         });
         if (candidates.length === 0) {
-          throw new Error('Invitation delivery has not completed');
+          throw new Error(options.missing);
         }
         const ordered = [...candidates].sort(
           (left, right) =>
@@ -125,12 +168,12 @@ export async function waitForInvitationCode(
           const recipients = body.to.map(normalizeMailboxRecipient);
           if (!recipients.includes(expectedRecipient)) continue;
           return {
-            code: extractInvitationCode(body.text),
+            code: options.extract(body.text),
             messageId: candidate.id,
             createdAt: candidate.createdAt,
           };
         }
-        throw new Error('Invitation delivery has not completed');
+        throw new Error(options.missing);
       },
       {
         attempts: options.attempts,
@@ -141,7 +184,7 @@ export async function waitForInvitationCode(
       },
     );
   } catch {
-    throw new Error('Invitation delivery was not observed');
+    throw new Error(options.unobserved);
   }
 }
 

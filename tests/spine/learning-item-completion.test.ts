@@ -31,6 +31,7 @@ const clinicianEmail = 'clinician@example.test';
 const password = 'correct horse battery staple';
 const recipient = 'student.one@example.test';
 const invitationCode = '729104';
+let generatedCode = invitationCode;
 const origin = 'http://127.0.0.1';
 const operatorHeaders = {
   authorization: `Bearer ${'learning-operator-token-'.padEnd(40, 'x')}`,
@@ -59,7 +60,7 @@ const learningInvitationSecrets = {
   hmacKey: Buffer.alloc(32, 7),
   encryptionKeys: { test: Buffer.alloc(32, 9) },
   activeEncryptionKeyId: 'test',
-  createCode: () => invitationCode,
+  createCode: () => generatedCode,
 };
 
 function completeAnswers(fields: IntakeFormField[]) {
@@ -535,6 +536,68 @@ test('acknowledgement binds the Student, workspace, item, revision, release, and
   }
 
   expect(telemetryLines.join('\n')).not.toContain(recipient);
+});
+
+test('fresh-browser Sign-In restores Memberships, Intake Record status, and Learning Progress', async () => {
+  generatedCode = '818181';
+  const requested = await fetch(`${baseUrl}/api/v1/auth/student/sign-in`, {
+    method: 'POST',
+    headers: mutationHeaders,
+    body: JSON.stringify({ recipient }),
+  });
+  expect(requested.status).toBe(200);
+  const owner = new Client({ connectionString: postgres.connectionString });
+  await owner.connect();
+  try {
+    await owner.query(
+      `update identity_access.sign_in_deliveries
+          set status = 'delivered', delivered_at = $1
+        where status in ('pending', 'sending')`,
+      [now],
+    );
+  } finally {
+    await owner.end();
+  }
+  generatedCode = invitationCode;
+  const verified = await fetch(
+    `${baseUrl}/api/v1/auth/student/sign-in/verify`,
+    {
+      method: 'POST',
+      headers: mutationHeaders,
+      body: JSON.stringify({ recipient, code: '818181' }),
+    },
+  );
+  expect(verified.status).toBe(200);
+  const cookie = verified.headers.get('set-cookie')?.split(';', 1)[0] as string;
+  expect(cookie).toStartWith('__Host-prevcare-student-session=');
+  expect(cookie).not.toBe(studentCookie);
+
+  const session = await fetch(`${baseUrl}/api/v1/student/session`, {
+    headers: { cookie },
+  });
+  expect(session.status).toBe(200);
+  const access = (await session.json()) as {
+    languageChoice: string;
+    activeClassMemberships: { classId: string }[];
+  };
+  expect(access.activeClassMemberships.map((item) => item.classId)).toEqual([
+    classId,
+  ]);
+  expect(access.languageChoice).toBe('en-US');
+
+  const client = createApiClient(baseUrl);
+  const intake = await client.GET('/api/v1/student/intake', {
+    headers: { cookie },
+    params: { query: { locale: 'en-US' } },
+  });
+  expect(intake.response.status).toBe(200);
+  expect(intake.data?.learningUnlocked).toBe(true);
+
+  const learning = await readLearning(cookie);
+  expect(learning.status).toBe(200);
+  const snapshot = (await learning.json()) as StudentLearningSnapshot;
+  expect(snapshot.learningUnlocked).toBe(true);
+  expect(snapshot.completion).not.toBeNull();
 });
 
 test('fresh Student authentication in another browser restores the Item Completion', async () => {

@@ -106,6 +106,15 @@ export type IdentityAndAccess = {
   redeemInvitation(
     command: RedeemInvitationCommand,
   ): Promise<StudentSessionGrant>;
+  requestStudentSignIn(
+    command: RequestStudentSignInCommand,
+  ): Promise<RequestStudentSignInResult>;
+  completeStudentSignIn(
+    command: CompleteStudentSignInCommand,
+  ): Promise<StudentSessionGrant>;
+  saveStudentLanguage(
+    command: SaveStudentLanguageCommand,
+  ): Promise<SaveStudentLanguageResult>;
   resolveStudentSession(
     command: ResolveStudentSessionCommand,
   ): Promise<StudentSessionContext | undefined>;
@@ -116,6 +125,34 @@ export type RedeemInvitationCommand = {
   code: string;
 };
 
+export type RequestStudentSignInCommand = {
+  recipient: string;
+};
+
+export type RequestStudentSignInResult = {
+  outcome: 'accepted';
+};
+
+export type CompleteStudentSignInCommand = {
+  recipient: string;
+  code: string;
+};
+
+export type SaveStudentLanguageCommand = {
+  sessionHandle: string;
+  languageChoice: StudentLanguageChoice;
+};
+
+export type SaveStudentLanguageResult = {
+  languageChoice: StudentLanguageChoice;
+};
+
+export const studentSignInCodeDurationMs = 10 * 60 * 1000;
+export const studentSignInSendIntervalMs = 60 * 1000;
+export const studentSignInHourlySendLimit = 5;
+export const studentSessionIdleMs = 30 * 60 * 1000;
+export const studentSessionAbsoluteMs = 8 * 60 * 60 * 1000;
+
 export type StudentSessionGrant = {
   sessionHandle: string;
   absoluteExpiresAt: Date;
@@ -125,11 +162,31 @@ export type ResolveStudentSessionCommand = {
   sessionHandle: string;
 };
 
+export const studentLanguageChoices = [
+  'en-US',
+  'es-US',
+  'pt-BR',
+  'fr-CA',
+  'ht-HT',
+] as const;
+
+export type StudentLanguageChoice = (typeof studentLanguageChoices)[number];
+
 export type StudentSessionContext = {
   studentId: string;
   workspaceId: string;
+  languageChoice: StudentLanguageChoice;
   activeClassMemberships: { classId: string; name: string }[];
 };
+
+export class StudentClassAccessRequiredError extends Error {
+  readonly code = 'STUDENT_CLASS_ACCESS_REQUIRED';
+
+  constructor() {
+    super('No Class access is active');
+    this.name = 'StudentClassAccessRequiredError';
+  }
+}
 
 export type CreateClassInvitationCommand = {
   operationId: string;
@@ -359,15 +416,27 @@ export type InvitationSecretProtector = {
   createCode(): string;
   digestRecipient(recipient: string): string;
   digestInvitationLookup(input: { recipient: string; code: string }): string;
+  digestSignInLookup(input: { recipient: string; code: string }): string;
   digestCode(input: {
     invitationId: string;
     purpose: 'join_class';
     generation: number;
     code: string;
   }): string;
+  digestSignInCode(input: {
+    challengeId: string;
+    generation: number;
+    code: string;
+  }): string;
   codeMatches(input: {
     invitationId: string;
     purpose: 'join_class';
+    generation: number;
+    code: string;
+    expectedDigest: string;
+  }): boolean;
+  signInCodeMatches(input: {
+    challengeId: string;
     generation: number;
     code: string;
     expectedDigest: string;
@@ -380,6 +449,18 @@ export type InvitationSecretProtector = {
   protect(input: {
     invitationId: string;
     purpose: 'join_class';
+    generation: number;
+    recipient: string;
+    code: string;
+  }): {
+    recipientDigest: string;
+    codeDigest: string;
+    lookupDigest: string;
+    keyId: string;
+    ciphertext: string;
+  };
+  protectSignIn(input: {
+    challengeId: string;
     generation: number;
     recipient: string;
     code: string;
@@ -1232,6 +1313,14 @@ export type InvitationRedemptionCandidate = {
   codeDigest: string;
 };
 
+export type SignInRedemptionCandidate = {
+  challengeId: string;
+  workspaceId: string;
+  studentId: string;
+  generation: number;
+  codeDigest: string;
+};
+
 export type StudentAccessStore = {
   claimInvitationAttempt(request: {
     recipientDigest: string;
@@ -1255,6 +1344,51 @@ export type StudentAccessStore = {
     };
     audit: { auditId: string; operationId: string };
   }): Promise<StudentSessionContext | 'unavailable'>;
+  issueSignInCode(request: {
+    recipientDigest: string;
+    attemptedAt: Date;
+    proposedChallengeId: string;
+    sendAttemptId: string;
+    auditId: string;
+    outboxId: string;
+    createSecrets(input: {
+      challengeId: string;
+      generation: number;
+      workspaceId: string;
+      studentId: string;
+    }): {
+      codeDigest: string;
+      lookupDigest: string;
+      keyId: string;
+      ciphertext: string;
+      expiresAt: Date;
+      providerIdempotencyKey: string;
+    };
+  }): Promise<void>;
+  claimSignInAttempt(request: {
+    recipientDigest: string;
+    lookupDigest: string;
+    attemptedAt: Date;
+  }): Promise<SignInRedemptionCandidate | undefined>;
+  completeStudentSignIn(request: {
+    recipientDigest: string;
+    candidate: SignInRedemptionCandidate;
+    codeDigest: string;
+    attemptedAt: Date;
+    session: {
+      sessionId: string;
+      sessionHandleHash: string;
+      idleExpiresAt: Date;
+      absoluteExpiresAt: Date;
+    };
+    audit: { auditId: string; operationId: string };
+  }): Promise<StudentSessionContext | 'unavailable'>;
+  saveStudentLanguage(request: {
+    sessionHandleHash: string;
+    languageChoice: StudentLanguageChoice;
+    resolvedAt: Date;
+    idleExpiresAt: Date;
+  }): Promise<StudentLanguageChoice | undefined>;
   resolveStudentSession(request: {
     sessionHandleHash: string;
     resolvedAt: Date;
@@ -2804,7 +2938,7 @@ export function createIdentityAndAccess(dependencies: {
       const proposedStudentId = dependencies.ids.create();
       const sessionHandle = handles.create();
       const absoluteExpiresAt = new Date(
-        attemptedAt.getTime() + 8 * 60 * 60 * 1000,
+        attemptedAt.getTime() + studentSessionAbsoluteMs,
       );
       const result = await store.redeemInvitation({
         recipientDigest,
@@ -2827,7 +2961,7 @@ export function createIdentityAndAccess(dependencies: {
         session: {
           sessionId: dependencies.ids.create(),
           sessionHandleHash: handles.hash(sessionHandle),
-          idleExpiresAt: new Date(attemptedAt.getTime() + 30 * 60 * 1000),
+          idleExpiresAt: new Date(attemptedAt.getTime() + studentSessionIdleMs),
           absoluteExpiresAt,
         },
         audit: {
@@ -2841,13 +2975,111 @@ export function createIdentityAndAccess(dependencies: {
       return { sessionHandle, absoluteExpiresAt };
     },
 
+    async requestStudentSignIn(command) {
+      const { store, secrets } = requireStudentAccessSeams();
+      const attemptedAt = dependencies.clock.now();
+      const proposedChallengeId = dependencies.ids.create();
+      await store.issueSignInCode({
+        recipientDigest: secrets.digestRecipient(command.recipient),
+        attemptedAt,
+        proposedChallengeId,
+        sendAttemptId: dependencies.ids.create(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        createSecrets(input) {
+          const code = secrets.createCode();
+          const protectedSecrets = secrets.protectSignIn({
+            challengeId: input.challengeId,
+            generation: input.generation,
+            recipient: command.recipient,
+            code,
+          });
+          return {
+            codeDigest: protectedSecrets.codeDigest,
+            lookupDigest: protectedSecrets.lookupDigest,
+            keyId: protectedSecrets.keyId,
+            ciphertext: protectedSecrets.ciphertext,
+            expiresAt: new Date(
+              attemptedAt.getTime() + studentSignInCodeDurationMs,
+            ),
+            providerIdempotencyKey: `${input.challengeId}:${input.generation}`,
+          };
+        },
+      });
+      return { outcome: 'accepted' as const };
+    },
+
+    async completeStudentSignIn(command) {
+      const { store, secrets, handles } = requireStudentAccessSeams();
+      const attemptedAt = dependencies.clock.now();
+      const recipientDigest = secrets.digestRecipient(command.recipient);
+      const candidate = await store.claimSignInAttempt({
+        recipientDigest,
+        lookupDigest: secrets.digestSignInLookup(command),
+        attemptedAt,
+      });
+      if (
+        !candidate ||
+        !secrets.signInCodeMatches({
+          challengeId: candidate.challengeId,
+          generation: candidate.generation,
+          code: command.code,
+          expectedDigest: candidate.codeDigest,
+        })
+      ) {
+        throw new StudentAuthenticationFailedError();
+      }
+
+      const sessionHandle = handles.create();
+      const absoluteExpiresAt = new Date(
+        attemptedAt.getTime() + studentSessionAbsoluteMs,
+      );
+      const result = await store.completeStudentSignIn({
+        recipientDigest,
+        candidate,
+        codeDigest: secrets.digestSignInCode({
+          challengeId: candidate.challengeId,
+          generation: candidate.generation,
+          code: command.code,
+        }),
+        attemptedAt,
+        session: {
+          sessionId: dependencies.ids.create(),
+          sessionHandleHash: handles.hash(sessionHandle),
+          idleExpiresAt: new Date(attemptedAt.getTime() + studentSessionIdleMs),
+          absoluteExpiresAt,
+        },
+        audit: {
+          auditId: dependencies.ids.create(),
+          operationId: dependencies.ids.create(),
+        },
+      });
+      if (result === 'unavailable') {
+        throw new StudentAuthenticationFailedError();
+      }
+      return { sessionHandle, absoluteExpiresAt };
+    },
+
+    async saveStudentLanguage(command) {
+      const { store, handles } = requireStudentAccessSeams();
+      const resolvedAt = dependencies.clock.now();
+      const languageChoice = await store.saveStudentLanguage({
+        sessionHandleHash: handles.hash(command.sessionHandle),
+        languageChoice: command.languageChoice,
+        resolvedAt,
+        idleExpiresAt: new Date(resolvedAt.getTime() + studentSessionIdleMs),
+      });
+      if (!languageChoice) throw new StudentAuthenticationFailedError();
+      return { languageChoice };
+    },
+
     async resolveStudentSession(command) {
       const { store, handles } = requireStudentAccessSeams();
       const resolvedAt = dependencies.clock.now();
       return store.resolveStudentSession({
         sessionHandleHash: handles.hash(command.sessionHandle),
         resolvedAt,
-        idleExpiresAt: new Date(resolvedAt.getTime() + 30 * 60 * 1000),
+        idleExpiresAt: new Date(resolvedAt.getTime() + studentSessionIdleMs),
       });
     },
   };

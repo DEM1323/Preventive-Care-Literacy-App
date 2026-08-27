@@ -26,11 +26,28 @@ export function StudentIntakePage() {
   useEffect(() => {
     let active = true;
     void client
-      .GET('/api/v1/student/intake', { params: { query: { locale: 'en-US' } } })
-      .then(({ data, response }) => {
+      .GET('/api/v1/student/session')
+      .then(async ({ data: access, response: sessionResponse }) => {
+        if (!active) return;
+        if (sessionResponse.status === 401) {
+          navigate('/student/sign-in');
+          return;
+        }
+        if (sessionResponse.status !== 200 || !access) {
+          setError('Intake is not available yet.');
+          setBusy(undefined);
+          return;
+        }
+        const { data, response } = await client.GET('/api/v1/student/intake', {
+          params: { query: { locale: access.languageChoice } },
+        });
         if (!active) return;
         if (response.status === 401) {
-          navigate('/student/invitation');
+          navigate('/student/sign-in');
+          return;
+        }
+        if (response.status === 403) {
+          navigate('/student');
           return;
         }
         if (response.status !== 200 || !data) {

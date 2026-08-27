@@ -452,6 +452,38 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/auth/student/sign-in': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['requestStudentSignIn'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/auth/student/sign-in/verify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['completeStudentSignIn'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/clinical/intake-records/current': {
     parameters: {
       query?: never;
@@ -590,6 +622,22 @@ export interface paths {
     get?: never;
     put?: never;
     post: operations['submitIntakeRecordVersion'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/student/language': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['saveStudentLanguage'];
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -6032,6 +6080,245 @@ export interface operations {
       };
     };
   };
+  requestStudentSignIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          recipient: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            outcome: 'accepted';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  completeStudentSignIn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          code: string;
+          recipient: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            outcome: 'authenticated';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
   revealCurrentIntakeRecord: {
     parameters: {
       query?: never;
@@ -6753,6 +7040,26 @@ export interface operations {
         };
       };
       /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
       404: {
         headers: {
           [name: string]: unknown;
@@ -6854,6 +7161,26 @@ export interface operations {
       };
       /** @description Default Response */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -7054,6 +7381,26 @@ export interface operations {
         };
       };
       /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
       404: {
         headers: {
           [name: string]: unknown;
@@ -7155,6 +7502,134 @@ export interface operations {
       };
     };
   };
+  saveStudentLanguage: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          languageChoice: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            languageChoice: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
   readStudentLearning: {
     parameters: {
       query?: {
@@ -7200,6 +7675,26 @@ export interface operations {
       };
       /** @description Default Response */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeReleaseId?: string | null;
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            draftVersion?: number;
+            outcome?: string;
+            reason?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -7466,6 +7961,7 @@ export interface operations {
               classId: string;
               name: string;
             }[];
+            languageChoice: 'en-US' | 'es-US' | 'pt-BR' | 'fr-CA' | 'ht-HT';
             /** Format: uuid */
             studentId: string;
             /** Format: uuid */

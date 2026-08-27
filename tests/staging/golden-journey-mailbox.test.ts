@@ -2,7 +2,9 @@ import { expect, test } from 'bun:test';
 import {
   captureInvitationMailboxBaseline,
   extractInvitationCode,
+  extractSignInCode,
   waitForInvitationCode,
+  waitForSignInCode,
 } from '../../packages/golden-journey/src/index.ts';
 
 const recipient = 'controlled@example.test';
@@ -10,6 +12,23 @@ const codeText = 'Your Invitation Code is 654321. It expires in 10 minutes.';
 
 test('mailbox parser extracts a six-digit Invitation Code from the fixed subject text', () => {
   expect(extractInvitationCode(codeText)).toBe('654321');
+});
+
+test('mailbox parser extracts a six-digit Sign-In Code from the distinct template', () => {
+  expect(
+    extractSignInCode('Your Sign-In Code is 555111. It expires in 10 minutes.'),
+  ).toBe('555111');
+});
+
+test('mailbox parser keeps Invitation and Sign-In Code templates distinct', () => {
+  expect(() =>
+    extractSignInCode(
+      'Your Invitation Code is 729104. It expires in 10 minutes.',
+    ),
+  ).toThrow('Sign-In Code');
+  expect(() => extractInvitationCode('Your Sign-In Code is 555111.')).toThrow(
+    'Invitation Code',
+  );
 });
 
 test('mailbox parser rejects bodies that are not the invitation template', () => {
@@ -58,6 +77,47 @@ test('mailbox waiter correlates subject, sent-after, and the expected recipient 
   expect(code.code).toBe('654321');
   expect(code.messageId).toBe('msg-1');
   expect(requests).toEqual(['list', 'list', 'read:msg-1']);
+});
+
+test('mailbox waiter observes a Sign-In Code by the distinct subject and template', async () => {
+  const code = await waitForSignInCode(
+    {
+      list: async () => ({
+        messages: [
+          {
+            id: 'invite-1',
+            createdAt: '2026-08-26T18:01:00.000Z',
+            subject: 'Your Invitation Code',
+          },
+          {
+            id: 'signin-1',
+            createdAt: '2026-08-26T18:01:30.000Z',
+            subject: 'Your Sign-In Code',
+          },
+        ],
+      }),
+      read: async (id) => ({
+        id,
+        text:
+          id === 'signin-1'
+            ? 'Your Sign-In Code is 555111. It expires in 10 minutes.'
+            : codeText,
+        to: [recipient],
+      }),
+    },
+    {
+      expectedRecipient: recipient,
+      since: new Date('2026-08-26T18:00:00.000Z'),
+      sleep: async () => undefined,
+      attempts: 1,
+      now: () => new Date('2026-08-26T18:02:00.000Z'),
+    },
+  );
+  expect(code).toEqual({
+    code: '555111',
+    messageId: 'signin-1',
+    createdAt: '2026-08-26T18:01:30.000Z',
+  });
 });
 
 test('mailbox waiter ignores a matching subject sent to an unrelated recipient', async () => {

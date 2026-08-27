@@ -101,6 +101,13 @@ async function renderContracts() {
       redeemInvitation: async () => {
         throw new Error('Contract generation does not execute commands');
       },
+      requestStudentSignIn: async () => ({ outcome: 'accepted' as const }),
+      completeStudentSignIn: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
+      saveStudentLanguage: async () => {
+        throw new Error('Contract generation does not execute commands');
+      },
       resolveStudentSession: async () => undefined,
     },
     {

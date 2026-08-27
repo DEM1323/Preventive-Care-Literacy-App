@@ -50,7 +50,9 @@ export {
   captureInvitationMailboxBaseline,
   createResendInvitationMailbox,
   extractInvitationCode,
+  extractSignInCode,
   waitForInvitationCode,
+  waitForSignInCode,
   type InvitationMailbox,
   type ObservedInvitationMail,
 } from './mailbox.ts';

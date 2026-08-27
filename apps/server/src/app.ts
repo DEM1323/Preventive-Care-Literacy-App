@@ -28,6 +28,7 @@ import {
   StaffIdentityAlreadyExistsError,
   StaffPermissionRequiredError,
   StudentAuthenticationFailedError,
+  StudentClassAccessRequiredError,
   StaffSessionExpiredError,
   StaffSessionRevokedError,
   StepUpIncompleteError,
@@ -691,7 +692,7 @@ const ClassDirectoryResponse = Type.Object({
   ),
 });
 
-const RedeemInvitationBody = Type.Object(
+const StudentEmailCodeBody = Type.Object(
   {
     recipient: Type.String({
       maxLength: 322,
@@ -701,18 +702,22 @@ const RedeemInvitationBody = Type.Object(
   },
   { additionalProperties: false },
 );
+const RedeemInvitationBody = StudentEmailCodeBody;
+const StudentSignInVerifyBody = StudentEmailCodeBody;
+const StudentSignInRequestBody = Type.Object(
+  {
+    recipient: Type.String({
+      maxLength: 322,
+      pattern: '^\\s*[^\\s@]+@[^\\s@]+\\s*$',
+    }),
+  },
+  { additionalProperties: false },
+);
+const StudentSignInAcceptedResponse = Type.Object({
+  outcome: Type.Literal('accepted'),
+});
 const StudentSessionCreatedResponse = Type.Object({
   outcome: Type.Literal('authenticated'),
-});
-const StudentSessionResponse = Type.Object({
-  studentId: Type.String({ format: 'uuid' }),
-  workspaceId: Type.String({ format: 'uuid' }),
-  activeClassMemberships: Type.Array(
-    Type.Object({
-      classId: Type.String({ format: 'uuid' }),
-      name: Type.String(),
-    }),
-  ),
 });
 const IntakeLocaleSchema = Type.Union([
   Type.Literal('en-US'),
@@ -721,6 +726,26 @@ const IntakeLocaleSchema = Type.Union([
   Type.Literal('fr-CA'),
   Type.Literal('ht-HT'),
 ]);
+const SaveStudentLanguageBody = Type.Object(
+  {
+    languageChoice: IntakeLocaleSchema,
+  },
+  { additionalProperties: false },
+);
+const SaveStudentLanguageResponse = Type.Object({
+  languageChoice: IntakeLocaleSchema,
+});
+const StudentSessionResponse = Type.Object({
+  studentId: Type.String({ format: 'uuid' }),
+  workspaceId: Type.String({ format: 'uuid' }),
+  languageChoice: IntakeLocaleSchema,
+  activeClassMemberships: Type.Array(
+    Type.Object({
+      classId: Type.String({ format: 'uuid' }),
+      name: Type.String(),
+    }),
+  ),
+});
 const ExactResourceRevisionSchema = Type.Object({
   resourceId: Type.String({ format: 'uuid' }),
   revisionNumber: Type.Integer({ minimum: 1 }),
@@ -1911,18 +1936,27 @@ export async function buildApp(
                         ? 'clinical-intake-reveal'
                         : route.startsWith('/api/v1/administration/classes')
                           ? 'classes'
-                          : route === '/api/v1/student/intake'
-                            ? 'student-intake'
-                            : route === '/api/v1/student/intake/draft'
-                              ? 'student-intake-draft'
-                              : route === '/api/v1/student/intake/submissions'
-                                ? 'student-intake-submission'
-                                : route === '/api/v1/student/learning'
-                                  ? 'student-learning'
-                                  : route ===
-                                      '/api/v1/student/learning/acknowledgements'
-                                    ? 'student-learning-acknowledgement'
-                                    : 'unknown';
+                          : route === '/api/v1/auth/student/sign-in'
+                            ? 'student-sign-in'
+                            : route === '/api/v1/auth/student/sign-in/verify'
+                              ? 'student-sign-in-verify'
+                              : route === '/api/v1/student/session'
+                                ? 'student-session'
+                                : route === '/api/v1/student/language'
+                                  ? 'student-language'
+                                  : route === '/api/v1/student/intake'
+                                    ? 'student-intake'
+                                    : route === '/api/v1/student/intake/draft'
+                                      ? 'student-intake-draft'
+                                      : route ===
+                                          '/api/v1/student/intake/submissions'
+                                        ? 'student-intake-submission'
+                                        : route === '/api/v1/student/learning'
+                                          ? 'student-learning'
+                                          : route ===
+                                              '/api/v1/student/learning/acknowledgements'
+                                            ? 'student-learning-acknowledgement'
+                                            : 'unknown';
       telemetry.record({
         name: 'http.request.completed',
         method: ['DELETE', 'GET', 'PATCH', 'POST', 'PUT'].includes(
@@ -2204,6 +2238,14 @@ export async function buildApp(
         type: 'https://preventive-care-literacy.example/problems/student-authentication',
         title: error.message,
         status: 401,
+        code: error.code,
+      });
+    }
+    if (error instanceof StudentClassAccessRequiredError) {
+      return reply.type('application/problem+json').code(403).send({
+        type: 'https://preventive-care-literacy.example/problems/student-class-access',
+        title: error.message,
+        status: 403,
         code: error.code,
       });
     }
@@ -3674,6 +3716,84 @@ export async function buildApp(
     },
   );
 
+  app.post<{ Body: Static<typeof StudentSignInRequestBody> }>(
+    '/api/v1/auth/student/sign-in',
+    {
+      schema: {
+        operationId: 'requestStudentSignIn',
+        body: StudentSignInRequestBody,
+        response: {
+          200: StudentSignInAcceptedResponse,
+          400: ProblemResponse,
+          403: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request) => {
+      return identityAndAccess.requestStudentSignIn(request.body);
+    },
+  );
+
+  app.post<{ Body: Static<typeof StudentSignInVerifyBody> }>(
+    '/api/v1/auth/student/sign-in/verify',
+    {
+      schema: {
+        operationId: 'completeStudentSignIn',
+        body: StudentSignInVerifyBody,
+        response: {
+          200: StudentSessionCreatedResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const grant = await identityAndAccess.completeStudentSignIn(request.body);
+      reply.header(
+        'set-cookie',
+        setSecureOpaqueCookie(studentSessionCookie, grant.sessionHandle),
+      );
+      return { outcome: 'authenticated' as const };
+    },
+  );
+
+  app.put<{ Body: Static<typeof SaveStudentLanguageBody> }>(
+    '/api/v1/student/language',
+    {
+      schema: {
+        operationId: 'saveStudentLanguage',
+        security: [{ studentSession: [] }],
+        body: SaveStudentLanguageBody,
+        response: {
+          200: SaveStudentLanguageResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        studentSessionCookie,
+      );
+      if (!sessionHandle) {
+        return studentSessionRequired(reply);
+      }
+      return identityAndAccess.saveStudentLanguage({
+        sessionHandle,
+        languageChoice: request.body.languageChoice,
+      });
+    },
+  );
+
   app.get(
     '/api/v1/student/session',
     {
@@ -3730,6 +3850,7 @@ export async function buildApp(
         response: {
           200: StudentIntakeSnapshotResponse,
           401: ProblemResponse,
+          403: ProblemResponse,
           404: ProblemResponse,
           500: ProblemResponse,
         },
@@ -3763,6 +3884,7 @@ export async function buildApp(
           200: SaveIntakeDraftResponse,
           400: ProblemResponse,
           401: ProblemResponse,
+          403: ProblemResponse,
           404: ProblemResponse,
           409: ProblemResponse,
           413: ProblemResponse,
@@ -3798,6 +3920,7 @@ export async function buildApp(
           201: SubmitIntakeRecordVersionResponse,
           400: ProblemResponse,
           401: ProblemResponse,
+          403: ProblemResponse,
           404: ProblemResponse,
           409: ProblemResponse,
           413: ProblemResponse,
@@ -3833,6 +3956,7 @@ export async function buildApp(
         response: {
           200: StudentLearningSnapshotResponse,
           401: ProblemResponse,
+          403: ProblemResponse,
           404: ProblemResponse,
           500: ProblemResponse,
         },

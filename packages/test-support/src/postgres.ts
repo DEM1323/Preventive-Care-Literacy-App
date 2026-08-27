@@ -78,6 +78,10 @@ export async function createRuntimeDatabaseUser(
           identity_access.students, identity_access.verified_email_addresses,
            identity_access.class_memberships, identity_access.student_sessions,
            identity_access.staff_session_freshness,
+           identity_access.sign_in_challenges,
+           identity_access.sign_in_challenge_codes,
+           identity_access.sign_in_deliveries,
+           identity_access.sign_in_send_attempts,
            infrastructure.operation_receipts, audit.evidence to ${role}`,
     );
     await client.query(
@@ -93,7 +97,12 @@ export async function createRuntimeDatabaseUser(
            identity_access.invitation_deliveries,
            identity_access.classes,
            identity_access.class_memberships, identity_access.student_sessions,
-           identity_access.staff_session_freshness to ${role}`,
+           identity_access.staff_session_freshness,
+           identity_access.students,
+           identity_access.sign_in_challenges,
+           identity_access.sign_in_challenge_codes,
+           identity_access.sign_in_deliveries,
+           identity_access.sign_in_send_attempts to ${role}`,
     );
     await client.query(
       `grant execute on function identity_access.current_staff_has_permission(text) to ${role}`,

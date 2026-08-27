@@ -5,6 +5,7 @@ import { StaffSignInPage } from './features/staff/StaffSignInPage';
 import {
   InvitationRedemptionPage,
   StudentHomePage,
+  StudentSignInPage,
 } from './features/student-access/StudentAccessPages';
 import { StudentIntakePage } from './features/intake/StudentIntakePage';
 import { StudentLearningPage } from './features/learning/StudentLearningPage';
@@ -43,6 +44,7 @@ export default function App() {
           path="/student/invitation"
           element={<InvitationRedemptionPage />}
         />
+        <Route path="/student/sign-in" element={<StudentSignInPage />} />
         <Route path="/student" element={<StudentHomePage />} />
         <Route path="/student/intake" element={<StudentIntakePage />} />
         <Route path="/student/learning" element={<StudentLearningPage />} />

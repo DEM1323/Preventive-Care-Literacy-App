@@ -23,6 +23,10 @@ function context(input: {
   return `${input.purpose}:${input.invitationId}:${input.generation}`;
 }
 
+function signInContext(input: { challengeId: string; generation: number }) {
+  return `sign_in:${input.challengeId}:${input.generation}`;
+}
+
 function recipientContext(input: { workspaceId: string; studentId: string }) {
   return `verified-email:${input.workspaceId}:${input.studentId}`;
 }
@@ -54,15 +58,38 @@ export function createInvitationSecretProtector(
         )
         .digest('hex');
     },
+    digestSignInLookup(input) {
+      return createHmac('sha256', keys.hmacKey)
+        .update(
+          `sign-in-lookup:${input.recipient.trim().toLowerCase()}:${input.code}`,
+        )
+        .digest('hex');
+    },
     digestCode(input) {
       return createHmac('sha256', keys.hmacKey)
         .update(`code:${context(input)}:${input.code}`)
+        .digest('hex');
+    },
+    digestSignInCode(input) {
+      return createHmac('sha256', keys.hmacKey)
+        .update(`code:${signInContext(input)}:${input.code}`)
         .digest('hex');
     },
     codeMatches(input) {
       const actual = Buffer.from(
         createHmac('sha256', keys.hmacKey)
           .update(`code:${context(input)}:${input.code}`)
+          .digest('hex'),
+      );
+      const expected = Buffer.from(input.expectedDigest);
+      return (
+        actual.length === expected.length && timingSafeEqual(actual, expected)
+      );
+    },
+    signInCodeMatches(input) {
+      const actual = Buffer.from(
+        createHmac('sha256', keys.hmacKey)
+          .update(`code:${signInContext(input)}:${input.code}`)
           .digest('hex'),
       );
       const expected = Buffer.from(input.expectedDigest);
@@ -118,6 +145,36 @@ export function createInvitationSecretProtector(
         ]).toString('base64url'),
       };
     },
+    protectSignIn(input) {
+      const normalizedRecipient = input.recipient.trim().toLowerCase();
+      const binding = signInContext(input);
+      const nonce = randomBytes(12);
+      const cipher = createCipheriv('aes-256-gcm', encryptionKey, nonce);
+      cipher.setAAD(Buffer.from(binding));
+      const encrypted = Buffer.concat([
+        cipher.update(
+          JSON.stringify({ recipient: normalizedRecipient, code: input.code }),
+        ),
+        cipher.final(),
+      ]);
+      return {
+        recipientDigest: createHmac('sha256', keys.hmacKey)
+          .update(`recipient:${normalizedRecipient}`)
+          .digest('hex'),
+        codeDigest: createHmac('sha256', keys.hmacKey)
+          .update(`code:${binding}:${input.code}`)
+          .digest('hex'),
+        lookupDigest: createHmac('sha256', keys.hmacKey)
+          .update(`sign-in-lookup:${normalizedRecipient}:${input.code}`)
+          .digest('hex'),
+        keyId: keys.activeEncryptionKeyId,
+        ciphertext: Buffer.concat([
+          nonce,
+          cipher.getAuthTag(),
+          encrypted,
+        ]).toString('base64url'),
+      };
+    },
     revealInvitationRecipient(input) {
       return decryptInvitationDelivery({
         keys,
@@ -129,6 +186,23 @@ export function createInvitationSecretProtector(
       }).recipient;
     },
   };
+}
+
+export function decryptSignInDelivery(input: {
+  keys: Pick<InvitationSecretKeys, 'encryptionKeys'>;
+  keyId: string;
+  ciphertext: string;
+  challengeId: string;
+  generation: number;
+}): { recipient: string; code: string } {
+  return decryptInvitationDelivery({
+    keys: input.keys,
+    keyId: input.keyId,
+    ciphertext: input.ciphertext,
+    invitationId: input.challengeId,
+    purpose: 'sign_in',
+    generation: input.generation,
+  });
 }
 
 export function decryptInvitationDelivery(input: {

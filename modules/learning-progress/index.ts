@@ -4,6 +4,7 @@ import type {
   IdGenerator,
   StudentSessionContext,
 } from '../identity-access/index.ts';
+import { StudentClassAccessRequiredError } from '../identity-access/index.ts';
 import {
   canonicalJson,
   supportedLocales,
@@ -275,6 +276,9 @@ export function createLearningProgress(dependencies: {
         sessionHandle: command.sessionHandle,
       });
       if (!session) return undefined;
+      if (session.activeClassMemberships.length === 0) {
+        throw new StudentClassAccessRequiredError();
+      }
       const state = await dependencies.store.readWorkspaceLearning({
         studentId: session.studentId,
         workspaceId: session.workspaceId,
@@ -305,6 +309,9 @@ export function createLearningProgress(dependencies: {
         sessionHandle: command.sessionHandle,
       });
       if (!session) return undefined;
+      if (session.activeClassMemberships.length === 0) {
+        throw new StudentClassAccessRequiredError();
+      }
       const submitted = await dependencies.store.acknowledge({
         studentId: session.studentId,
         workspaceId: session.workspaceId,
