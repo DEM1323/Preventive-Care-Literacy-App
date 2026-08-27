@@ -141,12 +141,19 @@ export type SaveIntakeDraftResult = {
   replayed: boolean;
 };
 
+export type IntakeChangedField = {
+  fieldId: string;
+  change: 'added' | 'removed' | 'changed';
+};
+
 export type SubmitIntakeRecordVersionCommand = {
   sessionHandle: string;
   operationId: string;
   expectedSchoolConfigurationReleaseId: string;
   expectedIntakeForm: ExactResourceRevision;
   expectedSubmissionAttestation: ExactResourceRevision;
+  expectedDraftRevision?: number;
+  expectedCurrentIntakeRecordVersionId?: string;
   locale: IntakeLocale;
   answers: IntakeAnswerMap;
   attestation: {
@@ -160,6 +167,23 @@ export type SubmitIntakeRecordVersionResult = {
   intakeRecordVersionId: string;
   acceptedAt: string;
   learningUnlocked: true;
+  replayed: boolean;
+  predecessorIntakeRecordVersionId: string | null;
+  changedFields: IntakeChangedField[];
+};
+
+export type ReopenIntakeRecordCommand = {
+  sessionHandle: string;
+  operationId: string;
+  expectedCurrentIntakeRecordVersionId: string;
+  locale: IntakeLocale;
+};
+
+export type ReopenIntakeRecordResult = {
+  operationId: string;
+  locale: IntakeLocale;
+  updatedAt: string;
+  draftRevision: number;
   replayed: boolean;
 };
 
@@ -218,6 +242,14 @@ export class IntakeRecordNotFoundError extends Error {
   constructor() {
     super('No current Intake Record Version is available');
     this.name = 'IntakeRecordNotFoundError';
+  }
+}
+
+export class IntakeCurrentRevisionConflictError extends Error {
+  readonly code = 'INTAKE_CURRENT_REVISION_CONFLICT';
+  constructor(readonly currentIntakeRecordVersionId: string) {
+    super('The current Intake Record Version changed');
+    this.name = 'IntakeCurrentRevisionConflictError';
   }
 }
 
@@ -289,11 +321,13 @@ export type StoredIntakeDraft = {
 
 export type StoredIntakeRecordVersion = {
   intakeRecordVersionId: string;
+  versionNumber: number;
   acceptedAt: Date;
   schoolConfigurationReleaseId: string;
   intakeForm: ExactResourceRevision;
   submissionAttestation: ExactResourceRevision;
   locale: IntakeLocale;
+  sealed: SealedRecord;
 };
 
 export type IntakeStore = {
@@ -325,6 +359,24 @@ export type IntakeStore = {
       }
     | { outcome: 'replayed'; result: SaveIntakeDraftResult }
   >;
+  reopen(input: {
+    studentId: string;
+    workspaceId: string;
+    operationId: string;
+    requestBinding: string;
+    locale: IntakeLocale;
+    expectedCurrentIntakeRecordVersionId: string;
+    updatedAt: Date;
+    seedDraft: (currentSealed: SealedRecord) => Promise<SealedRecord>;
+  }): Promise<
+    | {
+        outcome: 'saved';
+        draftRevision: number;
+        locale: IntakeLocale;
+        updatedAt: Date;
+      }
+    | { outcome: 'replayed'; result: ReopenIntakeRecordResult }
+  >;
   submit(input: {
     studentId: string;
     workspaceId: string;
@@ -335,12 +387,23 @@ export type IntakeStore = {
     expectedSchoolConfigurationReleaseId: string;
     expectedIntakeForm: ExactResourceRevision;
     expectedSubmissionAttestation: ExactResourceRevision;
+    expectedDraftRevision?: number;
+    expectedCurrentIntakeRecordVersionId?: string;
     sealed: SealedRecord;
     acceptedAt: Date;
     auditId: string;
     outboxId: string;
+    summarizeChanges: (
+      previousSealed: SealedRecord | undefined,
+    ) => Promise<IntakeChangedField[]>;
   }): Promise<
-    | { outcome: 'accepted'; intakeRecordVersionId: string; acceptedAt: Date }
+    | {
+        outcome: 'accepted';
+        intakeRecordVersionId: string;
+        acceptedAt: Date;
+        predecessorIntakeRecordVersionId: string | null;
+        changedFields: IntakeChangedField[];
+      }
     | { outcome: 'replayed'; result: SubmitIntakeRecordVersionResult }
   >;
   revealCurrent(input: {
@@ -549,6 +612,31 @@ function decodeAnswers(bytes: Uint8Array): IntakeAnswerMap {
   return answers;
 }
 
+function changedFieldSummary(
+  previous: IntakeAnswerMap | undefined,
+  next: IntakeAnswerMap,
+): IntakeChangedField[] {
+  const fieldIds = [
+    ...new Set([...Object.keys(previous ?? {}), ...Object.keys(next)]),
+  ].sort();
+  const summary: IntakeChangedField[] = [];
+  for (const fieldId of fieldIds) {
+    const before = previous?.[fieldId];
+    const after = next[fieldId];
+    if (before === after) continue;
+    summary.push({
+      fieldId,
+      change:
+        before === undefined
+          ? 'added'
+          : after === undefined
+            ? 'removed'
+            : 'changed',
+    });
+  }
+  return summary;
+}
+
 function assertExpectedRelease(
   release: ActiveIntakeRelease,
   expected: {
@@ -614,24 +702,23 @@ export function createIntake(dependencies: {
             locale: state.currentVersion.locale,
           }
         : null;
-      const draft =
-        current || !state.draft
-          ? null
-          : {
-              draftRevision: state.draft.draftRevision,
-              locale: state.draft.locale,
-              updatedAt: state.draft.updatedAt.toISOString(),
-              schoolConfigurationReleaseId:
-                state.draft.schoolConfigurationReleaseId,
-              intakeForm: state.draft.intakeForm,
-              answers: decodeAnswers(
-                await dependencies.keys.open(state.draft.sealed, {
-                  purpose: 'intake-draft',
-                  workspaceId: session.workspaceId,
-                  studentId: session.studentId,
-                }),
-              ),
-            };
+      const draft = !state.draft
+        ? null
+        : {
+            draftRevision: state.draft.draftRevision,
+            locale: state.draft.locale,
+            updatedAt: state.draft.updatedAt.toISOString(),
+            schoolConfigurationReleaseId:
+              state.draft.schoolConfigurationReleaseId,
+            intakeForm: state.draft.intakeForm,
+            answers: decodeAnswers(
+              await dependencies.keys.open(state.draft.sealed, {
+                purpose: 'intake-draft',
+                workspaceId: session.workspaceId,
+                studentId: session.studentId,
+              }),
+            ),
+          };
       return {
         learningUnlocked: current !== null,
         currentIntakeRecordVersion: current,
@@ -698,6 +785,57 @@ export function createIntake(dependencies: {
       };
     },
 
+    async reopen(command: ReopenIntakeRecordCommand) {
+      const session = await requireStudent(command.sessionHandle);
+      if (!session) return undefined;
+      const updatedAt = dependencies.clock.now();
+      const requestBinding = dependencies.keys.bind(
+        Buffer.from(
+          canonicalJson({
+            expectedCurrentIntakeRecordVersionId:
+              command.expectedCurrentIntakeRecordVersionId,
+            locale: command.locale,
+          }),
+          'utf8',
+        ),
+        {
+          workspaceId: session.workspaceId,
+          studentId: session.studentId,
+        },
+      );
+      const reopened = await dependencies.store.reopen({
+        studentId: session.studentId,
+        workspaceId: session.workspaceId,
+        operationId: command.operationId,
+        requestBinding,
+        locale: command.locale,
+        expectedCurrentIntakeRecordVersionId:
+          command.expectedCurrentIntakeRecordVersionId,
+        updatedAt,
+        seedDraft: async (currentSealed) =>
+          dependencies.keys.seal(
+            await dependencies.keys.open(currentSealed, {
+              purpose: 'intake-record-version',
+              workspaceId: session.workspaceId,
+              studentId: session.studentId,
+            }),
+            {
+              purpose: 'intake-draft',
+              workspaceId: session.workspaceId,
+              studentId: session.studentId,
+            },
+          ),
+      });
+      if (reopened.outcome === 'replayed') return reopened.result;
+      return {
+        operationId: command.operationId,
+        locale: reopened.locale,
+        updatedAt: reopened.updatedAt.toISOString(),
+        draftRevision: reopened.draftRevision,
+        replayed: false,
+      };
+    },
+
     async submit(command: SubmitIntakeRecordVersionCommand) {
       const session = await requireStudent(command.sessionHandle);
       if (!session) return undefined;
@@ -732,6 +870,15 @@ export function createIntake(dependencies: {
             expectedIntakeForm: command.expectedIntakeForm,
             expectedSubmissionAttestation:
               command.expectedSubmissionAttestation,
+            ...(command.expectedDraftRevision === undefined
+              ? {}
+              : { expectedDraftRevision: command.expectedDraftRevision }),
+            ...(command.expectedCurrentIntakeRecordVersionId
+              ? {
+                  expectedCurrentIntakeRecordVersionId:
+                    command.expectedCurrentIntakeRecordVersionId,
+                }
+              : {}),
             locale: command.locale,
             answers: command.answers,
             attestation: command.attestation,
@@ -754,6 +901,9 @@ export function createIntake(dependencies: {
           command.expectedSchoolConfigurationReleaseId,
         expectedIntakeForm: command.expectedIntakeForm,
         expectedSubmissionAttestation: command.expectedSubmissionAttestation,
+        expectedDraftRevision: command.expectedDraftRevision,
+        expectedCurrentIntakeRecordVersionId:
+          command.expectedCurrentIntakeRecordVersionId,
         sealed: dependencies.keys.seal(encodeAnswers(command.answers), {
           purpose: 'intake-record-version',
           workspaceId: session.workspaceId,
@@ -762,6 +912,19 @@ export function createIntake(dependencies: {
         acceptedAt,
         auditId: dependencies.ids.create(),
         outboxId: dependencies.ids.create(),
+        summarizeChanges: async (previousSealed) =>
+          changedFieldSummary(
+            previousSealed
+              ? decodeAnswers(
+                  await dependencies.keys.open(previousSealed, {
+                    purpose: 'intake-record-version',
+                    workspaceId: session.workspaceId,
+                    studentId: session.studentId,
+                  }),
+                )
+              : undefined,
+            command.answers,
+          ),
       });
       if (submitted.outcome === 'replayed') return submitted.result;
       return {
@@ -770,6 +933,9 @@ export function createIntake(dependencies: {
         acceptedAt: submitted.acceptedAt.toISOString(),
         learningUnlocked: true as const,
         replayed: false,
+        predecessorIntakeRecordVersionId:
+          submitted.predecessorIntakeRecordVersionId,
+        changedFields: submitted.changedFields,
       };
     },
 

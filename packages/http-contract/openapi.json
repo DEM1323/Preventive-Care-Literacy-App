@@ -365,6 +365,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -394,6 +398,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -423,6 +431,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -514,6 +526,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -543,6 +559,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -572,6 +592,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -601,6 +625,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -630,6 +658,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -713,6 +745,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -742,6 +778,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -771,6 +811,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -800,6 +844,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -829,6 +877,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -858,6 +910,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -887,6 +943,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -962,6 +1022,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -991,6 +1055,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1020,6 +1088,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1049,6 +1121,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1078,6 +1154,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1272,6 +1352,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1301,6 +1385,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1330,6 +1418,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1359,6 +1451,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1388,6 +1484,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1417,6 +1517,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1446,6 +1550,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1674,6 +1782,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1703,6 +1815,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1732,6 +1848,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1761,6 +1881,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1790,6 +1914,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1819,6 +1947,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1848,6 +1980,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -1877,6 +2013,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2006,6 +2146,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2035,6 +2179,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2064,6 +2212,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2093,6 +2245,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2122,6 +2278,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2151,6 +2311,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2239,6 +2403,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2268,6 +2436,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2297,6 +2469,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2326,6 +2502,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2355,6 +2535,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2384,6 +2568,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2413,6 +2601,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2487,6 +2679,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2516,6 +2712,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2545,6 +2745,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2574,6 +2778,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2603,6 +2811,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2632,6 +2844,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2718,6 +2934,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2747,6 +2967,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2776,6 +3000,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2805,6 +3033,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2834,6 +3066,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2863,6 +3099,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2892,6 +3132,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2961,6 +3205,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -2990,6 +3238,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -3019,6 +3271,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -3048,6 +3304,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -3077,6 +3337,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -3106,6 +3370,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -3489,6 +3757,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -3518,6 +3790,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -3547,6 +3823,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -3576,6 +3856,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4198,6 +4482,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4227,6 +4515,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4256,6 +4548,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4285,6 +4581,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4314,6 +4614,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4343,6 +4647,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4372,6 +4680,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4465,6 +4777,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4494,6 +4810,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4523,6 +4843,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4552,6 +4876,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4581,6 +4909,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4610,6 +4942,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -4639,6 +4975,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5087,6 +5427,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5116,6 +5460,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5145,6 +5493,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5174,6 +5526,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5203,6 +5559,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5232,6 +5592,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5261,6 +5625,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5373,6 +5741,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5402,6 +5774,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5431,6 +5807,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5546,6 +5926,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5575,6 +5959,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5604,6 +5992,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5633,6 +6025,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5662,6 +6058,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5691,6 +6091,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5720,6 +6124,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5872,6 +6280,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5901,6 +6313,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5930,6 +6346,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -5959,6 +6379,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6042,6 +6466,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6071,6 +6499,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6100,6 +6532,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6129,6 +6565,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6158,6 +6598,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6187,6 +6631,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6281,6 +6729,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6310,6 +6762,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6339,6 +6795,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6468,6 +6928,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6497,6 +6961,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6526,6 +6994,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6555,6 +7027,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6584,6 +7060,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6613,6 +7093,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6642,6 +7126,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6736,6 +7224,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6765,6 +7257,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6794,6 +7290,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6823,6 +7323,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6852,6 +7356,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6881,6 +7389,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6910,6 +7422,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -6939,6 +7455,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7059,6 +7579,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7088,6 +7612,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7117,6 +7645,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7146,6 +7678,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7175,6 +7711,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7204,6 +7744,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7233,6 +7777,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7262,6 +7810,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7362,6 +7914,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7391,6 +7947,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7420,6 +7980,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7449,6 +8013,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7478,6 +8046,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7507,6 +8079,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7536,6 +8112,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7565,6 +8145,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7641,6 +8225,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7670,6 +8258,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7699,6 +8291,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7728,6 +8324,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7757,6 +8357,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7786,6 +8390,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7815,6 +8423,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7890,6 +8502,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7919,6 +8535,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7948,6 +8568,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -7977,6 +8601,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8006,6 +8634,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8035,6 +8667,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8064,6 +8700,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8161,6 +8801,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8190,6 +8834,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8219,6 +8867,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8248,6 +8900,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8277,6 +8933,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8306,6 +8966,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8335,6 +8999,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8405,6 +9073,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8434,6 +9106,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8463,6 +9139,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8492,6 +9172,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8542,6 +9226,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8627,6 +9315,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8656,6 +9348,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8685,6 +9381,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8714,6 +9414,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8743,6 +9447,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8793,6 +9501,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8822,6 +9534,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8851,6 +9567,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8880,6 +9600,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8946,6 +9670,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -8975,6 +9703,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9004,6 +9736,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9033,6 +9769,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9062,6 +9802,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9091,6 +9835,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9162,6 +9910,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9191,6 +9943,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9220,6 +9976,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9249,6 +10009,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9278,6 +10042,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9348,6 +10116,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9377,6 +10149,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9406,6 +10182,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9435,6 +10215,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9464,6 +10248,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9533,6 +10321,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9562,6 +10354,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9591,6 +10387,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9620,6 +10420,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9690,6 +10494,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9719,6 +10527,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9748,6 +10560,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9777,6 +10593,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -9806,6 +10626,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10015,6 +10839,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10044,6 +10872,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10073,6 +10905,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10102,6 +10938,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10131,6 +10971,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10160,6 +11004,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10261,6 +11109,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10290,6 +11142,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10319,6 +11175,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10562,6 +11422,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10591,6 +11455,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10640,6 +11508,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10779,6 +11651,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10808,6 +11684,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10880,6 +11760,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -10909,6 +11793,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11281,6 +12169,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11310,6 +12202,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11339,6 +12235,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11368,6 +12268,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11488,6 +12392,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11517,6 +12425,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11546,6 +12458,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11575,6 +12491,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11604,6 +12524,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11633,6 +12557,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11662,6 +12590,313 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "studentSession": [] }]
+      }
+    },
+    "/api/v1/student/intake/reopen": {
+      "post": {
+        "operationId": "reopenIntakeRecord",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "expectedCurrentIntakeRecordVersionId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "locale": {
+                    "anyOf": [
+                      { "enum": ["en-US"], "type": "string" },
+                      { "enum": ["es-US"], "type": "string" },
+                      { "enum": ["pt-BR"], "type": "string" },
+                      { "enum": ["fr-CA"], "type": "string" },
+                      { "enum": ["ht-HT"], "type": "string" }
+                    ]
+                  },
+                  "operationId": { "format": "uuid", "type": "string" }
+                },
+                "required": [
+                  "operationId",
+                  "expectedCurrentIntakeRecordVersionId",
+                  "locale"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "draftRevision": { "minimum": 1, "type": "integer" },
+                    "locale": {
+                      "anyOf": [
+                        { "enum": ["en-US"], "type": "string" },
+                        { "enum": ["es-US"], "type": "string" },
+                        { "enum": ["pt-BR"], "type": "string" },
+                        { "enum": ["fr-CA"], "type": "string" },
+                        { "enum": ["ht-HT"], "type": "string" }
+                      ]
+                    },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "replayed": { "type": "boolean" },
+                    "updatedAt": { "format": "date-time", "type": "string" }
+                  },
+                  "required": [
+                    "operationId",
+                    "locale",
+                    "updatedAt",
+                    "draftRevision",
+                    "replayed"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11720,6 +12955,11 @@
                     "required": ["locale", "notice"],
                     "type": "object"
                   },
+                  "expectedCurrentIntakeRecordVersionId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "expectedDraftRevision": { "minimum": 0, "type": "integer" },
                   "expectedIntakeForm": {
                     "properties": {
                       "resourceId": { "format": "uuid", "type": "string" },
@@ -11773,12 +13013,35 @@
                 "schema": {
                   "properties": {
                     "acceptedAt": { "format": "date-time", "type": "string" },
+                    "changedFields": {
+                      "items": {
+                        "properties": {
+                          "change": {
+                            "anyOf": [
+                              { "enum": ["added"], "type": "string" },
+                              { "enum": ["removed"], "type": "string" },
+                              { "enum": ["changed"], "type": "string" }
+                            ]
+                          },
+                          "fieldId": { "format": "uuid", "type": "string" }
+                        },
+                        "required": ["fieldId", "change"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
                     "intakeRecordVersionId": {
                       "format": "uuid",
                       "type": "string"
                     },
                     "learningUnlocked": { "enum": [true], "type": "boolean" },
                     "operationId": { "format": "uuid", "type": "string" },
+                    "predecessorIntakeRecordVersionId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
                     "replayed": { "type": "boolean" }
                   },
                   "required": [
@@ -11786,7 +13049,9 @@
                     "intakeRecordVersionId",
                     "acceptedAt",
                     "learningUnlocked",
-                    "replayed"
+                    "replayed",
+                    "predecessorIntakeRecordVersionId",
+                    "changedFields"
                   ],
                   "type": "object"
                 }
@@ -11808,6 +13073,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11837,6 +13106,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11866,6 +13139,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11895,6 +13172,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11924,6 +13205,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11953,6 +13238,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -11982,6 +13271,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12011,6 +13304,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12093,6 +13390,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12122,6 +13423,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12151,6 +13456,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12180,6 +13489,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12209,6 +13522,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12362,6 +13679,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12391,6 +13712,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12420,6 +13745,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12449,6 +13778,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12543,6 +13876,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12572,6 +13909,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12601,6 +13942,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12630,6 +13975,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12659,6 +14008,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12688,6 +14041,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12717,6 +14074,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12794,6 +14155,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },
@@ -12823,6 +14188,10 @@
                     "affectedValue": { "type": "string" },
                     "candidateFingerprint": { "type": "string" },
                     "code": { "type": "string" },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
                     "draftRevision": { "minimum": 0, "type": "integer" },
                     "draftVersion": { "minimum": 0, "type": "integer" },
                     "outcome": { "type": "string" },

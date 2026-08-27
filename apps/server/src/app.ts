@@ -52,6 +52,7 @@ import type {
 } from '../../../modules/intake/index.ts';
 import {
   IntakeAlreadyAcceptedError,
+  IntakeCurrentRevisionConflictError,
   IntakeDraftRevisionConflictError,
   IntakeIncompleteError,
   IntakeOperationReusedError,
@@ -946,12 +947,25 @@ const SaveIntakeDraftResponse = Type.Object({
   draftRevision: Type.Integer({ minimum: 1 }),
   replayed: Type.Boolean(),
 });
+const ReopenIntakeRecordBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    expectedCurrentIntakeRecordVersionId: Type.String({ format: 'uuid' }),
+    locale: IntakeLocaleSchema,
+  },
+  { additionalProperties: false },
+);
+const ReopenIntakeRecordResponse = SaveIntakeDraftResponse;
 const SubmitIntakeRecordVersionBody = Type.Object(
   {
     operationId: Type.String({ format: 'uuid' }),
     expectedSchoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
     expectedIntakeForm: ExactResourceRevisionSchema,
     expectedSubmissionAttestation: ExactResourceRevisionSchema,
+    expectedDraftRevision: Type.Optional(Type.Integer({ minimum: 0 })),
+    expectedCurrentIntakeRecordVersionId: Type.Optional(
+      Type.String({ format: 'uuid' }),
+    ),
     locale: IntakeLocaleSchema,
     answers: IntakeAnswersSchema,
     attestation: Type.Object({
@@ -961,12 +975,25 @@ const SubmitIntakeRecordVersionBody = Type.Object(
   },
   { additionalProperties: false },
 );
+const IntakeChangedFieldResponse = Type.Object({
+  fieldId: Type.String({ format: 'uuid' }),
+  change: Type.Union([
+    Type.Literal('added'),
+    Type.Literal('removed'),
+    Type.Literal('changed'),
+  ]),
+});
 const SubmitIntakeRecordVersionResponse = Type.Object({
   operationId: Type.String({ format: 'uuid' }),
   intakeRecordVersionId: Type.String({ format: 'uuid' }),
   acceptedAt: Type.String({ format: 'date-time' }),
   learningUnlocked: Type.Literal(true),
   replayed: Type.Boolean(),
+  predecessorIntakeRecordVersionId: Type.Union([
+    Type.String({ format: 'uuid' }),
+    Type.Null(),
+  ]),
+  changedFields: Type.Array(IntakeChangedFieldResponse),
 });
 const ClinicalDirectoryResponse = Type.Object({
   students: Type.Array(
@@ -1451,6 +1478,7 @@ const ProblemDetails = Type.Object({
   code: Type.String(),
   draftVersion: Type.Optional(Type.Integer({ minimum: 0 })),
   draftRevision: Type.Optional(Type.Integer({ minimum: 0 })),
+  currentIntakeRecordVersionId: Type.Optional(Type.String({ format: 'uuid' })),
   activeReleaseId: Type.Optional(
     Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
   ),
@@ -2046,14 +2074,17 @@ export async function buildApp(
                                     : route === '/api/v1/student/intake/draft'
                                       ? 'student-intake-draft'
                                       : route ===
-                                          '/api/v1/student/intake/submissions'
-                                        ? 'student-intake-submission'
-                                        : route === '/api/v1/student/learning'
-                                          ? 'student-learning'
-                                          : route ===
-                                              '/api/v1/student/learning/acknowledgements'
-                                            ? 'student-learning-acknowledgement'
-                                            : 'unknown';
+                                          '/api/v1/student/intake/reopen'
+                                        ? 'student-intake-reopen'
+                                        : route ===
+                                            '/api/v1/student/intake/submissions'
+                                          ? 'student-intake-submission'
+                                          : route === '/api/v1/student/learning'
+                                            ? 'student-learning'
+                                            : route ===
+                                                '/api/v1/student/learning/acknowledgements'
+                                              ? 'student-learning-acknowledgement'
+                                              : 'unknown';
       telemetry.record({
         name: 'http.request.completed',
         method: ['DELETE', 'GET', 'PATCH', 'POST', 'PUT'].includes(
@@ -2374,6 +2405,7 @@ export async function buildApp(
     if (
       error instanceof IntakeRevisionConflictError ||
       error instanceof IntakeDraftRevisionConflictError ||
+      error instanceof IntakeCurrentRevisionConflictError ||
       error instanceof IntakeAlreadyAcceptedError ||
       error instanceof IntakeOperationReusedError
     ) {
@@ -2387,6 +2419,12 @@ export async function buildApp(
           code: error.code,
           ...(error instanceof IntakeDraftRevisionConflictError
             ? { draftRevision: error.draftRevision }
+            : {}),
+          ...(error instanceof IntakeCurrentRevisionConflictError
+            ? {
+                currentIntakeRecordVersionId:
+                  error.currentIntakeRecordVersionId,
+              }
             : {}),
         });
     }
@@ -4109,6 +4147,42 @@ export async function buildApp(
         return studentSessionRequired(reply);
       }
       const result = await options.intake.saveDraft({
+        sessionHandle,
+        ...request.body,
+      });
+      if (!result) return studentSessionRequired(reply);
+      return result;
+    },
+  );
+
+  app.post<{ Body: Static<typeof ReopenIntakeRecordBody> }>(
+    '/api/v1/student/intake/reopen',
+    {
+      schema: {
+        operationId: 'reopenIntakeRecord',
+        security: [{ studentSession: [] }],
+        body: ReopenIntakeRecordBody,
+        response: {
+          200: ReopenIntakeRecordResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          500: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        studentSessionCookie,
+      );
+      if (!sessionHandle || !options.intake) {
+        return studentSessionRequired(reply);
+      }
+      const result = await options.intake.reopen({
         sessionHandle,
         ...request.body,
       });

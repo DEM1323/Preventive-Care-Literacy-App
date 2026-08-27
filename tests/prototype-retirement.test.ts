@@ -41,6 +41,7 @@ test('Student intake does not persist answers in browser storage', () => {
   expect(intakeSource).toContain('operationId: saveOperationId.current');
   expect(intakeSource).toContain('expectedDraftRevision');
   expect(intakeSource).toContain('INTAKE_DRAFT_REVISION_CONFLICT');
+  expect(intakeSource).toContain('INTAKE_CURRENT_REVISION_CONFLICT');
   expect(intakeSource).toContain('id="intake-draft-conflict"');
   expect(intakeSource).toContain('id="use-saved-draft"');
   expect(intakeSource).toContain('id="keep-unsaved-answers"');

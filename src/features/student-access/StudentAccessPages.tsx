@@ -421,7 +421,15 @@ export function StudentHomePage() {
                     ? 'Learning unlocked after server confirmation'
                     : 'Answers stay private until the school confirms your submission'}
                 </p>
-                {learningUnlocked ? null : (
+                {learningUnlocked ? (
+                  <Link
+                    id="update-intake"
+                    to="/student/intake"
+                    className="mt-6 inline-block bg-[#e6af2e] px-5 py-3 font-black text-[#17332d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >
+                    Update intake
+                  </Link>
+                ) : (
                   <Link
                     id="open-intake"
                     to="/student/intake"

@@ -123,7 +123,7 @@ try {
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
-    `grant select, insert on intake.intake_record_versions
+    `grant select, insert, update on intake.intake_record_versions
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
