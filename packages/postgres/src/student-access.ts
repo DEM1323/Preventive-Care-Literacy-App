@@ -176,7 +176,8 @@ export function createPostgresStudentAccessStore(options: {
         } else {
           const active = await client.query(
             `select 1 from identity_access.students
-              where student_id = $1 and workspace_id = $2 and status = 'active'`,
+              where student_id = $1 and workspace_id = $2
+                and status = 'active' and presence = 'enrolled'`,
             [studentId, selected.workspace_id],
           );
           if (active.rowCount !== 1) {
@@ -355,7 +356,8 @@ export function createPostgresStudentAccessStore(options: {
         );
         const student = await client.query(
           `select 1 from identity_access.students
-            where student_id = $1 and workspace_id = $2 and status = 'active'`,
+            where student_id = $1 and workspace_id = $2
+              and status = 'active' and presence = 'enrolled'`,
           [selected.student_id, selected.workspace_id],
         );
         if (student.rowCount !== 1) {
@@ -592,7 +594,8 @@ export function createPostgresStudentAccessStore(options: {
           language_choice: StudentSessionContext['languageChoice'];
         }>(
           `select language_choice from identity_access.students
-            where student_id = $1 and workspace_id = $2 and status = 'active'`,
+            where student_id = $1 and workspace_id = $2
+              and status = 'active' and presence = 'enrolled'`,
           [selected.student_id, selected.workspace_id],
         );
         if (student.rowCount !== 1) {
@@ -692,7 +695,7 @@ export function createPostgresStudentAccessStore(options: {
         await client.query(
           `update identity_access.students
               set language_choice = $2
-            where student_id = $1 and status = 'active'`,
+            where student_id = $1 and status = 'active' and presence = 'enrolled'`,
           [session.studentId, request.languageChoice],
         );
         await client.query('commit');
@@ -744,7 +747,7 @@ export function createPostgresStudentAccessStore(options: {
           language_choice: StudentSessionContext['languageChoice'];
         }>(
           `select language_choice from identity_access.students
-            where student_id = $1 and status = 'active'`,
+            where student_id = $1 and status = 'active' and presence = 'enrolled'`,
           [current.student_id],
         );
         if (student.rowCount !== 1) {

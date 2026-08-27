@@ -25,12 +25,12 @@ export const restrictedDatabaseRoleSql = `select
     select 1
     from pg_class relation
     join pg_namespace namespace on namespace.oid = relation.relnamespace
-    where namespace.nspname in ('identity_access', 'school_configuration', 'intake', 'learning_progress', 'audit', 'infrastructure')
+    where namespace.nspname in ('identity_access', 'school_configuration', 'intake', 'learning_progress', 'records_governance', 'audit', 'infrastructure')
       and pg_has_role(current_user, relation.relowner, 'member')
     union all
     select 1
     from pg_namespace namespace
-    where namespace.nspname in ('identity_access', 'school_configuration', 'intake', 'learning_progress', 'audit', 'infrastructure')
+    where namespace.nspname in ('identity_access', 'school_configuration', 'intake', 'learning_progress', 'records_governance', 'audit', 'infrastructure')
       and pg_has_role(current_user, namespace.nspowner, 'member')
   ) as owns_protected_objects`;
 

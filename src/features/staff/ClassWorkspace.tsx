@@ -37,6 +37,7 @@ export type ClassDirectoryEntry = {
     classMembershipId: string | null;
     membershipStatus: 'none' | 'active' | 'inactive';
     studentAccessStatus: 'active' | 'disabled' | null;
+    studentPresence: 'enrolled' | 'departed' | null;
     currentVerifiedEmail: string | null;
     verifiedEmailHistory: {
       recipient: string;
@@ -94,7 +95,14 @@ type CsvPreviewRow =
 type Problem = { code?: string; reason?: string };
 
 type ConfirmKind =
-  'revoke' | 'deactivate' | 'close' | 'replace-email' | 'disable' | 'enable';
+  | 'revoke'
+  | 'deactivate'
+  | 'close'
+  | 'replace-email'
+  | 'disable'
+  | 'enable'
+  | 'depart'
+  | 'reverse-departure';
 
 const invitationCsvMaxBytes = 32 * 1024;
 
@@ -330,6 +338,11 @@ export function ClassWorkspace(props: {
   const [enableReason, setEnableReason] = useState<
     'access_restored' | 'hold_released'
   >('access_restored');
+  const [departureReason, setDepartureReason] = useState<
+    'transferred' | 'graduated' | 'withdrew'
+  >('transferred');
+  const [departureEffectiveOn, setDepartureEffectiveOn] =
+    useState('2026-06-12');
   const [studentPassword, setStudentPassword] = useState('');
   const [studentTotp, setStudentTotp] = useState('');
 
@@ -636,7 +649,9 @@ export function ClassWorkspace(props: {
     } else if (
       confirm.kind === 'replace-email' ||
       confirm.kind === 'disable' ||
-      confirm.kind === 'enable'
+      confirm.kind === 'enable' ||
+      confirm.kind === 'depart' ||
+      confirm.kind === 'reverse-departure'
     ) {
       await applyStudentAccess(confirm.kind, confirm.studentId);
       return;
@@ -688,7 +703,8 @@ export function ClassWorkspace(props: {
   }
 
   async function applyStudentAccess(
-    kind: 'replace-email' | 'disable' | 'enable',
+    kind:
+      'replace-email' | 'disable' | 'enable' | 'depart' | 'reverse-departure',
     studentId: string | undefined,
   ) {
     if (!studentId) {
@@ -769,7 +785,7 @@ export function ClassWorkspace(props: {
       setMessage(
         'Student access disabled. Sessions and codes were revoked. Memberships remain.',
       );
-    } else {
+    } else if (kind === 'enable') {
       const result = await client.POST(
         '/api/v1/administration/students/re-enablements',
         {
@@ -797,6 +813,65 @@ export function ClassWorkspace(props: {
       }
       setMessage(
         'Student access re-enabled. Prior sessions, codes, and Invitations stay unusable.',
+      );
+    } else if (kind === 'depart') {
+      const result = await client.POST(
+        '/api/v1/administration/students/departures',
+        {
+          body: {
+            operationId,
+            studentId,
+            reason: departureReason,
+            effectiveOn: departureEffectiveOn,
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status === 409) {
+        const problem = result.error as Problem | undefined;
+        if (problem?.code === 'AUTHENTICATION_FRESHNESS_REQUIRED') {
+          setMessage(
+            'Authentication freshness expired. Confirm both factors again.',
+          );
+          return;
+        }
+        if (problem?.code === 'STUDENT_ALREADY_DEPARTED') {
+          setMessage('Student Departure is already recorded.');
+          return;
+        }
+      }
+      if (result.response.status !== 200) {
+        setMessage('Student Departure could not be recorded.');
+        return;
+      }
+      setMessage(
+        'Student Departure recorded. Sessions and Sign-In Codes ended. Pending Invitations were superseded. Class Memberships are inactive. The Student Record Bundle is kept.',
+      );
+    } else {
+      const result = await client.POST(
+        '/api/v1/administration/students/departure-reversals',
+        {
+          body: { operationId, studentId },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status === 409) {
+        const problem = result.error as Problem | undefined;
+        if (problem?.code === 'AUTHENTICATION_FRESHNESS_REQUIRED') {
+          setMessage(
+            'Authentication freshness expired. Confirm both factors again.',
+          );
+          return;
+        }
+      }
+      if (result.response.status !== 200) {
+        setMessage('Student Departure could not be reversed.');
+        return;
+      }
+      setMessage(
+        'Student Departure reversed. Prior sessions, Sign-In Codes, Invitations, and Class Memberships stay unusable.',
       );
     }
     await props.onReload();
@@ -1066,6 +1141,9 @@ export function ClassWorkspace(props: {
                             {row.studentAccessStatus ? (
                               <p className="mt-1 text-sm text-slate-300">
                                 Student access {row.studentAccessStatus}
+                                {row.studentPresence
+                                  ? ` · Presence ${row.studentPresence}`
+                                  : ''}
                                 {row.currentVerifiedEmail
                                   ? ` · Current Verified Email Address ${row.currentVerifiedEmail}`
                                   : ''}
@@ -1171,6 +1249,36 @@ export function ClassWorkspace(props: {
                                 }
                               >
                                 Re-enable Student access
+                              </button>
+                            ) : null}
+                            {row.studentId &&
+                            row.studentPresence === 'enrolled' ? (
+                              <button
+                                type="button"
+                                className="text-xs font-bold text-rose-300"
+                                onClick={() =>
+                                  setConfirm({
+                                    kind: 'depart',
+                                    studentId: row.studentId!,
+                                  })
+                                }
+                              >
+                                Record Student Departure
+                              </button>
+                            ) : null}
+                            {row.studentId &&
+                            row.studentPresence === 'departed' ? (
+                              <button
+                                type="button"
+                                className="text-xs font-bold text-sky-300"
+                                onClick={() =>
+                                  setConfirm({
+                                    kind: 'reverse-departure',
+                                    studentId: row.studentId!,
+                                  })
+                                }
+                              >
+                                Reverse Student Departure
                               </button>
                             ) : null}
                           </div>
@@ -1316,6 +1424,9 @@ export function ClassWorkspace(props: {
                 {row.studentAccessStatus ? (
                   <p className="mt-1 text-sm text-slate-300">
                     Student access {row.studentAccessStatus}
+                    {row.studentPresence
+                      ? ` · Presence ${row.studentPresence}`
+                      : ''}
                     {row.currentVerifiedEmail
                       ? ` · Current Verified Email Address ${row.currentVerifiedEmail}`
                       : ''}
@@ -1561,6 +1672,86 @@ export function ClassWorkspace(props: {
                 <option value="hold_released">hold_released</option>
               </select>
             </label>
+            <StudentAccessStepUpFields
+              password={studentPassword}
+              totp={studentTotp}
+              onPassword={setStudentPassword}
+              onTotp={setStudentTotp}
+            />
+          </div>
+        </ConfirmDialog>
+      ) : null}
+      {confirm?.kind === 'depart' ? (
+        <ConfirmDialog
+          title="Record Student Departure"
+          body="This records that the Student transferred, graduated, or withdrew. Sessions and Sign-In Codes end. Pending Invitations are superseded. Class Memberships become inactive. The Student Record Bundle is kept. This is not Student Disablement or Class closure."
+          confirmLabel="Record Student Departure"
+          busy={busy}
+          onConfirm={() => void confirmAction()}
+          onCancel={() => {
+            setConfirm(undefined);
+            clearStudentStepUp();
+          }}
+        >
+          <div className="mt-4 grid gap-3">
+            <label
+              className="grid gap-2 font-bold"
+              htmlFor="student-departure-reason"
+            >
+              Reason
+              <select
+                id="student-departure-reason"
+                value={departureReason}
+                onChange={(event) =>
+                  setDepartureReason(
+                    event.target.value as typeof departureReason,
+                  )
+                }
+                className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                <option value="transferred">transferred</option>
+                <option value="graduated">graduated</option>
+                <option value="withdrew">withdrew</option>
+              </select>
+            </label>
+            <label
+              className="grid gap-2 font-bold"
+              htmlFor="student-departure-effective-on"
+            >
+              Effective date
+              <input
+                id="student-departure-effective-on"
+                type="date"
+                required
+                value={departureEffectiveOn}
+                onChange={(event) =>
+                  setDepartureEffectiveOn(event.target.value)
+                }
+                className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              />
+            </label>
+            <StudentAccessStepUpFields
+              password={studentPassword}
+              totp={studentTotp}
+              onPassword={setStudentPassword}
+              onTotp={setStudentTotp}
+            />
+          </div>
+        </ConfirmDialog>
+      ) : null}
+      {confirm?.kind === 'reverse-departure' ? (
+        <ConfirmDialog
+          title="Reverse Student Departure"
+          body="This records that the Student did not leave. Prior sessions, Sign-In Codes, Invitations, and Class Memberships stay unusable. Restoration uses a new Invitation or Sign-In Code."
+          confirmLabel="Reverse Student Departure"
+          busy={busy}
+          onConfirm={() => void confirmAction()}
+          onCancel={() => {
+            setConfirm(undefined);
+            clearStudentStepUp();
+          }}
+        >
+          <div className="mt-4 grid gap-3">
             <StudentAccessStepUpFields
               password={studentPassword}
               totp={studentTotp}

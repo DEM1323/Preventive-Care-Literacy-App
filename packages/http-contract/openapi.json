@@ -265,6 +265,13 @@
                                     { "type": "null" }
                                   ]
                                 },
+                                "studentPresence": {
+                                  "anyOf": [
+                                    { "enum": ["enrolled"], "type": "string" },
+                                    { "enum": ["departed"], "type": "string" },
+                                    { "type": "null" }
+                                  ]
+                                },
                                 "verifiedEmailHistory": {
                                   "items": {
                                     "properties": {
@@ -312,6 +319,7 @@
                                 "classMembershipId",
                                 "membershipStatus",
                                 "studentAccessStatus",
+                                "studentPresence",
                                 "currentVerifiedEmail",
                                 "verifiedEmailHistory",
                                 "identityCollision",
@@ -13132,6 +13140,1037 @@
         "security": [{ "bearerAuth": [] }, { "operatorSession": [] }]
       }
     },
+    "/api/v1/administration/students/departure-reversals": {
+      "post": {
+        "operationId": "reverseStudentDeparture",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "operationId": { "format": "uuid", "type": "string" },
+                  "studentId": { "format": "uuid", "type": "string" }
+                },
+                "required": ["operationId", "studentId"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": { "enum": ["reversed"], "type": "string" },
+                    "studentId": { "format": "uuid", "type": "string" }
+                  },
+                  "required": ["operationId", "studentId", "outcome"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/students/departures": {
+      "post": {
+        "operationId": "recordStudentDeparture",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "effectiveOn": { "format": "date", "type": "string" },
+                  "operationId": { "format": "uuid", "type": "string" },
+                  "reason": {
+                    "anyOf": [
+                      { "enum": ["transferred"], "type": "string" },
+                      { "enum": ["graduated"], "type": "string" },
+                      { "enum": ["withdrew"], "type": "string" }
+                    ]
+                  },
+                  "studentId": { "format": "uuid", "type": "string" }
+                },
+                "required": [
+                  "operationId",
+                  "studentId",
+                  "reason",
+                  "effectiveOn"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": { "enum": ["departed"], "type": "string" },
+                    "studentId": { "format": "uuid", "type": "string" }
+                  },
+                  "required": ["operationId", "studentId", "outcome"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
     "/api/v1/administration/students/disablements": {
       "post": {
         "operationId": "disableStudentAccess",
@@ -14026,6 +15065,3236 @@
             "description": "Default Response"
           },
           "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/students/record-hold-releases": {
+      "post": {
+        "operationId": "releaseRecordHold",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "holdId": { "format": "uuid", "type": "string" },
+                  "operationId": { "format": "uuid", "type": "string" }
+                },
+                "required": ["operationId", "holdId"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "holdId": { "format": "uuid", "type": "string" },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": { "enum": ["released"], "type": "string" }
+                  },
+                  "required": ["operationId", "holdId", "outcome"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/students/record-holds": {
+      "post": {
+        "operationId": "establishRecordHold",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "operationId": { "format": "uuid", "type": "string" },
+                  "reason": {
+                    "enum": ["school_preservation"],
+                    "type": "string"
+                  },
+                  "studentId": { "format": "uuid", "type": "string" }
+                },
+                "required": ["operationId", "studentId", "reason"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "holdId": { "format": "uuid", "type": "string" },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": { "enum": ["established"], "type": "string" },
+                    "studentId": { "format": "uuid", "type": "string" }
+                  },
+                  "required": ["operationId", "studentId", "holdId", "outcome"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/students/record-lifecycle-case-decisions": {
+      "post": {
+        "operationId": "decideRecordLifecycleCase",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "caseId": { "format": "uuid", "type": "string" },
+                  "decision": {
+                    "anyOf": [
+                      { "enum": ["authorized"], "type": "string" },
+                      { "enum": ["denied"], "type": "string" },
+                      { "enum": ["withdrawn"], "type": "string" }
+                    ]
+                  },
+                  "operationId": { "format": "uuid", "type": "string" }
+                },
+                "required": ["operationId", "caseId", "decision"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "caseId": { "format": "uuid", "type": "string" },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": { "enum": ["decided"], "type": "string" }
+                  },
+                  "required": ["operationId", "caseId", "outcome"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/students/record-lifecycle-case-outcomes": {
+      "post": {
+        "operationId": "recordRecordLifecycleCaseOutcome",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "caseId": { "format": "uuid", "type": "string" },
+                  "operationId": { "format": "uuid", "type": "string" },
+                  "outcome": {
+                    "anyOf": [
+                      { "enum": ["completed"], "type": "string" },
+                      { "enum": ["cancelled"], "type": "string" }
+                    ]
+                  }
+                },
+                "required": ["operationId", "caseId", "outcome"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "caseId": { "format": "uuid", "type": "string" },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": { "enum": ["recorded"], "type": "string" }
+                  },
+                  "required": ["operationId", "caseId", "outcome"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/students/record-lifecycle-cases": {
+      "post": {
+        "operationId": "openRecordLifecycleCase",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "authorityKind": {
+                    "anyOf": [
+                      { "enum": ["school_administrator"], "type": "string" },
+                      { "enum": ["school_nurse"], "type": "string" },
+                      { "enum": ["legal_custodian"], "type": "string" }
+                    ]
+                  },
+                  "caseType": {
+                    "anyOf": [
+                      { "enum": ["access"], "type": "string" },
+                      { "enum": ["amendment"], "type": "string" },
+                      { "enum": ["transfer"], "type": "string" },
+                      { "enum": ["disclosure"], "type": "string" },
+                      { "enum": ["hold"], "type": "string" },
+                      { "enum": ["disposition"], "type": "string" }
+                    ]
+                  },
+                  "deadlineAt": { "format": "date-time", "type": "string" },
+                  "operationId": { "format": "uuid", "type": "string" },
+                  "requestCode": {
+                    "anyOf": [
+                      { "enum": ["lawful_access"], "type": "string" },
+                      { "enum": ["amendment_challenge"], "type": "string" },
+                      { "enum": ["transfer"], "type": "string" },
+                      { "enum": ["disclosure"], "type": "string" },
+                      { "enum": ["preservation"], "type": "string" },
+                      { "enum": ["scheduled_destruction"], "type": "string" }
+                    ]
+                  },
+                  "requesterKind": {
+                    "anyOf": [
+                      { "enum": ["school_administrator"], "type": "string" },
+                      { "enum": ["school_nurse"], "type": "string" },
+                      { "enum": ["legal_custodian"], "type": "string" },
+                      { "enum": ["student"], "type": "string" },
+                      { "enum": ["parent_guardian"], "type": "string" }
+                    ]
+                  },
+                  "scope": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "portions": {
+                        "items": {
+                          "anyOf": [
+                            { "enum": ["identity"], "type": "string" },
+                            { "enum": ["membership"], "type": "string" },
+                            { "enum": ["intake"], "type": "string" },
+                            { "enum": ["learning_progress"], "type": "string" },
+                            { "enum": ["audit_evidence"], "type": "string" },
+                            { "enum": ["complete_bundle"], "type": "string" }
+                          ]
+                        },
+                        "minItems": 1,
+                        "type": "array"
+                      },
+                      "purpose": {
+                        "anyOf": [
+                          { "enum": ["lawful_access"], "type": "string" },
+                          { "enum": ["amendment_challenge"], "type": "string" },
+                          { "enum": ["transfer"], "type": "string" },
+                          { "enum": ["disclosure"], "type": "string" },
+                          { "enum": ["preservation"], "type": "string" },
+                          {
+                            "enum": ["scheduled_destruction"],
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["portions", "purpose"],
+                    "type": "object"
+                  },
+                  "studentId": { "format": "uuid", "type": "string" }
+                },
+                "required": [
+                  "operationId",
+                  "studentId",
+                  "caseType",
+                  "requestCode",
+                  "requesterKind",
+                  "authorityKind",
+                  "scope",
+                  "deadlineAt"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "caseId": { "format": "uuid", "type": "string" },
+                    "caseType": {
+                      "anyOf": [
+                        { "enum": ["access"], "type": "string" },
+                        { "enum": ["amendment"], "type": "string" },
+                        { "enum": ["transfer"], "type": "string" },
+                        { "enum": ["disclosure"], "type": "string" },
+                        { "enum": ["hold"], "type": "string" },
+                        { "enum": ["disposition"], "type": "string" }
+                      ]
+                    },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": { "enum": ["opened"], "type": "string" },
+                    "policyRevisionId": { "format": "uuid", "type": "string" },
+                    "studentId": { "format": "uuid", "type": "string" }
+                  },
+                  "required": [
+                    "operationId",
+                    "studentId",
+                    "caseId",
+                    "caseType",
+                    "policyRevisionId",
+                    "outcome"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "staffSession": [] }]
+      }
+    },
+    "/api/v1/administration/students/records-governance": {
+      "get": {
+        "operationId": "listRecordsGovernance",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "students": {
+                      "items": {
+                        "properties": {
+                          "accessStatus": {
+                            "anyOf": [
+                              { "enum": ["active"], "type": "string" },
+                              { "enum": ["disabled"], "type": "string" }
+                            ]
+                          },
+                          "cases": {
+                            "items": {
+                              "properties": {
+                                "authorityKind": {
+                                  "anyOf": [
+                                    {
+                                      "enum": ["school_administrator"],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "enum": ["school_nurse"],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "enum": ["legal_custodian"],
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "caseId": {
+                                  "format": "uuid",
+                                  "type": "string"
+                                },
+                                "caseType": {
+                                  "anyOf": [
+                                    { "enum": ["access"], "type": "string" },
+                                    { "enum": ["amendment"], "type": "string" },
+                                    { "enum": ["transfer"], "type": "string" },
+                                    {
+                                      "enum": ["disclosure"],
+                                      "type": "string"
+                                    },
+                                    { "enum": ["hold"], "type": "string" },
+                                    {
+                                      "enum": ["disposition"],
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "closedAt": {
+                                  "anyOf": [
+                                    { "format": "date-time", "type": "string" },
+                                    { "type": "null" }
+                                  ]
+                                },
+                                "deadlineAt": {
+                                  "format": "date-time",
+                                  "type": "string"
+                                },
+                                "decision": {
+                                  "anyOf": [
+                                    { "enum": ["pending"], "type": "string" },
+                                    {
+                                      "enum": ["authorized"],
+                                      "type": "string"
+                                    },
+                                    { "enum": ["denied"], "type": "string" },
+                                    { "enum": ["withdrawn"], "type": "string" }
+                                  ]
+                                },
+                                "openedAt": {
+                                  "format": "date-time",
+                                  "type": "string"
+                                },
+                                "outcome": {
+                                  "anyOf": [
+                                    { "enum": ["open"], "type": "string" },
+                                    { "enum": ["completed"], "type": "string" },
+                                    { "enum": ["cancelled"], "type": "string" }
+                                  ]
+                                },
+                                "policyRevisionId": {
+                                  "format": "uuid",
+                                  "type": "string"
+                                },
+                                "requestCode": {
+                                  "anyOf": [
+                                    {
+                                      "enum": ["lawful_access"],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "enum": ["amendment_challenge"],
+                                      "type": "string"
+                                    },
+                                    { "enum": ["transfer"], "type": "string" },
+                                    {
+                                      "enum": ["disclosure"],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "enum": ["preservation"],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "enum": ["scheduled_destruction"],
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "requesterKind": {
+                                  "anyOf": [
+                                    {
+                                      "enum": ["school_administrator"],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "enum": ["school_nurse"],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "enum": ["legal_custodian"],
+                                      "type": "string"
+                                    },
+                                    { "enum": ["student"], "type": "string" },
+                                    {
+                                      "enum": ["parent_guardian"],
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "scope": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "portions": {
+                                      "items": {
+                                        "anyOf": [
+                                          {
+                                            "enum": ["identity"],
+                                            "type": "string"
+                                          },
+                                          {
+                                            "enum": ["membership"],
+                                            "type": "string"
+                                          },
+                                          {
+                                            "enum": ["intake"],
+                                            "type": "string"
+                                          },
+                                          {
+                                            "enum": ["learning_progress"],
+                                            "type": "string"
+                                          },
+                                          {
+                                            "enum": ["audit_evidence"],
+                                            "type": "string"
+                                          },
+                                          {
+                                            "enum": ["complete_bundle"],
+                                            "type": "string"
+                                          }
+                                        ]
+                                      },
+                                      "minItems": 1,
+                                      "type": "array"
+                                    },
+                                    "purpose": {
+                                      "anyOf": [
+                                        {
+                                          "enum": ["lawful_access"],
+                                          "type": "string"
+                                        },
+                                        {
+                                          "enum": ["amendment_challenge"],
+                                          "type": "string"
+                                        },
+                                        {
+                                          "enum": ["transfer"],
+                                          "type": "string"
+                                        },
+                                        {
+                                          "enum": ["disclosure"],
+                                          "type": "string"
+                                        },
+                                        {
+                                          "enum": ["preservation"],
+                                          "type": "string"
+                                        },
+                                        {
+                                          "enum": ["scheduled_destruction"],
+                                          "type": "string"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": ["portions", "purpose"],
+                                  "type": "object"
+                                }
+                              },
+                              "required": [
+                                "caseId",
+                                "caseType",
+                                "requestCode",
+                                "requesterKind",
+                                "authorityKind",
+                                "scope",
+                                "deadlineAt",
+                                "decision",
+                                "outcome",
+                                "policyRevisionId",
+                                "openedAt",
+                                "closedAt"
+                              ],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "departure": {
+                            "anyOf": [
+                              {
+                                "properties": {
+                                  "effectiveOn": {
+                                    "format": "date",
+                                    "type": "string"
+                                  },
+                                  "reason": {
+                                    "anyOf": [
+                                      {
+                                        "enum": ["transferred"],
+                                        "type": "string"
+                                      },
+                                      {
+                                        "enum": ["graduated"],
+                                        "type": "string"
+                                      },
+                                      { "enum": ["withdrew"], "type": "string" }
+                                    ]
+                                  },
+                                  "recordedAt": {
+                                    "format": "date-time",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "reason",
+                                  "effectiveOn",
+                                  "recordedAt"
+                                ],
+                                "type": "object"
+                              },
+                              { "type": "null" }
+                            ]
+                          },
+                          "destructionEligibility": {
+                            "anyOf": [
+                              { "enum": ["not_eligible"], "type": "string" },
+                              {
+                                "enum": ["eligible_after_departure"],
+                                "type": "string"
+                              },
+                              { "enum": ["blocked_by_hold"], "type": "string" }
+                            ]
+                          },
+                          "holds": {
+                            "items": {
+                              "properties": {
+                                "caseId": {
+                                  "anyOf": [
+                                    { "format": "uuid", "type": "string" },
+                                    { "type": "null" }
+                                  ]
+                                },
+                                "establishedAt": {
+                                  "format": "date-time",
+                                  "type": "string"
+                                },
+                                "holdId": {
+                                  "format": "uuid",
+                                  "type": "string"
+                                },
+                                "reason": { "type": "string" },
+                                "releasedAt": {
+                                  "anyOf": [
+                                    { "format": "date-time", "type": "string" },
+                                    { "type": "null" }
+                                  ]
+                                },
+                                "source": {
+                                  "anyOf": [
+                                    { "enum": ["manual"], "type": "string" },
+                                    {
+                                      "enum": ["automatic_access_case"],
+                                      "type": "string"
+                                    },
+                                    {
+                                      "enum": ["automatic_amendment_case"],
+                                      "type": "string"
+                                    },
+                                    { "enum": ["hold_case"], "type": "string" }
+                                  ]
+                                },
+                                "status": {
+                                  "anyOf": [
+                                    { "enum": ["active"], "type": "string" },
+                                    { "enum": ["released"], "type": "string" }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "holdId",
+                                "source",
+                                "reason",
+                                "status",
+                                "caseId",
+                                "establishedAt",
+                                "releasedAt"
+                              ],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "policyRevisionId": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "presence": {
+                            "anyOf": [
+                              { "enum": ["enrolled"], "type": "string" },
+                              { "enum": ["departed"], "type": "string" }
+                            ]
+                          },
+                          "studentId": { "format": "uuid", "type": "string" }
+                        },
+                        "required": [
+                          "studentId",
+                          "presence",
+                          "accessStatus",
+                          "departure",
+                          "cases",
+                          "holds",
+                          "destructionEligibility",
+                          "policyRevisionId"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["students"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
             "content": {
               "application/problem+json": {
                 "schema": {

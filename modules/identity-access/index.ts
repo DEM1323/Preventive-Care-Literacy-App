@@ -272,12 +272,16 @@ export const studentReenablementReasons = [
 export type StudentReenablementReason =
   (typeof studentReenablementReasons)[number];
 
+export const studentPresenceStates = ['enrolled', 'departed'] as const;
+export type StudentPresence = (typeof studentPresenceStates)[number];
+
 export type ClassDirectoryRelationship = {
   recipient: string;
   studentId: string | null;
   classMembershipId: string | null;
   membershipStatus: MembershipStatus;
   studentAccessStatus: StudentAccessStatus | null;
+  studentPresence: StudentPresence | null;
   currentVerifiedEmail: string | null;
   verifiedEmailHistory: VerifiedEmailBinding[];
   identityCollision: IdentityCollision;
@@ -1332,6 +1336,7 @@ export type ClassDirectorySnapshot = {
   studentAccess: {
     studentId: string;
     status: StudentAccessStatus;
+    presence: StudentPresence;
     emails: {
       recipientDigest: string;
       status: 'current' | 'historical';
@@ -1996,6 +2001,7 @@ export function createIdentityAndAccess(dependencies: {
           classMembershipId: membership?.classMembershipId ?? null,
           membershipStatus: membership?.status ?? 'none',
           studentAccessStatus: student?.status ?? null,
+          studentPresence: student?.presence ?? null,
           currentVerifiedEmail,
           verifiedEmailHistory,
           identityCollision: historicalDigests.has(latest.recipientDigest)

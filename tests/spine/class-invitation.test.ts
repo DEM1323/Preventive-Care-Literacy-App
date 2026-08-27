@@ -162,6 +162,7 @@ test('Administrator creates one Class and one protected purpose-bound Invitation
             classMembershipId: null,
             membershipStatus: 'none',
             studentAccessStatus: null,
+            studentPresence: null,
             currentVerifiedEmail: null,
             verifiedEmailHistory: [],
             identityCollision: 'none',
