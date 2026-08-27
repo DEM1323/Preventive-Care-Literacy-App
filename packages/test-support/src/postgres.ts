@@ -121,6 +121,9 @@ export async function createRuntimeDatabaseUser(
       `grant execute on function identity_access.apply_staff_lifecycle(uuid, uuid, text, text[], timestamptz) to ${role}`,
     );
     await client.query(
+      `grant execute on function learning_progress.prior_release_items(uuid, uuid) to ${role}`,
+    );
+    await client.query(
       'grant select, insert, update on infrastructure.outbox to ' + role,
     );
     await client.query(

@@ -23071,6 +23071,23 @@
                                           }
                                         ]
                                       },
+                                      "contentChange": {
+                                        "anyOf": [
+                                          { "type": "null" },
+                                          {
+                                            "anyOf": [
+                                              {
+                                                "enum": ["revised"],
+                                                "type": "string"
+                                              },
+                                              {
+                                                "enum": ["added"],
+                                                "type": "string"
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      },
                                       "href": {
                                         "anyOf": [
                                           { "type": "string" },
@@ -23116,7 +23133,8 @@
                                       "href",
                                       "moduleId",
                                       "moduleTitle",
-                                      "completion"
+                                      "completion",
+                                      "contentChange"
                                     ],
                                     "type": "object"
                                   },
@@ -23171,6 +23189,67 @@
                         { "format": "uuid", "type": "string" },
                         { "type": "null" }
                       ]
+                    },
+                    "updatedContent": {
+                      "anyOf": [
+                        { "type": "null" },
+                        {
+                          "properties": {
+                            "items": {
+                              "items": {
+                                "properties": {
+                                  "change": {
+                                    "anyOf": [
+                                      { "enum": ["revised"], "type": "string" },
+                                      { "enum": ["added"], "type": "string" }
+                                    ]
+                                  },
+                                  "itemId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  },
+                                  "kind": {
+                                    "anyOf": [
+                                      {
+                                        "enum": ["knowledge"],
+                                        "type": "string"
+                                      },
+                                      { "enum": ["skill"], "type": "string" },
+                                      {
+                                        "enum": ["application"],
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "moduleId": {
+                                    "format": "uuid",
+                                    "type": "string"
+                                  },
+                                  "revisionNumber": {
+                                    "minimum": 1,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "itemId",
+                                  "revisionNumber",
+                                  "kind",
+                                  "moduleId",
+                                  "change"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "schoolConfigurationReleaseId": {
+                              "format": "uuid",
+                              "type": "string"
+                            }
+                          },
+                          "required": ["schoolConfigurationReleaseId", "items"],
+                          "type": "object"
+                        }
+                      ]
                     }
                   },
                   "required": [
@@ -23179,7 +23258,8 @@
                     "locale",
                     "modules",
                     "item",
-                    "completion"
+                    "completion",
+                    "updatedContent"
                   ],
                   "type": "object"
                 }

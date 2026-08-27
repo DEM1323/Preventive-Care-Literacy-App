@@ -1101,6 +1101,10 @@ const LearningDisplayedItemSchema = Type.Object({
   moduleId: Type.String({ format: 'uuid' }),
   moduleTitle: Type.String(),
 });
+const LearningContentChangeSchema = Type.Union([
+  Type.Literal('revised'),
+  Type.Literal('added'),
+]);
 const LearningProjectedItemSchema = Type.Object({
   itemId: Type.String({ format: 'uuid' }),
   revisionNumber: Type.Integer({ minimum: 1 }),
@@ -1110,6 +1114,19 @@ const LearningProjectedItemSchema = Type.Object({
   moduleId: Type.String({ format: 'uuid' }),
   moduleTitle: Type.String(),
   completion: Type.Union([Type.Null(), LearningItemCompletionSchema]),
+  contentChange: Type.Union([Type.Null(), LearningContentChangeSchema]),
+});
+const UpdatedLearningContentSchema = Type.Object({
+  schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+  items: Type.Array(
+    Type.Object({
+      itemId: Type.String({ format: 'uuid' }),
+      revisionNumber: Type.Integer({ minimum: 1 }),
+      kind: LearningItemKindSchema,
+      moduleId: Type.String({ format: 'uuid' }),
+      change: LearningContentChangeSchema,
+    }),
+  ),
 });
 const LearningSectionProjectionSchema = Type.Object({
   kind: LearningItemKindSchema,
@@ -1142,6 +1159,7 @@ const StudentLearningSnapshotResponse = Type.Object({
   modules: Type.Array(LearningModuleProjectionSchema),
   item: Type.Union([Type.Null(), LearningDisplayedItemSchema]),
   completion: Type.Union([Type.Null(), LearningItemCompletionSchema]),
+  updatedContent: Type.Union([Type.Null(), UpdatedLearningContentSchema]),
 });
 const AcknowledgeLearningItemBody = Type.Object(
   {
