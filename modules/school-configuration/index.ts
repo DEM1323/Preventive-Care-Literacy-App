@@ -92,19 +92,38 @@ export type ExactTranslationReview = {
 
 type Locale = (typeof supportedLocales)[number];
 
+export type ReadinessEditorResource =
+  'branding' | 'modules' | 'intake' | 'translations';
+export type ReadinessPreviewScreen = 'home' | 'module' | 'intake';
+export type ReadinessLocation = {
+  editorResource: ReadinessEditorResource;
+  previewScreen: ReadinessPreviewScreen;
+  locale?: Locale;
+  moduleId?: string;
+  resourceId?: string;
+};
+
 export type ValidationResult = {
   code: string;
   path: string;
   message: string;
   severity: 'blocker' | 'warning';
+  location: ReadinessLocation;
 };
+
+export type ResourceChange = 'added' | 'removed' | 'changed' | 'unchanged';
 
 export type ResourceComparison = {
   resourceId: string;
-  draftRevision: number;
+  kind: string;
+  slot: string;
+  label: string;
+  draftRevision: number | null;
   activeRevision: number | null;
   differs: boolean;
+  change: ResourceChange;
   discardEligible: boolean;
+  archiveEligible: boolean;
 };
 
 export type SchoolConfigurationDraft = {
@@ -241,6 +260,14 @@ export type DraftEdit =
       resourceId: string;
     }
   | {
+      type: 'archive-authored-resource';
+      resourceId: string;
+    }
+  | {
+      type: 'restore-release-assembly';
+      releaseId: string;
+    }
+  | {
       type: 'save-managed-translation';
       resourceId: string;
       locale: ManagedLocale;
@@ -317,6 +344,31 @@ export type PublishSchoolConfigurationReleaseResult = {
   };
   replayed: boolean;
 };
+
+export type SchoolConfigurationReleaseComponent = {
+  resourceId: string;
+  revisionNumber: number;
+  slot: string;
+  kind: string;
+  position: number | null;
+};
+
+export type SchoolConfigurationReleaseSummary = {
+  releaseId: string;
+  releaseNumber: number;
+  candidateFingerprint: string;
+  changeDescription: string;
+  publishedAt: Date;
+  publishedBy: string;
+  active: boolean;
+  components: SchoolConfigurationReleaseComponent[];
+};
+
+export type SchoolConfigurationReleaseDetail =
+  SchoolConfigurationReleaseSummary & {
+    candidate: unknown;
+    comparisons: ResourceComparison[];
+  };
 
 export type PublicationFailure = {
   code:
@@ -467,6 +519,21 @@ export type SchoolConfigurationStore = {
   readActiveReleaseResources(
     session: AdministrativeSessionContext,
   ): Promise<ExactResource[]>;
+  readReferencedResourceIds(
+    session: AdministrativeSessionContext,
+  ): Promise<string[]>;
+  readOccupiedRevisions(
+    session: AdministrativeSessionContext,
+  ): Promise<{ resourceId: string; revisionNumber: number }[]>;
+  listReleases(
+    session: AdministrativeSessionContext,
+  ): Promise<SchoolConfigurationReleaseSummary[]>;
+  readRelease(
+    session: AdministrativeSessionContext,
+    releaseId: string,
+  ): Promise<
+    (SchoolConfigurationReleaseSummary & { candidate: unknown }) | undefined
+  >;
   saveDraft(input: {
     session: AdministrativeSessionContext;
     operationId: string;
@@ -478,6 +545,7 @@ export type SchoolConfigurationStore = {
     resources: ExactResource[];
     reviews: ExactTranslationReview[];
     discardedResourceIds: string[];
+    archivedResourceIds: string[];
     changedAt: Date;
     auditId: string;
   }): Promise<{ draftVersion: number }>;
@@ -523,6 +591,7 @@ export type SchoolConfigurationStore = {
     packageByteLength: number;
     packageObjectKey: string;
     resources: ExactResource[];
+    candidate: unknown;
     publishedAt: Date;
     auditId: string;
     outboxId: string;
@@ -1051,6 +1120,15 @@ function collectResourceIds(value: unknown, ids: string[] = []): string[] {
   return ids;
 }
 
+function leftoverResourceIds(previous: unknown, next: unknown): string[] {
+  const remaining = new Set(
+    extractExactResources(next).map((resource) => resource.resourceId),
+  );
+  return extractExactResources(previous)
+    .map((resource) => resource.resourceId)
+    .filter((resourceId) => !remaining.has(resourceId));
+}
+
 function releaseRecord(candidate: unknown): Record<string, unknown> {
   if (!isRecord(candidate) || !isRecord(candidate.release)) {
     throw new InvalidSchoolConfigurationError('release');
@@ -1359,6 +1437,224 @@ function localizedPath(path: string, locale: string): string {
   return `${path}.${locale}`;
 }
 
+const localePathPattern = /(en-US|es-US|pt-BR|fr-CA|ht-HT)$/;
+const moduleIndexPathPattern = /release\.modules\[(\d+)\]/;
+const intakeFieldPathPattern =
+  /release\.intakeForm\.fields\.([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+
+function nearestResourceId(
+  candidate: unknown,
+  path: string,
+  preferLocalizedSource: boolean,
+): string | undefined {
+  const parts = path
+    .replace(/\[(\d+)\]/g, '.$1')
+    .split('.')
+    .filter(Boolean);
+  let current: unknown = candidate;
+  let lastId: string | undefined;
+  let localizedSourceId: string | undefined;
+  for (const part of parts) {
+    if (Array.isArray(current)) {
+      current = current[Number(part)];
+    } else if (isRecord(current)) {
+      current = current[part];
+    } else {
+      break;
+    }
+    if (!isRecord(current)) continue;
+    if (typeof current.id === 'string') lastId = current.id;
+    const english = current['en-US'];
+    if (isRecord(english) && typeof english.id === 'string') {
+      localizedSourceId = english.id;
+    }
+  }
+  return preferLocalizedSource ? (localizedSourceId ?? lastId) : lastId;
+}
+
+export function readinessLocationFor(
+  path: string,
+  candidate: unknown,
+): ReadinessLocation {
+  const normalized = path.startsWith('candidate.')
+    ? path.slice('candidate.'.length)
+    : path;
+  const localeMatch = normalized.match(localePathPattern);
+  const locale = localeMatch?.[1] as Locale | undefined;
+  const moduleIndex = Number(
+    normalized.match(moduleIndexPathPattern)?.[1] ?? Number.NaN,
+  );
+  const modules = isRecord(candidate) ? modulesArraySafe(candidate) : [];
+  const moduleId =
+    Number.isInteger(moduleIndex) && modules[moduleIndex]
+      ? String(modules[moduleIndex]?.id)
+      : undefined;
+  const fieldId = normalized.match(intakeFieldPathPattern)?.[1];
+  const translation = locale !== undefined && locale !== 'en-US';
+  const resourceId =
+    nearestResourceId(candidate, normalized, translation) ?? fieldId;
+  if (translation) {
+    return {
+      editorResource: 'translations',
+      previewScreen: moduleId
+        ? 'module'
+        : normalized.includes('intake') ||
+            normalized.includes('submissionAttestation')
+          ? 'intake'
+          : normalized.includes('modules')
+            ? 'module'
+            : 'home',
+      locale,
+      moduleId,
+      resourceId,
+    };
+  }
+  if (normalized.includes('branding') || normalized.startsWith('workspace.')) {
+    return {
+      editorResource: 'branding',
+      previewScreen: 'home',
+      locale,
+      resourceId,
+    };
+  }
+  if (normalized.includes('modules')) {
+    return {
+      editorResource: 'modules',
+      previewScreen: 'module',
+      locale,
+      moduleId,
+      resourceId,
+    };
+  }
+  if (
+    normalized.includes('intake') ||
+    normalized.includes('submissionAttestation')
+  ) {
+    return {
+      editorResource: 'intake',
+      previewScreen: 'intake',
+      locale,
+      resourceId,
+    };
+  }
+  return {
+    editorResource: 'translations',
+    previewScreen: 'home',
+    locale,
+    moduleId,
+    resourceId,
+  };
+}
+
+function modulesArraySafe(candidate: unknown): Record<string, unknown>[] {
+  if (!isRecord(candidate) || !isRecord(candidate.release)) return [];
+  return Array.isArray(candidate.release.modules)
+    ? candidate.release.modules.filter(isRecord)
+    : [];
+}
+
+function resourceLabel(payload: Record<string, unknown>, kind: string): string {
+  for (const key of ['displayName', 'title', 'label', 'text', 'shortName']) {
+    const value = payload[key];
+    if (
+      isRecord(value) &&
+      isRecord(value['en-US']) &&
+      typeof value['en-US'].value === 'string' &&
+      value['en-US'].value.trim()
+    ) {
+      return String(value['en-US'].value);
+    }
+    if (typeof value === 'string' && value.trim()) return value;
+  }
+  return kind;
+}
+
+function isProtectedAssemblySlot(slot: string): boolean {
+  return (
+    slot.endsWith('.branding') ||
+    slot.endsWith('.intakeForm') ||
+    slot.endsWith('.submissionAttestation') ||
+    slot === 'candidate.workspace' ||
+    slot.endsWith('.workspace')
+  );
+}
+
+export function compareResourceAssemblies(input: {
+  proposed: ExactResource[];
+  baseline: ExactResource[];
+  referencedResourceIds: ReadonlySet<string>;
+}): ResourceComparison[] {
+  const proposedById = new Map(
+    input.proposed.map((resource) => [resource.resourceId, resource]),
+  );
+  const baselineById = new Map(
+    input.baseline.map((resource) => [resource.resourceId, resource]),
+  );
+  const ids = new Set([...proposedById.keys(), ...baselineById.keys()]);
+  return [...ids]
+    .sort((left, right) => left.localeCompare(right))
+    .map((resourceId) => {
+      const proposed = proposedById.get(resourceId);
+      const baseline = baselineById.get(resourceId);
+      const payload = proposed?.payload ?? baseline?.payload ?? {};
+      const kind = proposed?.kind ?? baseline?.kind ?? 'resource';
+      const slot = proposed?.slot ?? baseline?.slot ?? '';
+      const differs =
+        !proposed ||
+        !baseline ||
+        canonicalJson(canonicalMeaning(proposed.payload)) !==
+          canonicalJson(canonicalMeaning(baseline.payload));
+      const change: ResourceChange = !baseline
+        ? 'added'
+        : !proposed
+          ? 'removed'
+          : differs
+            ? 'changed'
+            : 'unchanged';
+      const referenced = input.referencedResourceIds.has(resourceId);
+      return {
+        resourceId,
+        kind,
+        slot,
+        label: resourceLabel(payload, kind),
+        draftRevision: proposed?.revisionNumber ?? null,
+        activeRevision: baseline?.revisionNumber ?? null,
+        differs,
+        change,
+        discardEligible: Boolean(proposed) && !referenced,
+        archiveEligible:
+          Boolean(proposed) && referenced && !isProtectedAssemblySlot(slot),
+      };
+    });
+}
+
+function assignAvailableRevisions(
+  previous: unknown,
+  next: unknown,
+  occupied: ReadonlyMap<string, ReadonlySet<number>>,
+): unknown {
+  const previousById = new Map<string, Record<string, unknown>>();
+  indexRevisioned(previous, previousById);
+  function visit(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(visit);
+    if (!isRecord(value)) return value;
+    const copy: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(value)) {
+      copy[key] = visit(child);
+    }
+    if (typeof copy.id === 'string' && Number.isInteger(copy.revision)) {
+      const prior = previousById.get(copy.id);
+      if (prior && prior.revision === copy.revision) return copy;
+      const taken = occupied.get(copy.id);
+      let revision = Number(copy.revision);
+      while (taken?.has(revision)) revision += 1;
+      copy.revision = revision;
+    }
+    return copy;
+  }
+  return visit(next);
+}
+
 export function collectValidationResults(
   candidate: unknown,
   workspaceId: string,
@@ -1376,6 +1672,7 @@ export function collectValidationResults(
       path,
       message,
       severity,
+      location: readinessLocationFor(path, candidate),
     });
   }
   try {
@@ -1464,6 +1761,14 @@ export function collectValidationResults(
         'CONSTRAINED_BRANDING',
         'workspace.branding.generatedTextMark',
         'The generated text mark must be one to four letters or digits.',
+      );
+    }
+    if (branding.logo == null) {
+      add(
+        'warning',
+        'MISSING_OPTIONAL_MARK',
+        'workspace.branding.logo',
+        'Add a school mark so Students can recognize the workspace. This does not block publication.',
       );
     }
     if (branding.logo != null) {
@@ -1852,14 +2157,11 @@ function collectIntakeFormValidation(
 export function presentDraft(
   draft: StoredSchoolConfigurationDraft,
   activeResources: ExactResource[],
+  referencedResourceIds: readonly string[] = activeResources.map(
+    (resource) => resource.resourceId,
+  ),
 ): SchoolConfigurationDraft {
   const draftResources = extractExactResources(draft.candidate);
-  const activeById = new Map(
-    activeResources.map((resource) => [resource.resourceId, resource]),
-  );
-  const publishedIds = new Set(
-    activeResources.map((resource) => resource.resourceId),
-  );
   return {
     workspaceId: draft.workspaceId,
     draftVersion: draft.draftVersion,
@@ -1871,18 +2173,10 @@ export function presentDraft(
       !draft.activeCandidateFingerprint ||
       draft.candidateFingerprint !== draft.activeCandidateFingerprint,
     validation: collectValidationResults(draft.candidate, draft.workspaceId),
-    comparisons: draftResources.map((resource) => {
-      const active = activeById.get(resource.resourceId);
-      return {
-        resourceId: resource.resourceId,
-        draftRevision: resource.revisionNumber,
-        activeRevision: active?.revisionNumber ?? null,
-        differs:
-          !active ||
-          canonicalJson(canonicalMeaning(active.payload)) !==
-            canonicalJson(canonicalMeaning(resource.payload)),
-        discardEligible: !publishedIds.has(resource.resourceId),
-      };
+    comparisons: compareResourceAssemblies({
+      proposed: draftResources,
+      baseline: activeResources,
+      referencedResourceIds: new Set(referencedResourceIds),
     }),
     managedTranslations: presentManagedTranslations(draft.candidate),
   };
@@ -1893,6 +2187,7 @@ export function applyDraftEdit(input: {
   edit: DraftEdit;
   ids: IdGenerator;
   activePayload?: Record<string, unknown>;
+  releaseCandidate?: unknown;
   reviewer?: string;
   reviewedAt?: Date;
 }): { candidate: unknown; discardedResourceIds: string[] } {
@@ -2252,10 +2547,35 @@ export function applyDraftEdit(input: {
     next = replaceRevisioned(next, edit.resourceId, input.activePayload);
     applyExplicitOrder(next);
     return { candidate: next, discardedResourceIds };
+  } else if (edit.type === 'restore-release-assembly') {
+    if (input.releaseCandidate === undefined) {
+      throw new InvalidSchoolConfigurationError('release');
+    }
+    return {
+      candidate: cloneCandidate(input.releaseCandidate),
+      discardedResourceIds: leftoverResourceIds(
+        input.candidate,
+        input.releaseCandidate,
+      ),
+    };
   } else if (edit.type === 'discard-authored-resource') {
     const existing = findRevisioned(next, edit.resourceId);
     if (!existing) {
       throw new InvalidSchoolConfigurationError('discard');
+    }
+    discardedResourceIds.push(...collectResourceIds(existing));
+    const sectionFields = intakeFields(next).filter(
+      (field) => field.sectionId === edit.resourceId,
+    );
+    for (const field of sectionFields) {
+      discardedResourceIds.push(...collectResourceIds(field));
+      next = removeRevisioned(next, String(field.id));
+    }
+    next = removeRevisioned(next, edit.resourceId);
+  } else if (edit.type === 'archive-authored-resource') {
+    const existing = findRevisioned(next, edit.resourceId);
+    if (!existing) {
+      throw new InvalidSchoolConfigurationError('archive');
     }
     discardedResourceIds.push(...collectResourceIds(existing));
     const sectionFields = intakeFields(next).filter(
@@ -2320,13 +2640,49 @@ export function createSchoolConfiguration(dependencies: {
         );
       const draft = await dependencies.store.readDraft(session);
       if (!draft) return undefined;
-      const activeResources =
-        await dependencies.store.readActiveReleaseResources(session);
-      return presentDraft(draft, activeResources);
+      const [activeResources, referencedIds] = await Promise.all([
+        dependencies.store.readActiveReleaseResources(session),
+        dependencies.store.readReferencedResourceIds(session),
+      ]);
+      return presentDraft(draft, activeResources, referencedIds);
     },
 
     stepUp(command: { sessionHandle: string; password: string; totp: string }) {
       return dependencies.identityAndAccess.stepUpStaffSession(command);
+    },
+
+    async listReleases(command: { sessionHandle: string }) {
+      const session =
+        await dependencies.identityAndAccess.requireAdministrativeSession(
+          command,
+        );
+      return {
+        releases: await dependencies.store.listReleases(session),
+      };
+    },
+
+    async readRelease(command: { sessionHandle: string; releaseId: string }) {
+      const session =
+        await dependencies.identityAndAccess.requireAdministrativeSession(
+          command,
+        );
+      const release = await dependencies.store.readRelease(
+        session,
+        command.releaseId,
+      );
+      if (!release) return undefined;
+      const draft = await dependencies.store.readDraft(session);
+      const referenced = new Set(
+        await dependencies.store.readReferencedResourceIds(session),
+      );
+      return {
+        ...release,
+        comparisons: compareResourceAssemblies({
+          proposed: extractExactResources(release.candidate),
+          baseline: draft ? extractExactResources(draft.candidate) : [],
+          referencedResourceIds: referenced,
+        }),
+      };
     },
 
     async editDraft(command: EditSchoolConfigurationDraftCommand) {
@@ -2349,8 +2705,13 @@ export function createSchoolConfiguration(dependencies: {
           throw new ResourceRevisionConflictError();
         }
       }
-      const activeResources =
-        await dependencies.store.readActiveReleaseResources(session);
+      const [activeResources, referencedIds, occupiedRevisions] =
+        await Promise.all([
+          dependencies.store.readActiveReleaseResources(session),
+          dependencies.store.readReferencedResourceIds(session),
+          dependencies.store.readOccupiedRevisions(session),
+        ]);
+      const referenced = new Set(referencedIds);
       const restoreResourceId =
         command.edit.type === 'restore-active-revision'
           ? command.edit.resourceId
@@ -2360,12 +2721,28 @@ export function createSchoolConfiguration(dependencies: {
             (resource) => resource.resourceId === restoreResourceId,
           )?.payload
         : undefined;
-      if (command.edit.type === 'discard-authored-resource') {
-        const published = new Set(
-          activeResources.map((resource) => resource.resourceId),
+      let releaseCandidate: unknown;
+      if (command.edit.type === 'restore-release-assembly') {
+        const release = await dependencies.store.readRelease(
+          session,
+          command.edit.releaseId,
         );
-        if (published.has(command.edit.resourceId)) {
+        if (!release) throw new InvalidSchoolConfigurationError('release');
+        releaseCandidate = release.candidate;
+      }
+      if (command.edit.type === 'discard-authored-resource') {
+        if (referenced.has(command.edit.resourceId)) {
           throw new InvalidSchoolConfigurationError('discard');
+        }
+      }
+      if (command.edit.type === 'archive-authored-resource') {
+        const current = currentById.get(command.edit.resourceId);
+        if (
+          !current ||
+          !referenced.has(command.edit.resourceId) ||
+          isProtectedAssemblySlot(current.slot)
+        ) {
+          throw new InvalidSchoolConfigurationError('archive');
         }
       }
       const applied = applyDraftEdit({
@@ -2373,11 +2750,34 @@ export function createSchoolConfiguration(dependencies: {
         edit: command.edit,
         ids: dependencies.ids,
         activePayload,
+        releaseCandidate,
         reviewer: session.staffIdentityId,
         reviewedAt: dependencies.clock.now(),
       });
-      const candidateFingerprint = fingerprintCandidate(applied.candidate);
-      const resources = extractExactResources(applied.candidate);
+      const occupied = new Map<string, Set<number>>();
+      for (const row of occupiedRevisions) {
+        const current = occupied.get(row.resourceId) ?? new Set<number>();
+        current.add(row.revisionNumber);
+        occupied.set(row.resourceId, current);
+      }
+      const candidate =
+        command.edit.type === 'restore-release-assembly' ||
+        command.edit.type === 'restore-active-revision'
+          ? applied.candidate
+          : assignAvailableRevisions(
+              draft.candidate,
+              applied.candidate,
+              occupied,
+            );
+      const leftover = leftoverResourceIds(draft.candidate, candidate);
+      const archivedResourceIds = leftover.filter((resourceId) =>
+        referenced.has(resourceId),
+      );
+      const discardedResourceIds = leftover.filter(
+        (resourceId) => !referenced.has(resourceId),
+      );
+      const candidateFingerprint = fingerprintCandidate(candidate);
+      const resources = extractExactResources(candidate);
       const saved = await dependencies.store.saveDraft({
         session,
         operationId: command.operationId,
@@ -2391,11 +2791,12 @@ export function createSchoolConfiguration(dependencies: {
         ),
         expectedDraftVersion: command.expectedDraftVersion,
         expectedResourceRevisions: command.expectedResourceRevisions,
-        candidate: applied.candidate,
+        candidate,
         candidateFingerprint,
         resources,
-        reviews: extractTranslationReviews(applied.candidate),
-        discardedResourceIds: applied.discardedResourceIds,
+        reviews: extractTranslationReviews(candidate),
+        discardedResourceIds,
+        archivedResourceIds,
         changedAt: dependencies.clock.now(),
         auditId: dependencies.ids.create(),
       });
@@ -2410,6 +2811,7 @@ export function createSchoolConfiguration(dependencies: {
         ...presentDraft(
           { ...stored, draftVersion: saved.draftVersion },
           activeResources,
+          referencedIds,
         ),
       };
     },
@@ -2495,13 +2897,16 @@ export function createSchoolConfiguration(dependencies: {
         resources,
         reviews: extractTranslationReviews(candidate),
         discardedResourceIds: [],
+        archivedResourceIds: [],
         changedAt: dependencies.clock.now(),
         auditId: dependencies.ids.create(),
       });
       const stored = await dependencies.store.readDraft(session);
       if (!stored) throw new InvalidSchoolConfigurationError('draft');
-      const activeResources =
-        await dependencies.store.readActiveReleaseResources(session);
+      const [activeResources, referencedIds] = await Promise.all([
+        dependencies.store.readActiveReleaseResources(session),
+        dependencies.store.readReferencedResourceIds(session),
+      ]);
       const telemetry: TranslationGenerationTelemetry = {
         adapter: dependencies.translationAdapter.id,
         adapterVersion: dependencies.translationAdapter.version,
@@ -2528,6 +2933,7 @@ export function createSchoolConfiguration(dependencies: {
         ...presentDraft(
           { ...stored, draftVersion: saved.draftVersion },
           activeResources,
+          referencedIds,
         ),
       };
     },
@@ -2597,12 +3003,24 @@ export function createSchoolConfiguration(dependencies: {
           try {
             const draft = await dependencies.store.readDraft(session);
             if (!draft) throw new InvalidSchoolConfigurationError('draft');
-            validateCandidate(draft.candidate, session.workspaceId);
+            if (draft.activeReleaseId !== command.expectedActiveReleaseId) {
+              throw new ActiveReleaseConflictError(draft.activeReleaseId);
+            }
+            if (draft.draftVersion !== command.expectedDraftVersion) {
+              throw new DraftVersionConflictError(draft.draftVersion);
+            }
             if (draft.candidateFingerprint !== command.candidateFingerprint) {
               throw new CandidateFingerprintConflictError(
                 draft.candidateFingerprint,
               );
             }
+            if (
+              draft.activeCandidateFingerprint &&
+              draft.candidateFingerprint === draft.activeCandidateFingerprint
+            ) {
+              throw new InvalidSchoolConfigurationError('unpublishedChanges');
+            }
+            validateCandidate(draft.candidate, session.workspaceId);
             const resources = extractExactResources(draft.candidate);
             const packageDocument = {
               format: releasePackageFormat,
@@ -2652,6 +3070,7 @@ export function createSchoolConfiguration(dependencies: {
                   packageByteLength: packageBytes.byteLength,
                   packageObjectKey,
                   resources,
+                  candidate: draft.candidate,
                   publishedAt: dependencies.clock.now(),
                   auditId: dependencies.ids.create(),
                   outboxId: dependencies.ids.create(),

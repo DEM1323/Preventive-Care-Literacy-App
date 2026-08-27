@@ -272,4 +272,10 @@ export type Database = {
     operation_id: string;
     created_at: Timestamp;
   };
+  'school_configuration.release_assemblies': {
+    release_id: string;
+    workspace_id: string;
+    candidate: unknown;
+    recorded_at: Timestamp;
+  };
 };
