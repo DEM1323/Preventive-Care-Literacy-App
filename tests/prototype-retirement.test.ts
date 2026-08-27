@@ -38,6 +38,15 @@ test('Student intake does not persist answers in browser storage', () => {
   expect(intakeSource).not.toContain('localStorage');
   expect(intakeSource).not.toContain('sessionStorage');
   expect(intakeSource).not.toContain('searchParams');
+  expect(intakeSource).toContain('operationId: saveOperationId.current');
+  expect(intakeSource).toContain('expectedDraftRevision');
+  expect(intakeSource).toContain('INTAKE_DRAFT_REVISION_CONFLICT');
+  expect(intakeSource).toContain('id="intake-draft-conflict"');
+  expect(intakeSource).toContain('id="use-saved-draft"');
+  expect(intakeSource).toContain('id="keep-unsaved-answers"');
+  expect(intakeSource).toContain('Your unsaved answers were not');
+  expect(intakeSource).toContain('setAnswers(data.draft?.answers ?? {})');
+  expect(intakeSource).not.toContain('setAnswers(confirmed.data');
 });
 
 test('Student learning shows Completed only from server-accepted Item Completion', () => {

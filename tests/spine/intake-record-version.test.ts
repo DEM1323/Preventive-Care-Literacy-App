@@ -400,6 +400,8 @@ test('Student completes an encrypted Intake Draft and receives one immutable Int
   const saved = await client.PUT('/api/v1/student/intake/draft', {
     headers: { ...mutationHeaders, cookie: studentCookie },
     body: {
+      operationId: crypto.randomUUID(),
+      expectedDraftRevision: snapshot.draft?.draftRevision ?? 0,
       expectedSchoolConfigurationReleaseId:
         snapshot.form.schoolConfigurationReleaseId,
       expectedIntakeForm: {

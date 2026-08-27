@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from 'pg';
 import {
   IntakeAlreadyAcceptedError,
+  IntakeDraftRevisionConflictError,
   IntakeOperationReusedError,
   IntakeRevisionConflictError,
   IntakeUnavailableError,
@@ -8,6 +9,7 @@ import {
   type ExactResourceRevision,
   type IntakeAnswerMap,
   type IntakeStore,
+  type SaveIntakeDraftResult,
   type SealedRecord,
   type StoredIntakeDraft,
   type StoredIntakeRecordVersion,
@@ -260,11 +262,17 @@ export function createPostgresIntakeStore(options: {
         const draft = await client.query<{
           locale: StoredIntakeDraft['locale'];
           updated_at: Date;
+          draft_revision: number;
+          school_configuration_release_id: string;
+          intake_form_resource_id: string;
+          intake_form_revision_number: number;
           wrapping_key_id: string;
           wrapped_data_key: string;
           ciphertext: string;
         }>(
-          `select locale, updated_at, wrapping_key_id, wrapped_data_key, ciphertext
+          `select locale, updated_at, draft_revision, school_configuration_release_id,
+                  intake_form_resource_id, intake_form_revision_number,
+                  wrapping_key_id, wrapped_data_key, ciphertext
              from intake.intake_drafts
             where student_id = $1 and workspace_id = $2`,
           [input.studentId, input.workspaceId],
@@ -295,6 +303,13 @@ export function createPostgresIntakeStore(options: {
             ? {
                 locale: draftRow.locale,
                 updatedAt: draftRow.updated_at,
+                draftRevision: draftRow.draft_revision,
+                schoolConfigurationReleaseId:
+                  draftRow.school_configuration_release_id,
+                intakeForm: {
+                  resourceId: draftRow.intake_form_resource_id,
+                  revisionNumber: draftRow.intake_form_revision_number,
+                },
                 sealed: sealedFrom(draftRow),
               }
             : undefined,
@@ -321,12 +336,34 @@ export function createPostgresIntakeStore(options: {
     },
 
     async saveDraft(input) {
-      await transaction(options.pool, async (client) => {
+      return transaction(options.pool, async (client) => {
         await setStudentScope(client, input);
         await client.query(
           'select pg_advisory_xact_lock(hashtextextended($1, 0))',
           [`intake:${input.studentId}`],
         );
+        const receipt = await client.query<{
+          command_name: string;
+          request_binding: string;
+          result: SaveIntakeDraftResult;
+        }>(
+          `select command_name, request_binding, result
+             from intake.intake_operation_receipts
+            where workspace_id = $1 and student_id = $2 and operation_id = $3`,
+          [input.workspaceId, input.studentId, input.operationId],
+        );
+        if (receipt.rows[0]) {
+          if (
+            receipt.rows[0].command_name !== 'saveIntakeDraft' ||
+            receipt.rows[0].request_binding !== input.requestBinding
+          ) {
+            throw new IntakeOperationReusedError();
+          }
+          return {
+            outcome: 'replayed' as const,
+            result: receipt.rows[0].result,
+          };
+        }
         await lockSchoolConfigurationWorkspace(client, input.workspaceId);
         const release = requireExpectedRelease(
           await readActiveIntakeRelease(client, input.workspaceId),
@@ -342,13 +379,30 @@ export function createPostgresIntakeStore(options: {
           [input.studentId, input.workspaceId],
         );
         if (accepted.rowCount === 1) throw new IntakeAlreadyAcceptedError();
+        const current = await client.query<{ draft_revision: number }>(
+          `select draft_revision from intake.intake_drafts
+            where student_id = $1 and workspace_id = $2`,
+          [input.studentId, input.workspaceId],
+        );
+        const currentRevision = current.rows[0]?.draft_revision ?? 0;
+        if (currentRevision !== input.expectedDraftRevision) {
+          throw new IntakeDraftRevisionConflictError(currentRevision);
+        }
+        const nextRevision = currentRevision + 1;
+        const result: SaveIntakeDraftResult = {
+          operationId: input.operationId,
+          locale: input.locale,
+          updatedAt: input.updatedAt.toISOString(),
+          draftRevision: nextRevision,
+          replayed: true,
+        };
         await client.query(
           `insert into intake.intake_drafts
              (student_id, workspace_id, school_configuration_release_id,
               intake_form_resource_id, intake_form_revision_number, locale,
               wrapping_key_id, wrapped_data_key, ciphertext, updated_at,
-              record_owner, record_classification, disposal_class)
-           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+              draft_revision, record_owner, record_classification, disposal_class)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
                    'school', 'student_record', 'intake_draft')
            on conflict (student_id, workspace_id) do update
              set school_configuration_release_id = excluded.school_configuration_release_id,
@@ -358,7 +412,8 @@ export function createPostgresIntakeStore(options: {
                  wrapping_key_id = excluded.wrapping_key_id,
                  wrapped_data_key = excluded.wrapped_data_key,
                  ciphertext = excluded.ciphertext,
-                 updated_at = excluded.updated_at`,
+                 updated_at = excluded.updated_at,
+                 draft_revision = excluded.draft_revision`,
           [
             input.studentId,
             input.workspaceId,
@@ -370,8 +425,31 @@ export function createPostgresIntakeStore(options: {
             input.sealed.wrappedDataKey,
             input.sealed.ciphertext,
             input.updatedAt,
+            nextRevision,
           ],
         );
+        await client.query(
+          `insert into intake.intake_operation_receipts
+             (workspace_id, student_id, operation_id, command_name, result,
+              request_binding, recorded_at, record_owner,
+              record_classification, disposal_class)
+           values ($1, $2, $3, 'saveIntakeDraft', $4, $5, $6,
+                   'school', 'operational_evidence', 'operation_receipt')`,
+          [
+            input.workspaceId,
+            input.studentId,
+            input.operationId,
+            result,
+            input.requestBinding,
+            input.updatedAt,
+          ],
+        );
+        return {
+          outcome: 'saved' as const,
+          draftRevision: nextRevision,
+          locale: input.locale,
+          updatedAt: input.updatedAt,
+        };
       });
     },
 

@@ -308,8 +308,11 @@ function createFetch() {
     }
     if (path === '/api/v1/student/intake/draft') {
       return jsonResponse(200, {
+        operationId: crypto.randomUUID(),
         locale: 'en-US',
         updatedAt: '2026-08-25T16:04:00.000Z',
+        draftRevision: 1,
+        replayed: false,
       });
     }
     if (path === '/api/v1/student/intake/submissions') {

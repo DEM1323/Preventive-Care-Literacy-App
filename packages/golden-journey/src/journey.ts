@@ -721,6 +721,8 @@ export async function runGoldenJourney(
       {
         method: 'PUT',
         body: JSON.stringify({
+          operationId: crypto.randomUUID(),
+          expectedDraftRevision: 0,
           expectedSchoolConfigurationReleaseId:
             form.schoolConfigurationReleaseId,
           expectedIntakeForm: {

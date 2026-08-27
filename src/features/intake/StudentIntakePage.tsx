@@ -21,7 +21,11 @@ export function StudentIntakePage() {
   const [busy, setBusy] = useState<'load' | 'save' | 'submit' | undefined>(
     'load',
   );
+  const [conflict, setConflict] = useState<{
+    savedAnswers: Record<string, string>;
+  }>();
   const operationId = useRef(crypto.randomUUID());
+  const saveOperationId = useRef(crypto.randomUUID());
 
   useEffect(() => {
     let active = true;
@@ -96,8 +100,14 @@ export function StudentIntakePage() {
     setBusy('save');
     setError(undefined);
     try {
-      const { response } = await client.PUT('/api/v1/student/intake/draft', {
+      const {
+        response,
+        data,
+        error: problem,
+      } = await client.PUT('/api/v1/student/intake/draft', {
         body: {
+          operationId: saveOperationId.current,
+          expectedDraftRevision: snapshot.draft?.draftRevision ?? 0,
           expectedSchoolConfigurationReleaseId:
             snapshot.form.schoolConfigurationReleaseId,
           expectedIntakeForm: {
@@ -108,14 +118,64 @@ export function StudentIntakePage() {
           answers,
         },
       });
-      if (response.status !== 200) {
-        setError('Your draft could not be saved. Try again.');
+      if (response.status === 200 && data) {
+        saveOperationId.current = crypto.randomUUID();
+        setConflict(undefined);
+        setSnapshot((current) =>
+          current
+            ? {
+                ...current,
+                draft: {
+                  draftRevision: data.draftRevision,
+                  locale: data.locale,
+                  updatedAt: data.updatedAt,
+                  schoolConfigurationReleaseId:
+                    current.form.schoolConfigurationReleaseId,
+                  intakeForm: {
+                    resourceId: current.form.intakeForm.resourceId,
+                    revisionNumber: current.form.intakeForm.revisionNumber,
+                  },
+                  answers,
+                },
+              }
+            : current,
+        );
+        return;
       }
+      if (
+        response.status === 409 &&
+        problem?.code === 'INTAKE_DRAFT_REVISION_CONFLICT'
+      ) {
+        const confirmed = await client.GET('/api/v1/student/intake', {
+          params: { query: { locale: 'en-US' } },
+        });
+        if (confirmed.response.status === 200 && confirmed.data) {
+          setSnapshot(confirmed.data);
+          setConflict({
+            savedAnswers: confirmed.data.draft?.answers ?? {},
+          });
+          saveOperationId.current = crypto.randomUUID();
+          return;
+        }
+      }
+      setError('Your draft could not be saved. Try again.');
     } catch {
       setError('Your draft could not be saved. Try again.');
     } finally {
       setBusy(undefined);
     }
+  }
+
+  function useSavedDraft() {
+    if (!conflict) return;
+    setAnswers(conflict.savedAnswers);
+    setConflict(undefined);
+    setError(undefined);
+  }
+
+  function keepUnsavedAnswers() {
+    setConflict(undefined);
+    setError(undefined);
   }
 
   async function submit(event: FormEvent) {
@@ -137,7 +197,8 @@ export function StudentIntakePage() {
             },
             expectedSubmissionAttestation: {
               resourceId: snapshot.form.submissionAttestation.resourceId,
-              revisionNumber: snapshot.form.submissionAttestation.revisionNumber,
+              revisionNumber:
+                snapshot.form.submissionAttestation.revisionNumber,
             },
             locale: 'en-US',
             answers,
@@ -153,7 +214,9 @@ export function StudentIntakePage() {
         },
       );
       if (response.status !== 201) {
-        setError('Your intake could not be accepted. Check your answers and try again.');
+        setError(
+          'Your intake could not be accepted. Check your answers and try again.',
+        );
         return;
       }
       const confirmed = await client.GET('/api/v1/student/intake', {
@@ -377,7 +440,52 @@ export function StudentIntakePage() {
             </form>
           ) : null}
 
-          {error ? (
+          {conflict ? (
+            <div
+              id="intake-draft-conflict"
+              role="alert"
+              className="mt-6 border-l-4 border-[#b43c2c] bg-[#f9ded5] p-4 text-sm font-bold leading-6"
+            >
+              <p>
+                A newer draft was saved in another session. Review the saved
+                answers before continuing. Your unsaved answers were not
+                overwritten.
+              </p>
+              <ul className="mt-3 list-disc space-y-1 pl-5 font-medium normal-case tracking-normal">
+                {snapshot?.form.intakeForm.fields.flatMap((field) => {
+                  const saved = conflict.savedAnswers[field.id];
+                  if (!saved) return [];
+                  return [
+                    <li key={field.id}>
+                      {field.label}: {saved}
+                    </li>,
+                  ];
+                })}
+              </ul>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <button
+                  id="use-saved-draft"
+                  type="button"
+                  disabled={busy !== undefined}
+                  onClick={useSavedDraft}
+                  className="border-2 border-[#17332d] bg-white px-5 py-3 font-black uppercase tracking-wide shadow-[4px_4px_0_#17332d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+                >
+                  Use saved draft
+                </button>
+                <button
+                  id="keep-unsaved-answers"
+                  type="button"
+                  disabled={busy !== undefined}
+                  onClick={keepUnsavedAnswers}
+                  className="border-2 border-[#17332d] bg-[#e6af2e] px-5 py-3 font-black uppercase tracking-wide shadow-[4px_4px_0_#17332d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+                >
+                  Keep these answers
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {error && !conflict ? (
             <p
               role="alert"
               className="mt-6 border-l-4 border-[#b43c2c] bg-[#f9ded5] p-4 text-sm font-bold leading-6"
