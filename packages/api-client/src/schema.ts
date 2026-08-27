@@ -13446,6 +13446,7 @@ export interface operations {
                     /** Format: uuid */
                     schoolConfigurationReleaseId: string;
                   };
+                  contentChange: null | ('revised' | 'added');
                   href: string | null;
                   /** Format: uuid */
                   itemId: string;
@@ -13463,6 +13464,19 @@ export interface operations {
               title: string;
             }[];
             schoolConfigurationReleaseId: string | null;
+            updatedContent: null | {
+              items: {
+                change: 'revised' | 'added';
+                /** Format: uuid */
+                itemId: string;
+                kind: 'knowledge' | 'skill' | 'application';
+                /** Format: uuid */
+                moduleId: string;
+                revisionNumber: number;
+              }[];
+              /** Format: uuid */
+              schoolConfigurationReleaseId: string;
+            };
           };
         };
       };

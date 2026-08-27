@@ -160,6 +160,10 @@ try {
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
+    `grant execute on function learning_progress.prior_release_items(uuid, uuid)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
     `grant select, usage on all sequences in schema infrastructure
        to ${runtimeRoleIdentifier}`,
   );

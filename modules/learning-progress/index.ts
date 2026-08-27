@@ -32,8 +32,24 @@ export type ItemCompletionView = {
   completedAt: string;
 };
 
+export type LearningContentChange = 'revised' | 'added';
+
 export type ProjectedLearningItem = DisplayedLearningItem & {
   completion: ItemCompletionView | null;
+  contentChange: LearningContentChange | null;
+};
+
+export type UpdatedLearningContentItem = {
+  itemId: string;
+  revisionNumber: number;
+  kind: LearningItemKind;
+  moduleId: string;
+  change: LearningContentChange;
+};
+
+export type UpdatedLearningContent = {
+  schoolConfigurationReleaseId: string;
+  items: UpdatedLearningContentItem[];
 };
 
 export type LearningSectionProjection = {
@@ -58,6 +74,11 @@ export type LearningModuleProjection = {
   sections: LearningSectionProjection[];
 };
 
+export type PriorReleasedItem = {
+  itemId: string;
+  revisionNumber: number;
+};
+
 export type StoredItemCompletion = {
   itemCompletionId: string;
   itemId: string;
@@ -74,6 +95,7 @@ export type StudentLearningSnapshot = {
   modules: LearningModuleProjection[];
   item: DisplayedLearningItem | null;
   completion: ItemCompletionView | null;
+  updatedContent: UpdatedLearningContent | null;
 };
 
 export type AcknowledgeLearningItemCommand = {
@@ -143,6 +165,7 @@ export type LearningProgressStore = {
     learningUnlocked: boolean;
     release: ActiveLearningRelease | undefined;
     completions: StoredItemCompletion[];
+    priorReleasedItems: PriorReleasedItem[];
   }>;
   acknowledge(input: {
     studentId: string;
@@ -281,15 +304,31 @@ function projectBadge(
   return { key: module.badge.key, name, earned };
 }
 
+function contentChangeFor(
+  item: DisplayedLearningItem,
+  completion: ItemCompletionView | null,
+  priorReleasedItems: ReadonlyMap<string, number>,
+): LearningContentChange | null {
+  if (completion) return null;
+  if (priorReleasedItems.size === 0) return null;
+  const priorRevision = priorReleasedItems.get(item.itemId);
+  if (priorRevision === undefined) return 'added';
+  if (priorRevision !== item.revisionNumber) return 'revised';
+  return null;
+}
+
 export function projectLearningProgress(
   release: ActiveLearningRelease,
   locale: LearningLocale,
   completions: StoredItemCompletion[],
+  priorReleasedItems: ReadonlyMap<string, number>,
 ): {
   modules: LearningModuleProjection[];
   item: DisplayedLearningItem | null;
   completion: ItemCompletionView | null;
+  updatedContent: UpdatedLearningContent | null;
 } {
+  const updatedItems: UpdatedLearningContentItem[] = [];
   const modules = releasedModules(release).flatMap((module) => {
     const moduleTitle = localizedTextWithFallback(module.title, locale);
     if (!moduleTitle) return [];
@@ -303,10 +342,26 @@ export function projectLearningProgress(
           locale,
         );
         if (!displayed) return [];
+        const completion = matchingCompletion(completions, displayed);
+        const contentChange = contentChangeFor(
+          displayed,
+          completion,
+          priorReleasedItems,
+        );
+        if (contentChange) {
+          updatedItems.push({
+            itemId: displayed.itemId,
+            revisionNumber: displayed.revisionNumber,
+            kind: displayed.kind,
+            moduleId: displayed.moduleId,
+            change: contentChange,
+          });
+        }
         return [
           {
             ...displayed,
-            completion: matchingCompletion(completions, displayed),
+            completion,
+            contentChange,
           } satisfies ProjectedLearningItem,
         ];
       });
@@ -334,11 +389,18 @@ export function projectLearningProgress(
       } satisfies LearningModuleProjection,
     ];
   });
+  const updatedContent =
+    updatedItems.length === 0
+      ? null
+      : {
+          schoolConfigurationReleaseId: release.schoolConfigurationReleaseId,
+          items: updatedItems,
+        };
   const resume = modules
     .flatMap((module) => module.sections.flatMap((section) => section.items))
     .find((item) => item.completion === null);
   if (!resume) {
-    return { modules, item: null, completion: null };
+    return { modules, item: null, completion: null, updatedContent };
   }
   return {
     modules,
@@ -352,6 +414,7 @@ export function projectLearningProgress(
       moduleTitle: resume.moduleTitle,
     },
     completion: null,
+    updatedContent,
   };
 }
 
@@ -433,8 +496,19 @@ export function createLearningProgress(dependencies: {
             state.release,
             command.locale,
             state.completions,
+            new Map(
+              state.priorReleasedItems.map((item) => [
+                item.itemId,
+                item.revisionNumber,
+              ]),
+            ),
           )
-        : { modules: [], item: null, completion: null };
+        : {
+            modules: [],
+            item: null,
+            completion: null,
+            updatedContent: null,
+          };
       return {
         learningUnlocked: state.learningUnlocked,
         schoolConfigurationReleaseId:
@@ -443,6 +517,7 @@ export function createLearningProgress(dependencies: {
         modules: projection.modules,
         item: projection.item,
         completion: projection.completion,
+        updatedContent: projection.updatedContent,
       } satisfies StudentLearningSnapshot;
     },
 

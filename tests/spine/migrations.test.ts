@@ -41,6 +41,7 @@ test('migrations apply in order and are repeatable', async () => {
         { name: '023_intake_draft_revision.sql' },
         { name: '024_intake_successor_pointer.sql' },
         { name: '025_intake_release_reconciliation.sql' },
+        { name: '026_learning_release_evolution.sql' },
       ]);
     } finally {
       await client.end();

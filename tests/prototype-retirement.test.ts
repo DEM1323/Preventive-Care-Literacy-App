@@ -70,6 +70,8 @@ test('Student learning shows Completed only from server-accepted Item Completion
   expect(learningSource).toContain('I can do this');
   expect(learningSource).toContain('I did this');
   expect(learningSource).toContain('item.completion');
+  expect(learningSource).toContain('updated-learning-content');
+  expect(learningSource).toContain('Acknowledge updated content');
   expect(learningSource).not.toContain('setCompleted(true)');
 });
 

@@ -5,6 +5,7 @@ import {
   type AcknowledgeLearningItemResult,
   type ActiveLearningRelease,
   type LearningProgressStore,
+  type PriorReleasedItem,
   type StoredItemCompletion,
 } from '../../../modules/learning-progress/index.ts';
 import { schoolConfigurationWorkspaceLockKey } from './workspace-locks.ts';
@@ -134,6 +135,28 @@ function replayedResult(
   };
 }
 
+async function readPriorReleasedItems(
+  client: PoolClient,
+  input: {
+    workspaceId: string;
+    currentReleaseId: string | undefined;
+  },
+): Promise<PriorReleasedItem[]> {
+  if (!input.currentReleaseId) return [];
+  const rows = await client.query<{
+    item_id: string;
+    revision_number: number;
+  }>(
+    `select item_id, revision_number
+       from learning_progress.prior_release_items($1, $2)`,
+    [input.workspaceId, input.currentReleaseId],
+  );
+  return rows.rows.map((row) => ({
+    itemId: row.item_id,
+    revisionNumber: row.revision_number,
+  }));
+}
+
 export function createPostgresLearningProgressStore(options: {
   pool: Pool;
 }): LearningProgressStore {
@@ -141,10 +164,19 @@ export function createPostgresLearningProgressStore(options: {
     async readWorkspaceLearning(input) {
       return transaction(options.pool, async (client) => {
         await setStudentScope(client, input);
+        const release = await readActiveLearningRelease(
+          client,
+          input.workspaceId,
+        );
+        const completions = await readCompletions(client, input);
         return {
           learningUnlocked: await learningUnlocked(client, input),
-          release: await readActiveLearningRelease(client, input.workspaceId),
-          completions: await readCompletions(client, input),
+          release,
+          completions,
+          priorReleasedItems: await readPriorReleasedItems(client, {
+            workspaceId: input.workspaceId,
+            currentReleaseId: release?.schoolConfigurationReleaseId,
+          }),
         };
       });
     },

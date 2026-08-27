@@ -151,6 +151,19 @@ export function StudentLearningPage() {
             your acknowledgement.
           </p>
 
+          {snapshot?.learningUnlocked && snapshot.updatedContent ? (
+            <div
+              id="updated-learning-content"
+              className="mt-6 border-l-4 border-[#b43c2c] bg-[#f9ded5] p-4 text-sm font-bold leading-6"
+            >
+              <p>
+                Learning content was updated. Previous acknowledgements still
+                count for unchanged items. Review each new or revised item
+                below.
+              </p>
+            </div>
+          ) : null}
+
           {busy === 'load' ? (
             <p className="mt-8 text-lg text-[#38544d]">
               Restoring your learning progress...
@@ -244,7 +257,11 @@ export function StudentLearningPage() {
                           }
                         >
                           <p className="text-sm font-bold uppercase tracking-wide text-[#b43c2c]">
-                            {itemKindCopy[item.kind].hint}
+                            {item.contentChange === 'revised'
+                              ? 'This item was revised. Acknowledge this exact revision.'
+                              : item.contentChange === 'added'
+                                ? 'This item was added. Acknowledge this exact revision.'
+                                : itemKindCopy[item.kind].hint}
                           </p>
                           <p className="mt-3 text-lg leading-8">{item.text}</p>
                           {item.href ? (
@@ -273,7 +290,9 @@ export function StudentLearningPage() {
                             >
                               {busy === item.itemId
                                 ? 'Saving...'
-                                : itemKindCopy[item.kind].action}
+                                : item.contentChange
+                                  ? 'Acknowledge updated content'
+                                  : itemKindCopy[item.kind].action}
                             </button>
                           )}
                         </li>

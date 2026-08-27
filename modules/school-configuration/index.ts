@@ -999,15 +999,37 @@ function contrastRatio(left: string, right: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-function canonicalMeaning(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonicalMeaning);
+function canonicalMeaning(
+  value: unknown,
+  excludedKeys: ReadonlySet<string> = new Set(['order']),
+): unknown {
+  if (Array.isArray(value)) {
+    return value.map((child) => canonicalMeaning(child, excludedKeys));
+  }
   if (!isRecord(value)) return value;
   return Object.fromEntries(
     Object.keys(value)
       .sort()
-      .filter((key) => key !== 'order')
-      .map((key) => [key, canonicalMeaning(value[key])]),
+      .filter((key) => !excludedKeys.has(key))
+      .map((key) => [key, canonicalMeaning(value[key], excludedKeys)]),
   );
+}
+
+const learningItemExcludedKeys = new Set<string>(['order', ...managedLocales]);
+
+function isLearningModuleItem(value: Record<string, unknown>): boolean {
+  return (
+    isRecord(value.text) &&
+    isRecord(value.text['en-US']) &&
+    typeof value.text['en-US'].value === 'string' &&
+    !Array.isArray(value.knowledgeItems)
+  );
+}
+
+function meaningForRevision(value: Record<string, unknown>): unknown {
+  return isLearningModuleItem(value)
+    ? canonicalMeaning(value, learningItemExcludedKeys)
+    : canonicalMeaning(value);
 }
 
 function indexRevisioned(
@@ -1039,8 +1061,8 @@ function assignCanonicalRevisions(previous: unknown, next: unknown): unknown {
       const prior = previousById.get(copy.id);
       if (prior) {
         copy.revision =
-          canonicalJson(canonicalMeaning(prior)) ===
-          canonicalJson(canonicalMeaning(copy))
+          canonicalJson(meaningForRevision(prior)) ===
+          canonicalJson(meaningForRevision(copy))
             ? prior.revision
             : Number(prior.revision) + 1;
       }
