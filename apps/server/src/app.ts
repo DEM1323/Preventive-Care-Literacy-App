@@ -70,6 +70,19 @@ import {
   LearningUnavailableError,
 } from '../../../modules/learning-progress/index.ts';
 import { createLearningProgress } from '../../../modules/learning-progress/index.ts';
+import type { RecordsGovernance } from '../../../modules/records-governance/index.ts';
+import {
+  RecordHoldNotActiveError,
+  RecordHoldNotFoundError,
+  RecordHoldNotReleasableError,
+  RecordLifecycleCaseDecisionRequiredError,
+  RecordLifecycleCaseNotFoundError,
+  RecordLifecycleCaseNotOpenError,
+  RecordLifecycleCaseRequestMismatchError,
+  StudentAlreadyDepartedError,
+  StudentNotDepartedError,
+} from '../../../modules/records-governance/index.ts';
+import { createRecordsGovernance } from '../../../modules/records-governance/index.ts';
 import type {
   DraftEdit,
   SchoolConfiguration,
@@ -119,6 +132,7 @@ import { createMemoryReleasePackageStorage } from '../../../packages/release-pac
 import type { ReleasePackageStorage } from '../../../modules/school-configuration/index.ts';
 import { createPostgresIntakeStore } from '../../../packages/postgres/src/intake.ts';
 import { createPostgresLearningProgressStore } from '../../../packages/postgres/src/learning-progress.ts';
+import { createPostgresRecordsGovernanceStore } from '../../../packages/postgres/src/records-governance.ts';
 import { queryGoldenJourneyOperatorEvidence } from '../../../packages/postgres/src/golden-journey-evidence.ts';
 import {
   listOperatorWorkspaces,
@@ -700,6 +714,245 @@ const EnableStudentAccessResponse = Type.Object({
   studentId: Type.String({ format: 'uuid' }),
   outcome: Type.Literal('enabled'),
 });
+const StudentDepartureReasonSchema = Type.Union([
+  Type.Literal('transferred'),
+  Type.Literal('graduated'),
+  Type.Literal('withdrew'),
+]);
+const RecordStudentDepartureBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    studentId: Type.String({ format: 'uuid' }),
+    reason: StudentDepartureReasonSchema,
+    effectiveOn: Type.String({ format: 'date' }),
+  },
+  { additionalProperties: false },
+);
+const RecordStudentDepartureResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  studentId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('departed'),
+});
+const ReverseStudentDepartureBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    studentId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+const ReverseStudentDepartureResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  studentId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('reversed'),
+});
+const RecordLifecycleCaseTypeSchema = Type.Union([
+  Type.Literal('access'),
+  Type.Literal('amendment'),
+  Type.Literal('transfer'),
+  Type.Literal('disclosure'),
+  Type.Literal('hold'),
+  Type.Literal('disposition'),
+]);
+const RecordLifecycleRequestCodeSchema = Type.Union([
+  Type.Literal('lawful_access'),
+  Type.Literal('amendment_challenge'),
+  Type.Literal('transfer'),
+  Type.Literal('disclosure'),
+  Type.Literal('preservation'),
+  Type.Literal('scheduled_destruction'),
+]);
+const RecordLifecycleRequesterKindSchema = Type.Union([
+  Type.Literal('school_administrator'),
+  Type.Literal('school_nurse'),
+  Type.Literal('legal_custodian'),
+  Type.Literal('student'),
+  Type.Literal('parent_guardian'),
+]);
+const RecordLifecycleAuthorityKindSchema = Type.Union([
+  Type.Literal('school_administrator'),
+  Type.Literal('school_nurse'),
+  Type.Literal('legal_custodian'),
+]);
+const RecordLifecycleScopeSchema = Type.Object(
+  {
+    portions: Type.Array(
+      Type.Union([
+        Type.Literal('identity'),
+        Type.Literal('membership'),
+        Type.Literal('intake'),
+        Type.Literal('learning_progress'),
+        Type.Literal('audit_evidence'),
+        Type.Literal('complete_bundle'),
+      ]),
+      { minItems: 1 },
+    ),
+    purpose: Type.Union([
+      Type.Literal('lawful_access'),
+      Type.Literal('amendment_challenge'),
+      Type.Literal('transfer'),
+      Type.Literal('disclosure'),
+      Type.Literal('preservation'),
+      Type.Literal('scheduled_destruction'),
+    ]),
+  },
+  { additionalProperties: false },
+);
+const OpenRecordLifecycleCaseBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    studentId: Type.String({ format: 'uuid' }),
+    caseType: RecordLifecycleCaseTypeSchema,
+    requestCode: RecordLifecycleRequestCodeSchema,
+    requesterKind: RecordLifecycleRequesterKindSchema,
+    authorityKind: RecordLifecycleAuthorityKindSchema,
+    scope: RecordLifecycleScopeSchema,
+    deadlineAt: Type.String({ format: 'date-time' }),
+  },
+  { additionalProperties: false },
+);
+const OpenRecordLifecycleCaseResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  studentId: Type.String({ format: 'uuid' }),
+  caseId: Type.String({ format: 'uuid' }),
+  caseType: RecordLifecycleCaseTypeSchema,
+  policyRevisionId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('opened'),
+});
+const DecideRecordLifecycleCaseBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    caseId: Type.String({ format: 'uuid' }),
+    decision: Type.Union([
+      Type.Literal('authorized'),
+      Type.Literal('denied'),
+      Type.Literal('withdrawn'),
+    ]),
+  },
+  { additionalProperties: false },
+);
+const DecideRecordLifecycleCaseResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  caseId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('decided'),
+});
+const RecordRecordLifecycleCaseOutcomeBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    caseId: Type.String({ format: 'uuid' }),
+    outcome: Type.Union([Type.Literal('completed'), Type.Literal('cancelled')]),
+  },
+  { additionalProperties: false },
+);
+const RecordRecordLifecycleCaseOutcomeResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  caseId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('recorded'),
+});
+const EstablishRecordHoldBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    studentId: Type.String({ format: 'uuid' }),
+    reason: Type.Literal('school_preservation'),
+  },
+  { additionalProperties: false },
+);
+const EstablishRecordHoldResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  studentId: Type.String({ format: 'uuid' }),
+  holdId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('established'),
+});
+const ReleaseRecordHoldBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    holdId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+const ReleaseRecordHoldResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  holdId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('released'),
+});
+const RecordsGovernanceDirectoryResponse = Type.Object({
+  students: Type.Array(
+    Type.Object({
+      studentId: Type.String({ format: 'uuid' }),
+      presence: Type.Union([
+        Type.Literal('enrolled'),
+        Type.Literal('departed'),
+      ]),
+      accessStatus: Type.Union([
+        Type.Literal('active'),
+        Type.Literal('disabled'),
+      ]),
+      departure: Type.Union([
+        Type.Object({
+          reason: StudentDepartureReasonSchema,
+          effectiveOn: Type.String({ format: 'date' }),
+          recordedAt: Type.String({ format: 'date-time' }),
+        }),
+        Type.Null(),
+      ]),
+      cases: Type.Array(
+        Type.Object({
+          caseId: Type.String({ format: 'uuid' }),
+          caseType: RecordLifecycleCaseTypeSchema,
+          requestCode: RecordLifecycleRequestCodeSchema,
+          requesterKind: RecordLifecycleRequesterKindSchema,
+          authorityKind: RecordLifecycleAuthorityKindSchema,
+          scope: RecordLifecycleScopeSchema,
+          deadlineAt: Type.String({ format: 'date-time' }),
+          decision: Type.Union([
+            Type.Literal('pending'),
+            Type.Literal('authorized'),
+            Type.Literal('denied'),
+            Type.Literal('withdrawn'),
+          ]),
+          outcome: Type.Union([
+            Type.Literal('open'),
+            Type.Literal('completed'),
+            Type.Literal('cancelled'),
+          ]),
+          policyRevisionId: Type.String({ format: 'uuid' }),
+          openedAt: Type.String({ format: 'date-time' }),
+          closedAt: Type.Union([
+            Type.String({ format: 'date-time' }),
+            Type.Null(),
+          ]),
+        }),
+      ),
+      holds: Type.Array(
+        Type.Object({
+          holdId: Type.String({ format: 'uuid' }),
+          source: Type.Union([
+            Type.Literal('manual'),
+            Type.Literal('automatic_access_case'),
+            Type.Literal('automatic_amendment_case'),
+            Type.Literal('hold_case'),
+          ]),
+          reason: Type.String(),
+          status: Type.Union([
+            Type.Literal('active'),
+            Type.Literal('released'),
+          ]),
+          caseId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
+          establishedAt: Type.String({ format: 'date-time' }),
+          releasedAt: Type.Union([
+            Type.String({ format: 'date-time' }),
+            Type.Null(),
+          ]),
+        }),
+      ),
+      destructionEligibility: Type.Union([
+        Type.Literal('not_eligible'),
+        Type.Literal('eligible_after_departure'),
+        Type.Literal('blocked_by_hold'),
+      ]),
+      policyRevisionId: Type.String({ format: 'uuid' }),
+    }),
+  ),
+});
 const ClassDirectoryResponse = Type.Object({
   classes: Type.Array(
     Type.Object({
@@ -733,6 +986,11 @@ const ClassDirectoryResponse = Type.Object({
           studentAccessStatus: Type.Union([
             Type.Literal('active'),
             Type.Literal('disabled'),
+            Type.Null(),
+          ]),
+          studentPresence: Type.Union([
+            Type.Literal('enrolled'),
+            Type.Literal('departed'),
             Type.Null(),
           ]),
           currentVerifiedEmail: Type.Union([Type.String(), Type.Null()]),
@@ -2126,6 +2384,7 @@ export async function buildApp(
     schoolConfiguration?: SchoolConfiguration;
     intake?: Intake;
     learningProgress?: LearningProgress;
+    recordsGovernance?: RecordsGovernance;
     buildIdentity?: BuildAttestation;
     verifyBuildAttestation?: () => Promise<BuildAttestation | undefined>;
     queryGoldenJourneyEvidence?: (input: {
@@ -2436,6 +2695,78 @@ export async function buildApp(
         type: 'https://preventive-care-literacy.example/problems/student-not-found',
         title: error.message,
         status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof StudentAlreadyDepartedError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/student-already-departed',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof StudentNotDepartedError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/student-not-departed',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordLifecycleCaseNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/record-lifecycle-case-not-found',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordLifecycleCaseNotOpenError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-lifecycle-case-not-open',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordHoldNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/record-hold-not-found',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordHoldNotActiveError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-hold-not-active',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordLifecycleCaseRequestMismatchError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-lifecycle-case-request-mismatch',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordLifecycleCaseDecisionRequiredError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-lifecycle-case-decision-required',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordHoldNotReleasableError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-hold-not-releasable',
+        title: error.message,
+        status: 409,
         code: error.code,
       });
     }
@@ -3961,6 +4292,234 @@ export async function buildApp(
     },
   );
 
+  if (options.recordsGovernance) {
+    const recordsGovernance = options.recordsGovernance;
+    app.post<{ Body: Static<typeof RecordStudentDepartureBody> }>(
+      '/api/v1/administration/students/departures',
+      {
+        schema: {
+          operationId: 'recordStudentDeparture',
+          security: [{ staffSession: [] }],
+          body: RecordStudentDepartureBody,
+          response: {
+            200: RecordStudentDepartureResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.recordStudentDeparture({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof ReverseStudentDepartureBody> }>(
+      '/api/v1/administration/students/departure-reversals',
+      {
+        schema: {
+          operationId: 'reverseStudentDeparture',
+          security: [{ staffSession: [] }],
+          body: ReverseStudentDepartureBody,
+          response: {
+            200: ReverseStudentDepartureResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.reverseStudentDeparture({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.get(
+      '/api/v1/administration/students/records-governance',
+      {
+        schema: {
+          operationId: 'listRecordsGovernance',
+          security: [{ staffSession: [] }],
+          response: {
+            200: RecordsGovernanceDirectoryResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.listRecordsGovernance({ sessionHandle });
+      },
+    );
+
+    app.post<{ Body: Static<typeof OpenRecordLifecycleCaseBody> }>(
+      '/api/v1/administration/students/record-lifecycle-cases',
+      {
+        schema: {
+          operationId: 'openRecordLifecycleCase',
+          security: [{ staffSession: [] }],
+          body: OpenRecordLifecycleCaseBody,
+          response: {
+            200: OpenRecordLifecycleCaseResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.openRecordLifecycleCase({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof DecideRecordLifecycleCaseBody> }>(
+      '/api/v1/administration/students/record-lifecycle-case-decisions',
+      {
+        schema: {
+          operationId: 'decideRecordLifecycleCase',
+          security: [{ staffSession: [] }],
+          body: DecideRecordLifecycleCaseBody,
+          response: {
+            200: DecideRecordLifecycleCaseResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.decideRecordLifecycleCase({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof RecordRecordLifecycleCaseOutcomeBody> }>(
+      '/api/v1/administration/students/record-lifecycle-case-outcomes',
+      {
+        schema: {
+          operationId: 'recordRecordLifecycleCaseOutcome',
+          security: [{ staffSession: [] }],
+          body: RecordRecordLifecycleCaseOutcomeBody,
+          response: {
+            200: RecordRecordLifecycleCaseOutcomeResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.recordRecordLifecycleCaseOutcome({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof EstablishRecordHoldBody> }>(
+      '/api/v1/administration/students/record-holds',
+      {
+        schema: {
+          operationId: 'establishRecordHold',
+          security: [{ staffSession: [] }],
+          body: EstablishRecordHoldBody,
+          response: {
+            200: EstablishRecordHoldResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.establishRecordHold({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof ReleaseRecordHoldBody> }>(
+      '/api/v1/administration/students/record-hold-releases',
+      {
+        schema: {
+          operationId: 'releaseRecordHold',
+          security: [{ staffSession: [] }],
+          body: ReleaseRecordHoldBody,
+          response: {
+            200: ReleaseRecordHoldResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.releaseRecordHold({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+  }
+
   if (options.schoolConfiguration) {
     const schoolConfiguration = options.schoolConfiguration;
     app.post<{ Body: Static<typeof StepUpBody> }>(
@@ -4781,6 +5340,12 @@ export async function createServer(options: {
     clock,
     ids,
   });
+  const recordsGovernance = createRecordsGovernance({
+    identityAndAccess,
+    store: createPostgresRecordsGovernanceStore({ pool }),
+    clock,
+    ids,
+  });
   return buildApp(identityAndAccess, {
     operatorAuthenticator: createOperatorAuthenticator(
       options.operatorCredentials,
@@ -4796,6 +5361,7 @@ export async function createServer(options: {
     schoolConfiguration,
     intake,
     learningProgress,
+    recordsGovernance,
     verifyBuildAttestation: async () => {
       try {
         return await verifyBuildAttestationForHealth(process.cwd());

@@ -190,6 +190,32 @@ async function renderContracts() {
           throw new Error('Contract generation does not execute commands');
         },
       },
+      recordsGovernance: {
+        recordStudentDeparture: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        reverseStudentDeparture: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        openRecordLifecycleCase: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        decideRecordLifecycleCase: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        recordRecordLifecycleCaseOutcome: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        establishRecordHold: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        releaseRecordHold: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        listRecordsGovernance: async () => {
+          throw new Error('Contract generation does not execute queries');
+        },
+      },
     },
   );
   const document = sortDeep(app.swagger());

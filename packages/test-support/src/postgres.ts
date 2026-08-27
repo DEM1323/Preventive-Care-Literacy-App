@@ -68,7 +68,7 @@ export async function createRuntimeDatabaseUser(
       `grant connect on database ${database.rows[0]?.name} to ${role}`,
     );
     await client.query(
-      `grant usage on schema identity_access, school_configuration, intake, learning_progress, audit, infrastructure to ${role}`,
+      `grant usage on schema identity_access, school_configuration, intake, learning_progress, records_governance, audit, infrastructure to ${role}`,
     );
     await client.query(
       `grant select, insert on identity_access.school_workspaces,
@@ -143,7 +143,10 @@ export async function createRuntimeDatabaseUser(
       `grant select, insert, update, delete on all tables in schema school_configuration to ${role}`,
     );
     await client.query(
-      `grant usage, select on all sequences in schema audit, infrastructure to ${role}`,
+      `grant select, insert, update on all tables in schema records_governance to ${role}`,
+    );
+    await client.query(
+      `grant usage, select on all sequences in schema audit, infrastructure, records_governance to ${role}`,
     );
     return `postgres://${role}:${password}@127.0.0.1:${new URL(databaseUrl).port}/${database.rows[0]?.name}`;
   } finally {

@@ -6,6 +6,7 @@ import {
   ClassWorkspace,
   type ClassDirectoryEntry,
 } from './ClassWorkspace';
+import { StudentRecordLifecycleSection } from './StudentRecordLifecycleSection';
 
 const client = createBrowserApiClient();
 
@@ -153,7 +154,10 @@ export function StaffHomePage() {
         ) : null}
 
         {classes ? (
-          <ClassWorkspace classes={classes} onReload={loadClasses} />
+          <>
+            <ClassWorkspace classes={classes} onReload={loadClasses} />
+            <StudentRecordLifecycleSection />
+          </>
         ) : null}
       </section>
     </main>

@@ -954,8 +954,9 @@ export function createPostgresClassInvitationStore(options: {
         const students = await sql<{
           student_id: string;
           status: 'active' | 'disabled';
+          presence: 'enrolled' | 'departed';
         }>`
-          select student_id, status
+          select student_id, status, presence
             from identity_access.students
            where workspace_id = ${request.workspaceId}
            order by created_at, student_id
@@ -1006,6 +1007,7 @@ export function createPostgresClassInvitationStore(options: {
           studentAccess: students.rows.map((student) => ({
             studentId: student.student_id,
             status: student.status,
+            presence: student.presence,
             emails: emails.rows
               .filter((email) => email.student_id === student.student_id)
               .map((email) => ({
