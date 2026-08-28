@@ -311,6 +311,74 @@ export type RecordProductionCleanupStatus =
   (typeof recordProductionCleanupStatuses)[number];
 
 export const recordProductionTtlMs = 10 * 60 * 1000;
+export const recordDispositionCancellationWindowMs = 7 * 24 * 60 * 60 * 1000;
+
+export const recordDispositionStatuses = [
+  'scheduled',
+  'executing',
+  'cancelled',
+  'failed',
+  'purged',
+] as const;
+export type RecordDispositionStatus =
+  (typeof recordDispositionStatuses)[number];
+
+export const recordDispositionBlockingReasons = [
+  'missing_policy',
+  'missing_student_departure',
+  'open_hold',
+  'incomplete_notice',
+  'incomplete_copy_opportunity',
+  'missing_structured_authority',
+  'open_lifecycle_case',
+] as const;
+export type RecordDispositionBlockingReason =
+  (typeof recordDispositionBlockingReasons)[number];
+
+export const recordDispositionAdapters = [
+  'identity_access',
+  'memberships',
+  'intake',
+  'learning_progress',
+  'clinical_access_evidence',
+  'productions',
+  'projections',
+] as const;
+export type RecordDispositionAdapter =
+  (typeof recordDispositionAdapters)[number];
+
+export type RecordDispositionPurgeEntry = {
+  location: string;
+  adapter: RecordDispositionAdapter;
+  status: 'pending' | 'purged' | 'failed';
+  count: number;
+  verification: 'pending' | 'verified' | 'failed';
+};
+
+export type RecordDispositionView = {
+  dispositionId: string;
+  caseId: string;
+  status: RecordDispositionStatus;
+  version: number;
+  scheduledAt: string;
+  cancellationDeadlineAt: string;
+  cancelledAt: string | null;
+  executionStartedAt: string | null;
+  completedAt: string | null;
+  policyRevisionId: string;
+  purgeManifest: RecordDispositionPurgeEntry[];
+};
+
+export type RecordDispositionPrerequisites = {
+  blockingReasons: RecordDispositionBlockingReason[];
+  noticeCompleted: boolean;
+  copyOpportunityCompleted: boolean;
+  hasPolicy: boolean;
+  hasQualifyingDeparture: boolean;
+  hasStructuredAuthority: boolean;
+  openHold: boolean;
+  openLifecycleCase: boolean;
+};
 
 export const recordProductionCaseTypes = [
   'access',
@@ -375,6 +443,8 @@ export type StudentRecordsGovernanceView = {
   amendments: RecordAmendmentView[];
   conflictReviews: RecordConflictReviewView[];
   productions: RecordProductionView[];
+  dispositions: RecordDispositionView[];
+  dispositionPrerequisites: RecordDispositionPrerequisites;
   destructionEligibility: DestructionEligibility;
   policyRevisionId: string;
 };
@@ -548,6 +618,80 @@ export class RecordProductionCleanupFailedError extends Error {
   }
 }
 
+export class RecordDispositionNotSchedulableError extends Error {
+  readonly code = 'RECORD_DISPOSITION_NOT_SCHEDULABLE';
+  readonly blockingReasons: RecordDispositionBlockingReason[];
+
+  constructor(blockingReasons: RecordDispositionBlockingReason[]) {
+    super('Record Disposition cannot be scheduled');
+    this.name = 'RecordDispositionNotSchedulableError';
+    this.blockingReasons = blockingReasons;
+  }
+}
+
+export class RecordDispositionNotFoundError extends Error {
+  readonly code = 'RECORD_DISPOSITION_NOT_FOUND';
+
+  constructor() {
+    super('Record Disposition was not found');
+    this.name = 'RecordDispositionNotFoundError';
+  }
+}
+
+export class RecordDispositionNotCancellableError extends Error {
+  readonly code = 'RECORD_DISPOSITION_NOT_CANCELLABLE';
+
+  constructor() {
+    super('Record Disposition cannot be cancelled');
+    this.name = 'RecordDispositionNotCancellableError';
+  }
+}
+
+export class RecordDispositionCancellationWindowOpenError extends Error {
+  readonly code = 'RECORD_DISPOSITION_CANCELLATION_WINDOW_OPEN';
+
+  constructor() {
+    super('Record Disposition cancellation window is still open');
+    this.name = 'RecordDispositionCancellationWindowOpenError';
+  }
+}
+
+export class RecordDispositionNotExecutableError extends Error {
+  readonly code = 'RECORD_DISPOSITION_NOT_EXECUTABLE';
+
+  constructor() {
+    super('Record Disposition cannot be executed');
+    this.name = 'RecordDispositionNotExecutableError';
+  }
+}
+
+export class RecordDispositionNotRepairableError extends Error {
+  readonly code = 'RECORD_DISPOSITION_NOT_REPAIRABLE';
+
+  constructor() {
+    super('Record Disposition cannot be retried');
+    this.name = 'RecordDispositionNotRepairableError';
+  }
+}
+
+export class RecordDispositionVersionConflictError extends Error {
+  readonly code = 'RECORD_DISPOSITION_VERSION_CONFLICT';
+
+  constructor() {
+    super('Record Disposition version does not match');
+    this.name = 'RecordDispositionVersionConflictError';
+  }
+}
+
+export class RecordDispositionConfirmationRequiredError extends Error {
+  readonly code = 'RECORD_DISPOSITION_CONFIRMATION_REQUIRED';
+
+  constructor() {
+    super('Record Disposition requires structured confirmation');
+    this.name = 'RecordDispositionConfirmationRequiredError';
+  }
+}
+
 export type ResolveRecordAmendmentCommand = {
   sessionHandle: string;
   operationId: string;
@@ -630,6 +774,89 @@ export type RepairRecordProductionCleanupResult = {
   operationId: string;
   productionId: string;
   outcome: 'removed' | 'failed';
+};
+
+export type CompleteRecordDispositionNoticeCommand = {
+  sessionHandle: string;
+  operationId: string;
+  studentId: string;
+};
+
+export type CompleteRecordDispositionNoticeResult = {
+  operationId: string;
+  studentId: string;
+  noticeId: string;
+  outcome: 'completed';
+};
+
+export type CompleteRecordDispositionCopyOpportunityCommand = {
+  sessionHandle: string;
+  operationId: string;
+  studentId: string;
+};
+
+export type CompleteRecordDispositionCopyOpportunityResult = {
+  operationId: string;
+  studentId: string;
+  copyOpportunityId: string;
+  outcome: 'completed';
+};
+
+export type ScheduleRecordDispositionCommand = {
+  sessionHandle: string;
+  operationId: string;
+  studentId: string;
+  caseId: string;
+  confirmation: 'schedule_destruction';
+};
+
+export type ScheduleRecordDispositionResult = {
+  operationId: string;
+  studentId: string;
+  dispositionId: string;
+  cancellationDeadlineAt: string;
+  outcome: 'scheduled';
+};
+
+export type CancelRecordDispositionCommand = {
+  sessionHandle: string;
+  operationId: string;
+  dispositionId: string;
+  expectedVersion: number;
+};
+
+export type CancelRecordDispositionResult = {
+  operationId: string;
+  dispositionId: string;
+  outcome: 'cancelled';
+};
+
+export type ExecuteRecordDispositionCommand = {
+  sessionHandle: string;
+  operationId: string;
+  dispositionId: string;
+  expectedVersion: number;
+  confirmation: 'execute_destruction';
+};
+
+export type ExecuteRecordDispositionResult = {
+  operationId: string;
+  dispositionId: string;
+  outcome: 'purged' | 'failed';
+};
+
+export type RetryRecordDispositionCommand = {
+  sessionHandle: string;
+  operationId: string;
+  dispositionId: string;
+  expectedVersion: number;
+  confirmation: 'execute_destruction';
+};
+
+export type RetryRecordDispositionResult = {
+  operationId: string;
+  dispositionId: string;
+  outcome: 'purged' | 'failed';
 };
 
 export type RecordProductionSecrets = {
@@ -965,6 +1192,120 @@ export type RecordsGovernanceStore = {
       }
     | { outcome: 'not_found' }
   >;
+  completeNotice(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    studentId: string;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    noticeId: string;
+    result: CompleteRecordDispositionNoticeResult;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: CompleteRecordDispositionNoticeResult;
+      }
+    | { outcome: 'not_found' }
+  >;
+  completeCopyOpportunity(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    studentId: string;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    copyOpportunityId: string;
+    result: CompleteRecordDispositionCopyOpportunityResult;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: CompleteRecordDispositionCopyOpportunityResult;
+      }
+    | { outcome: 'not_found' }
+  >;
+  scheduleDisposition(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    studentId: string;
+    caseId: string;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    dispositionId: string;
+    result: ScheduleRecordDispositionResult;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: ScheduleRecordDispositionResult;
+      }
+    | { outcome: 'not_found' }
+    | {
+        outcome: 'not_schedulable';
+        blockingReasons: RecordDispositionBlockingReason[];
+      }
+  >;
+  cancelDisposition(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    dispositionId: string;
+    expectedVersion: number;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    result: CancelRecordDispositionResult;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: CancelRecordDispositionResult;
+      }
+    | { outcome: 'not_found' }
+    | { outcome: 'not_cancellable' }
+    | { outcome: 'version_conflict' }
+  >;
+  executeDisposition(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    dispositionId: string;
+    expectedVersion: number;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    result: ExecuteRecordDispositionResult;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: ExecuteRecordDispositionResult;
+      }
+    | { outcome: 'not_found' }
+    | { outcome: 'window_open' }
+    | { outcome: 'not_executable' }
+    | { outcome: 'version_conflict' }
+  >;
+  retryDisposition(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    dispositionId: string;
+    expectedVersion: number;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    result: RetryRecordDispositionResult;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: RetryRecordDispositionResult;
+      }
+    | { outcome: 'not_found' }
+    | { outcome: 'not_repairable' }
+    | { outcome: 'version_conflict' }
+  >;
 };
 
 export type RecordsGovernance = {
@@ -1007,6 +1348,24 @@ export type RecordsGovernance = {
   repairRecordProductionCleanup(
     command: RepairRecordProductionCleanupCommand,
   ): Promise<RepairRecordProductionCleanupResult>;
+  completeRecordDispositionNotice(
+    command: CompleteRecordDispositionNoticeCommand,
+  ): Promise<CompleteRecordDispositionNoticeResult>;
+  completeRecordDispositionCopyOpportunity(
+    command: CompleteRecordDispositionCopyOpportunityCommand,
+  ): Promise<CompleteRecordDispositionCopyOpportunityResult>;
+  scheduleRecordDisposition(
+    command: ScheduleRecordDispositionCommand,
+  ): Promise<ScheduleRecordDispositionResult>;
+  cancelRecordDisposition(
+    command: CancelRecordDispositionCommand,
+  ): Promise<CancelRecordDispositionResult>;
+  executeRecordDisposition(
+    command: ExecuteRecordDispositionCommand,
+  ): Promise<ExecuteRecordDispositionResult>;
+  retryRecordDisposition(
+    command: RetryRecordDispositionCommand,
+  ): Promise<RetryRecordDispositionResult>;
   listRecordsGovernance(command: {
     sessionHandle: string;
   }): Promise<RecordsGovernanceDirectory>;
@@ -1497,6 +1856,191 @@ export function createRecordsGovernance(dependencies: {
         throw new RecordProductionUnavailableError();
       }
       return repaired.result;
+    },
+
+    async completeRecordDispositionNotice(command) {
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const noticeId = dependencies.ids.create();
+      const result: CompleteRecordDispositionNoticeResult = {
+        operationId: command.operationId,
+        studentId: command.studentId,
+        noticeId,
+        outcome: 'completed',
+      };
+      const completed = await dependencies.store.completeNotice({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        studentId: command.studentId,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        noticeId,
+        result,
+      });
+      if (completed.outcome === 'not_found') throw new StudentNotFoundError();
+      return completed.result;
+    },
+
+    async completeRecordDispositionCopyOpportunity(command) {
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const copyOpportunityId = dependencies.ids.create();
+      const result: CompleteRecordDispositionCopyOpportunityResult = {
+        operationId: command.operationId,
+        studentId: command.studentId,
+        copyOpportunityId,
+        outcome: 'completed',
+      };
+      const completed = await dependencies.store.completeCopyOpportunity({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        studentId: command.studentId,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        copyOpportunityId,
+        result,
+      });
+      if (completed.outcome === 'not_found') throw new StudentNotFoundError();
+      return completed.result;
+    },
+
+    async scheduleRecordDisposition(command) {
+      if (command.confirmation !== 'schedule_destruction') {
+        throw new RecordDispositionConfirmationRequiredError();
+      }
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const dispositionId = dependencies.ids.create();
+      const cancellationDeadlineAt = new Date(
+        dependencies.clock.now().getTime() +
+          recordDispositionCancellationWindowMs,
+      ).toISOString();
+      const result: ScheduleRecordDispositionResult = {
+        operationId: command.operationId,
+        studentId: command.studentId,
+        dispositionId,
+        cancellationDeadlineAt,
+        outcome: 'scheduled',
+      };
+      const scheduled = await dependencies.store.scheduleDisposition({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        studentId: command.studentId,
+        caseId: command.caseId,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        dispositionId,
+        result,
+      });
+      if (scheduled.outcome === 'not_found') throw new StudentNotFoundError();
+      if (scheduled.outcome === 'not_schedulable') {
+        throw new RecordDispositionNotSchedulableError(
+          scheduled.blockingReasons,
+        );
+      }
+      return scheduled.result;
+    },
+
+    async cancelRecordDisposition(command) {
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const result: CancelRecordDispositionResult = {
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        outcome: 'cancelled',
+      };
+      const cancelled = await dependencies.store.cancelDisposition({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        expectedVersion: command.expectedVersion,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        result,
+      });
+      if (cancelled.outcome === 'not_found') {
+        throw new RecordDispositionNotFoundError();
+      }
+      if (cancelled.outcome === 'not_cancellable') {
+        throw new RecordDispositionNotCancellableError();
+      }
+      if (cancelled.outcome === 'version_conflict') {
+        throw new RecordDispositionVersionConflictError();
+      }
+      return cancelled.result;
+    },
+
+    async executeRecordDisposition(command) {
+      if (command.confirmation !== 'execute_destruction') {
+        throw new RecordDispositionConfirmationRequiredError();
+      }
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const result: ExecuteRecordDispositionResult = {
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        outcome: 'purged',
+      };
+      const executed = await dependencies.store.executeDisposition({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        expectedVersion: command.expectedVersion,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        result,
+      });
+      if (executed.outcome === 'not_found') {
+        throw new RecordDispositionNotFoundError();
+      }
+      if (executed.outcome === 'window_open') {
+        throw new RecordDispositionCancellationWindowOpenError();
+      }
+      if (executed.outcome === 'not_executable') {
+        throw new RecordDispositionNotExecutableError();
+      }
+      if (executed.outcome === 'version_conflict') {
+        throw new RecordDispositionVersionConflictError();
+      }
+      return executed.result;
+    },
+
+    async retryRecordDisposition(command) {
+      if (command.confirmation !== 'execute_destruction') {
+        throw new RecordDispositionConfirmationRequiredError();
+      }
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const result: RetryRecordDispositionResult = {
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        outcome: 'purged',
+      };
+      const retried = await dependencies.store.retryDisposition({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        expectedVersion: command.expectedVersion,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        result,
+      });
+      if (retried.outcome === 'not_found') {
+        throw new RecordDispositionNotFoundError();
+      }
+      if (retried.outcome === 'not_repairable') {
+        throw new RecordDispositionNotRepairableError();
+      }
+      if (retried.outcome === 'version_conflict') {
+        throw new RecordDispositionVersionConflictError();
+      }
+      return retried.result;
     },
 
     async listRecordsGovernance(command) {

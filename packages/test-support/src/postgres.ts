@@ -146,6 +146,22 @@ export async function createRuntimeDatabaseUser(
       `grant select, insert, update on all tables in schema records_governance to ${role}`,
     );
     await client.query(
+      `grant delete on identity_access.verified_email_addresses,
+         identity_access.student_sessions, identity_access.class_memberships,
+         identity_access.invitations, identity_access.invitation_challenges,
+         identity_access.invitation_deliveries,
+         identity_access.sign_in_challenges,
+         identity_access.sign_in_challenge_codes,
+         identity_access.sign_in_deliveries,
+         identity_access.sign_in_send_attempts,
+         intake.intake_record_versions, intake.intake_operation_receipts,
+         learning_progress.item_completions,
+         learning_progress.item_completion_receipts to ${role}`,
+    );
+    await client.query(
+      `grant execute on function records_governance.disposition_purge_authorized(uuid, uuid) to ${role}`,
+    );
+    await client.query(
       `grant usage, select on all sequences in schema audit, infrastructure, records_governance to ${role}`,
     );
     return `postgres://${role}:${password}@127.0.0.1:${new URL(databaseUrl).port}/${database.rows[0]?.name}`;

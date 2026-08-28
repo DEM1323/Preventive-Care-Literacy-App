@@ -3,6 +3,9 @@ import type {
   DestructionEligibility,
   RecordAmendmentView,
   RecordConflictReviewView,
+  RecordDispositionBlockingReason,
+  RecordDispositionPrerequisites,
+  RecordDispositionView,
   RecordHoldView,
   RecordLifecycleCaseView,
   RecordProductionMaterials,
@@ -11,7 +14,11 @@ import type {
   RecordsGovernanceStore,
   StudentRecordsGovernanceView,
 } from '../../../modules/records-governance/index.ts';
-import { authorizedProductionPortions } from '../../../modules/records-governance/index.ts';
+import {
+  authorizedProductionPortions,
+  recordDispositionAdapters,
+  recordDispositionCancellationWindowMs,
+} from '../../../modules/records-governance/index.ts';
 
 const recordsPolicyPayload = {
   schema: 'records-policy/v1',
@@ -1899,6 +1906,445 @@ export function createPostgresRecordsGovernanceStore(options: {
       }
     },
 
+    async completeNotice(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:${request.operationId}`],
+        );
+        const existing = await readReceipt<typeof request.result>(
+          client,
+          request.workspaceId,
+          request.operationId,
+          'completeRecordDispositionNotice',
+        );
+        if (existing) {
+          await client.query('commit');
+          return { outcome: 'replayed' as const, result: existing };
+        }
+        const student = await lockStudent(
+          client,
+          request.workspaceId,
+          request.studentId,
+        );
+        if (!student) {
+          await client.query('rollback');
+          return { outcome: 'not_found' };
+        }
+        const already = await client.query<{ notice_id: string }>(
+          `select notice_id from records_governance.record_disposition_notices
+            where workspace_id = $1 and student_id = $2`,
+          [request.workspaceId, request.studentId],
+        );
+        const noticeId = already.rows[0]?.notice_id ?? request.noticeId;
+        if (!already.rows[0]) {
+          await client.query(
+            `insert into records_governance.record_disposition_notices
+               (notice_id, workspace_id, student_id, completed_at,
+                actor_staff_identity_id, operation_id, record_owner,
+                record_classification, disposal_class)
+             values ($1, $2, $3, $4, $5, $6, 'school', 'student_record',
+                     'record_disposition_notice')`,
+            [
+              noticeId,
+              request.workspaceId,
+              request.studentId,
+              request.occurredAt,
+              request.staffIdentityId,
+              request.operationId,
+            ],
+          );
+        }
+        const result = { ...request.result, noticeId };
+        await writeReceipt(client, {
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          commandName: 'completeRecordDispositionNotice',
+          result,
+          occurredAt: request.occurredAt,
+        });
+        await writeAudit(client, {
+          auditId: request.auditId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          eventType: 'record_disposition.notice_completed',
+          actorId: request.staffIdentityId,
+          occurredAt: request.occurredAt,
+          details: { studentId: request.studentId, noticeId },
+        });
+        await writeOutbox(client, {
+          outboxId: request.outboxId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          topic: 'record_disposition.notice_completed',
+          payload: { studentId: request.studentId, noticeId },
+          occurredAt: request.occurredAt,
+        });
+        await client.query('commit');
+        return { outcome: 'applied', result };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async completeCopyOpportunity(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:${request.operationId}`],
+        );
+        const existing = await readReceipt<typeof request.result>(
+          client,
+          request.workspaceId,
+          request.operationId,
+          'completeRecordDispositionCopyOpportunity',
+        );
+        if (existing) {
+          await client.query('commit');
+          return { outcome: 'replayed' as const, result: existing };
+        }
+        const student = await lockStudent(
+          client,
+          request.workspaceId,
+          request.studentId,
+        );
+        if (!student) {
+          await client.query('rollback');
+          return { outcome: 'not_found' };
+        }
+        const already = await client.query<{ copy_opportunity_id: string }>(
+          `select copy_opportunity_id
+             from records_governance.record_disposition_copy_opportunities
+            where workspace_id = $1 and student_id = $2`,
+          [request.workspaceId, request.studentId],
+        );
+        const copyOpportunityId =
+          already.rows[0]?.copy_opportunity_id ?? request.copyOpportunityId;
+        if (!already.rows[0]) {
+          await client.query(
+            `insert into records_governance.record_disposition_copy_opportunities
+               (copy_opportunity_id, workspace_id, student_id, completed_at,
+                actor_staff_identity_id, operation_id, record_owner,
+                record_classification, disposal_class)
+             values ($1, $2, $3, $4, $5, $6, 'school', 'student_record',
+                     'record_disposition_copy_opportunity')`,
+            [
+              copyOpportunityId,
+              request.workspaceId,
+              request.studentId,
+              request.occurredAt,
+              request.staffIdentityId,
+              request.operationId,
+            ],
+          );
+        }
+        const result = { ...request.result, copyOpportunityId };
+        await writeReceipt(client, {
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          commandName: 'completeRecordDispositionCopyOpportunity',
+          result,
+          occurredAt: request.occurredAt,
+        });
+        await writeAudit(client, {
+          auditId: request.auditId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          eventType: 'record_disposition.copy_opportunity_completed',
+          actorId: request.staffIdentityId,
+          occurredAt: request.occurredAt,
+          details: { studentId: request.studentId, copyOpportunityId },
+        });
+        await writeOutbox(client, {
+          outboxId: request.outboxId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          topic: 'record_disposition.copy_opportunity_completed',
+          payload: { studentId: request.studentId, copyOpportunityId },
+          occurredAt: request.occurredAt,
+        });
+        await client.query('commit');
+        return { outcome: 'applied', result };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async scheduleDisposition(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:${request.operationId}`],
+        );
+        const existing = await readReceipt<typeof request.result>(
+          client,
+          request.workspaceId,
+          request.operationId,
+          'scheduleRecordDisposition',
+        );
+        if (existing) {
+          await client.query('commit');
+          return { outcome: 'replayed' as const, result: existing };
+        }
+        const student = await lockStudent(
+          client,
+          request.workspaceId,
+          request.studentId,
+        );
+        if (!student) {
+          await client.query('rollback');
+          return { outcome: 'not_found' };
+        }
+        const prerequisites = await evaluateDispositionPrerequisites(
+          client,
+          request.workspaceId,
+          request.studentId,
+          request.caseId,
+        );
+        if (prerequisites.blockingReasons.length > 0) {
+          await client.query('rollback');
+          return {
+            outcome: 'not_schedulable',
+            blockingReasons: prerequisites.blockingReasons,
+          };
+        }
+        const cancellationDeadlineAt = new Date(
+          request.occurredAt.getTime() + recordDispositionCancellationWindowMs,
+        );
+        const result = {
+          ...request.result,
+          cancellationDeadlineAt: cancellationDeadlineAt.toISOString(),
+        };
+        await client.query(
+          `insert into records_governance.record_dispositions
+             (disposition_id, workspace_id, student_id, case_id,
+              policy_revision_id, status, version, scheduled_at,
+              cancellation_deadline_at, authority_kind, notice_id,
+              copy_opportunity_id, actor_staff_identity_id, operation_id,
+              record_owner, record_classification, disposal_class)
+           values ($1, $2, $3, $4, $5, 'scheduled', 1, $6, $7, $8, $9, $10, $11,
+                   $12, 'school', 'student_record', 'record_disposition')`,
+          [
+            request.dispositionId,
+            request.workspaceId,
+            request.studentId,
+            request.caseId,
+            prerequisites.policyRevisionId,
+            request.occurredAt,
+            cancellationDeadlineAt,
+            prerequisites.authorityKind,
+            prerequisites.noticeId,
+            prerequisites.copyOpportunityId,
+            request.staffIdentityId,
+            request.operationId,
+          ],
+        );
+        await insertDispositionEvent(client, {
+          dispositionId: request.dispositionId,
+          workspaceId: request.workspaceId,
+          studentId: request.studentId,
+          eventKind: 'scheduled',
+          occurredAt: request.occurredAt,
+          actorStaffIdentityId: request.staffIdentityId,
+          operationId: request.operationId,
+          details: {
+            caseId: request.caseId,
+            policyRevisionId: prerequisites.policyRevisionId,
+          },
+        });
+        await writeReceipt(client, {
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          commandName: 'scheduleRecordDisposition',
+          result,
+          occurredAt: request.occurredAt,
+        });
+        await writeAudit(client, {
+          auditId: request.auditId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          eventType: 'record_disposition.scheduled',
+          actorId: request.staffIdentityId,
+          occurredAt: request.occurredAt,
+          details: {
+            studentId: request.studentId,
+            dispositionId: request.dispositionId,
+            caseId: request.caseId,
+          },
+        });
+        await writeOutbox(client, {
+          outboxId: request.outboxId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          topic: 'record_disposition.scheduled',
+          payload: {
+            studentId: request.studentId,
+            dispositionId: request.dispositionId,
+          },
+          occurredAt: request.occurredAt,
+        });
+        await client.query('commit');
+        return { outcome: 'applied', result };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async cancelDisposition(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:${request.operationId}`],
+        );
+        const existing = await readReceipt<typeof request.result>(
+          client,
+          request.workspaceId,
+          request.operationId,
+          'cancelRecordDisposition',
+        );
+        if (existing) {
+          await client.query('commit');
+          return { outcome: 'replayed' as const, result: existing };
+        }
+        const locked = await lockDisposition(
+          client,
+          request.workspaceId,
+          request.dispositionId,
+        );
+        if (!locked) {
+          await client.query('rollback');
+          return { outcome: 'not_found' };
+        }
+        if (locked.version !== request.expectedVersion) {
+          await client.query('rollback');
+          return { outcome: 'version_conflict' };
+        }
+        if (
+          locked.status !== 'scheduled' ||
+          locked.cancellationDeadlineAt.getTime() <=
+            request.occurredAt.getTime()
+        ) {
+          await client.query('rollback');
+          return { outcome: 'not_cancellable' };
+        }
+        await client.query(
+          `update records_governance.record_dispositions
+              set status = 'cancelled', cancelled_at = $2, version = version + 1
+            where disposition_id = $1`,
+          [request.dispositionId, request.occurredAt],
+        );
+        await insertDispositionEvent(client, {
+          dispositionId: request.dispositionId,
+          workspaceId: request.workspaceId,
+          studentId: locked.studentId,
+          eventKind: 'cancelled',
+          occurredAt: request.occurredAt,
+          actorStaffIdentityId: request.staffIdentityId,
+          operationId: request.operationId,
+          details: {},
+        });
+        await writeReceipt(client, {
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          commandName: 'cancelRecordDisposition',
+          result: request.result,
+          occurredAt: request.occurredAt,
+        });
+        await writeAudit(client, {
+          auditId: request.auditId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          eventType: 'record_disposition.cancelled',
+          actorId: request.staffIdentityId,
+          occurredAt: request.occurredAt,
+          details: { dispositionId: request.dispositionId },
+        });
+        await writeOutbox(client, {
+          outboxId: request.outboxId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          topic: 'record_disposition.cancelled',
+          payload: { dispositionId: request.dispositionId },
+          occurredAt: request.occurredAt,
+        });
+        await client.query('commit');
+        return { outcome: 'applied', result: request.result };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async executeDisposition(request) {
+      const executed = await runDispositionPurge(options.pool, {
+        ...request,
+        commandName: 'executeRecordDisposition',
+        startFrom: 'scheduled',
+      });
+      if (executed.outcome === 'not_repairable') {
+        return { outcome: 'not_executable' };
+      }
+      return executed;
+    },
+
+    async retryDisposition(request) {
+      const retried = await runDispositionPurge(options.pool, {
+        ...request,
+        commandName: 'retryRecordDisposition',
+        startFrom: 'failed',
+      });
+      if (
+        retried.outcome === 'window_open' ||
+        retried.outcome === 'not_executable'
+      ) {
+        return { outcome: 'not_repairable' };
+      }
+      return retried;
+    },
+
     async list(request) {
       const client = await options.pool.connect();
       try {
@@ -1926,6 +2372,11 @@ export function createPostgresRecordsGovernanceStore(options: {
           amendments: unknown;
           conflict_reviews: unknown;
           productions: unknown;
+          dispositions: unknown;
+          notice_completed: boolean;
+          copy_opportunity_completed: boolean;
+          has_structured_authority: boolean;
+          open_lifecycle_case: boolean;
           active_hold_count: string;
         }>(
           `select student.student_id, student.presence, student.status,
@@ -2035,6 +2486,68 @@ export function createPostgresRecordsGovernanceStore(options: {
                      where production.student_id = student.student_id
                        and production.workspace_id = student.workspace_id
                   ), '[]'::json) as productions,
+                  coalesce((
+                    select json_agg(json_build_object(
+                      'dispositionId', disposition.disposition_id,
+                      'caseId', disposition.case_id,
+                      'status', disposition.status,
+                      'version', disposition.version,
+                      'scheduledAt', to_char(disposition.scheduled_at at time zone 'UTC',
+                                             'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+                      'cancellationDeadlineAt', to_char(
+                        disposition.cancellation_deadline_at at time zone 'UTC',
+                        'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+                      'cancelledAt', case when disposition.cancelled_at is null then null
+                        else to_char(disposition.cancelled_at at time zone 'UTC',
+                                     'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') end,
+                      'executionStartedAt', case when disposition.execution_started_at is null then null
+                        else to_char(disposition.execution_started_at at time zone 'UTC',
+                                     'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') end,
+                      'completedAt', case when disposition.completed_at is null then null
+                        else to_char(disposition.completed_at at time zone 'UTC',
+                                     'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') end,
+                      'policyRevisionId', disposition.policy_revision_id,
+                      'purgeManifest', coalesce((
+                        select json_agg(json_build_object(
+                          'location', task.location,
+                          'adapter', task.adapter,
+                          'status', task.status,
+                          'count', task.purged_count,
+                          'verification', task.verification
+                        ) order by task.adapter)
+                          from records_governance.record_disposition_tasks task
+                         where task.disposition_id = disposition.disposition_id
+                      ), '[]'::json)
+                    ) order by disposition.scheduled_at, disposition.disposition_id)
+                      from records_governance.record_dispositions disposition
+                     where disposition.student_id = student.student_id
+                       and disposition.workspace_id = student.workspace_id
+                  ), '[]'::json) as dispositions,
+                  exists (
+                    select 1 from records_governance.record_disposition_notices notice
+                     where notice.student_id = student.student_id
+                       and notice.workspace_id = student.workspace_id
+                  ) as notice_completed,
+                  exists (
+                    select 1 from records_governance.record_disposition_copy_opportunities copy
+                     where copy.student_id = student.student_id
+                       and copy.workspace_id = student.workspace_id
+                  ) as copy_opportunity_completed,
+                  exists (
+                    select 1 from records_governance.record_lifecycle_cases lifecycle
+                     where lifecycle.student_id = student.student_id
+                       and lifecycle.workspace_id = student.workspace_id
+                       and lifecycle.case_type = 'disposition'
+                       and lifecycle.decision = 'authorized'
+                       and lifecycle.outcome = 'open'
+                  ) as has_structured_authority,
+                  exists (
+                    select 1 from records_governance.record_lifecycle_cases lifecycle
+                     where lifecycle.student_id = student.student_id
+                       and lifecycle.workspace_id = student.workspace_id
+                       and lifecycle.outcome = 'open'
+                       and lifecycle.case_type <> 'disposition'
+                  ) as open_lifecycle_case,
                   (select count(*) from records_governance.record_holds hold
                     where hold.student_id = student.student_id
                       and hold.workspace_id = student.workspace_id
@@ -2067,7 +2580,19 @@ export function createPostgresRecordsGovernanceStore(options: {
             const productions = parseJsonArray<RecordProductionView>(
               row.productions,
             );
+            const dispositions = parseJsonArray<RecordDispositionView>(
+              row.dispositions,
+            );
             const activeHolds = Number(row.active_hold_count);
+            const dispositionPrerequisites = dispositionPrerequisitesFrom({
+              hasPolicy: true,
+              presence: row.presence,
+              openHold: activeHolds > 0,
+              noticeCompleted: row.notice_completed,
+              copyOpportunityCompleted: row.copy_opportunity_completed,
+              hasStructuredAuthority: row.has_structured_authority,
+              openLifecycleCase: row.open_lifecycle_case,
+            });
             const destructionEligibility: DestructionEligibility =
               activeHolds > 0
                 ? 'blocked_by_hold'
@@ -2094,6 +2619,8 @@ export function createPostgresRecordsGovernanceStore(options: {
               amendments,
               conflictReviews,
               productions,
+              dispositions,
+              dispositionPrerequisites,
               destructionEligibility,
               policyRevisionId,
             };
@@ -2330,4 +2857,752 @@ function parseJsonArray<T>(value: unknown): T[] {
 function dateOnly(value: Date | string): string {
   if (typeof value === 'string') return value.slice(0, 10);
   return value.toISOString().slice(0, 10);
+}
+
+function dispositionPrerequisitesFrom(input: {
+  hasPolicy: boolean;
+  presence: 'enrolled' | 'departed';
+  openHold: boolean;
+  noticeCompleted: boolean;
+  copyOpportunityCompleted: boolean;
+  hasStructuredAuthority: boolean;
+  openLifecycleCase: boolean;
+}): RecordDispositionPrerequisites {
+  const blockingReasons: RecordDispositionBlockingReason[] = [];
+  if (!input.hasPolicy) blockingReasons.push('missing_policy');
+  if (input.presence !== 'departed') {
+    blockingReasons.push('missing_student_departure');
+  }
+  if (input.openHold) blockingReasons.push('open_hold');
+  if (!input.noticeCompleted) blockingReasons.push('incomplete_notice');
+  if (!input.copyOpportunityCompleted) {
+    blockingReasons.push('incomplete_copy_opportunity');
+  }
+  if (!input.hasStructuredAuthority) {
+    blockingReasons.push('missing_structured_authority');
+  }
+  if (input.openLifecycleCase) blockingReasons.push('open_lifecycle_case');
+  return {
+    blockingReasons,
+    noticeCompleted: input.noticeCompleted,
+    copyOpportunityCompleted: input.copyOpportunityCompleted,
+    hasPolicy: input.hasPolicy,
+    hasQualifyingDeparture: input.presence === 'departed',
+    hasStructuredAuthority: input.hasStructuredAuthority,
+    openHold: input.openHold,
+    openLifecycleCase: input.openLifecycleCase,
+  };
+}
+
+async function evaluateDispositionPrerequisites(
+  client: PoolClient,
+  workspaceId: string,
+  studentId: string,
+  caseId: string,
+): Promise<{
+  blockingReasons: RecordDispositionBlockingReason[];
+  policyRevisionId?: string;
+  noticeId?: string;
+  copyOpportunityId?: string;
+  authorityKind?: string;
+}> {
+  const student = await client.query<{ presence: 'enrolled' | 'departed' }>(
+    `select presence from identity_access.students
+      where student_id = $1 and workspace_id = $2`,
+    [studentId, workspaceId],
+  );
+  const policy = await client.query<{ policy_revision_id: string }>(
+    `select policy_revision_id from records_governance.records_policy_revisions
+      where workspace_id = $1
+      order by revision_number desc limit 1`,
+    [workspaceId],
+  );
+  const holds = await client.query<{ count: string }>(
+    `select count(*)::text as count from records_governance.record_holds
+      where student_id = $1 and workspace_id = $2 and status = 'active'`,
+    [studentId, workspaceId],
+  );
+  const notice = await client.query<{ notice_id: string }>(
+    `select notice_id from records_governance.record_disposition_notices
+      where student_id = $1 and workspace_id = $2`,
+    [studentId, workspaceId],
+  );
+  const copy = await client.query<{ copy_opportunity_id: string }>(
+    `select copy_opportunity_id
+       from records_governance.record_disposition_copy_opportunities
+      where student_id = $1 and workspace_id = $2`,
+    [studentId, workspaceId],
+  );
+  const authority = await client.query<{ authority_kind: string }>(
+    `select authority_kind from records_governance.record_lifecycle_cases
+      where case_id = $1 and workspace_id = $2 and student_id = $3
+        and case_type = 'disposition' and decision = 'authorized'
+        and outcome = 'open'`,
+    [caseId, workspaceId, studentId],
+  );
+  const openCases = await client.query<{ count: string }>(
+    `select count(*)::text as count from records_governance.record_lifecycle_cases
+      where student_id = $1 and workspace_id = $2 and outcome = 'open'
+        and case_type <> 'disposition'`,
+    [studentId, workspaceId],
+  );
+  const prerequisites = dispositionPrerequisitesFrom({
+    hasPolicy: Boolean(policy.rows[0]),
+    presence: student.rows[0]?.presence ?? 'enrolled',
+    openHold: Number(holds.rows[0]?.count ?? '0') > 0,
+    noticeCompleted: Boolean(notice.rows[0]),
+    copyOpportunityCompleted: Boolean(copy.rows[0]),
+    hasStructuredAuthority: Boolean(authority.rows[0]),
+    openLifecycleCase: Number(openCases.rows[0]?.count ?? '0') > 0,
+  });
+  return {
+    blockingReasons: prerequisites.blockingReasons,
+    policyRevisionId: policy.rows[0]?.policy_revision_id,
+    noticeId: notice.rows[0]?.notice_id,
+    copyOpportunityId: copy.rows[0]?.copy_opportunity_id,
+    authorityKind: authority.rows[0]?.authority_kind,
+  };
+}
+
+async function lockDisposition(
+  client: PoolClient,
+  workspaceId: string,
+  dispositionId: string,
+): Promise<
+  | {
+      studentId: string;
+      status: string;
+      version: number;
+      cancellationDeadlineAt: Date;
+      caseId: string;
+    }
+  | undefined
+> {
+  const row = await client.query<{
+    student_id: string;
+    status: string;
+    version: number;
+    cancellation_deadline_at: Date;
+    case_id: string;
+  }>(
+    `select student_id, status, version, cancellation_deadline_at, case_id
+       from records_governance.record_dispositions
+      where disposition_id = $1 and workspace_id = $2
+      for update`,
+    [dispositionId, workspaceId],
+  );
+  const selected = row.rows[0];
+  if (!selected) return undefined;
+  return {
+    studentId: selected.student_id,
+    status: selected.status,
+    version: selected.version,
+    cancellationDeadlineAt: selected.cancellation_deadline_at,
+    caseId: selected.case_id,
+  };
+}
+
+async function insertDispositionEvent(
+  client: PoolClient,
+  input: {
+    dispositionId: string;
+    workspaceId: string;
+    studentId: string;
+    eventKind: string;
+    occurredAt: Date;
+    actorStaffIdentityId: string | null;
+    operationId: string;
+    details: unknown;
+  },
+) {
+  await client.query(
+    `insert into records_governance.record_disposition_events
+       (disposition_event_id, disposition_id, workspace_id, student_id,
+        event_kind, occurred_at, actor_staff_identity_id, operation_id, details,
+        record_owner, record_classification, disposal_class)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb,
+             'school', 'student_record', 'record_disposition_event')`,
+    [
+      crypto.randomUUID(),
+      input.dispositionId,
+      input.workspaceId,
+      input.studentId,
+      input.eventKind,
+      input.occurredAt,
+      input.actorStaffIdentityId,
+      input.operationId,
+      JSON.stringify(input.details),
+    ],
+  );
+}
+
+const disposalAdapters: {
+  adapter: (typeof recordDispositionAdapters)[number];
+  location: string;
+  purge: (
+    client: PoolClient,
+    workspaceId: string,
+    studentId: string,
+  ) => Promise<number>;
+}[] = [
+  {
+    adapter: 'memberships',
+    location: 'memberships_invitations_codes',
+    purge: purgeMemberships,
+  },
+  {
+    adapter: 'identity_access',
+    location: 'identity_sessions_emails_codes',
+    purge: purgeIdentityAccess,
+  },
+  {
+    adapter: 'intake',
+    location: 'intake_drafts_and_versions',
+    purge: purgeIntake,
+  },
+  {
+    adapter: 'learning_progress',
+    location: 'learning_item_completions',
+    purge: purgeLearningProgress,
+  },
+  {
+    adapter: 'clinical_access_evidence',
+    location: 'clinical_access_copies',
+    purge: async () => 0,
+  },
+  {
+    adapter: 'productions',
+    location: 'generated_production_artifacts',
+    purge: purgeProductions,
+  },
+  {
+    adapter: 'projections',
+    location: 'owned_projections_and_history',
+    purge: purgeProjections,
+  },
+];
+
+async function countDeleted(
+  client: PoolClient,
+  sql: string,
+  values: unknown[],
+): Promise<number> {
+  const result = await client.query(sql, values);
+  return result.rowCount ?? 0;
+}
+
+async function purgeMemberships(
+  client: PoolClient,
+  workspaceId: string,
+  studentId: string,
+): Promise<number> {
+  const invitations = await client.query<{ invitation_id: string }>(
+    `select invitation.invitation_id
+       from identity_access.invitations invitation
+      where invitation.workspace_id = $1
+        and invitation.recipient_digest in (
+          select email.recipient_digest
+            from identity_access.verified_email_addresses email
+           where email.student_id = $2 and email.workspace_id = $1
+        )`,
+    [workspaceId, studentId],
+  );
+  const invitationIds = invitations.rows.map((row) => row.invitation_id);
+  let removed = await countDeleted(
+    client,
+    `delete from identity_access.class_memberships
+      where student_id = $1 and workspace_id = $2`,
+    [studentId, workspaceId],
+  );
+  if (invitationIds.length > 0) {
+    removed += await countDeleted(
+      client,
+      `delete from identity_access.invitation_deliveries
+        where invitation_id = any($1::uuid[])`,
+      [invitationIds],
+    );
+    removed += await countDeleted(
+      client,
+      `delete from identity_access.invitation_challenges
+        where invitation_id = any($1::uuid[])`,
+      [invitationIds],
+    );
+    removed += await countDeleted(
+      client,
+      `delete from identity_access.invitations
+        where invitation_id = any($1::uuid[])`,
+      [invitationIds],
+    );
+  }
+  return removed;
+}
+
+async function purgeIdentityAccess(
+  client: PoolClient,
+  workspaceId: string,
+  studentId: string,
+): Promise<number> {
+  const challenges = await client.query<{ sign_in_challenge_id: string }>(
+    `select sign_in_challenge_id from identity_access.sign_in_challenges
+      where student_id = $1 and workspace_id = $2`,
+    [studentId, workspaceId],
+  );
+  const challengeIds = challenges.rows.map((row) => row.sign_in_challenge_id);
+  let removed = 0;
+  if (challengeIds.length > 0) {
+    removed += await countDeleted(
+      client,
+      `delete from identity_access.sign_in_deliveries
+        where sign_in_challenge_id = any($1::uuid[])`,
+      [challengeIds],
+    );
+    removed += await countDeleted(
+      client,
+      `delete from identity_access.sign_in_challenge_codes
+        where sign_in_challenge_id = any($1::uuid[])`,
+      [challengeIds],
+    );
+    removed += await countDeleted(
+      client,
+      `delete from identity_access.sign_in_challenges
+        where sign_in_challenge_id = any($1::uuid[])`,
+      [challengeIds],
+    );
+  }
+  removed += await countDeleted(
+    client,
+    `delete from identity_access.sign_in_send_attempts
+      where recipient_digest in (
+        select email.recipient_digest
+          from identity_access.verified_email_addresses email
+         where email.student_id = $1 and email.workspace_id = $2
+      )`,
+    [studentId, workspaceId],
+  );
+  removed += await countDeleted(
+    client,
+    `delete from identity_access.student_sessions
+      where student_id = $1 and workspace_id = $2`,
+    [studentId, workspaceId],
+  );
+  removed += await countDeleted(
+    client,
+    `delete from identity_access.verified_email_addresses
+      where student_id = $1 and workspace_id = $2`,
+    [studentId, workspaceId],
+  );
+  return removed;
+}
+
+async function purgeIntake(
+  client: PoolClient,
+  workspaceId: string,
+  studentId: string,
+): Promise<number> {
+  let removed = await countDeleted(
+    client,
+    `delete from intake.intake_drafts
+      where student_id = $1 and workspace_id = $2`,
+    [studentId, workspaceId],
+  );
+  removed += await countDeleted(
+    client,
+    `delete from intake.intake_record_versions
+      where student_id = $1 and workspace_id = $2`,
+    [studentId, workspaceId],
+  );
+  return removed;
+}
+
+async function purgeLearningProgress(
+  client: PoolClient,
+  workspaceId: string,
+  studentId: string,
+): Promise<number> {
+  return countDeleted(
+    client,
+    `delete from learning_progress.item_completions
+      where student_id = $1 and workspace_id = $2`,
+    [studentId, workspaceId],
+  );
+}
+
+async function purgeProductions(
+  client: PoolClient,
+  workspaceId: string,
+  studentId: string,
+): Promise<number> {
+  const productions = await client.query(
+    `update records_governance.record_productions
+        set wrapping_key_id = null, wrapped_data_key = null, ciphertext = null,
+            delivery_key_id = null, delivery_ciphertext = null,
+            cleanup_status = 'removed',
+            removed_at = coalesce(removed_at, clock_timestamp())
+      where student_id = $1 and workspace_id = $2
+        and (ciphertext is not null or delivery_ciphertext is not null)`,
+    [studentId, workspaceId],
+  );
+  const amendments = await client.query(
+    `update records_governance.record_amendments
+        set statement_wrapping_key_id = null, statement_wrapped_data_key = null,
+            statement_ciphertext = null, correction_wrapping_key_id = null,
+            correction_wrapped_data_key = null, correction_ciphertext = null
+      where student_id = $1 and workspace_id = $2
+        and (statement_ciphertext is not null or correction_ciphertext is not null)`,
+    [studentId, workspaceId],
+  );
+  return (productions.rowCount ?? 0) + (amendments.rowCount ?? 0);
+}
+
+async function purgeProjections(
+  client: PoolClient,
+  workspaceId: string,
+  studentId: string,
+): Promise<number> {
+  let removed = await countDeleted(
+    client,
+    `delete from intake.intake_operation_receipts
+      where student_id = $1 and workspace_id = $2`,
+    [studentId, workspaceId],
+  );
+  removed += await countDeleted(
+    client,
+    `delete from learning_progress.item_completion_receipts
+      where student_id = $1 and workspace_id = $2`,
+    [studentId, workspaceId],
+  );
+  await client.query(
+    `update identity_access.students
+        set language_choice = 'en-US', status = 'disabled'
+      where student_id = $1 and workspace_id = $2`,
+    [studentId, workspaceId],
+  );
+  return removed;
+}
+
+async function runDispositionPurge(
+  pool: Pool,
+  request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    dispositionId: string;
+    expectedVersion: number;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    result: {
+      operationId: string;
+      dispositionId: string;
+      outcome: 'purged' | 'failed';
+    };
+    commandName: string;
+    startFrom: 'scheduled' | 'failed';
+  },
+): Promise<
+  | {
+      outcome: 'applied' | 'replayed';
+      result: {
+        operationId: string;
+        dispositionId: string;
+        outcome: 'purged' | 'failed';
+      };
+    }
+  | { outcome: 'not_found' }
+  | { outcome: 'window_open' }
+  | { outcome: 'not_executable' }
+  | { outcome: 'not_repairable' }
+  | { outcome: 'version_conflict' }
+> {
+  const client = await pool.connect();
+  try {
+    await client.query('select pg_advisory_lock(hashtextextended($1, 0))', [
+      `${request.workspaceId}:disposition:${request.dispositionId}`,
+    ]);
+    await client.query('begin');
+    await setLocal(client, 'app.workspace_id', request.workspaceId);
+    await setLocal(client, 'app.staff_identity_id', request.staffIdentityId);
+    const existing = await readReceipt<typeof request.result>(
+      client,
+      request.workspaceId,
+      request.operationId,
+      request.commandName,
+    );
+    if (existing) {
+      await client.query('commit');
+      return { outcome: 'replayed', result: existing };
+    }
+    const locked = await lockDisposition(
+      client,
+      request.workspaceId,
+      request.dispositionId,
+    );
+    if (!locked) {
+      await client.query('rollback');
+      return { outcome: 'not_found' };
+    }
+    if (locked.version !== request.expectedVersion) {
+      await client.query('rollback');
+      return { outcome: 'version_conflict' };
+    }
+    const openHold = await client.query<{ count: string }>(
+      `select count(*)::text as count from records_governance.record_holds
+        where student_id = $1 and workspace_id = $2 and status = 'active'`,
+      [locked.studentId, request.workspaceId],
+    );
+    if (Number(openHold.rows[0]?.count ?? '0') > 0) {
+      await client.query('rollback');
+      return request.startFrom === 'scheduled'
+        ? { outcome: 'not_executable' }
+        : { outcome: 'not_repairable' };
+    }
+    if (request.startFrom === 'scheduled') {
+      if (locked.status !== 'scheduled') {
+        await client.query('rollback');
+        return { outcome: 'not_executable' };
+      }
+      if (
+        locked.cancellationDeadlineAt.getTime() > request.occurredAt.getTime()
+      ) {
+        await client.query('rollback');
+        return { outcome: 'window_open' };
+      }
+      await client.query(
+        `update records_governance.record_dispositions
+            set status = 'executing', execution_started_at = $2,
+                version = version + 1
+          where disposition_id = $1`,
+        [request.dispositionId, request.occurredAt],
+      );
+      for (const adapter of disposalAdapters) {
+        await client.query(
+          `insert into records_governance.record_disposition_tasks
+             (task_id, disposition_id, workspace_id, student_id, adapter,
+              location, status, purged_count, verification, record_owner,
+              record_classification, disposal_class)
+           values ($1, $2, $3, $4, $5, $6, 'pending', 0, 'pending',
+                   'school', 'student_record', 'record_disposition_task')
+           on conflict (disposition_id, adapter) do nothing`,
+          [
+            crypto.randomUUID(),
+            request.dispositionId,
+            request.workspaceId,
+            locked.studentId,
+            adapter.adapter,
+            adapter.location,
+          ],
+        );
+      }
+      await insertDispositionEvent(client, {
+        dispositionId: request.dispositionId,
+        workspaceId: request.workspaceId,
+        studentId: locked.studentId,
+        eventKind: 'execution_started',
+        occurredAt: request.occurredAt,
+        actorStaffIdentityId: request.staffIdentityId,
+        operationId: request.operationId,
+        details: {},
+      });
+    } else {
+      if (locked.status !== 'failed') {
+        await client.query('rollback');
+        return { outcome: 'not_repairable' };
+      }
+      await client.query(
+        `update records_governance.record_dispositions
+            set status = 'executing', version = version + 1
+          where disposition_id = $1`,
+        [request.dispositionId],
+      );
+      await insertDispositionEvent(client, {
+        dispositionId: request.dispositionId,
+        workspaceId: request.workspaceId,
+        studentId: locked.studentId,
+        eventKind: 'retry_started',
+        occurredAt: request.occurredAt,
+        actorStaffIdentityId: request.staffIdentityId,
+        operationId: request.operationId,
+        details: {},
+      });
+    }
+    await client.query('commit');
+
+    for (const adapter of disposalAdapters) {
+      await client.query('begin');
+      await setLocal(client, 'app.workspace_id', request.workspaceId);
+      await setLocal(client, 'app.staff_identity_id', request.staffIdentityId);
+      const task = await client.query<{ status: string }>(
+        `select status from records_governance.record_disposition_tasks
+          where disposition_id = $1 and adapter = $2`,
+        [request.dispositionId, adapter.adapter],
+      );
+      if (task.rows[0]?.status === 'purged') {
+        await client.query('rollback');
+        continue;
+      }
+      try {
+        await setLocal(
+          client,
+          'app.record_disposition_id',
+          request.dispositionId,
+        );
+        const count = await adapter.purge(
+          client,
+          request.workspaceId,
+          locked.studentId,
+        );
+        await client.query(
+          `update records_governance.record_disposition_tasks
+              set status = 'purged', purged_count = $3, verification = 'verified',
+                  last_error_code = null
+            where disposition_id = $1 and adapter = $2`,
+          [request.dispositionId, adapter.adapter, count],
+        );
+        await insertDispositionEvent(client, {
+          dispositionId: request.dispositionId,
+          workspaceId: request.workspaceId,
+          studentId: locked.studentId,
+          eventKind: 'adapter_purged',
+          occurredAt: request.occurredAt,
+          actorStaffIdentityId: request.staffIdentityId,
+          operationId: request.operationId,
+          details: { adapter: adapter.adapter, count },
+        });
+        await client.query('commit');
+      } catch {
+        await client.query('rollback');
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        await client.query(
+          `update records_governance.record_disposition_tasks
+              set status = 'failed', verification = 'failed',
+                  last_error_code = 'ADAPTER_PURGE_FAILED'
+            where disposition_id = $1 and adapter = $2`,
+          [request.dispositionId, adapter.adapter],
+        );
+        await insertDispositionEvent(client, {
+          dispositionId: request.dispositionId,
+          workspaceId: request.workspaceId,
+          studentId: locked.studentId,
+          eventKind: 'adapter_failed',
+          occurredAt: request.occurredAt,
+          actorStaffIdentityId: request.staffIdentityId,
+          operationId: request.operationId,
+          details: { adapter: adapter.adapter },
+        });
+        await client.query('commit');
+      }
+    }
+
+    await client.query('begin');
+    await setLocal(client, 'app.workspace_id', request.workspaceId);
+    await setLocal(client, 'app.staff_identity_id', request.staffIdentityId);
+    const remaining = await client.query<{ count: string }>(
+      `select count(*)::text as count
+         from records_governance.record_disposition_tasks
+        where disposition_id = $1 and status <> 'purged'`,
+      [request.dispositionId],
+    );
+    const purged = Number(remaining.rows[0]?.count ?? '1') === 0;
+    const result = {
+      ...request.result,
+      outcome: purged ? ('purged' as const) : ('failed' as const),
+    };
+    if (purged) {
+      await client.query(
+        `update records_governance.record_dispositions
+            set status = 'purged', completed_at = $2, version = version + 1
+          where disposition_id = $1`,
+        [request.dispositionId, request.occurredAt],
+      );
+      await client.query(
+        `update records_governance.record_lifecycle_cases
+            set outcome = 'completed', closed_at = $2
+          where case_id = $1 and outcome = 'open'`,
+        [locked.caseId, request.occurredAt],
+      );
+      await insertDispositionEvent(client, {
+        dispositionId: request.dispositionId,
+        workspaceId: request.workspaceId,
+        studentId: locked.studentId,
+        eventKind: 'purged',
+        occurredAt: request.occurredAt,
+        actorStaffIdentityId: request.staffIdentityId,
+        operationId: request.operationId,
+        details: {},
+      });
+    } else {
+      await client.query(
+        `update records_governance.record_dispositions
+            set status = 'failed', version = version + 1
+          where disposition_id = $1`,
+        [request.dispositionId],
+      );
+      await insertDispositionEvent(client, {
+        dispositionId: request.dispositionId,
+        workspaceId: request.workspaceId,
+        studentId: locked.studentId,
+        eventKind: 'failed',
+        occurredAt: request.occurredAt,
+        actorStaffIdentityId: request.staffIdentityId,
+        operationId: request.operationId,
+        details: {},
+      });
+    }
+    await writeReceipt(client, {
+      workspaceId: request.workspaceId,
+      operationId: request.operationId,
+      commandName: request.commandName,
+      result,
+      occurredAt: request.occurredAt,
+    });
+    await writeAudit(client, {
+      auditId: request.auditId,
+      workspaceId: request.workspaceId,
+      operationId: request.operationId,
+      eventType: purged
+        ? 'record_disposition.purged'
+        : 'record_disposition.failed',
+      actorId: request.staffIdentityId,
+      occurredAt: request.occurredAt,
+      details: {
+        dispositionId: request.dispositionId,
+        outcome: result.outcome,
+      },
+    });
+    await writeOutbox(client, {
+      outboxId: request.outboxId,
+      workspaceId: request.workspaceId,
+      operationId: request.operationId,
+      topic: purged ? 'record_disposition.purged' : 'record_disposition.failed',
+      payload: {
+        dispositionId: request.dispositionId,
+        outcome: result.outcome,
+      },
+      occurredAt: request.occurredAt,
+    });
+    await client.query('commit');
+    return { outcome: 'applied', result };
+  } catch (error) {
+    try {
+      await client.query('rollback');
+    } catch {
+      // The connection may already be idle after a committed adapter step.
+    }
+    throw error;
+  } finally {
+    try {
+      await client.query('select pg_advisory_unlock(hashtextextended($1, 0))', [
+        `${request.workspaceId}:disposition:${request.dispositionId}`,
+      ]);
+    } catch {
+      // Unlock best-effort so the pool client can be released.
+    }
+    client.release();
+  }
 }

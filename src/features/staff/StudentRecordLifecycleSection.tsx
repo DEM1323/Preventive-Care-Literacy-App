@@ -72,6 +72,25 @@ type GovernanceStudent = {
     cleanupStatus: string;
     purpose: string;
   }[];
+  dispositions: {
+    dispositionId: string;
+    status: string;
+    version: number;
+    cancellationDeadlineAt: string;
+    purgeManifest: {
+      location: string;
+      adapter: string;
+      status: string;
+      count: number;
+      verification: string;
+    }[];
+  }[];
+  dispositionPrerequisites: {
+    blockingReasons: string[];
+    noticeCompleted: boolean;
+    copyOpportunityCompleted: boolean;
+    hasStructuredAuthority: boolean;
+  };
   destructionEligibility:
     'not_eligible' | 'eligible_after_departure' | 'blocked_by_hold';
 };
@@ -156,6 +175,16 @@ export function StudentRecordLifecycleSection() {
     | { kind: 'resolve-amendment'; caseId: string; decision: string }
     | { kind: 'authorize-production'; caseId: string }
     | { kind: 'decide-review'; reviewId: string }
+    | { kind: 'complete-notice' }
+    | { kind: 'complete-copy' }
+    | { kind: 'schedule-disposition'; caseId: string }
+    | { kind: 'cancel-disposition'; dispositionId: string; version: number }
+    | {
+        kind: 'execute-disposition';
+        dispositionId: string;
+        version: number;
+      }
+    | { kind: 'retry-disposition'; dispositionId: string; version: number }
     | undefined
   >();
   const [amendmentReason, setAmendmentReason] = useState<
@@ -342,6 +371,127 @@ export function StudentRecordLifecycleSection() {
         return;
       }
       setMessage('Record Hold released.');
+    } else if (confirm.kind === 'complete-notice') {
+      const result = await client.POST(
+        '/api/v1/administration/students/record-disposition-notices',
+        { body: { operationId, studentId: selected.studentId } },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status !== 200) {
+        setMessage('Disposition notice could not be recorded.');
+        return;
+      }
+      setMessage('Disposition notice recorded. Protected record contents are not shown.');
+    } else if (confirm.kind === 'complete-copy') {
+      const result = await client.POST(
+        '/api/v1/administration/students/record-disposition-copy-opportunities',
+        { body: { operationId, studentId: selected.studentId } },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status !== 200) {
+        setMessage('Copy opportunity could not be recorded.');
+        return;
+      }
+      setMessage('Copy opportunity recorded. Protected record contents are not shown.');
+    } else if (confirm.kind === 'schedule-disposition') {
+      const result = await client.POST(
+        '/api/v1/administration/students/record-dispositions',
+        {
+          body: {
+            operationId,
+            studentId: selected.studentId,
+            caseId: confirm.caseId,
+            confirmation: 'schedule_destruction',
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status !== 200) {
+        const problem = result.error as Problem | undefined;
+        setMessage(
+          problem?.code === 'RECORD_DISPOSITION_NOT_SCHEDULABLE'
+            ? 'Record Disposition is blocked until every prerequisite is complete.'
+            : 'Record Disposition could not be scheduled.',
+        );
+        return;
+      }
+      setMessage(
+        'Record Disposition scheduled. The seven-day cancellation window is now open. The Student Record Bundle is intact.',
+      );
+    } else if (confirm.kind === 'cancel-disposition') {
+      const result = await client.POST(
+        '/api/v1/administration/students/record-disposition-cancellations',
+        {
+          body: {
+            operationId,
+            dispositionId: confirm.dispositionId,
+            expectedVersion: confirm.version,
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status !== 200) {
+        setMessage('Record Disposition could not be cancelled.');
+        return;
+      }
+      setMessage(
+        'Record Disposition cancelled. The Student Record Bundle remains intact.',
+      );
+    } else if (confirm.kind === 'execute-disposition') {
+      const result = await client.POST(
+        '/api/v1/administration/students/record-disposition-executions',
+        {
+          body: {
+            operationId,
+            dispositionId: confirm.dispositionId,
+            expectedVersion: confirm.version,
+            confirmation: 'execute_destruction',
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status !== 200) {
+        const problem = result.error as Problem | undefined;
+        setMessage(
+          problem?.code === 'RECORD_DISPOSITION_CANCELLATION_WINDOW_OPEN'
+            ? 'Execution is blocked until the seven-day cancellation window ends.'
+            : 'Record Disposition could not be executed.',
+        );
+        return;
+      }
+      setMessage(
+        result.data?.outcome === 'purged'
+          ? 'Record Disposition purged owned locations. No destruction certificate is issued here.'
+          : 'Record Disposition is incomplete and repairable. No destruction certificate was issued.',
+      );
+    } else if (confirm.kind === 'retry-disposition') {
+      const result = await client.POST(
+        '/api/v1/administration/students/record-disposition-retries',
+        {
+          body: {
+            operationId,
+            dispositionId: confirm.dispositionId,
+            expectedVersion: confirm.version,
+            confirmation: 'execute_destruction',
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status !== 200) {
+        setMessage('Record Disposition retry could not be completed.');
+        return;
+      }
+      setMessage(
+        result.data?.outcome === 'purged'
+          ? 'Repairable Record Disposition tasks completed. No destruction certificate is issued here.'
+          : 'Record Disposition remains incomplete and repairable.',
+      );
     } else if (confirm.kind === 'resolve-amendment') {
       const decision =
         confirm.decision === 'denied'
@@ -641,6 +791,74 @@ export function StudentRecordLifecycleSection() {
                     {item.cleanupStatus}
                   </li>
                 ))}
+                <li>
+                  Record Disposition prerequisites
+                  {selected.dispositionPrerequisites.blockingReasons.length > 0
+                    ? ` · blocked: ${selected.dispositionPrerequisites.blockingReasons.join(', ')}`
+                    : ' · ready to schedule'}
+                </li>
+                {selected.dispositions.map((item) => (
+                  <li key={item.dispositionId}>
+                    Record Disposition {item.status}
+                    {item.purgeManifest.length > 0
+                      ? ` · ${item.purgeManifest
+                          .map(
+                            (entry) =>
+                              `${entry.adapter}:${entry.status}:${entry.count}`,
+                          )
+                          .join(' ')}`
+                      : ''}
+                    {item.status === 'scheduled' ? (
+                      <>
+                        {' '}
+                        <button
+                          type="button"
+                          className="font-bold text-sky-300"
+                          onClick={() =>
+                            setConfirm({
+                              kind: 'cancel-disposition',
+                              dispositionId: item.dispositionId,
+                              version: item.version,
+                            })
+                          }
+                        >
+                          Cancel Record Disposition
+                        </button>{' '}
+                        <button
+                          type="button"
+                          className="font-bold text-sky-300"
+                          onClick={() =>
+                            setConfirm({
+                              kind: 'execute-disposition',
+                              dispositionId: item.dispositionId,
+                              version: item.version,
+                            })
+                          }
+                        >
+                          Execute Record Disposition
+                        </button>
+                      </>
+                    ) : null}
+                    {item.status === 'failed' ? (
+                      <>
+                        {' '}
+                        <button
+                          type="button"
+                          className="font-bold text-sky-300"
+                          onClick={() =>
+                            setConfirm({
+                              kind: 'retry-disposition',
+                              dispositionId: item.dispositionId,
+                              version: item.version,
+                            })
+                          }
+                        >
+                          Retry Record Disposition
+                        </button>
+                      </>
+                    ) : null}
+                  </li>
+                ))}
               </ul>
               <div className="flex flex-wrap gap-3">
                 <button
@@ -657,6 +875,44 @@ export function StudentRecordLifecycleSection() {
                 >
                   Establish Record Hold
                 </button>
+                <button
+                  type="button"
+                  className="text-xs font-bold text-sky-300"
+                  onClick={() => setConfirm({ kind: 'complete-notice' })}
+                >
+                  Complete disposition notice
+                </button>
+                <button
+                  type="button"
+                  className="text-xs font-bold text-sky-300"
+                  onClick={() => setConfirm({ kind: 'complete-copy' })}
+                >
+                  Complete copy opportunity
+                </button>
+                {selected.cases.some(
+                  (item) =>
+                    item.caseType === 'disposition' &&
+                    item.decision === 'authorized' &&
+                    item.outcome === 'open',
+                ) ? (
+                  <button
+                    type="button"
+                    className="text-xs font-bold text-sky-300"
+                    onClick={() => {
+                      const caseId = selected.cases.find(
+                        (item) =>
+                          item.caseType === 'disposition' &&
+                          item.decision === 'authorized' &&
+                          item.outcome === 'open',
+                      )?.caseId;
+                      if (caseId) {
+                        setConfirm({ kind: 'schedule-disposition', caseId });
+                      }
+                    }}
+                  >
+                    Schedule Record Disposition
+                  </button>
+                ) : null}
               </div>
             </div>
           ) : null}
@@ -683,7 +939,19 @@ export function StudentRecordLifecycleSection() {
                           ? 'Authorize Record Production'
                           : confirm.kind === 'decide-review'
                             ? 'Record Conflict Review'
-                            : 'Release Record Hold'}
+                            : confirm.kind === 'complete-notice'
+                              ? 'Complete disposition notice'
+                              : confirm.kind === 'complete-copy'
+                                ? 'Complete copy opportunity'
+                                : confirm.kind === 'schedule-disposition'
+                                  ? 'Schedule Record Disposition'
+                                  : confirm.kind === 'cancel-disposition'
+                                    ? 'Cancel Record Disposition'
+                                    : confirm.kind === 'execute-disposition'
+                                      ? 'Execute Record Disposition'
+                                      : confirm.kind === 'retry-disposition'
+                                        ? 'Retry Record Disposition'
+                                        : 'Release Record Hold'}
             </h3>
             <p className="mt-3 text-sm leading-6 text-slate-300">
               {confirm.kind === 'open-case'
@@ -700,7 +968,19 @@ export function StudentRecordLifecycleSection() {
                           ? 'This authorizes a purpose-scoped Record Production from the case. The package is not shown here and is delivered only through the one-recipient channel.'
                           : confirm.kind === 'decide-review'
                             ? 'This records a non-merge outcome. Students remain distinct. There is no Administrator merge action.'
-                            : 'Releasing this Record Hold may make destruction eligible if no other Record Hold remains. This does not restore Student access.'}
+                            : confirm.kind === 'complete-notice'
+                              ? 'This records that notice of pending destruction was completed. It does not show protected record contents.'
+                              : confirm.kind === 'complete-copy'
+                                ? 'This records that the copy opportunity was completed. It does not show or download protected record contents.'
+                                : confirm.kind === 'schedule-disposition'
+                                  ? 'This schedules destruction and starts the seven-day cancellation window. Execution cannot begin early. Confirm schedule_destruction as structured authority.'
+                                  : confirm.kind === 'cancel-disposition'
+                                    ? 'This cancels the scheduled destruction. The Student Record Bundle stays intact and an append-only evidence record is added.'
+                                    : confirm.kind === 'execute-disposition'
+                                      ? 'This destroys every active owned location after the cancellation window. Confirm execute_destruction. This does not issue a destruction certificate.'
+                                      : confirm.kind === 'retry-disposition'
+                                        ? 'This retries failed disposal adapters from the failed step. It cannot issue a destruction certificate while any required location is incomplete.'
+                                        : 'Releasing this Record Hold may make destruction eligible if no other Record Hold remains. This does not restore Student access.'}
             </p>
             {confirm.kind === 'open-case' ? (
               <div className="mt-4 grid gap-3">
@@ -984,7 +1264,19 @@ export function StudentRecordLifecycleSection() {
                             ? 'Authorize Record Production'
                             : confirm.kind === 'decide-review'
                               ? 'Record Conflict Review'
-                              : 'Release Record Hold'}
+                              : confirm.kind === 'complete-notice'
+                                ? 'Complete disposition notice'
+                                : confirm.kind === 'complete-copy'
+                                  ? 'Complete copy opportunity'
+                                  : confirm.kind === 'schedule-disposition'
+                                    ? 'Schedule Record Disposition'
+                                    : confirm.kind === 'cancel-disposition'
+                                      ? 'Cancel Record Disposition'
+                                      : confirm.kind === 'execute-disposition'
+                                        ? 'Execute Record Disposition'
+                                        : confirm.kind === 'retry-disposition'
+                                          ? 'Retry Record Disposition'
+                                          : 'Release Record Hold'}
               </button>
               <button
                 type="button"
