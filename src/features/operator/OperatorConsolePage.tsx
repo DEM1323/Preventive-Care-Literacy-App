@@ -114,6 +114,17 @@ export function OperatorConsolePage() {
   const [alerts, setAlerts] = useState<
     { alertId: string; kind: string; acknowledged: boolean }[]
   >([]);
+  const [acceptance, setAcceptance] = useState<{
+    campaignId: string;
+    pin: { artifactDigest: string; environmentHost: string };
+    decision: { decision: string; reasons: string[] };
+    schoolNurseAcceptance: { status: string };
+  } | null>();
+  const [acceptanceReleaseId, setAcceptanceReleaseId] = useState('');
+  const [acceptanceIdentitySetId, setAcceptanceIdentitySetId] = useState('');
+  const [acceptanceNurseId, setAcceptanceNurseId] = useState('');
+  const [acceptanceMigrations, setAcceptanceMigrations] = useState('');
+  const [acceptanceReplace, setAcceptanceReplace] = useState(false);
   const workspaceCommand = useRef<
     { operationId: string; workspaceId: string } | undefined
   >(undefined);
@@ -166,6 +177,12 @@ export function OperatorConsolePage() {
     if (listedAlerts.response.status === 200 && listedAlerts.data) {
       setAlerts(listedAlerts.data);
     }
+    const campaign = await client.GET(
+      '/api/v1/operator/acceptance-campaigns/current',
+    );
+    if (campaign.response.status === 200) {
+      setAcceptance(campaign.data);
+    }
   }
 
   useEffect(() => {
@@ -204,6 +221,7 @@ export function OperatorConsolePage() {
     setRestoreReadiness(undefined);
     setIncident(undefined);
     setAlerts([]);
+    setAcceptance(undefined);
   }
 
   async function beginRestoreGate() {
@@ -270,6 +288,115 @@ export function OperatorConsolePage() {
       }
       setStatus('Technical Operator authorized resume.');
       await loadWorkspaces();
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function startAcceptanceCampaign(event: FormEvent) {
+    event.preventDefault();
+    setBusy('acceptance-start');
+    setStatus('');
+    try {
+      const build = await fetch('/health/build');
+      if (!build.ok) {
+        setStatus('The release-candidate digest is unavailable.');
+        return;
+      }
+      const identity = (await build.json()) as {
+        artifactDigest: string;
+        commit: string;
+      };
+      const result = await client.POST(
+        '/api/v1/operator/acceptance-campaigns',
+        {
+          params: { header: { 'x-prevcare-csrf': '1' } },
+          body: {
+            operationId: crypto.randomUUID(),
+            campaignId: crypto.randomUUID(),
+            pin: {
+              artifactDigest: identity.artifactDigest,
+              environment: 'staging',
+              environmentHost: window.location.host,
+              environmentIdentity: 'operator-console',
+              schemaMigrations: acceptanceMigrations
+                .split('\n')
+                .map((name) => name.trim())
+                .filter((name) => name.length > 0),
+              schoolConfigurationReleaseId: acceptanceReleaseId,
+              syntheticIdentitySetId: acceptanceIdentitySetId,
+              commit: identity.commit,
+            },
+            syntheticIdentifiers: {
+              workspaceId: selectedWorkspaceId || crypto.randomUUID(),
+              staffIdentityId: acceptanceNurseId || crypto.randomUUID(),
+              classId: crypto.randomUUID(),
+              studentId: crypto.randomUUID(),
+              invitationId: crypto.randomUUID(),
+            },
+            replaceExisting: acceptanceReplace,
+          },
+        },
+      );
+      if (result.response.status !== 200) {
+        setStatus('The acceptance campaign could not be pinned.');
+        return;
+      }
+      setStatus(
+        'Campaign pinned. Automated checks stay pending until recorded. School Nurse and native browser evidence stay pending.',
+      );
+      await loadWorkspaces();
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function recordNurseAcceptance() {
+    setBusy('acceptance-nurse');
+    setStatus('');
+    try {
+      const result = await client.POST(
+        '/api/v1/operator/acceptance-campaigns/school-nurse-acceptance',
+        {
+          params: { header: { 'x-prevcare-csrf': '1' } },
+          body: {
+            operationId: crypto.randomUUID(),
+            staffIdentityId: acceptanceNurseId,
+          },
+        },
+      );
+      if (result.response.status !== 200) {
+        setStatus('School Nurse acceptance could not be recorded.');
+        return;
+      }
+      setStatus('School Nurse domain authorization is recorded.');
+      await loadWorkspaces();
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function exportAcceptanceEvidence() {
+    setBusy('acceptance-export');
+    setStatus('');
+    try {
+      const result = await client.GET(
+        '/api/v1/operator/acceptance-campaigns/current/evidence',
+      );
+      if (result.response.status !== 200 || !result.data) {
+        setStatus('The evidence bundle could not be exported.');
+        return;
+      }
+      const blob = new Blob([`${JSON.stringify(result.data, null, 2)}\n`], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'release-candidate-evidence.json';
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatus('Non-sensitive evidence bundle downloaded.');
     } finally {
       setBusy(undefined);
     }
@@ -954,6 +1081,124 @@ export function OperatorConsolePage() {
                   </li>
                 ))}
               </ul>
+            </section>
+          ) : null}
+
+          {authenticated ? (
+            <section className="border-2 border-[#15251f] bg-white p-6">
+              <p className="font-mono text-xs font-bold uppercase">
+                Release candidate
+              </p>
+              <h2 className="mt-1 text-2xl font-black">Acceptance evidence</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Pin one exact artifact digest, schema, and School Configuration
+                Release. Automated checks, School Nurse authorization, and
+                native browser outcomes stay pending until recorded. Do not
+                paste Intake answers, codes, or addresses.
+              </p>
+              <p className="mt-3 text-sm">
+                Decision {acceptance?.decision.decision ?? 'none'}
+                {acceptance
+                  ? ` · ${acceptance.pin.environmentHost} · nurse ${acceptance.schoolNurseAcceptance.status}`
+                  : ''}
+              </p>
+              {acceptance?.decision.reasons.length ? (
+                <p className="mt-2 font-mono text-xs">
+                  {acceptance.decision.reasons.join(' · ')}
+                </p>
+              ) : null}
+              <form
+                className="mt-4 grid gap-3"
+                onSubmit={startAcceptanceCampaign}
+              >
+                <label className="block text-sm font-bold">
+                  School Configuration Release
+                  <input
+                    required
+                    value={acceptanceReleaseId}
+                    onChange={(event) =>
+                      setAcceptanceReleaseId(event.target.value)
+                    }
+                    className="mt-1 w-full border-2 border-[#15251f] px-3 py-2 font-mono text-xs font-normal"
+                  />
+                </label>
+                <label className="block text-sm font-bold">
+                  Synthetic identity set
+                  <input
+                    required
+                    value={acceptanceIdentitySetId}
+                    onChange={(event) =>
+                      setAcceptanceIdentitySetId(event.target.value)
+                    }
+                    className="mt-1 w-full border-2 border-[#15251f] px-3 py-2 font-mono text-xs font-normal"
+                  />
+                </label>
+                <label
+                  className="block text-sm font-bold"
+                  htmlFor="acceptance-migrations"
+                >
+                  Applied schema migrations
+                </label>
+                <textarea
+                  id="acceptance-migrations"
+                  required
+                  value={acceptanceMigrations}
+                  onChange={(event) =>
+                    setAcceptanceMigrations(event.target.value)
+                  }
+                  rows={6}
+                  className="w-full border-2 border-[#15251f] p-2 font-mono text-xs"
+                  spellCheck={false}
+                />
+                <label className="flex items-center gap-2 text-sm font-bold">
+                  <input
+                    type="checkbox"
+                    checked={acceptanceReplace}
+                    onChange={(event) =>
+                      setAcceptanceReplace(event.target.checked)
+                    }
+                  />
+                  Start a new campaign and archive the current pin
+                </label>
+                <button
+                  disabled={busy !== undefined}
+                  className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
+                >
+                  {busy === 'acceptance-start'
+                    ? 'Pinning campaign...'
+                    : 'Pin release-candidate campaign'}
+                </button>
+              </form>
+              <label className="mt-4 block text-sm font-bold">
+                School Nurse Staff Identity
+                <input
+                  value={acceptanceNurseId}
+                  onChange={(event) => setAcceptanceNurseId(event.target.value)}
+                  className="mt-1 w-full border-2 border-[#15251f] px-3 py-2 font-mono text-xs font-normal"
+                />
+              </label>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={busy !== undefined || !acceptanceNurseId}
+                  onClick={() => void recordNurseAcceptance()}
+                  className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
+                >
+                  {busy === 'acceptance-nurse'
+                    ? 'Recording...'
+                    : 'Record School Nurse acceptance'}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy !== undefined}
+                  onClick={() => void exportAcceptanceEvidence()}
+                  className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
+                >
+                  {busy === 'acceptance-export'
+                    ? 'Exporting...'
+                    : 'Export evidence bundle'}
+                </button>
+              </div>
             </section>
           ) : null}
 

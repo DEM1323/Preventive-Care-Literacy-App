@@ -243,6 +243,12 @@ export async function createRuntimeDatabaseUser(
       `grant execute on function infrastructure.authorize_incident_resume(uuid, text, text, text, integer, timestamptz) to ${role}`,
     );
     await client.query(
+      `grant execute on function infrastructure.read_acceptance_campaign() to ${role}`,
+    );
+    await client.query(
+      `grant execute on function infrastructure.write_acceptance_campaign(uuid, text, text, text, jsonb, boolean, timestamptz) to ${role}`,
+    );
+    await client.query(
       `grant usage, select on all sequences in schema audit, infrastructure, records_governance to ${role}`,
     );
     return `postgres://${role}:${password}@127.0.0.1:${new URL(databaseUrl).port}/${database.rows[0]?.name}`;

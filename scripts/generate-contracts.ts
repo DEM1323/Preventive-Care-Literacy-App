@@ -174,6 +174,24 @@ async function renderContracts() {
           throw new Error('Contract generation does not execute commands');
         },
       },
+      releaseCandidateEvidence: {
+        readCampaign: async () => undefined,
+        startCampaign: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        recordCheck: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        recordException: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        recordSchoolNurseAcceptance: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        exportEvidence: async () => {
+          throw new Error('Contract generation does not execute queries');
+        },
+      },
       schoolConfiguration: {
         readDraft: async () => undefined,
         stepUp: async () => {

@@ -980,6 +980,102 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/operator/acceptance-campaigns': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['startAcceptanceCampaign'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/acceptance-campaigns/checks': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['recordAcceptanceCheck'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/acceptance-campaigns/current': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['readAcceptanceCampaign'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/acceptance-campaigns/current/evidence': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['exportAcceptanceCampaignEvidence'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/acceptance-campaigns/exceptions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['recordAcceptanceException'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/acceptance-campaigns/school-nurse-acceptance': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['recordSchoolNurseAcceptance'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/operator/alerts': {
     parameters: {
       query?: never;
@@ -24837,6 +24933,2707 @@ export interface operations {
       };
       /** @description Default Response */
       500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  startAcceptanceCampaign: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          campaignId: string;
+          /** Format: uuid */
+          operationId: string;
+          pin: {
+            artifactDigest: string;
+            commit: string;
+            /** @enum {string} */
+            environment: 'staging';
+            environmentHost: string;
+            environmentIdentity: string;
+            schemaMigrations: string[];
+            /** Format: uuid */
+            schoolConfigurationReleaseId: string;
+            /** Format: uuid */
+            syntheticIdentitySetId: string;
+          };
+          replaceExisting?: boolean;
+          syntheticIdentifiers: {
+            /** Format: uuid */
+            classId: string;
+            /** Format: uuid */
+            invitationId: string;
+            /** Format: uuid */
+            staffIdentityId: string;
+            /** Format: uuid */
+            studentId: string;
+            /** Format: uuid */
+            workspaceId: string;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            campaignId: string;
+            decision: {
+              decision: 'go' | 'no-go' | 'pending';
+              reasons: string[];
+              schoolNurseAcceptance: 'recorded' | 'missing';
+            };
+            exceptions: {
+              checkId: string;
+              checkKind: 'journey' | 'locale' | 'matrix' | 'wcag';
+              evidence: string;
+              expiry: string;
+              impact: string;
+              mitigation: string;
+              owner: string;
+              reasonOutsideNonWaivable: string;
+              requirement: string;
+            }[];
+            journeys: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            locales: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            matrix: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            pin: {
+              artifactDigest: string;
+              commit: string;
+              /** @enum {string} */
+              environment: 'staging';
+              environmentHost: string;
+              environmentIdentity: string;
+              schemaMigrations: string[];
+              /** Format: uuid */
+              schoolConfigurationReleaseId: string;
+              /** Format: uuid */
+              syntheticIdentitySetId: string;
+            };
+            schoolNurseAcceptance: {
+              /** Format: uuid */
+              actorId?: string;
+              /** Format: date-time */
+              recordedAt?: string;
+              status: 'recorded' | 'missing';
+            };
+            /** Format: date-time */
+            startedAt: string;
+            syntheticIdentifiers: {
+              /** Format: uuid */
+              classId: string;
+              /** Format: uuid */
+              invitationId: string;
+              /** Format: uuid */
+              staffIdentityId: string;
+              /** Format: uuid */
+              studentId: string;
+              /** Format: uuid */
+              workspaceId: string;
+            };
+            wcag: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  recordAcceptanceCheck: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          actorType: 'technical_operator' | 'school_nurse' | 'automation';
+          checkId: string;
+          kind: 'journey' | 'locale' | 'matrix' | 'wcag';
+          nonWaivableCategory?:
+            | 'authorization_bypass'
+            | 'cross_workspace_disclosure'
+            | 'sensitive_data_leak'
+            | 'stale_publication'
+            | 'false_success'
+            | 'history_atomicity_loss'
+            | 'failed_required_operation'
+            | 'journey_blocking_accessibility';
+          observed?: {
+            automationProxy?: 'chromium' | 'webkit' | 'firefox';
+            browser?: string;
+            browserVersion?: string;
+            device?: string;
+            locale?: string;
+            viewport?: string;
+          };
+          /** Format: uuid */
+          operationId: string;
+          outcome: 'pass' | 'fail' | 'pending' | 'exception';
+          pin?: {
+            artifactDigest: string;
+            commit: string;
+            /** @enum {string} */
+            environment: 'staging';
+            environmentHost: string;
+            environmentIdentity: string;
+            schemaMigrations: string[];
+            /** Format: uuid */
+            schoolConfigurationReleaseId: string;
+            /** Format: uuid */
+            syntheticIdentitySetId: string;
+          };
+          source:
+            | 'automated_synthetic'
+            | 'automation_proxy'
+            | 'live_staging_pending'
+            | 'provider_dashboard_pending'
+            | 'provider_dashboard'
+            | 'school_nurse_pending'
+            | 'school_nurse_recorded'
+            | 'human_browser_pending'
+            | 'human_browser_recorded';
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            campaignId: string;
+            decision: {
+              decision: 'go' | 'no-go' | 'pending';
+              reasons: string[];
+              schoolNurseAcceptance: 'recorded' | 'missing';
+            };
+            exceptions: {
+              checkId: string;
+              checkKind: 'journey' | 'locale' | 'matrix' | 'wcag';
+              evidence: string;
+              expiry: string;
+              impact: string;
+              mitigation: string;
+              owner: string;
+              reasonOutsideNonWaivable: string;
+              requirement: string;
+            }[];
+            journeys: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            locales: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            matrix: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            pin: {
+              artifactDigest: string;
+              commit: string;
+              /** @enum {string} */
+              environment: 'staging';
+              environmentHost: string;
+              environmentIdentity: string;
+              schemaMigrations: string[];
+              /** Format: uuid */
+              schoolConfigurationReleaseId: string;
+              /** Format: uuid */
+              syntheticIdentitySetId: string;
+            };
+            schoolNurseAcceptance: {
+              /** Format: uuid */
+              actorId?: string;
+              /** Format: date-time */
+              recordedAt?: string;
+              status: 'recorded' | 'missing';
+            };
+            /** Format: date-time */
+            startedAt: string;
+            syntheticIdentifiers: {
+              /** Format: uuid */
+              classId: string;
+              /** Format: uuid */
+              invitationId: string;
+              /** Format: uuid */
+              staffIdentityId: string;
+              /** Format: uuid */
+              studentId: string;
+              /** Format: uuid */
+              workspaceId: string;
+            };
+            wcag: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  readAcceptanceCampaign: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            campaignId: string;
+            decision: {
+              decision: 'go' | 'no-go' | 'pending';
+              reasons: string[];
+              schoolNurseAcceptance: 'recorded' | 'missing';
+            };
+            exceptions: {
+              checkId: string;
+              checkKind: 'journey' | 'locale' | 'matrix' | 'wcag';
+              evidence: string;
+              expiry: string;
+              impact: string;
+              mitigation: string;
+              owner: string;
+              reasonOutsideNonWaivable: string;
+              requirement: string;
+            }[];
+            journeys: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            locales: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            matrix: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            pin: {
+              artifactDigest: string;
+              commit: string;
+              /** @enum {string} */
+              environment: 'staging';
+              environmentHost: string;
+              environmentIdentity: string;
+              schemaMigrations: string[];
+              /** Format: uuid */
+              schoolConfigurationReleaseId: string;
+              /** Format: uuid */
+              syntheticIdentitySetId: string;
+            };
+            schoolNurseAcceptance: {
+              /** Format: uuid */
+              actorId?: string;
+              /** Format: date-time */
+              recordedAt?: string;
+              status: 'recorded' | 'missing';
+            };
+            /** Format: date-time */
+            startedAt: string;
+            syntheticIdentifiers: {
+              /** Format: uuid */
+              classId: string;
+              /** Format: uuid */
+              invitationId: string;
+              /** Format: uuid */
+              staffIdentityId: string;
+              /** Format: uuid */
+              studentId: string;
+              /** Format: uuid */
+              workspaceId: string;
+            };
+            wcag: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+          } | null;
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  exportAcceptanceCampaignEvidence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            campaignId: string;
+            /** Format: date-time */
+            completedAt: string;
+            decision: {
+              decision: 'go' | 'no-go' | 'pending';
+              reasons: string[];
+              schoolNurseAcceptance: 'recorded' | 'missing';
+            };
+            exceptions: {
+              checkId: string;
+              checkKind: 'journey' | 'locale' | 'matrix' | 'wcag';
+              evidence: string;
+              expiry: string;
+              impact: string;
+              mitigation: string;
+              owner: string;
+              reasonOutsideNonWaivable: string;
+              requirement: string;
+            }[];
+            journeys: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            locales: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            matrix: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            pin: {
+              artifactDigest: string;
+              commit: string;
+              /** @enum {string} */
+              environment: 'staging';
+              environmentHost: string;
+              environmentIdentity: string;
+              schemaMigrations: string[];
+              /** Format: uuid */
+              schoolConfigurationReleaseId: string;
+              /** Format: uuid */
+              syntheticIdentitySetId: string;
+            };
+            /** @enum {number} */
+            schemaVersion: 1;
+            schoolNurseAcceptance: {
+              /** Format: uuid */
+              actorId?: string;
+              /** Format: date-time */
+              recordedAt?: string;
+              status: 'recorded' | 'missing';
+            };
+            /** Format: date-time */
+            startedAt: string;
+            syntheticIdentifiers: {
+              /** Format: uuid */
+              classId: string;
+              /** Format: uuid */
+              invitationId: string;
+              /** Format: uuid */
+              staffIdentityId: string;
+              /** Format: uuid */
+              studentId: string;
+              /** Format: uuid */
+              workspaceId: string;
+            };
+            wcag: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  recordAcceptanceException: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          checkId: string;
+          checkKind: 'journey' | 'locale' | 'matrix' | 'wcag';
+          evidence: string;
+          expiry: string;
+          impact: string;
+          mitigation: string;
+          /** Format: uuid */
+          operationId: string;
+          owner: string;
+          reasonOutsideNonWaivable: string;
+          requirement: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            campaignId: string;
+            decision: {
+              decision: 'go' | 'no-go' | 'pending';
+              reasons: string[];
+              schoolNurseAcceptance: 'recorded' | 'missing';
+            };
+            exceptions: {
+              checkId: string;
+              checkKind: 'journey' | 'locale' | 'matrix' | 'wcag';
+              evidence: string;
+              expiry: string;
+              impact: string;
+              mitigation: string;
+              owner: string;
+              reasonOutsideNonWaivable: string;
+              requirement: string;
+            }[];
+            journeys: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            locales: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            matrix: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            pin: {
+              artifactDigest: string;
+              commit: string;
+              /** @enum {string} */
+              environment: 'staging';
+              environmentHost: string;
+              environmentIdentity: string;
+              schemaMigrations: string[];
+              /** Format: uuid */
+              schoolConfigurationReleaseId: string;
+              /** Format: uuid */
+              syntheticIdentitySetId: string;
+            };
+            schoolNurseAcceptance: {
+              /** Format: uuid */
+              actorId?: string;
+              /** Format: date-time */
+              recordedAt?: string;
+              status: 'recorded' | 'missing';
+            };
+            /** Format: date-time */
+            startedAt: string;
+            syntheticIdentifiers: {
+              /** Format: uuid */
+              classId: string;
+              /** Format: uuid */
+              invitationId: string;
+              /** Format: uuid */
+              staffIdentityId: string;
+              /** Format: uuid */
+              studentId: string;
+              /** Format: uuid */
+              workspaceId: string;
+            };
+            wcag: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  recordSchoolNurseAcceptance: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          /** Format: uuid */
+          staffIdentityId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            campaignId: string;
+            decision: {
+              decision: 'go' | 'no-go' | 'pending';
+              reasons: string[];
+              schoolNurseAcceptance: 'recorded' | 'missing';
+            };
+            exceptions: {
+              checkId: string;
+              checkKind: 'journey' | 'locale' | 'matrix' | 'wcag';
+              evidence: string;
+              expiry: string;
+              impact: string;
+              mitigation: string;
+              owner: string;
+              reasonOutsideNonWaivable: string;
+              requirement: string;
+            }[];
+            journeys: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            locales: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            matrix: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+            pin: {
+              artifactDigest: string;
+              commit: string;
+              /** @enum {string} */
+              environment: 'staging';
+              environmentHost: string;
+              environmentIdentity: string;
+              schemaMigrations: string[];
+              /** Format: uuid */
+              schoolConfigurationReleaseId: string;
+              /** Format: uuid */
+              syntheticIdentitySetId: string;
+            };
+            schoolNurseAcceptance: {
+              /** Format: uuid */
+              actorId?: string;
+              /** Format: date-time */
+              recordedAt?: string;
+              status: 'recorded' | 'missing';
+            };
+            /** Format: date-time */
+            startedAt: string;
+            syntheticIdentifiers: {
+              /** Format: uuid */
+              classId: string;
+              /** Format: uuid */
+              invitationId: string;
+              /** Format: uuid */
+              staffIdentityId: string;
+              /** Format: uuid */
+              studentId: string;
+              /** Format: uuid */
+              workspaceId: string;
+            };
+            wcag: {
+              [key: string]: {
+                actorType: 'technical_operator' | 'school_nurse' | 'automation';
+                nonWaivableCategory?:
+                  | 'authorization_bypass'
+                  | 'cross_workspace_disclosure'
+                  | 'sensitive_data_leak'
+                  | 'stale_publication'
+                  | 'false_success'
+                  | 'history_atomicity_loss'
+                  | 'failed_required_operation'
+                  | 'journey_blocking_accessibility';
+                observed?: {
+                  automationProxy?: 'chromium' | 'webkit' | 'firefox';
+                  browser?: string;
+                  browserVersion?: string;
+                  device?: string;
+                  locale?: string;
+                  viewport?: string;
+                };
+                outcome: 'pass' | 'fail' | 'pending' | 'exception';
+                /** Format: date-time */
+                recordedAt: string;
+                source:
+                  | 'automated_synthetic'
+                  | 'automation_proxy'
+                  | 'live_staging_pending'
+                  | 'provider_dashboard_pending'
+                  | 'provider_dashboard'
+                  | 'school_nurse_pending'
+                  | 'school_nurse_recorded'
+                  | 'human_browser_pending'
+                  | 'human_browser_recorded';
+              };
+            };
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
         headers: {
           [name: string]: unknown;
         };
