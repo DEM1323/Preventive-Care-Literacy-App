@@ -388,6 +388,54 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/administration/students/purge-backup-expiry-verifications': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['verifyBackupExpiry'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/students/purge-provider-verifications': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['recordProviderVerification'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/students/purge-verification-reconciliations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['reconcilePurgeVerification'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/administration/students/re-enablements': {
     parameters: {
       query?: never;
@@ -446,6 +494,22 @@ export interface paths {
     get?: never;
     put?: never;
     post: operations['openRecordConflictReview'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/students/record-destruction-certificates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['readDestructionCertificate'];
+    put?: never;
+    post: operations['issueDestructionCertificate'];
     delete?: never;
     options?: never;
     head?: never;
@@ -908,6 +972,54 @@ export interface paths {
       cookie?: never;
     };
     get: operations['goldenJourneyOperatorEvidence'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/purge-restore-gate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['readPurgeRestoreGate'];
+    put?: never;
+    post: operations['runPurgeRestoreGate'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/purge-restore-gate/begin': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['beginPurgeRestoreGate'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/purge-tombstones': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['listPurgeTombstones'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1436,6 +1548,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -1477,6 +1598,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -1518,6 +1648,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -1601,6 +1740,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -1642,6 +1790,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -1683,6 +1840,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -1724,6 +1890,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -1765,6 +1940,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -1844,6 +2028,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -1885,6 +2078,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -1926,6 +2128,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -1967,6 +2178,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2008,6 +2228,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2049,6 +2278,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2090,6 +2328,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2168,6 +2415,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2209,6 +2465,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2250,6 +2515,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2291,6 +2565,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2332,6 +2615,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2455,6 +2747,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2496,6 +2797,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2537,6 +2847,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2578,6 +2897,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2619,6 +2947,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2660,6 +2997,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2701,6 +3047,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2840,6 +3195,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2881,6 +3245,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2922,6 +3295,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -2963,6 +3345,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3004,6 +3395,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3045,6 +3445,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3086,6 +3495,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3127,6 +3545,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3219,6 +3646,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3260,6 +3696,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3301,6 +3746,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3342,6 +3796,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3383,6 +3846,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3424,6 +3896,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3507,6 +3988,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3548,6 +4038,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3589,6 +4088,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3630,6 +4138,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3671,6 +4188,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3712,6 +4238,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3753,6 +4288,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3829,6 +4373,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3870,6 +4423,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3911,6 +4473,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3952,6 +4523,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -3993,6 +4573,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4034,6 +4623,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4116,6 +4714,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4157,6 +4764,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4198,6 +4814,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4239,6 +4864,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4280,6 +4914,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4321,6 +4964,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4362,6 +5014,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4439,6 +5100,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4480,6 +5150,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4521,6 +5200,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4562,6 +5250,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4603,6 +5300,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4644,6 +5350,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4798,6 +5513,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4839,6 +5563,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4880,6 +5613,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -4921,6 +5663,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5167,6 +5918,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5208,6 +5968,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5249,6 +6018,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5290,6 +6068,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5331,6 +6118,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5372,6 +6168,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5413,6 +6218,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5493,6 +6307,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5534,6 +6357,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5575,6 +6407,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5616,6 +6457,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5657,6 +6507,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5698,6 +6557,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5739,6 +6607,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5916,6 +6793,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5957,6 +6843,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -5998,6 +6893,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6039,6 +6943,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6080,6 +6993,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6121,6 +7043,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6162,6 +7093,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6244,6 +7184,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6285,6 +7234,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6326,6 +7284,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6415,6 +7382,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6456,6 +7432,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6497,6 +7482,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6538,6 +7532,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6579,6 +7582,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6620,6 +7632,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6661,6 +7682,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6757,6 +7787,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6798,6 +7837,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6839,6 +7887,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6880,6 +7937,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -6960,6 +8026,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7001,6 +8076,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7042,6 +8126,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7083,6 +8176,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7124,6 +8226,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7165,6 +8276,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7237,6 +8357,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7278,6 +8407,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7319,6 +8457,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7409,6 +8556,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7450,6 +8606,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7491,6 +8656,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7532,6 +8706,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7573,6 +8756,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7614,6 +8806,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7655,6 +8856,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7738,6 +8948,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7779,6 +8998,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7820,6 +9048,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7861,6 +9098,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7902,6 +9148,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7943,6 +9198,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -7984,6 +9248,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8025,6 +9298,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8110,6 +9392,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8151,6 +9442,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8192,6 +9492,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8233,6 +9542,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8274,6 +9592,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8315,6 +9642,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8356,6 +9692,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8397,6 +9742,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8481,6 +9835,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8522,6 +9885,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8563,6 +9935,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8604,6 +9985,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8645,6 +10035,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8686,6 +10085,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8727,6 +10135,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8768,6 +10185,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8845,6 +10271,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8886,6 +10321,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8927,6 +10371,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -8968,6 +10421,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9009,6 +10471,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9050,6 +10521,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9091,6 +10571,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9171,6 +10660,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9212,6 +10710,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9253,6 +10760,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9294,6 +10810,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9335,6 +10860,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9376,6 +10910,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9417,6 +10960,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9495,6 +11047,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9536,6 +11097,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9577,6 +11147,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9618,6 +11197,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9659,6 +11247,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9700,6 +11297,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9741,6 +11347,1182 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  verifyBackupExpiry: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          confirmation: 'backup_expiry_verified';
+          /** Format: uuid */
+          dispositionId: string;
+          expectedVersion: number;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            dispositionId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'verified';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  recordProviderVerification: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          adapter: 'email_provider';
+          /** @enum {string} */
+          confirmation: 'provider_deletion_verified';
+          /** Format: uuid */
+          dispositionId: string;
+          evidenceDigest: string;
+          expectedVersion: number;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            dispositionId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'recorded';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  reconcilePurgeVerification: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          dispositionId: string;
+          expectedVersion: number;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            dispositionId: string;
+            /** Format: uuid */
+            operationId: string;
+            outcome: 'reconciled' | 'failed';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9819,6 +12601,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9860,6 +12651,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9901,6 +12701,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9942,6 +12751,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -9983,6 +12801,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10024,6 +12851,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10065,6 +12901,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10178,6 +13023,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10219,6 +13073,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10260,6 +13123,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10301,6 +13173,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10342,6 +13223,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10383,6 +13273,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10424,6 +13323,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10502,6 +13410,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10543,6 +13460,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10584,6 +13510,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10625,6 +13560,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10666,6 +13610,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10707,6 +13660,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10748,6 +13710,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10828,6 +13799,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10869,6 +13849,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10910,6 +13899,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10951,6 +13949,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -10992,6 +13999,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11033,6 +14049,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11074,6 +14099,644 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  readDestructionCertificate: {
+    parameters: {
+      query?: {
+        dispositionId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            certificateId: string;
+            /** Format: uuid */
+            dispositionId: string;
+            /** Format: date-time */
+            issuedAt: string;
+            locations: {
+              adapter: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              /** @enum {string} */
+              verification: 'verified';
+            }[];
+            /** Format: uuid */
+            policyRevisionId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  issueDestructionCertificate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          confirmation: 'issue_destruction_certificate';
+          /** Format: uuid */
+          dispositionId: string;
+          expectedVersion: number;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            certificateId: string;
+            /** Format: uuid */
+            dispositionId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'certified';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11152,6 +14815,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11193,6 +14865,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11234,6 +14915,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11275,6 +14965,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11316,6 +15015,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11357,6 +15065,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11398,6 +15115,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11477,6 +15203,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11518,6 +15253,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11559,6 +15303,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11600,6 +15353,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11641,6 +15403,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11682,6 +15453,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11723,6 +15503,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11802,6 +15591,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11843,6 +15641,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11884,6 +15691,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11925,6 +15741,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -11966,6 +15791,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12007,6 +15841,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12048,6 +15891,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12127,6 +15979,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12168,6 +16029,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12209,6 +16079,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12250,6 +16129,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12291,6 +16179,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12332,6 +16229,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12373,6 +16279,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12452,6 +16367,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12493,6 +16417,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12534,6 +16467,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12575,6 +16517,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12616,6 +16567,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12657,6 +16617,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12698,6 +16667,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12783,6 +16761,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12824,6 +16811,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12865,6 +16861,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12906,6 +16911,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12947,6 +16961,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -12988,6 +17011,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13029,6 +17061,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13106,6 +17147,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13147,6 +17197,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13188,6 +17247,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13229,6 +17297,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13270,6 +17347,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13311,6 +17397,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13352,6 +17447,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13433,6 +17537,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13474,6 +17587,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13515,6 +17637,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13556,6 +17687,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13597,6 +17737,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13638,6 +17787,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13679,6 +17837,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13757,6 +17924,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13798,6 +17974,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13839,6 +18024,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13880,6 +18074,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13921,6 +18124,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -13962,6 +18174,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14003,6 +18224,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14081,6 +18311,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14122,6 +18361,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14163,6 +18411,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14204,6 +18461,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14245,6 +18511,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14286,6 +18561,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14327,6 +18611,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14456,6 +18749,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14497,6 +18799,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14538,6 +18849,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14579,6 +18899,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14620,6 +18949,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14661,6 +18999,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14702,6 +19049,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14778,6 +19134,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14819,6 +19184,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14860,6 +19234,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14901,6 +19284,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14942,6 +19334,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -14983,6 +19384,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15024,6 +19434,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15104,6 +19523,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15145,6 +19573,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15186,6 +19623,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15227,6 +19673,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15268,6 +19723,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15309,6 +19773,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15350,6 +19823,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15520,6 +20002,23 @@ export interface operations {
                 /** Format: uuid */
                 caseId: string;
                 completedAt: string | null;
+                destructionCertificate?: {
+                  /** Format: uuid */
+                  certificateId: string;
+                  /** Format: uuid */
+                  dispositionId: string;
+                  /** Format: date-time */
+                  issuedAt: string;
+                  locations: {
+                    adapter: string;
+                    /** Format: date-time */
+                    residualRetentionDeadlineAt: string;
+                    /** @enum {string} */
+                    verification: 'verified';
+                  }[];
+                  /** Format: uuid */
+                  policyRevisionId: string;
+                };
                 /** Format: uuid */
                 dispositionId: string;
                 executionStartedAt: string | null;
@@ -15543,6 +20042,15 @@ export interface operations {
                 scheduledAt: string;
                 status:
                   'scheduled' | 'executing' | 'cancelled' | 'failed' | 'purged';
+                verificationLocations: {
+                  adapter: string;
+                  deletion: 'requested' | 'deleted' | 'pending' | 'failed';
+                  evidenceDigest: string | null;
+                  location: string;
+                  /** Format: date-time */
+                  residualRetentionDeadlineAt: string;
+                  verification: 'pending' | 'verified' | 'failed';
+                }[];
                 version: number;
               }[];
               holds: {
@@ -15610,6 +20118,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15651,6 +20168,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15692,6 +20218,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15778,6 +20313,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15819,6 +20363,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15860,6 +20413,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15901,6 +20463,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15942,6 +20513,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -15983,6 +20563,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16024,6 +20613,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16094,6 +20692,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16135,6 +20742,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16176,6 +20792,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16217,6 +20842,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16281,6 +20915,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16356,6 +20999,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16397,6 +21049,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16438,6 +21099,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16479,6 +21149,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16520,6 +21199,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16584,6 +21272,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16625,6 +21322,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16666,6 +21372,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16707,6 +21422,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16778,6 +21502,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16819,6 +21552,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16860,6 +21602,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16901,6 +21652,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16942,6 +21702,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -16983,6 +21752,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17054,6 +21832,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17095,6 +21882,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17136,6 +21932,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17177,6 +21982,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17218,6 +22032,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17289,6 +22112,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17330,6 +22162,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17371,6 +22212,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17412,6 +22262,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17453,6 +22312,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17523,6 +22391,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17564,6 +22441,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17605,6 +22491,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17646,6 +22541,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17717,6 +22621,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17758,6 +22671,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17799,6 +22721,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17840,6 +22771,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -17881,6 +22821,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18046,6 +22995,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18087,6 +23045,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18128,6 +23095,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18169,6 +23145,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18210,6 +23195,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18251,6 +23245,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18419,6 +23422,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18460,6 +23472,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18501,6 +23522,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18542,6 +23572,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18583,6 +23622,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18624,6 +23672,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18717,6 +23774,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18758,6 +23824,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18799,6 +23874,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18891,6 +23975,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18932,6 +24025,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -18973,6 +24075,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19014,6 +24125,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19055,6 +24175,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19096,6 +24225,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19199,6 +24337,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19240,6 +24387,851 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  readPurgeRestoreGate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            failedCode: string | null;
+            status: 'not_required' | 'pending' | 'verified' | 'failed';
+            verifiedAt: string | null;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  runPurgeRestoreGate: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          manifests?: {
+            adapters: string[];
+            /** Format: date-time */
+            completedAt: string;
+            /** Format: uuid */
+            dispositionId: string;
+            /** Format: uuid */
+            studentId: string;
+            /** Format: uuid */
+            workspaceId: string;
+          }[];
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            failedCode: string | null;
+            /** Format: uuid */
+            operationId: string;
+            outcome: 'verified' | 'failed';
+            reappliedCount: number;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  beginPurgeRestoreGate: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'pending';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  listPurgeTombstones: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            tombstones: {
+              adapters: string[];
+              /** Format: date-time */
+              completedAt: string;
+              /** Format: uuid */
+              dispositionId: string;
+              /** Format: uuid */
+              studentId: string;
+              /** Format: uuid */
+              workspaceId: string;
+            }[];
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19303,6 +25295,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19385,6 +25386,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19426,6 +25436,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19501,6 +25520,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19542,6 +25570,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19583,6 +25620,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19624,6 +25670,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19665,6 +25720,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19735,6 +25799,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19776,6 +25849,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -19963,6 +26045,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20004,6 +26095,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20045,6 +26145,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20086,6 +26195,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20174,6 +26292,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20215,6 +26342,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20256,6 +26392,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20297,6 +26442,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20338,6 +26492,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20379,6 +26542,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20420,6 +26592,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20500,6 +26681,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20541,6 +26731,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20582,6 +26781,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20623,6 +26831,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20664,6 +26881,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20705,6 +26931,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20746,6 +26981,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20825,6 +27069,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20866,6 +27119,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20907,6 +27169,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20948,6 +27219,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -20989,6 +27269,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21030,6 +27319,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21071,6 +27369,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21182,6 +27489,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21223,6 +27539,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21264,6 +27589,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21305,6 +27639,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21346,6 +27689,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21387,6 +27739,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21428,6 +27789,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21469,6 +27839,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21538,6 +27917,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21579,6 +27967,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21620,6 +28017,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21661,6 +28067,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21702,6 +28117,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21844,6 +28268,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21885,6 +28318,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21926,6 +28368,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -21967,6 +28418,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -22053,6 +28513,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -22094,6 +28563,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -22135,6 +28613,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -22176,6 +28663,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -22217,6 +28713,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -22258,6 +28763,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -22299,6 +28813,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -22371,6 +28894,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
@@ -22412,6 +28944,15 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
             blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;

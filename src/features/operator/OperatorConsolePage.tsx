@@ -72,6 +72,13 @@ export function OperatorConsolePage() {
   );
   const [busy, setBusy] = useState<string>();
   const [status, setStatus] = useState('');
+  const [restoreGate, setRestoreGate] = useState<{
+    status: string;
+    verifiedAt: string | null;
+    failedCode: string | null;
+  }>();
+  const [tombstoneCount, setTombstoneCount] = useState<number>();
+  const [restoreManifests, setRestoreManifests] = useState('');
   const workspaceCommand = useRef<
     { operationId: string; workspaceId: string } | undefined
   >(undefined);
@@ -100,6 +107,14 @@ export function OperatorConsolePage() {
     setSelectedWorkspaceId(
       (current) => current || result.data[0]?.workspaceId || '',
     );
+    const gate = await client.GET('/api/v1/operator/purge-restore-gate');
+    if (gate.response.status === 200 && gate.data) {
+      setRestoreGate(gate.data);
+    }
+    const tombstones = await client.GET('/api/v1/operator/purge-tombstones');
+    if (tombstones.response.status === 200 && tombstones.data) {
+      setTombstoneCount(tombstones.data.tombstones.length);
+    }
   }
 
   useEffect(() => {
@@ -133,6 +148,100 @@ export function OperatorConsolePage() {
     setAuthenticated(false);
     setWorkspaces([]);
     setCreatedPassword(undefined);
+    setRestoreGate(undefined);
+    setTombstoneCount(undefined);
+  }
+
+  async function beginRestoreGate() {
+    setBusy('restore-begin');
+    setStatus('');
+    try {
+      const result = await client.POST(
+        '/api/v1/operator/purge-restore-gate/begin',
+        {
+          params: { header: { 'x-prevcare-csrf': '1' } },
+          body: { operationId: crypto.randomUUID() },
+        },
+      );
+      if (result.response.status !== 200) {
+        setStatus('The restore gate could not be marked pending.');
+        return;
+      }
+      setStatus(
+        'Service resume is blocked until purge manifests are reapplied.',
+      );
+      await loadWorkspaces();
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function exportTombstones() {
+    setBusy('restore-export');
+    setStatus('');
+    try {
+      const exported = await client.GET('/api/v1/operator/purge-tombstones');
+      if (exported.response.status !== 200 || !exported.data) {
+        setStatus('The purge ledger could not be exported.');
+        return;
+      }
+      setRestoreManifests(JSON.stringify(exported.data.tombstones, null, 2));
+      setTombstoneCount(exported.data.tombstones.length);
+      setStatus(
+        'Retain this ledger outside the restored snapshot. After restore, paste it and reapply.',
+      );
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function runRestoreGate() {
+    setBusy('restore-run');
+    setStatus('');
+    try {
+      let manifests: {
+        dispositionId: string;
+        workspaceId: string;
+        studentId: string;
+        completedAt: string;
+        adapters: string[];
+      }[] = [];
+      if (restoreManifests.trim() !== '') {
+        const parsed: unknown = JSON.parse(restoreManifests);
+        if (!Array.isArray(parsed)) {
+          setStatus(
+            'Retained manifests must be the JSON array exported from this console.',
+          );
+          return;
+        }
+        manifests = parsed as typeof manifests;
+      }
+      const result = await client.POST('/api/v1/operator/purge-restore-gate', {
+        params: { header: { 'x-prevcare-csrf': '1' } },
+        body: {
+          operationId: crypto.randomUUID(),
+          manifests,
+        },
+      });
+      if (result.response.status !== 200 || !result.data) {
+        setStatus('The restore gate could not be run.');
+        return;
+      }
+      setStatus(
+        result.data.outcome === 'verified'
+          ? 'Purge manifests were reapplied. Disposed records remain suppressed.'
+          : 'The restore gate could not prove suppression. Service stays not-ready.',
+      );
+      await loadWorkspaces();
+    } catch (error) {
+      setStatus(
+        error instanceof SyntaxError
+          ? 'Retained manifests must be valid JSON from the exported ledger.'
+          : 'The restore gate could not be run.',
+      );
+    } finally {
+      setBusy(undefined);
+    }
   }
 
   async function createWorkspace(event: FormEvent) {
@@ -701,6 +810,72 @@ export function OperatorConsolePage() {
                   </li>
                 ))}
               </ul>
+            </section>
+          ) : null}
+
+          {authenticated ? (
+            <section className="border-2 border-[#15251f] bg-white p-6">
+              <p className="font-mono text-xs font-bold uppercase">
+                After restore
+              </p>
+              <h2 className="mt-1 text-2xl font-black">Purge restore gate</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Export the purge ledger before restoring. After the snapshot is
+                restored, mark the gate pending, paste the retained ledger, and
+                reapply it before traffic resumes. Do not use live-database
+                tombstones from a pre-purge restore; those rows are gone. A
+                restore that cannot prove suppression stays not-ready.
+              </p>
+              <p className="mt-3 text-sm">
+                Gate {restoreGate?.status ?? 'unknown'}
+                {restoreGate?.failedCode ? ` · ${restoreGate.failedCode}` : ''}
+                {typeof tombstoneCount === 'number'
+                  ? ` · ${tombstoneCount} live manifests`
+                  : ''}
+              </p>
+              <label className="mt-4 block text-sm font-bold" htmlFor="restore-manifests">
+                Retained purge ledger
+              </label>
+              <textarea
+                id="restore-manifests"
+                value={restoreManifests}
+                onChange={(event) => setRestoreManifests(event.target.value)}
+                rows={8}
+                className="mt-1 w-full border-2 border-[#15251f] p-2 font-mono text-xs"
+                spellCheck={false}
+              />
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={busy !== undefined}
+                  onClick={() => void exportTombstones()}
+                  className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
+                >
+                  {busy === 'restore-export'
+                    ? 'Exporting ledger...'
+                    : 'Export purge ledger'}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy !== undefined}
+                  onClick={() => void beginRestoreGate()}
+                  className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
+                >
+                  {busy === 'restore-begin'
+                    ? 'Marking pending...'
+                    : 'Mark restore pending'}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy !== undefined}
+                  onClick={() => void runRestoreGate()}
+                  className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
+                >
+                  {busy === 'restore-run'
+                    ? 'Reapplying manifests...'
+                    : 'Reapply retained manifests'}
+                </button>
+              </div>
             </section>
           ) : null}
 

@@ -251,6 +251,36 @@ async function renderContracts() {
         retryRecordDisposition: async () => {
           throw new Error('Contract generation does not execute commands');
         },
+        reconcilePurgeVerification: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        recordProviderVerification: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        verifyBackupExpiry: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        issueDestructionCertificate: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        readDestructionCertificate: async () => {
+          throw new Error('Contract generation does not execute queries');
+        },
+        beginPurgeRestoreGate: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        runPurgeRestoreGate: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        listPurgeTombstones: async () => {
+          throw new Error('Contract generation does not execute queries');
+        },
+        readPurgeRestoreGate: async () => {
+          throw new Error('Contract generation does not execute queries');
+        },
+        assertPurgeRestoreReady: async () => {
+          throw new Error('Contract generation does not execute queries');
+        },
       },
     },
   );

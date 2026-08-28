@@ -99,6 +99,10 @@ try {
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
+    `revoke all on table records_governance.purge_restore_in_progress
+       from ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
     `grant select, insert, update on identity_access.staff_session_freshness
        to ${runtimeRoleIdentifier}`,
   );
@@ -155,6 +159,38 @@ try {
   );
   await client.query(
     `grant execute on function records_governance.disposition_purge_authorized(uuid, uuid)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function records_governance.reapply_purge_tombstone(uuid, uuid)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function records_governance.disposed_student_is_suppressed(uuid, uuid)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function records_governance.export_purge_tombstones()
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function records_governance.import_purge_tombstone(uuid, uuid, uuid, uuid, timestamptz, text[])
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function records_governance.unsuppressed_disposed_students()
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.read_purge_restore_gate()
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.begin_purge_restore_gate(uuid, text, timestamptz, jsonb)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.complete_purge_restore_gate(uuid, text, timestamptz, text, text, jsonb)
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(

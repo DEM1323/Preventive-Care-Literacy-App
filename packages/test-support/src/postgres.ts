@@ -146,6 +146,9 @@ export async function createRuntimeDatabaseUser(
       `grant select, insert, update on all tables in schema records_governance to ${role}`,
     );
     await client.query(
+      `revoke all on table records_governance.purge_restore_in_progress from ${role}`,
+    );
+    await client.query(
       `grant delete on identity_access.verified_email_addresses,
          identity_access.student_sessions, identity_access.class_memberships,
          identity_access.invitations, identity_access.invitation_challenges,
@@ -160,6 +163,30 @@ export async function createRuntimeDatabaseUser(
     );
     await client.query(
       `grant execute on function records_governance.disposition_purge_authorized(uuid, uuid) to ${role}`,
+    );
+    await client.query(
+      `grant execute on function records_governance.reapply_purge_tombstone(uuid, uuid) to ${role}`,
+    );
+    await client.query(
+      `grant execute on function records_governance.disposed_student_is_suppressed(uuid, uuid) to ${role}`,
+    );
+    await client.query(
+      `grant execute on function records_governance.export_purge_tombstones() to ${role}`,
+    );
+    await client.query(
+      `grant execute on function records_governance.import_purge_tombstone(uuid, uuid, uuid, uuid, timestamptz, text[]) to ${role}`,
+    );
+    await client.query(
+      `grant execute on function records_governance.unsuppressed_disposed_students() to ${role}`,
+    );
+    await client.query(
+      `grant execute on function infrastructure.read_purge_restore_gate() to ${role}`,
+    );
+    await client.query(
+      `grant execute on function infrastructure.begin_purge_restore_gate(uuid, text, timestamptz, jsonb) to ${role}`,
+    );
+    await client.query(
+      `grant execute on function infrastructure.complete_purge_restore_gate(uuid, text, timestamptz, text, text, jsonb) to ${role}`,
     );
     await client.query(
       `grant usage, select on all sequences in schema audit, infrastructure, records_governance to ${role}`,
