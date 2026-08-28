@@ -85,6 +85,13 @@ import {
   RecordDispositionNotRepairableError,
   RecordDispositionNotSchedulableError,
   RecordDispositionVersionConflictError,
+  DestructionCertificateNotFoundError,
+  DestructionCertificateNotIssuableError,
+  PurgeBackupExpiryNotReadyError,
+  PurgeProviderVerificationRequiredError,
+  PurgeRestoreGateNotReadyError,
+  PurgeVerificationNotFoundError,
+  PurgeVerificationNotRepairableError,
   RecordHoldNotActiveError,
   RecordHoldNotFoundError,
   RecordHoldNotReleasableError,
@@ -1101,6 +1108,122 @@ const RetryRecordDispositionResponse = Type.Object({
   dispositionId: Type.String({ format: 'uuid' }),
   outcome: Type.Union([Type.Literal('purged'), Type.Literal('failed')]),
 });
+const ReconcilePurgeVerificationBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    dispositionId: Type.String({ format: 'uuid' }),
+    expectedVersion: Type.Integer({ minimum: 1 }),
+  },
+  { additionalProperties: false },
+);
+const ReconcilePurgeVerificationResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  dispositionId: Type.String({ format: 'uuid' }),
+  outcome: Type.Union([Type.Literal('reconciled'), Type.Literal('failed')]),
+});
+const RecordProviderVerificationBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    dispositionId: Type.String({ format: 'uuid' }),
+    expectedVersion: Type.Integer({ minimum: 1 }),
+    adapter: Type.Literal('email_provider'),
+    confirmation: Type.Literal('provider_deletion_verified'),
+    evidenceDigest: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  },
+  { additionalProperties: false },
+);
+const RecordProviderVerificationResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  dispositionId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('recorded'),
+});
+const VerifyBackupExpiryBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    dispositionId: Type.String({ format: 'uuid' }),
+    expectedVersion: Type.Integer({ minimum: 1 }),
+    confirmation: Type.Literal('backup_expiry_verified'),
+  },
+  { additionalProperties: false },
+);
+const VerifyBackupExpiryResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  dispositionId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('verified'),
+});
+const IssueDestructionCertificateBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    dispositionId: Type.String({ format: 'uuid' }),
+    expectedVersion: Type.Integer({ minimum: 1 }),
+    confirmation: Type.Literal('issue_destruction_certificate'),
+  },
+  { additionalProperties: false },
+);
+const DestructionCertificateLocationSchema = Type.Object({
+  adapter: Type.String(),
+  verification: Type.Literal('verified'),
+  residualRetentionDeadlineAt: Type.String({ format: 'date-time' }),
+});
+const IssueDestructionCertificateResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  dispositionId: Type.String({ format: 'uuid' }),
+  certificateId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('certified'),
+});
+const DestructionCertificateQuery = Type.Object({
+  dispositionId: Type.Optional(Type.String({ format: 'uuid' })),
+});
+const DestructionCertificateResponse = Type.Object({
+  certificateId: Type.String({ format: 'uuid' }),
+  issuedAt: Type.String({ format: 'date-time' }),
+  policyRevisionId: Type.String({ format: 'uuid' }),
+  dispositionId: Type.String({ format: 'uuid' }),
+  locations: Type.Array(DestructionCertificateLocationSchema),
+});
+const BeginPurgeRestoreGateBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+const BeginPurgeRestoreGateResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('pending'),
+});
+const PurgeTombstoneExportSchema = Type.Object({
+  dispositionId: Type.String({ format: 'uuid' }),
+  workspaceId: Type.String({ format: 'uuid' }),
+  studentId: Type.String({ format: 'uuid' }),
+  completedAt: Type.String({ format: 'date-time' }),
+  adapters: Type.Array(Type.String()),
+});
+const RunPurgeRestoreGateBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    manifests: Type.Optional(Type.Array(PurgeTombstoneExportSchema)),
+  },
+  { additionalProperties: false },
+);
+const RunPurgeRestoreGateResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  outcome: Type.Union([Type.Literal('verified'), Type.Literal('failed')]),
+  reappliedCount: Type.Integer({ minimum: 0 }),
+  failedCode: Type.Union([Type.String(), Type.Null()]),
+});
+const PurgeRestoreGateResponse = Type.Object({
+  status: Type.Union([
+    Type.Literal('not_required'),
+    Type.Literal('pending'),
+    Type.Literal('verified'),
+    Type.Literal('failed'),
+  ]),
+  verifiedAt: Type.Union([Type.String({ format: 'date-time' }), Type.Null()]),
+  failedCode: Type.Union([Type.String(), Type.Null()]),
+});
+const PurgeTombstoneExportResponse = Type.Object({
+  tombstones: Type.Array(PurgeTombstoneExportSchema),
+});
 const RecordDispositionPurgeEntrySchema = Type.Object({
   location: Type.String(),
   adapter: Type.Union([
@@ -1311,6 +1434,47 @@ const RecordsGovernanceDirectoryResponse = Type.Object({
           ]),
           policyRevisionId: Type.String({ format: 'uuid' }),
           purgeManifest: Type.Array(RecordDispositionPurgeEntrySchema),
+          verificationLocations: Type.Array(
+            Type.Object({
+              adapter: Type.String(),
+              location: Type.String(),
+              deletion: Type.Union([
+                Type.Literal('requested'),
+                Type.Literal('deleted'),
+                Type.Literal('pending'),
+                Type.Literal('failed'),
+              ]),
+              verification: Type.Union([
+                Type.Literal('pending'),
+                Type.Literal('verified'),
+                Type.Literal('failed'),
+              ]),
+              residualRetentionDeadlineAt: Type.String({
+                format: 'date-time',
+              }),
+              evidenceDigest: Type.Union([
+                Type.String({ pattern: '^[0-9a-f]{64}$' }),
+                Type.Null(),
+              ]),
+            }),
+          ),
+          destructionCertificate: Type.Optional(
+            Type.Object({
+              certificateId: Type.String({ format: 'uuid' }),
+              issuedAt: Type.String({ format: 'date-time' }),
+              policyRevisionId: Type.String({ format: 'uuid' }),
+              dispositionId: Type.String({ format: 'uuid' }),
+              locations: Type.Array(
+                Type.Object({
+                  adapter: Type.String(),
+                  verification: Type.Literal('verified'),
+                  residualRetentionDeadlineAt: Type.String({
+                    format: 'date-time',
+                  }),
+                }),
+              ),
+            }),
+          ),
         }),
       ),
       dispositionPrerequisites: Type.Object({
@@ -2320,6 +2484,18 @@ const ProblemDetails = Type.Object({
   reason: Type.Optional(Type.String()),
   reviewId: Type.Optional(Type.String({ format: 'uuid' })),
   blockingReasons: Type.Optional(Type.Array(Type.String())),
+  blockingLocations: Type.Optional(
+    Type.Array(
+      Type.Object({
+        adapter: Type.String(),
+        location: Type.String(),
+        deletion: Type.String(),
+        verification: Type.String(),
+        residualRetentionDeadlineAt: Type.String({ format: 'date-time' }),
+        evidenceDigest: Type.Union([Type.String(), Type.Null()]),
+      }),
+    ),
+  ),
 });
 
 const ProblemResponse = {
@@ -3288,6 +3464,63 @@ export async function buildApp(
         type: 'https://preventive-care-literacy.example/problems/record-disposition-confirmation-required',
         title: error.message,
         status: 400,
+        code: error.code,
+      });
+    }
+    if (error instanceof PurgeVerificationNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/purge-verification-not-found',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof PurgeVerificationNotRepairableError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/purge-verification-not-repairable',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof PurgeProviderVerificationRequiredError) {
+      return reply.type('application/problem+json').code(400).send({
+        type: 'https://preventive-care-literacy.example/problems/purge-provider-verification-required',
+        title: error.message,
+        status: 400,
+        code: error.code,
+      });
+    }
+    if (error instanceof PurgeBackupExpiryNotReadyError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/purge-backup-expiry-not-ready',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof DestructionCertificateNotIssuableError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/destruction-certificate-not-issuable',
+        title: error.message,
+        status: 409,
+        code: error.code,
+        blockingLocations: error.blockingLocations,
+      });
+    }
+    if (error instanceof DestructionCertificateNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/destruction-certificate-not-found',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof PurgeRestoreGateNotReadyError) {
+      return reply.type('application/problem+json').code(503).send({
+        type: 'https://preventive-care-literacy.example/problems/purge-restore-gate-not-ready',
+        title: error.message,
+        status: 503,
         code: error.code,
       });
     }
@@ -5365,6 +5598,266 @@ export async function buildApp(
       },
     );
 
+    app.post<{ Body: Static<typeof ReconcilePurgeVerificationBody> }>(
+      '/api/v1/administration/students/purge-verification-reconciliations',
+      {
+        schema: {
+          operationId: 'reconcilePurgeVerification',
+          security: [{ staffSession: [] }],
+          body: ReconcilePurgeVerificationBody,
+          response: {
+            200: ReconcilePurgeVerificationResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.reconcilePurgeVerification({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof RecordProviderVerificationBody> }>(
+      '/api/v1/administration/students/purge-provider-verifications',
+      {
+        schema: {
+          operationId: 'recordProviderVerification',
+          security: [{ staffSession: [] }],
+          body: RecordProviderVerificationBody,
+          response: {
+            200: RecordProviderVerificationResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.recordProviderVerification({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof VerifyBackupExpiryBody> }>(
+      '/api/v1/administration/students/purge-backup-expiry-verifications',
+      {
+        schema: {
+          operationId: 'verifyBackupExpiry',
+          security: [{ staffSession: [] }],
+          body: VerifyBackupExpiryBody,
+          response: {
+            200: VerifyBackupExpiryResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.verifyBackupExpiry({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof IssueDestructionCertificateBody> }>(
+      '/api/v1/administration/students/record-destruction-certificates',
+      {
+        schema: {
+          operationId: 'issueDestructionCertificate',
+          security: [{ staffSession: [] }],
+          body: IssueDestructionCertificateBody,
+          response: {
+            200: IssueDestructionCertificateResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.issueDestructionCertificate({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.get<{ Querystring: Static<typeof DestructionCertificateQuery> }>(
+      '/api/v1/administration/students/record-destruction-certificates',
+      {
+        schema: {
+          operationId: 'readDestructionCertificate',
+          security: [{ staffSession: [] }],
+          querystring: DestructionCertificateQuery,
+          response: {
+            200: DestructionCertificateResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.readDestructionCertificate({
+          sessionHandle,
+          dispositionId: request.query.dispositionId,
+        });
+      },
+    );
+
+    app.post<{
+      Body: Static<typeof BeginPurgeRestoreGateBody>;
+      Headers: Static<typeof OperatorHeaders>;
+    }>(
+      '/api/v1/operator/purge-restore-gate/begin',
+      {
+        schema: {
+          operationId: 'beginPurgeRestoreGate',
+          security: [{ bearerAuth: [] }, { operatorSession: [] }],
+          headers: OperatorHeaders,
+          body: BeginPurgeRestoreGateBody,
+          response: {
+            200: BeginPurgeRestoreGateResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const actor = authenticateOperator(request);
+        if (!actor) return operatorAuthenticationRequired(reply);
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.beginPurgeRestoreGate({
+          actorId: actor.id,
+          operationId: request.body.operationId,
+        });
+      },
+    );
+
+    app.post<{
+      Body: Static<typeof RunPurgeRestoreGateBody>;
+      Headers: Static<typeof OperatorHeaders>;
+    }>(
+      '/api/v1/operator/purge-restore-gate',
+      {
+        schema: {
+          operationId: 'runPurgeRestoreGate',
+          security: [{ bearerAuth: [] }, { operatorSession: [] }],
+          headers: OperatorHeaders,
+          body: RunPurgeRestoreGateBody,
+          response: {
+            200: RunPurgeRestoreGateResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const actor = authenticateOperator(request);
+        if (!actor) return operatorAuthenticationRequired(reply);
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.runPurgeRestoreGate({
+          actorId: actor.id,
+          operationId: request.body.operationId,
+          manifests: request.body.manifests,
+        });
+      },
+    );
+
+    app.get<{ Headers: Static<typeof OperatorAuthenticationHeaders> }>(
+      '/api/v1/operator/purge-restore-gate',
+      {
+        schema: {
+          operationId: 'readPurgeRestoreGate',
+          security: [{ bearerAuth: [] }, { operatorSession: [] }],
+          headers: OperatorAuthenticationHeaders,
+          response: {
+            200: PurgeRestoreGateResponse,
+            401: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        if (!authenticateOperator(request)) {
+          return operatorAuthenticationRequired(reply);
+        }
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.readPurgeRestoreGate();
+      },
+    );
+
+    app.get<{ Headers: Static<typeof OperatorAuthenticationHeaders> }>(
+      '/api/v1/operator/purge-tombstones',
+      {
+        schema: {
+          operationId: 'listPurgeTombstones',
+          security: [{ bearerAuth: [] }, { operatorSession: [] }],
+          headers: OperatorAuthenticationHeaders,
+          response: {
+            200: PurgeTombstoneExportResponse,
+            401: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        if (!authenticateOperator(request)) {
+          return operatorAuthenticationRequired(reply);
+        }
+        reply.header('cache-control', 'no-store');
+        return {
+          tombstones: await recordsGovernance.listPurgeTombstones(),
+        };
+      },
+    );
+
     app.post<{ Body: Static<typeof RetrieveRecordProductionBody> }>(
       '/api/v1/records/productions/retrievals',
       {
@@ -6129,6 +6622,7 @@ export async function createServer(options: {
   releasePackages?: ReleasePackageStorage;
   translationAdapter?: TranslationAdapter;
   buildIdentity?: BuildAttestation;
+  purgeRestoreRequired?: boolean;
 }): Promise<FastifyInstance> {
   const connectionUrl = new URL(options.databaseUrl);
   if (options.databaseCaCertificate) {
@@ -6215,6 +6709,7 @@ export async function createServer(options: {
     ids,
     keys: envelopeKeys,
     productionSecrets: createRecordProductionSecrets(invitationSecretKeys),
+    purgeRestoreRequired: options.purgeRestoreRequired,
   });
   return buildApp(identityAndAccess, {
     operatorAuthenticator: createOperatorAuthenticator(
@@ -6224,6 +6719,7 @@ export async function createServer(options: {
     publicOrigin: options.publicOrigin,
     readiness: async () => {
       await pool.query('select 1');
+      await recordsGovernance.assertPurgeRestoreReady();
     },
     telemetry:
       options.telemetry ?? createTelemetry((line) => console.log(line)),

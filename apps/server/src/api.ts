@@ -62,6 +62,7 @@ const server = await createServer({
     idempotencyKey: Buffer.from(applicationIdempotencyKey, 'base64'),
   },
   webRoot: process.env.WEB_ROOT ?? 'dist',
+  purgeRestoreRequired: process.env.PURGE_RESTORE_REQUIRED === '1',
 });
 await server.listen({
   host: process.env.HOST ?? '0.0.0.0',

@@ -84,6 +84,18 @@ type GovernanceStudent = {
       count: number;
       verification: string;
     }[];
+    verificationLocations: {
+      adapter: string;
+      location: string;
+      deletion: string;
+      verification: string;
+      residualRetentionDeadlineAt: string;
+      evidenceDigest: string | null;
+    }[];
+    destructionCertificate?: {
+      certificateId: string;
+      issuedAt: string;
+    };
   }[];
   dispositionPrerequisites: {
     blockingReasons: string[];
@@ -185,6 +197,26 @@ export function StudentRecordLifecycleSection() {
         version: number;
       }
     | { kind: 'retry-disposition'; dispositionId: string; version: number }
+    | {
+        kind: 'reconcile-verification';
+        dispositionId: string;
+        version: number;
+      }
+    | {
+        kind: 'record-provider-verification';
+        dispositionId: string;
+        version: number;
+      }
+    | {
+        kind: 'verify-backup-expiry';
+        dispositionId: string;
+        version: number;
+      }
+    | {
+        kind: 'issue-certificate';
+        dispositionId: string;
+        version: number;
+      }
     | undefined
   >();
   const [amendmentReason, setAmendmentReason] = useState<
@@ -199,6 +231,7 @@ export function StudentRecordLifecycleSection() {
   const [requesterStatement, setRequesterStatement] = useState('');
   const [relatedStudentId, setRelatedStudentId] = useState('');
   const [productionRecipient, setProductionRecipient] = useState('');
+  const [providerEvidenceDigest, setProviderEvidenceDigest] = useState('');
   const [reviewOutcome, setReviewOutcome] = useState<
     'keep_distinct' | 'referred_for_amendment'
   >('keep_distinct');
@@ -491,6 +524,95 @@ export function StudentRecordLifecycleSection() {
         result.data?.outcome === 'purged'
           ? 'Repairable Record Disposition tasks completed. No destruction certificate is issued here.'
           : 'Record Disposition remains incomplete and repairable.',
+      );
+    } else if (confirm.kind === 'reconcile-verification') {
+      const result = await client.POST(
+        '/api/v1/administration/students/purge-verification-reconciliations',
+        {
+          body: {
+            operationId,
+            dispositionId: confirm.dispositionId,
+            expectedVersion: confirm.version,
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status !== 200) {
+        setMessage('Purge verification could not be reconciled.');
+        return;
+      }
+      setMessage(
+        result.data?.outcome === 'reconciled'
+          ? 'Purge verification locations were reconciled. Incomplete subprocessors still block the destruction certificate.'
+          : 'Some purge verification locations remain failed and repairable.',
+      );
+    } else if (confirm.kind === 'record-provider-verification') {
+      const result = await client.POST(
+        '/api/v1/administration/students/purge-provider-verifications',
+        {
+          body: {
+            operationId,
+            dispositionId: confirm.dispositionId,
+            expectedVersion: confirm.version,
+            adapter: 'email_provider',
+            confirmation: 'provider_deletion_verified',
+            evidenceDigest: providerEvidenceDigest,
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status !== 200) {
+        setMessage('Provider verification could not be recorded.');
+        return;
+      }
+      setMessage(
+        'Email subprocessor deletion was recorded as verified. No mailbox content is shown.',
+      );
+    } else if (confirm.kind === 'verify-backup-expiry') {
+      const result = await client.POST(
+        '/api/v1/administration/students/purge-backup-expiry-verifications',
+        {
+          body: {
+            operationId,
+            dispositionId: confirm.dispositionId,
+            expectedVersion: confirm.version,
+            confirmation: 'backup_expiry_verified',
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status !== 200) {
+        setMessage(
+          'Backup expiry cannot be verified until the residual-retention window ends.',
+        );
+        return;
+      }
+      setMessage('Backup expiry was verified. Backup media content is not shown.');
+    } else if (confirm.kind === 'issue-certificate') {
+      const result = await client.POST(
+        '/api/v1/administration/students/record-destruction-certificates',
+        {
+          body: {
+            operationId,
+            dispositionId: confirm.dispositionId,
+            expectedVersion: confirm.version,
+            confirmation: 'issue_destruction_certificate',
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status !== 200) {
+        setMessage(
+          'The destruction certificate cannot be issued while any required location is pending, failed, or late.',
+        );
+        return;
+      }
+      setMessage(
+        'A non-identifying destruction certificate was issued. Identifying verification residue was discarded.',
       );
     } else if (confirm.kind === 'resolve-amendment') {
       const decision =
@@ -808,6 +930,17 @@ export function StudentRecordLifecycleSection() {
                           )
                           .join(' ')}`
                       : ''}
+                    {item.verificationLocations?.length
+                      ? ` · verify ${item.verificationLocations
+                          .map(
+                            (entry) =>
+                              `${entry.adapter}:${entry.deletion}/${entry.verification}`,
+                          )
+                          .join(' ')}`
+                      : ''}
+                    {item.destructionCertificate
+                      ? ` · certificate ${item.destructionCertificate.certificateId}`
+                      : ''}
                     {item.status === 'scheduled' ? (
                       <>
                         {' '}
@@ -854,6 +987,63 @@ export function StudentRecordLifecycleSection() {
                           }
                         >
                           Retry Record Disposition
+                        </button>
+                      </>
+                    ) : null}
+                    {item.status === 'purged' ? (
+                      <>
+                        {' '}
+                        <button
+                          type="button"
+                          className="font-bold text-sky-300"
+                          onClick={() =>
+                            setConfirm({
+                              kind: 'reconcile-verification',
+                              dispositionId: item.dispositionId,
+                              version: item.version,
+                            })
+                          }
+                        >
+                          Reconcile purge verification
+                        </button>{' '}
+                        <button
+                          type="button"
+                          className="font-bold text-sky-300"
+                          onClick={() =>
+                            setConfirm({
+                              kind: 'record-provider-verification',
+                              dispositionId: item.dispositionId,
+                              version: item.version,
+                            })
+                          }
+                        >
+                          Record provider verification
+                        </button>{' '}
+                        <button
+                          type="button"
+                          className="font-bold text-sky-300"
+                          onClick={() =>
+                            setConfirm({
+                              kind: 'verify-backup-expiry',
+                              dispositionId: item.dispositionId,
+                              version: item.version,
+                            })
+                          }
+                        >
+                          Verify backup expiry
+                        </button>{' '}
+                        <button
+                          type="button"
+                          className="font-bold text-sky-300"
+                          onClick={() =>
+                            setConfirm({
+                              kind: 'issue-certificate',
+                              dispositionId: item.dispositionId,
+                              version: item.version,
+                            })
+                          }
+                        >
+                          Issue destruction certificate
                         </button>
                       </>
                     ) : null}
@@ -951,7 +1141,19 @@ export function StudentRecordLifecycleSection() {
                                       ? 'Execute Record Disposition'
                                       : confirm.kind === 'retry-disposition'
                                         ? 'Retry Record Disposition'
-                                        : 'Release Record Hold'}
+                                        : confirm.kind ===
+                                            'reconcile-verification'
+                                          ? 'Reconcile purge verification'
+                                          : confirm.kind ===
+                                              'record-provider-verification'
+                                            ? 'Record provider verification'
+                                            : confirm.kind ===
+                                                'verify-backup-expiry'
+                                              ? 'Verify backup expiry'
+                                              : confirm.kind ===
+                                                  'issue-certificate'
+                                                ? 'Issue destruction certificate'
+                                                : 'Release Record Hold'}
             </h3>
             <p className="mt-3 text-sm leading-6 text-slate-300">
               {confirm.kind === 'open-case'
@@ -980,8 +1182,37 @@ export function StudentRecordLifecycleSection() {
                                       ? 'This destroys every active owned location after the cancellation window. Confirm execute_destruction. This does not issue a destruction certificate.'
                                       : confirm.kind === 'retry-disposition'
                                         ? 'This retries failed disposal adapters from the failed step. It cannot issue a destruction certificate while any required location is incomplete.'
-                                        : 'Releasing this Record Hold may make destruction eligible if no other Record Hold remains. This does not restore Student access.'}
+                                        : confirm.kind ===
+                                            'reconcile-verification'
+                                          ? 'This retries failed residual adapters and records late locations as failed. It does not show destroyed record content.'
+                                          : confirm.kind ===
+                                              'record-provider-verification'
+                                            ? 'This records that the email subprocessor confirmed deletion. Provide only an opaque 64-character digest. Mailboxes and addresses are not shown.'
+                                            : confirm.kind ===
+                                                'verify-backup-expiry'
+                                              ? 'This records that backup media covering this destruction have expired after the residual-retention window. Backup contents are not shown.'
+                                              : confirm.kind ===
+                                                  'issue-certificate'
+                                                ? 'This issues a non-identifying destruction certificate only after every required location is verified. Identifying verification residue is discarded.'
+                                                : 'Releasing this Record Hold may make destruction eligible if no other Record Hold remains. This does not restore Student access.'}
             </p>
+            {confirm.kind === 'record-provider-verification' ? (
+              <label
+                className="mt-4 grid gap-2 font-bold"
+                htmlFor="provider-evidence-digest"
+              >
+                Opaque provider evidence digest
+                <input
+                  id="provider-evidence-digest"
+                  value={providerEvidenceDigest}
+                  onChange={(event) =>
+                    setProviderEvidenceDigest(event.target.value)
+                  }
+                  spellCheck={false}
+                  className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-mono font-normal"
+                />
+              </label>
+            ) : null}
             {confirm.kind === 'open-case' ? (
               <div className="mt-4 grid gap-3">
                 <label
@@ -1276,7 +1507,19 @@ export function StudentRecordLifecycleSection() {
                                         ? 'Execute Record Disposition'
                                         : confirm.kind === 'retry-disposition'
                                           ? 'Retry Record Disposition'
-                                          : 'Release Record Hold'}
+                                          : confirm.kind ===
+                                              'reconcile-verification'
+                                            ? 'Reconcile purge verification'
+                                            : confirm.kind ===
+                                                'record-provider-verification'
+                                              ? 'Record provider verification'
+                                              : confirm.kind ===
+                                                  'verify-backup-expiry'
+                                                ? 'Verify backup expiry'
+                                                : confirm.kind ===
+                                                    'issue-certificate'
+                                                  ? 'Issue destruction certificate'
+                                                  : 'Release Record Hold'}
               </button>
               <button
                 type="button"

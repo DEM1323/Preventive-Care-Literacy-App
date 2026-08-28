@@ -1,6 +1,12 @@
+import { createHash } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import type {
+  DestructionCertificateView,
   DestructionEligibility,
+  IssueDestructionCertificateResult,
+  PurgeTombstoneExport,
+  PurgeRestoreGateView,
+  PurgeVerificationLocationView,
   RecordAmendmentView,
   RecordConflictReviewView,
   RecordDispositionBlockingReason,
@@ -12,10 +18,16 @@ import type {
   RecordProductionView,
   RecordsGovernanceDirectory,
   RecordsGovernanceStore,
+  BeginPurgeRestoreGateResult,
+  RunPurgeRestoreGateResult,
   StudentRecordsGovernanceView,
 } from '../../../modules/records-governance/index.ts';
 import {
   authorizedProductionPortions,
+  purgeResidualAdapters,
+  purgeResidualRetentionMs,
+  purgeVerificationAdapters,
+  purgeVerificationLocations,
   recordDispositionAdapters,
   recordDispositionCancellationWindowMs,
 } from '../../../modules/records-governance/index.ts';
@@ -2345,6 +2357,210 @@ export function createPostgresRecordsGovernanceStore(options: {
       return retried;
     },
 
+    async reconcileVerification(request) {
+      const reconciled = await runVerificationCommand(options.pool, {
+        ...request,
+        commandName: 'reconcilePurgeVerification',
+        kind: 'reconcile',
+      });
+      if (reconciled.outcome === 'not_ready') {
+        return { outcome: 'not_repairable' };
+      }
+      return reconciled;
+    },
+
+    async recordProviderVerification(request) {
+      const recorded = await runVerificationCommand(options.pool, {
+        ...request,
+        commandName: 'recordProviderVerification',
+        kind: 'provider',
+      });
+      if (recorded.outcome === 'not_ready') {
+        return { outcome: 'not_repairable' };
+      }
+      return recorded;
+    },
+
+    async verifyBackupExpiry(request) {
+      return runVerificationCommand(options.pool, {
+        ...request,
+        commandName: 'verifyBackupExpiry',
+        kind: 'backup',
+      });
+    },
+
+    async issueDestructionCertificate(request) {
+      return issueCertificate(options.pool, request);
+    },
+
+    async readDestructionCertificate(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        const row = await client.query<{
+          certificate: DestructionCertificateView;
+        }>(
+          `select json_build_object(
+             'certificateId', certificate.certificate_id,
+             'issuedAt', to_char(certificate.issued_at at time zone 'UTC',
+                                 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+             'policyRevisionId', certificate.policy_revision_id,
+             'dispositionId', certificate.disposition_id,
+             'locations', certificate.locations
+           ) as certificate
+             from records_governance.destruction_certificates certificate
+            where certificate.disposition_id = $1
+              and certificate.workspace_id = $2`,
+          [request.dispositionId, request.workspaceId],
+        );
+        await client.query('commit');
+        return row.rows[0]?.certificate;
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async beginPurgeRestoreGate(request) {
+      const existing = await options.pool.query<{ result: unknown }>(
+        `select infrastructure.read_purge_restore_gate() as result`,
+      );
+      const current = existing.rows[0]?.result as {
+        lastOperationId?: string | null;
+        lastCommand?: string | null;
+        lastResult?: BeginPurgeRestoreGateResult | null;
+      };
+      if (
+        current?.lastOperationId === request.operationId &&
+        current.lastCommand === 'beginPurgeRestoreGate' &&
+        current.lastResult
+      ) {
+        return { outcome: 'replayed', result: current.lastResult };
+      }
+      const applied = await options.pool.query<{
+        result: BeginPurgeRestoreGateResult;
+      }>(
+        `select infrastructure.begin_purge_restore_gate($1, $2, $3, $4::jsonb) as result`,
+        [
+          request.operationId,
+          request.actorId,
+          request.occurredAt,
+          JSON.stringify(request.result),
+        ],
+      );
+      return { outcome: 'applied', result: applied.rows[0]!.result };
+    },
+
+    async runPurgeRestoreGate(request) {
+      const existing = await options.pool.query<{ result: unknown }>(
+        `select infrastructure.read_purge_restore_gate() as result`,
+      );
+      const current = existing.rows[0]?.result as {
+        status?: PurgeRestoreGateView['status'];
+        lastOperationId?: string | null;
+        lastCommand?: string | null;
+        lastResult?: RunPurgeRestoreGateResult | null;
+      };
+      if (
+        current?.lastOperationId === request.operationId &&
+        current.lastCommand === 'runPurgeRestoreGate' &&
+        current.lastResult
+      ) {
+        return { outcome: 'replayed', result: current.lastResult };
+      }
+      if (current?.status !== 'pending' && current?.status !== 'failed') {
+        return {
+          outcome: 'applied',
+          result: {
+            operationId: request.operationId,
+            outcome: 'failed',
+            reappliedCount: 0,
+            failedCode: 'RESTORE_GATE_NOT_PENDING',
+          },
+        };
+      }
+      if (request.manifests.length === 0) {
+        const live = await options.pool.query<{
+          tombstones: PurgeTombstoneExport[];
+        }>(`select records_governance.export_purge_tombstones() as tombstones`);
+        const tombstones = Array.isArray(live.rows[0]?.tombstones)
+          ? live.rows[0]!.tombstones
+          : [];
+        if (tombstones.length === 0) {
+          const result: RunPurgeRestoreGateResult = {
+            operationId: request.operationId,
+            outcome: 'failed',
+            reappliedCount: 0,
+            failedCode: 'RESTORE_MANIFESTS_REQUIRED',
+          };
+          await options.pool.query(
+            `select infrastructure.complete_purge_restore_gate($1, $2, $3, $4, $5, $6::jsonb)`,
+            [
+              request.operationId,
+              request.actorId,
+              request.occurredAt,
+              result.outcome,
+              result.failedCode,
+              JSON.stringify(result),
+            ],
+          );
+          return { outcome: 'applied', result };
+        }
+      }
+      const result = await applyPurgeRestoreGate(options.pool, request);
+      await options.pool.query(
+        `select infrastructure.complete_purge_restore_gate($1, $2, $3, $4, $5, $6::jsonb)`,
+        [
+          request.operationId,
+          request.actorId,
+          request.occurredAt,
+          result.outcome,
+          result.failedCode,
+          JSON.stringify(result),
+        ],
+      );
+      return { outcome: 'applied', result };
+    },
+
+    async listPurgeTombstones() {
+      const exported = await options.pool.query<{
+        tombstones: PurgeTombstoneExport[];
+      }>(`select records_governance.export_purge_tombstones() as tombstones`);
+      const value = exported.rows[0]?.tombstones;
+      return Array.isArray(value) ? value : [];
+    },
+
+    async readPurgeRestoreGate() {
+      const row = await options.pool.query<{ result: unknown }>(
+        `select infrastructure.read_purge_restore_gate() as result`,
+      );
+      const current = row.rows[0]?.result as {
+        status?: PurgeRestoreGateView['status'];
+        verifiedAt?: string | null;
+        failedCode?: string | null;
+      };
+      return {
+        status: current?.status ?? 'not_required',
+        verifiedAt: current?.verifiedAt ?? null,
+        failedCode: current?.failedCode ?? null,
+      };
+    },
+
+    async disposedRecordsAreSuppressed() {
+      const row = await options.pool.query<{ present: boolean }>(
+        `select records_governance.unsuppressed_disposed_students() as present`,
+      );
+      return row.rows[0]?.present !== true;
+    },
+
     async list(request) {
       const client = await options.pool.connect();
       try {
@@ -2517,7 +2733,37 @@ export function createPostgresRecordsGovernanceStore(options: {
                         ) order by task.adapter)
                           from records_governance.record_disposition_tasks task
                          where task.disposition_id = disposition.disposition_id
-                      ), '[]'::json)
+                      ), '[]'::json),
+                      'verificationLocations', coalesce((
+                        select json_agg(json_build_object(
+                          'adapter', location.adapter,
+                          'location', location.location,
+                          'deletion', location.deletion,
+                          'verification', location.verification,
+                          'residualRetentionDeadlineAt', to_char(
+                            location.residual_retention_deadline_at
+                              at time zone 'UTC',
+                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                          ),
+                          'evidenceDigest', location.evidence_digest
+                        ) order by location.adapter)
+                          from records_governance.purge_verification_locations location
+                         where location.disposition_id = disposition.disposition_id
+                      ), '[]'::json),
+                      'destructionCertificate', (
+                        select json_build_object(
+                          'certificateId', certificate.certificate_id,
+                          'issuedAt', to_char(
+                            certificate.issued_at at time zone 'UTC',
+                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+                          ),
+                          'policyRevisionId', certificate.policy_revision_id,
+                          'dispositionId', certificate.disposition_id,
+                          'locations', certificate.locations
+                        )
+                          from records_governance.destruction_certificates certificate
+                         where certificate.disposition_id = disposition.disposition_id
+                      )
                     ) order by disposition.scheduled_at, disposition.disposition_id)
                       from records_governance.record_dispositions disposition
                      where disposition.student_id = student.student_id
@@ -2582,7 +2828,18 @@ export function createPostgresRecordsGovernanceStore(options: {
             );
             const dispositions = parseJsonArray<RecordDispositionView>(
               row.dispositions,
-            );
+            ).map((disposition) => {
+              const withLocations: RecordDispositionView = {
+                ...disposition,
+                verificationLocations: disposition.verificationLocations ?? [],
+              };
+              if (!withLocations.destructionCertificate) {
+                const { destructionCertificate: _omitted, ...rest } =
+                  withLocations;
+                return rest;
+              }
+              return withLocations;
+            });
             const activeHolds = Number(row.active_hold_count);
             const dispositionPrerequisites = dispositionPrerequisitesFrom({
               hasPolicy: true,
@@ -2975,6 +3232,7 @@ async function lockDisposition(
       version: number;
       cancellationDeadlineAt: Date;
       caseId: string;
+      policyRevisionId: string;
     }
   | undefined
 > {
@@ -2984,8 +3242,10 @@ async function lockDisposition(
     version: number;
     cancellation_deadline_at: Date;
     case_id: string;
+    policy_revision_id: string;
   }>(
-    `select student_id, status, version, cancellation_deadline_at, case_id
+    `select student_id, status, version, cancellation_deadline_at, case_id,
+            policy_revision_id
        from records_governance.record_dispositions
       where disposition_id = $1 and workspace_id = $2
       for update`,
@@ -2999,6 +3259,7 @@ async function lockDisposition(
     version: selected.version,
     cancellationDeadlineAt: selected.cancellation_deadline_at,
     caseId: selected.case_id,
+    policyRevisionId: selected.policy_revision_id,
   };
 }
 
@@ -3526,6 +3787,13 @@ async function runDispositionPurge(
           where case_id = $1 and outcome = 'open'`,
         [locked.caseId, request.occurredAt],
       );
+      await seedPurgeVerification(
+        client,
+        request.workspaceId,
+        locked.studentId,
+        request.dispositionId,
+        request.occurredAt,
+      );
       await insertDispositionEvent(client, {
         dispositionId: request.dispositionId,
         workspaceId: request.workspaceId,
@@ -3605,4 +3873,737 @@ async function runDispositionPurge(
     }
     client.release();
   }
+}
+
+function opaqueVerificationDigest(adapter: string, location: string): string {
+  return createHash('sha256')
+    .update(`purge-verification/v1:${adapter}:${location}`)
+    .digest('hex');
+}
+
+async function seedPurgeVerification(
+  client: PoolClient,
+  workspaceId: string,
+  studentId: string,
+  dispositionId: string,
+  occurredAt: Date,
+) {
+  await client.query(
+    `insert into records_governance.purge_tombstones
+       (tombstone_id, workspace_id, student_id, disposition_id, completed_at,
+        adapters, record_owner, record_classification, disposal_class)
+     values ($1, $2, $3, $4, $5, $6::text[],
+             'school', 'operational_evidence', 'purge_tombstone')
+     on conflict (workspace_id, student_id) do nothing`,
+    [
+      crypto.randomUUID(),
+      workspaceId,
+      studentId,
+      dispositionId,
+      occurredAt,
+      [...purgeVerificationAdapters],
+    ],
+  );
+  await client.query(
+    `insert into records_governance.purge_identifying_residue
+       (residue_id, disposition_id, workspace_id, student_id, kind,
+        record_owner, record_classification, disposal_class)
+     values ($1, $2, $3, $4, 'verification_workflow',
+             'school', 'student_record', 'purge_identifying_residue')
+     on conflict (disposition_id) do nothing`,
+    [crypto.randomUUID(), dispositionId, workspaceId, studentId],
+  );
+  for (const adapter of purgeVerificationAdapters) {
+    const windowMs = purgeResidualRetentionMs[adapter];
+    const deadline = new Date(occurredAt.getTime() + windowMs);
+    const isResidual = (purgeResidualAdapters as readonly string[]).includes(
+      adapter,
+    );
+    const autoVerify = !isResidual;
+    await client.query(
+      `insert into records_governance.purge_verification_locations
+         (location_id, disposition_id, workspace_id, student_id, adapter,
+          location, deletion, verification, residual_retention_deadline_at,
+          evidence_digest, record_owner, record_classification, disposal_class)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+               'school', 'operational_evidence', 'purge_verification_location')
+       on conflict (disposition_id, adapter) do nothing`,
+      [
+        crypto.randomUUID(),
+        dispositionId,
+        workspaceId,
+        studentId,
+        adapter,
+        purgeVerificationLocations[adapter],
+        autoVerify ? 'deleted' : 'requested',
+        autoVerify ? 'verified' : 'pending',
+        deadline,
+        autoVerify
+          ? opaqueVerificationDigest(
+              adapter,
+              purgeVerificationLocations[adapter],
+            )
+          : null,
+      ],
+    );
+  }
+}
+
+async function loadVerificationLocations(
+  client: PoolClient,
+  dispositionId: string,
+): Promise<
+  {
+    adapter: PurgeVerificationLocationView['adapter'];
+    location: string;
+    deletion: PurgeVerificationLocationView['deletion'];
+    verification: PurgeVerificationLocationView['verification'];
+    residualRetentionDeadlineAt: Date;
+    evidenceDigest: string | null;
+    studentId: string;
+  }[]
+> {
+  const rows = await client.query<{
+    adapter: PurgeVerificationLocationView['adapter'];
+    location: string;
+    deletion: PurgeVerificationLocationView['deletion'];
+    verification: PurgeVerificationLocationView['verification'];
+    residual_retention_deadline_at: Date;
+    evidence_digest: string | null;
+    student_id: string;
+  }>(
+    `select adapter, location, deletion, verification,
+            residual_retention_deadline_at, evidence_digest, student_id
+       from records_governance.purge_verification_locations
+      where disposition_id = $1
+      order by adapter`,
+    [dispositionId],
+  );
+  return rows.rows.map((row) => ({
+    adapter: row.adapter,
+    location: row.location,
+    deletion: row.deletion,
+    verification: row.verification,
+    residualRetentionDeadlineAt: row.residual_retention_deadline_at,
+    evidenceDigest: row.evidence_digest,
+    studentId: row.student_id,
+  }));
+}
+
+function toLocationView(
+  row: Awaited<ReturnType<typeof loadVerificationLocations>>[number],
+): PurgeVerificationLocationView {
+  return {
+    adapter: row.adapter,
+    location: row.location,
+    deletion: row.deletion,
+    verification: row.verification,
+    residualRetentionDeadlineAt: row.residualRetentionDeadlineAt.toISOString(),
+    evidenceDigest: row.evidenceDigest,
+  };
+}
+
+async function adapterHasResidue(
+  client: PoolClient,
+  workspaceId: string,
+  studentId: string,
+  adapter: string,
+): Promise<boolean> {
+  if (adapter === 'object_storage' || adapter === 'productions') {
+    const leftover = await client.query<{ present: boolean }>(
+      `select exists(
+         select 1 from records_governance.record_productions
+          where student_id = $1 and workspace_id = $2
+            and (ciphertext is not null or delivery_ciphertext is not null)
+       ) as present`,
+      [studentId, workspaceId],
+    );
+    if (leftover.rows[0]?.present) return true;
+  }
+  const suppressed = await client.query<{ ok: boolean }>(
+    `select records_governance.disposed_student_is_suppressed($1, $2) as ok`,
+    [workspaceId, studentId],
+  );
+  return suppressed.rows[0]?.ok !== true;
+}
+
+async function bumpDispositionVersion(
+  client: PoolClient,
+  workspaceId: string,
+  dispositionId: string,
+) {
+  await client.query(
+    `update records_governance.record_dispositions
+        set version = version + 1
+      where disposition_id = $1 and workspace_id = $2`,
+    [dispositionId, workspaceId],
+  );
+}
+
+async function markLocation(
+  client: PoolClient,
+  dispositionId: string,
+  adapter: string,
+  input: {
+    deletion: PurgeVerificationLocationView['deletion'];
+    verification: PurgeVerificationLocationView['verification'];
+    evidenceDigest: string | null;
+    lastErrorCode: string | null;
+  },
+) {
+  await client.query(
+    `update records_governance.purge_verification_locations
+        set deletion = $3, verification = $4, evidence_digest = $5,
+            last_error_code = $6
+      where disposition_id = $1 and adapter = $2`,
+    [
+      dispositionId,
+      adapter,
+      input.deletion,
+      input.verification,
+      input.evidenceDigest,
+      input.lastErrorCode,
+    ],
+  );
+}
+
+async function runVerificationCommand<T>(
+  pool: Pool,
+  request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    dispositionId: string;
+    expectedVersion: number;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    commandName: string;
+    kind: 'reconcile' | 'provider' | 'backup';
+    adapter?: 'email_provider';
+    evidenceDigest?: string;
+    result: T;
+  },
+): Promise<
+  | {
+      outcome: 'applied' | 'replayed';
+      result: T;
+    }
+  | { outcome: 'not_found' }
+  | { outcome: 'not_ready' }
+  | { outcome: 'not_repairable' }
+  | { outcome: 'version_conflict' }
+> {
+  const client = await pool.connect();
+  try {
+    await client.query('select pg_advisory_lock(hashtextextended($1, 0))', [
+      `${request.workspaceId}:disposition:${request.dispositionId}`,
+    ]);
+    await client.query('begin');
+    await setLocal(client, 'app.workspace_id', request.workspaceId);
+    await setLocal(client, 'app.staff_identity_id', request.staffIdentityId);
+    const existing = await readReceipt<typeof request.result>(
+      client,
+      request.workspaceId,
+      request.operationId,
+      request.commandName,
+    );
+    if (existing) {
+      await client.query('commit');
+      return { outcome: 'replayed', result: existing };
+    }
+    const locked = await lockDisposition(
+      client,
+      request.workspaceId,
+      request.dispositionId,
+    );
+    if (!locked) {
+      await client.query('rollback');
+      return { outcome: 'not_found' };
+    }
+    if (locked.status !== 'purged') {
+      await client.query('rollback');
+      return { outcome: 'not_repairable' };
+    }
+    if (locked.version !== request.expectedVersion) {
+      await client.query('rollback');
+      return { outcome: 'version_conflict' };
+    }
+    const locations = await loadVerificationLocations(
+      client,
+      request.dispositionId,
+    );
+    if (locations.length === 0) {
+      await client.query('rollback');
+      return { outcome: 'not_found' };
+    }
+    const studentId = locations[0]!.studentId;
+    if (request.kind === 'backup') {
+      const backup = locations.find((row) => row.adapter === 'backups');
+      if (!backup) {
+        await client.query('rollback');
+        return { outcome: 'not_found' };
+      }
+      if (
+        backup.residualRetentionDeadlineAt.getTime() >
+        request.occurredAt.getTime()
+      ) {
+        await client.query('rollback');
+        return { outcome: 'not_ready' };
+      }
+      await markLocation(client, request.dispositionId, 'backups', {
+        deletion: 'deleted',
+        verification: 'verified',
+        evidenceDigest: opaqueVerificationDigest(
+          'backups',
+          purgeVerificationLocations.backups,
+        ),
+        lastErrorCode: null,
+      });
+      await insertDispositionEvent(client, {
+        dispositionId: request.dispositionId,
+        workspaceId: request.workspaceId,
+        studentId,
+        eventKind: 'backup_expiry_verified',
+        occurredAt: request.occurredAt,
+        actorStaffIdentityId: request.staffIdentityId,
+        operationId: request.operationId,
+        details: { adapter: 'backups' },
+      });
+    } else if (request.kind === 'provider') {
+      const provider = locations.find(
+        (row) => row.adapter === 'email_provider',
+      );
+      if (!provider || !request.evidenceDigest) {
+        await client.query('rollback');
+        return { outcome: 'not_found' };
+      }
+      await markLocation(client, request.dispositionId, 'email_provider', {
+        deletion: 'deleted',
+        verification: 'verified',
+        evidenceDigest: request.evidenceDigest,
+        lastErrorCode: null,
+      });
+      await insertDispositionEvent(client, {
+        dispositionId: request.dispositionId,
+        workspaceId: request.workspaceId,
+        studentId,
+        eventKind: 'verification_recorded',
+        occurredAt: request.occurredAt,
+        actorStaffIdentityId: request.staffIdentityId,
+        operationId: request.operationId,
+        details: { adapter: 'email_provider' },
+      });
+    } else {
+      for (const location of locations) {
+        if (location.verification === 'verified') continue;
+        if (
+          location.adapter === 'email_provider' ||
+          location.adapter === 'backups'
+        ) {
+          continue;
+        }
+        const residue = await adapterHasResidue(
+          client,
+          request.workspaceId,
+          studentId,
+          location.adapter,
+        );
+        if (residue) {
+          await markLocation(client, request.dispositionId, location.adapter, {
+            deletion: 'failed',
+            verification: 'failed',
+            evidenceDigest: null,
+            lastErrorCode: 'ADAPTER_RESIDUE_PRESENT',
+          });
+        } else {
+          await markLocation(client, request.dispositionId, location.adapter, {
+            deletion: 'deleted',
+            verification: 'verified',
+            evidenceDigest: opaqueVerificationDigest(
+              location.adapter,
+              location.location,
+            ),
+            lastErrorCode: null,
+          });
+        }
+      }
+    }
+    const remainingFailed = await client.query<{ count: string }>(
+      `select count(*)::text as count
+         from records_governance.purge_verification_locations
+        where disposition_id = $1 and verification = 'failed'`,
+      [request.dispositionId],
+    );
+    const failed = Number(remainingFailed.rows[0]?.count ?? '0') > 0;
+    const result = (
+      request.kind === 'reconcile'
+        ? {
+            ...request.result,
+            outcome: failed ? ('failed' as const) : ('reconciled' as const),
+          }
+        : request.result
+    ) as T;
+    await bumpDispositionVersion(
+      client,
+      request.workspaceId,
+      request.dispositionId,
+    );
+    await writeReceipt(client, {
+      workspaceId: request.workspaceId,
+      operationId: request.operationId,
+      commandName: request.commandName,
+      result,
+      occurredAt: request.occurredAt,
+    });
+    await writeAudit(client, {
+      auditId: request.auditId,
+      workspaceId: request.workspaceId,
+      operationId: request.operationId,
+      eventType:
+        request.kind === 'backup'
+          ? 'record_disposition.backup_expiry_verified'
+          : request.kind === 'provider'
+            ? 'record_disposition.provider_verified'
+            : failed
+              ? 'record_disposition.verification_failed'
+              : 'record_disposition.verification_reconciled',
+      actorId: request.staffIdentityId,
+      occurredAt: request.occurredAt,
+      details: { dispositionId: request.dispositionId },
+    });
+    await writeOutbox(client, {
+      outboxId: request.outboxId,
+      workspaceId: request.workspaceId,
+      operationId: request.operationId,
+      topic:
+        request.kind === 'backup'
+          ? 'record_disposition.backup_expiry_verified'
+          : request.kind === 'provider'
+            ? 'record_disposition.provider_verified'
+            : failed
+              ? 'record_disposition.verification_failed'
+              : 'record_disposition.verification_reconciled',
+      payload: { dispositionId: request.dispositionId },
+      occurredAt: request.occurredAt,
+    });
+    await client.query('commit');
+    return { outcome: 'applied', result };
+  } catch (error) {
+    try {
+      await client.query('rollback');
+    } catch {
+      // Connection may already be idle.
+    }
+    throw error;
+  } finally {
+    try {
+      await client.query('select pg_advisory_unlock(hashtextextended($1, 0))', [
+        `${request.workspaceId}:disposition:${request.dispositionId}`,
+      ]);
+    } catch {
+      // Unlock best-effort.
+    }
+    client.release();
+  }
+}
+
+async function issueCertificate(
+  pool: Pool,
+  request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    dispositionId: string;
+    expectedVersion: number;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    certificateId: string;
+    result: IssueDestructionCertificateResult;
+  },
+): Promise<
+  | {
+      outcome: 'applied' | 'replayed';
+      result: IssueDestructionCertificateResult;
+    }
+  | { outcome: 'not_found' }
+  | {
+      outcome: 'not_issuable';
+      blockingLocations: PurgeVerificationLocationView[];
+    }
+  | { outcome: 'version_conflict' }
+> {
+  const client = await pool.connect();
+  try {
+    await client.query('select pg_advisory_lock(hashtextextended($1, 0))', [
+      `${request.workspaceId}:disposition:${request.dispositionId}`,
+    ]);
+    await client.query('begin');
+    await setLocal(client, 'app.workspace_id', request.workspaceId);
+    await setLocal(client, 'app.staff_identity_id', request.staffIdentityId);
+    const existing = await readReceipt<IssueDestructionCertificateResult>(
+      client,
+      request.workspaceId,
+      request.operationId,
+      'issueDestructionCertificate',
+    );
+    if (existing) {
+      await client.query('commit');
+      return { outcome: 'replayed', result: existing };
+    }
+    const already = await client.query<{
+      certificate_id: string;
+    }>(
+      `select certificate_id from records_governance.destruction_certificates
+        where disposition_id = $1 and workspace_id = $2`,
+      [request.dispositionId, request.workspaceId],
+    );
+    if (already.rows[0]) {
+      const result = {
+        ...request.result,
+        certificateId: already.rows[0].certificate_id,
+      };
+      await writeReceipt(client, {
+        workspaceId: request.workspaceId,
+        operationId: request.operationId,
+        commandName: 'issueDestructionCertificate',
+        result,
+        occurredAt: request.occurredAt,
+      });
+      await client.query('commit');
+      return { outcome: 'applied', result };
+    }
+    const locked = await lockDisposition(
+      client,
+      request.workspaceId,
+      request.dispositionId,
+    );
+    if (!locked) {
+      await client.query('rollback');
+      return { outcome: 'not_found' };
+    }
+    if (locked.status !== 'purged') {
+      await client.query('rollback');
+      return { outcome: 'not_issuable', blockingLocations: [] };
+    }
+    if (locked.version !== request.expectedVersion) {
+      await client.query('rollback');
+      return { outcome: 'version_conflict' };
+    }
+    const locations = await loadVerificationLocations(
+      client,
+      request.dispositionId,
+    );
+    if (locations.length === 0) {
+      await client.query('rollback');
+      return { outcome: 'not_found' };
+    }
+    const incomplete = locations.filter(
+      (row) => row.verification !== 'verified',
+    );
+    if (incomplete.length > 0) {
+      await client.query('rollback');
+      return {
+        outcome: 'not_issuable',
+        blockingLocations: incomplete.map(toLocationView),
+      };
+    }
+    const suppressed = await client.query<{ ok: boolean }>(
+      `select records_governance.disposed_student_is_suppressed($1, $2) as ok`,
+      [request.workspaceId, locations[0]!.studentId],
+    );
+    if (suppressed.rows[0]?.ok !== true) {
+      await client.query('rollback');
+      return {
+        outcome: 'not_issuable',
+        blockingLocations: locations.map(toLocationView),
+      };
+    }
+    const studentId = locations[0]!.studentId;
+    const certificateLocations = locations.map((row) => ({
+      adapter: row.adapter,
+      verification: 'verified' as const,
+      residualRetentionDeadlineAt:
+        row.residualRetentionDeadlineAt.toISOString(),
+    }));
+    const result = {
+      ...request.result,
+      certificateId: request.certificateId,
+    };
+    await client.query(
+      `insert into records_governance.destruction_certificates
+         (certificate_id, disposition_id, workspace_id, issued_at,
+          policy_revision_id, locations, actor_staff_identity_id, operation_id,
+          record_owner, record_classification, disposal_class)
+       values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8,
+               'school', 'operational_evidence', 'destruction_certificate')`,
+      [
+        request.certificateId,
+        request.dispositionId,
+        request.workspaceId,
+        request.occurredAt,
+        locked.policyRevisionId,
+        JSON.stringify(certificateLocations),
+        request.staffIdentityId,
+        request.operationId,
+      ],
+    );
+    await client.query(
+      `update records_governance.purge_identifying_residue
+          set student_id = null, discarded_at = $2
+        where disposition_id = $1 and discarded_at is null`,
+      [request.dispositionId, request.occurredAt],
+    );
+    await insertDispositionEvent(client, {
+      dispositionId: request.dispositionId,
+      workspaceId: request.workspaceId,
+      studentId,
+      eventKind: 'certificate_issued',
+      occurredAt: request.occurredAt,
+      actorStaffIdentityId: request.staffIdentityId,
+      operationId: request.operationId,
+      details: { certificateId: request.certificateId },
+    });
+    await insertDispositionEvent(client, {
+      dispositionId: request.dispositionId,
+      workspaceId: request.workspaceId,
+      studentId,
+      eventKind: 'residue_discarded',
+      occurredAt: request.occurredAt,
+      actorStaffIdentityId: request.staffIdentityId,
+      operationId: request.operationId,
+      details: {},
+    });
+    await bumpDispositionVersion(
+      client,
+      request.workspaceId,
+      request.dispositionId,
+    );
+    await writeReceipt(client, {
+      workspaceId: request.workspaceId,
+      operationId: request.operationId,
+      commandName: 'issueDestructionCertificate',
+      result,
+      occurredAt: request.occurredAt,
+    });
+    await writeAudit(client, {
+      auditId: request.auditId,
+      workspaceId: request.workspaceId,
+      operationId: request.operationId,
+      eventType: 'record_disposition.certificate_issued',
+      actorId: request.staffIdentityId,
+      occurredAt: request.occurredAt,
+      details: {
+        dispositionId: request.dispositionId,
+        certificateId: request.certificateId,
+      },
+    });
+    await writeOutbox(client, {
+      outboxId: request.outboxId,
+      workspaceId: request.workspaceId,
+      operationId: request.operationId,
+      topic: 'record_disposition.certificate_issued',
+      payload: {
+        dispositionId: request.dispositionId,
+        certificateId: request.certificateId,
+      },
+      occurredAt: request.occurredAt,
+    });
+    await client.query('commit');
+    return { outcome: 'applied', result };
+  } catch (error) {
+    try {
+      await client.query('rollback');
+    } catch {
+      // Connection may already be idle.
+    }
+    throw error;
+  } finally {
+    try {
+      await client.query('select pg_advisory_unlock(hashtextextended($1, 0))', [
+        `${request.workspaceId}:disposition:${request.dispositionId}`,
+      ]);
+    } catch {
+      // Unlock best-effort.
+    }
+    client.release();
+  }
+}
+
+async function applyPurgeRestoreGate(
+  pool: Pool,
+  request: {
+    actorId: string;
+    operationId: string;
+    occurredAt: Date;
+    manifests: PurgeTombstoneExport[];
+    result: RunPurgeRestoreGateResult;
+  },
+): Promise<RunPurgeRestoreGateResult> {
+  for (const manifest of request.manifests) {
+    await pool.query(
+      `select records_governance.import_purge_tombstone($1, $2, $3, $4, $5, $6::text[])`,
+      [
+        crypto.randomUUID(),
+        manifest.workspaceId,
+        manifest.studentId,
+        manifest.dispositionId,
+        manifest.completedAt,
+        manifest.adapters,
+      ],
+    );
+  }
+  const exported = await pool.query<{ tombstones: PurgeTombstoneExport[] }>(
+    `select records_governance.export_purge_tombstones() as tombstones`,
+  );
+  const tombstones = Array.isArray(exported.rows[0]?.tombstones)
+    ? exported.rows[0]!.tombstones
+    : [];
+  let reappliedCount = 0;
+  for (const tombstone of tombstones) {
+    try {
+      await pool.query(
+        `select records_governance.reapply_purge_tombstone($1, $2)`,
+        [tombstone.workspaceId, tombstone.studentId],
+      );
+      const suppressed = await pool.query<{ ok: boolean }>(
+        `select records_governance.disposed_student_is_suppressed($1, $2) as ok`,
+        [tombstone.workspaceId, tombstone.studentId],
+      );
+      if (suppressed.rows[0]?.ok !== true) {
+        return {
+          operationId: request.operationId,
+          outcome: 'failed',
+          reappliedCount,
+          failedCode: 'RESTORE_SUPPRESSION_FAILED',
+        };
+      }
+      reappliedCount += 1;
+    } catch {
+      return {
+        operationId: request.operationId,
+        outcome: 'failed',
+        reappliedCount,
+        failedCode: 'RESTORE_REAPPLY_FAILED',
+      };
+    }
+  }
+  const leftover = await pool.query<{ present: boolean }>(
+    `select records_governance.unsuppressed_disposed_students() as present`,
+  );
+  if (leftover.rows[0]?.present === true) {
+    return {
+      operationId: request.operationId,
+      outcome: 'failed',
+      reappliedCount,
+      failedCode: 'RESTORE_SUPPRESSION_FAILED',
+    };
+  }
+  return {
+    operationId: request.operationId,
+    outcome: 'verified',
+    reappliedCount,
+    failedCode: null,
+  };
 }

@@ -347,12 +347,110 @@ export const recordDispositionAdapters = [
 export type RecordDispositionAdapter =
   (typeof recordDispositionAdapters)[number];
 
+export const purgeResidualAdapters = [
+  'replicas',
+  'caches',
+  'queues',
+  'telemetry',
+  'object_storage',
+  'email_provider',
+  'backups',
+] as const;
+export type PurgeResidualAdapter = (typeof purgeResidualAdapters)[number];
+
+export const purgeVerificationAdapters = [
+  ...recordDispositionAdapters,
+  ...purgeResidualAdapters,
+] as const;
+export type PurgeVerificationAdapter =
+  (typeof purgeVerificationAdapters)[number];
+
+export const purgeResidualRetentionMs = {
+  identity_access: 0,
+  memberships: 0,
+  intake: 0,
+  learning_progress: 0,
+  clinical_access_evidence: 0,
+  productions: 0,
+  projections: 0,
+  replicas: 24 * 60 * 60 * 1000,
+  caches: 60 * 60 * 1000,
+  queues: 7 * 24 * 60 * 60 * 1000,
+  telemetry: 30 * 24 * 60 * 60 * 1000,
+  object_storage: 7 * 24 * 60 * 60 * 1000,
+  email_provider: 30 * 24 * 60 * 60 * 1000,
+  backups: 30 * 24 * 60 * 60 * 1000,
+} as const;
+
+export const purgeVerificationLocations: Record<
+  PurgeVerificationAdapter,
+  string
+> = {
+  identity_access: 'identity_sessions_emails_codes',
+  memberships: 'memberships_invitations_codes',
+  intake: 'intake_drafts_and_versions',
+  learning_progress: 'learning_item_completions',
+  clinical_access_evidence: 'clinical_access_copies',
+  productions: 'generated_production_artifacts',
+  projections: 'owned_projections_and_history',
+  replicas: 'replica_read_models',
+  caches: 'application_caches',
+  queues: 'task_queues',
+  telemetry: 'telemetry_log_retention',
+  object_storage: 'object_blob_storage',
+  email_provider: 'email_subprocessor_residue',
+  backups: 'backup_media',
+};
+
+export const purgeRestoreGateStatuses = [
+  'not_required',
+  'pending',
+  'verified',
+  'failed',
+] as const;
+export type PurgeRestoreGateStatus = (typeof purgeRestoreGateStatuses)[number];
+
 export type RecordDispositionPurgeEntry = {
   location: string;
   adapter: RecordDispositionAdapter;
   status: 'pending' | 'purged' | 'failed';
   count: number;
   verification: 'pending' | 'verified' | 'failed';
+};
+
+export type PurgeVerificationLocationView = {
+  adapter: PurgeVerificationAdapter;
+  location: string;
+  deletion: 'requested' | 'deleted' | 'pending' | 'failed';
+  verification: 'pending' | 'verified' | 'failed';
+  residualRetentionDeadlineAt: string;
+  evidenceDigest: string | null;
+};
+
+export type DestructionCertificateView = {
+  certificateId: string;
+  issuedAt: string;
+  policyRevisionId: string;
+  dispositionId: string;
+  locations: {
+    adapter: PurgeVerificationAdapter;
+    verification: 'verified';
+    residualRetentionDeadlineAt: string;
+  }[];
+};
+
+export type PurgeTombstoneExport = {
+  dispositionId: string;
+  workspaceId: string;
+  studentId: string;
+  completedAt: string;
+  adapters: string[];
+};
+
+export type PurgeRestoreGateView = {
+  status: PurgeRestoreGateStatus;
+  verifiedAt: string | null;
+  failedCode: string | null;
 };
 
 export type RecordDispositionView = {
@@ -367,6 +465,8 @@ export type RecordDispositionView = {
   completedAt: string | null;
   policyRevisionId: string;
   purgeManifest: RecordDispositionPurgeEntry[];
+  verificationLocations: PurgeVerificationLocationView[];
+  destructionCertificate?: DestructionCertificateView;
 };
 
 export type RecordDispositionPrerequisites = {
@@ -692,6 +792,73 @@ export class RecordDispositionConfirmationRequiredError extends Error {
   }
 }
 
+export class PurgeVerificationNotFoundError extends Error {
+  readonly code = 'PURGE_VERIFICATION_NOT_FOUND';
+
+  constructor() {
+    super('Purge verification was not found');
+    this.name = 'PurgeVerificationNotFoundError';
+  }
+}
+
+export class PurgeVerificationNotRepairableError extends Error {
+  readonly code = 'PURGE_VERIFICATION_NOT_REPAIRABLE';
+
+  constructor() {
+    super('Purge verification cannot be repaired');
+    this.name = 'PurgeVerificationNotRepairableError';
+  }
+}
+
+export class PurgeProviderVerificationRequiredError extends Error {
+  readonly code = 'PURGE_PROVIDER_VERIFICATION_REQUIRED';
+
+  constructor() {
+    super('Purge provider verification requires structured confirmation');
+    this.name = 'PurgeProviderVerificationRequiredError';
+  }
+}
+
+export class PurgeBackupExpiryNotReadyError extends Error {
+  readonly code = 'PURGE_BACKUP_EXPIRY_NOT_READY';
+
+  constructor() {
+    super(
+      'Backup expiry cannot be verified before the residual-retention window',
+    );
+    this.name = 'PurgeBackupExpiryNotReadyError';
+  }
+}
+
+export class DestructionCertificateNotIssuableError extends Error {
+  readonly code = 'DESTRUCTION_CERTIFICATE_NOT_ISSUABLE';
+  readonly blockingLocations: PurgeVerificationLocationView[];
+
+  constructor(blockingLocations: PurgeVerificationLocationView[]) {
+    super('Destruction certificate cannot be issued');
+    this.name = 'DestructionCertificateNotIssuableError';
+    this.blockingLocations = blockingLocations;
+  }
+}
+
+export class DestructionCertificateNotFoundError extends Error {
+  readonly code = 'DESTRUCTION_CERTIFICATE_NOT_FOUND';
+
+  constructor() {
+    super('Destruction certificate was not found');
+    this.name = 'DestructionCertificateNotFoundError';
+  }
+}
+
+export class PurgeRestoreGateNotReadyError extends Error {
+  readonly code = 'PURGE_RESTORE_GATE_NOT_READY';
+
+  constructor() {
+    super('Purge restore gate has not verified suppression');
+    this.name = 'PurgeRestoreGateNotReadyError';
+  }
+}
+
 export type ResolveRecordAmendmentCommand = {
   sessionHandle: string;
   operationId: string;
@@ -857,6 +1024,87 @@ export type RetryRecordDispositionResult = {
   operationId: string;
   dispositionId: string;
   outcome: 'purged' | 'failed';
+};
+
+export type ReconcilePurgeVerificationCommand = {
+  sessionHandle: string;
+  operationId: string;
+  dispositionId: string;
+  expectedVersion: number;
+};
+
+export type ReconcilePurgeVerificationResult = {
+  operationId: string;
+  dispositionId: string;
+  outcome: 'reconciled' | 'failed';
+};
+
+export type RecordProviderVerificationCommand = {
+  sessionHandle: string;
+  operationId: string;
+  dispositionId: string;
+  expectedVersion: number;
+  adapter: 'email_provider';
+  confirmation: 'provider_deletion_verified';
+  evidenceDigest: string;
+};
+
+export type RecordProviderVerificationResult = {
+  operationId: string;
+  dispositionId: string;
+  outcome: 'recorded';
+};
+
+export type VerifyBackupExpiryCommand = {
+  sessionHandle: string;
+  operationId: string;
+  dispositionId: string;
+  expectedVersion: number;
+  confirmation: 'backup_expiry_verified';
+};
+
+export type VerifyBackupExpiryResult = {
+  operationId: string;
+  dispositionId: string;
+  outcome: 'verified';
+};
+
+export type IssueDestructionCertificateCommand = {
+  sessionHandle: string;
+  operationId: string;
+  dispositionId: string;
+  expectedVersion: number;
+  confirmation: 'issue_destruction_certificate';
+};
+
+export type IssueDestructionCertificateResult = {
+  operationId: string;
+  dispositionId: string;
+  certificateId: string;
+  outcome: 'certified';
+};
+
+export type BeginPurgeRestoreGateCommand = {
+  actorId: string;
+  operationId: string;
+};
+
+export type BeginPurgeRestoreGateResult = {
+  operationId: string;
+  outcome: 'pending';
+};
+
+export type RunPurgeRestoreGateCommand = {
+  actorId: string;
+  operationId: string;
+  manifests?: PurgeTombstoneExport[];
+};
+
+export type RunPurgeRestoreGateResult = {
+  operationId: string;
+  outcome: 'verified' | 'failed';
+  reappliedCount: number;
+  failedCode: string | null;
 };
 
 export type RecordProductionSecrets = {
@@ -1306,6 +1554,116 @@ export type RecordsGovernanceStore = {
     | { outcome: 'not_repairable' }
     | { outcome: 'version_conflict' }
   >;
+  reconcileVerification(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    dispositionId: string;
+    expectedVersion: number;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    result: ReconcilePurgeVerificationResult;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: ReconcilePurgeVerificationResult;
+      }
+    | { outcome: 'not_found' }
+    | { outcome: 'not_repairable' }
+    | { outcome: 'version_conflict' }
+  >;
+  recordProviderVerification(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    dispositionId: string;
+    expectedVersion: number;
+    adapter: 'email_provider';
+    evidenceDigest: string;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    result: RecordProviderVerificationResult;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: RecordProviderVerificationResult;
+      }
+    | { outcome: 'not_found' }
+    | { outcome: 'not_repairable' }
+    | { outcome: 'version_conflict' }
+  >;
+  verifyBackupExpiry(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    dispositionId: string;
+    expectedVersion: number;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    result: VerifyBackupExpiryResult;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: VerifyBackupExpiryResult;
+      }
+    | { outcome: 'not_found' }
+    | { outcome: 'not_ready' }
+    | { outcome: 'not_repairable' }
+    | { outcome: 'version_conflict' }
+  >;
+  issueDestructionCertificate(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    dispositionId: string;
+    expectedVersion: number;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    certificateId: string;
+    result: IssueDestructionCertificateResult;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: IssueDestructionCertificateResult;
+      }
+    | { outcome: 'not_found' }
+    | {
+        outcome: 'not_issuable';
+        blockingLocations: PurgeVerificationLocationView[];
+      }
+    | { outcome: 'version_conflict' }
+  >;
+  readDestructionCertificate(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    dispositionId: string;
+  }): Promise<DestructionCertificateView | undefined>;
+  beginPurgeRestoreGate(request: {
+    actorId: string;
+    operationId: string;
+    occurredAt: Date;
+    result: BeginPurgeRestoreGateResult;
+  }): Promise<{
+    outcome: 'applied' | 'replayed';
+    result: BeginPurgeRestoreGateResult;
+  }>;
+  runPurgeRestoreGate(request: {
+    actorId: string;
+    operationId: string;
+    occurredAt: Date;
+    manifests: PurgeTombstoneExport[];
+    result: RunPurgeRestoreGateResult;
+  }): Promise<{
+    outcome: 'applied' | 'replayed';
+    result: RunPurgeRestoreGateResult;
+  }>;
+  listPurgeTombstones(): Promise<PurgeTombstoneExport[]>;
+  readPurgeRestoreGate(): Promise<PurgeRestoreGateView>;
+  disposedRecordsAreSuppressed(): Promise<boolean>;
 };
 
 export type RecordsGovernance = {
@@ -1366,6 +1724,31 @@ export type RecordsGovernance = {
   retryRecordDisposition(
     command: RetryRecordDispositionCommand,
   ): Promise<RetryRecordDispositionResult>;
+  reconcilePurgeVerification(
+    command: ReconcilePurgeVerificationCommand,
+  ): Promise<ReconcilePurgeVerificationResult>;
+  recordProviderVerification(
+    command: RecordProviderVerificationCommand,
+  ): Promise<RecordProviderVerificationResult>;
+  verifyBackupExpiry(
+    command: VerifyBackupExpiryCommand,
+  ): Promise<VerifyBackupExpiryResult>;
+  issueDestructionCertificate(
+    command: IssueDestructionCertificateCommand,
+  ): Promise<IssueDestructionCertificateResult>;
+  readDestructionCertificate(command: {
+    sessionHandle: string;
+    dispositionId?: string;
+  }): Promise<DestructionCertificateView>;
+  beginPurgeRestoreGate(
+    command: BeginPurgeRestoreGateCommand,
+  ): Promise<BeginPurgeRestoreGateResult>;
+  runPurgeRestoreGate(
+    command: RunPurgeRestoreGateCommand,
+  ): Promise<RunPurgeRestoreGateResult>;
+  listPurgeTombstones(): Promise<PurgeTombstoneExport[]>;
+  readPurgeRestoreGate(): Promise<PurgeRestoreGateView>;
+  assertPurgeRestoreReady(): Promise<void>;
   listRecordsGovernance(command: {
     sessionHandle: string;
   }): Promise<RecordsGovernanceDirectory>;
@@ -1411,6 +1794,7 @@ export function createRecordsGovernance(dependencies: {
   ids: IdGenerator;
   keys: ApplicationKeyManagement;
   productionSecrets: RecordProductionSecrets;
+  purgeRestoreRequired?: boolean;
 }): RecordsGovernance {
   async function requireFreshAdministrator(sessionHandle: string) {
     const session =
@@ -2041,6 +2425,222 @@ export function createRecordsGovernance(dependencies: {
         throw new RecordDispositionVersionConflictError();
       }
       return retried.result;
+    },
+
+    async reconcilePurgeVerification(command) {
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const result: ReconcilePurgeVerificationResult = {
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        outcome: 'reconciled',
+      };
+      const reconciled = await dependencies.store.reconcileVerification({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        expectedVersion: command.expectedVersion,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        result,
+      });
+      if (reconciled.outcome === 'not_found') {
+        throw new PurgeVerificationNotFoundError();
+      }
+      if (reconciled.outcome === 'not_repairable') {
+        throw new PurgeVerificationNotRepairableError();
+      }
+      if (reconciled.outcome === 'version_conflict') {
+        throw new RecordDispositionVersionConflictError();
+      }
+      return reconciled.result;
+    },
+
+    async recordProviderVerification(command) {
+      if (command.confirmation !== 'provider_deletion_verified') {
+        throw new PurgeProviderVerificationRequiredError();
+      }
+      if (!/^[0-9a-f]{64}$/.test(command.evidenceDigest)) {
+        throw new PurgeProviderVerificationRequiredError();
+      }
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const result: RecordProviderVerificationResult = {
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        outcome: 'recorded',
+      };
+      const recorded = await dependencies.store.recordProviderVerification({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        expectedVersion: command.expectedVersion,
+        adapter: command.adapter,
+        evidenceDigest: command.evidenceDigest,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        result,
+      });
+      if (recorded.outcome === 'not_found') {
+        throw new PurgeVerificationNotFoundError();
+      }
+      if (recorded.outcome === 'not_repairable') {
+        throw new PurgeVerificationNotRepairableError();
+      }
+      if (recorded.outcome === 'version_conflict') {
+        throw new RecordDispositionVersionConflictError();
+      }
+      return recorded.result;
+    },
+
+    async verifyBackupExpiry(command) {
+      if (command.confirmation !== 'backup_expiry_verified') {
+        throw new RecordDispositionConfirmationRequiredError();
+      }
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const result: VerifyBackupExpiryResult = {
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        outcome: 'verified',
+      };
+      const verified = await dependencies.store.verifyBackupExpiry({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        expectedVersion: command.expectedVersion,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        result,
+      });
+      if (verified.outcome === 'not_found') {
+        throw new PurgeVerificationNotFoundError();
+      }
+      if (verified.outcome === 'not_ready') {
+        throw new PurgeBackupExpiryNotReadyError();
+      }
+      if (verified.outcome === 'not_repairable') {
+        throw new PurgeVerificationNotRepairableError();
+      }
+      if (verified.outcome === 'version_conflict') {
+        throw new RecordDispositionVersionConflictError();
+      }
+      return verified.result;
+    },
+
+    async issueDestructionCertificate(command) {
+      if (command.confirmation !== 'issue_destruction_certificate') {
+        throw new RecordDispositionConfirmationRequiredError();
+      }
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const certificateId = dependencies.ids.create();
+      const result: IssueDestructionCertificateResult = {
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        certificateId,
+        outcome: 'certified',
+      };
+      const issued = await dependencies.store.issueDestructionCertificate({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        dispositionId: command.dispositionId,
+        expectedVersion: command.expectedVersion,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        certificateId,
+        result,
+      });
+      if (issued.outcome === 'not_found') {
+        throw new PurgeVerificationNotFoundError();
+      }
+      if (issued.outcome === 'not_issuable') {
+        throw new DestructionCertificateNotIssuableError(
+          issued.blockingLocations,
+        );
+      }
+      if (issued.outcome === 'version_conflict') {
+        throw new RecordDispositionVersionConflictError();
+      }
+      return issued.result;
+    },
+
+    async readDestructionCertificate(command) {
+      const session =
+        await dependencies.identityAndAccess.requireAdministrativeSession({
+          sessionHandle: command.sessionHandle,
+        });
+      if (!command.dispositionId) {
+        throw new DestructionCertificateNotFoundError();
+      }
+      const certificate = await dependencies.store.readDestructionCertificate({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        dispositionId: command.dispositionId,
+      });
+      if (!certificate) throw new DestructionCertificateNotFoundError();
+      return certificate;
+    },
+
+    async beginPurgeRestoreGate(command) {
+      const result: BeginPurgeRestoreGateResult = {
+        operationId: command.operationId,
+        outcome: 'pending',
+      };
+      const began = await dependencies.store.beginPurgeRestoreGate({
+        actorId: command.actorId,
+        operationId: command.operationId,
+        occurredAt: dependencies.clock.now(),
+        result,
+      });
+      return began.result;
+    },
+
+    async runPurgeRestoreGate(command) {
+      const result: RunPurgeRestoreGateResult = {
+        operationId: command.operationId,
+        outcome: 'verified',
+        reappliedCount: 0,
+        failedCode: null,
+      };
+      const ran = await dependencies.store.runPurgeRestoreGate({
+        actorId: command.actorId,
+        operationId: command.operationId,
+        occurredAt: dependencies.clock.now(),
+        manifests: command.manifests ?? [],
+        result,
+      });
+      return ran.result;
+    },
+
+    async listPurgeTombstones() {
+      return dependencies.store.listPurgeTombstones();
+    },
+
+    async readPurgeRestoreGate() {
+      return dependencies.store.readPurgeRestoreGate();
+    },
+
+    async assertPurgeRestoreReady() {
+      const gate = await dependencies.store.readPurgeRestoreGate();
+      if (gate.status === 'pending' || gate.status === 'failed') {
+        throw new PurgeRestoreGateNotReadyError();
+      }
+      if (
+        dependencies.purgeRestoreRequired === true &&
+        gate.status !== 'verified'
+      ) {
+        throw new PurgeRestoreGateNotReadyError();
+      }
+      const suppressed =
+        await dependencies.store.disposedRecordsAreSuppressed();
+      if (!suppressed) {
+        throw new PurgeRestoreGateNotReadyError();
+      }
     },
 
     async listRecordsGovernance(command) {
