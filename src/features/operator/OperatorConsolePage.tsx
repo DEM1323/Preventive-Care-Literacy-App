@@ -100,6 +100,20 @@ export function OperatorConsolePage() {
     [],
   );
   const [repairConfirmWorkId, setRepairConfirmWorkId] = useState<string>();
+  const [restoreReadiness, setRestoreReadiness] = useState<{
+    resume: { allowed: boolean; code?: string };
+    purgeRestoreGate: string;
+    backup: { status: string } | null;
+  }>();
+  const [incident, setIncident] = useState<{
+    status: string;
+    stopped: boolean;
+    requestedByType: string;
+    resumeAuthorizedBy: string | null;
+  } | null>();
+  const [alerts, setAlerts] = useState<
+    { alertId: string; kind: string; acknowledged: boolean }[]
+  >([]);
   const workspaceCommand = useRef<
     { operationId: string; workspaceId: string } | undefined
   >(undefined);
@@ -140,6 +154,18 @@ export function OperatorConsolePage() {
     if (repairable.response.status === 200 && repairable.data) {
       setRepairableWork(repairable.data);
     }
+    const readiness = await client.GET('/api/v1/operator/restore-readiness');
+    if (readiness.response.status === 200 && readiness.data) {
+      setRestoreReadiness(readiness.data);
+    }
+    const drill = await client.GET('/api/v1/operator/incidents');
+    if (drill.response.status === 200) {
+      setIncident(drill.data);
+    }
+    const listedAlerts = await client.GET('/api/v1/operator/alerts');
+    if (listedAlerts.response.status === 200 && listedAlerts.data) {
+      setAlerts(listedAlerts.data);
+    }
   }
 
   useEffect(() => {
@@ -175,6 +201,9 @@ export function OperatorConsolePage() {
     setCreatedPassword(undefined);
     setRestoreGate(undefined);
     setTombstoneCount(undefined);
+    setRestoreReadiness(undefined);
+    setIncident(undefined);
+    setAlerts([]);
   }
 
   async function beginRestoreGate() {
@@ -195,6 +224,51 @@ export function OperatorConsolePage() {
       setStatus(
         'Service resume is blocked until purge manifests are reapplied.',
       );
+      await loadWorkspaces();
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function stopIncident() {
+    setBusy('incident-stop');
+    setStatus('');
+    try {
+      const result = await client.POST('/api/v1/operator/incidents/stop', {
+        params: { header: { 'x-prevcare-csrf': '1' } },
+        body: { operationId: crypto.randomUUID() },
+      });
+      if (result.response.status !== 200) {
+        setStatus('Incident stop could not be recorded.');
+        return;
+      }
+      setStatus(
+        'New activity is stopped. Health and operator recovery remain available.',
+      );
+      await loadWorkspaces();
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function resumeIncident() {
+    setBusy('incident-resume');
+    setStatus('');
+    try {
+      const result = await client.POST('/api/v1/operator/incidents/resume', {
+        params: { header: { 'x-prevcare-csrf': '1' } },
+        body: {
+          operationId: crypto.randomUUID(),
+          confirmation: 'authorize_incident_resume',
+        },
+      });
+      if (result.response.status !== 200) {
+        setStatus(
+          'Resume is blocked until checks, secrets, purge proof, and artifact identity pass.',
+        );
+        return;
+      }
+      setStatus('Technical Operator authorized resume.');
       await loadWorkspaces();
     } finally {
       setBusy(undefined);
@@ -880,6 +954,57 @@ export function OperatorConsolePage() {
                   </li>
                 ))}
               </ul>
+            </section>
+          ) : null}
+
+          {authenticated ? (
+            <section className="border-2 border-[#15251f] bg-white p-6">
+              <p className="font-mono text-xs font-bold uppercase">
+                Operational readiness
+              </p>
+              <h2 className="mt-1 text-2xl font-black">Incident drill</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Stop new activity, revoke sessions and secrets, preserve
+                non-sensitive evidence, repair, rerun non-waivable checks, then
+                authorize resume. A School Nurse may request stop; only the
+                Technical Operator may resume.
+              </p>
+              <p className="mt-3 text-sm">
+                Drill {incident?.status ?? 'idle'}
+                {incident?.stopped ? ' · stopped' : ''}
+                {restoreReadiness
+                  ? ` · restore resume ${restoreReadiness.resume.allowed ? 'allowed' : (restoreReadiness.resume.code ?? 'closed')}`
+                  : ''}
+                {restoreReadiness?.backup
+                  ? ` · backup ${restoreReadiness.backup.status}`
+                  : ''}
+              </p>
+              {alerts.length > 0 ? (
+                <p className="mt-2 text-sm">
+                  Alerts {alerts.filter((alert) => alert.acknowledged).length}/
+                  {alerts.length} acknowledged
+                </p>
+              ) : null}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={busy !== undefined}
+                  onClick={() => void stopIncident()}
+                  className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
+                >
+                  {busy === 'incident-stop' ? 'Stopping...' : 'Stop activity'}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy !== undefined}
+                  onClick={() => void resumeIncident()}
+                  className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
+                >
+                  {busy === 'incident-resume'
+                    ? 'Authorizing resume...'
+                    : 'Authorize resume'}
+                </button>
+              </div>
             </section>
           ) : null}
 

@@ -1,3 +1,8 @@
+import {
+  serviceCaps,
+  taskRetryDelaySeconds,
+} from '../operational-readiness/index.ts';
+
 export type InvitationQueue = {
   send(payload: { outboxId: string }): Promise<void>;
   receive(): Promise<
@@ -113,7 +118,7 @@ export async function runInvitationDeliveryCycle(
       await dependencies.queue.complete(message.messageId);
       return;
     }
-    if (message.attempt >= 5) {
+    if (message.attempt >= serviceCaps.taskMaxAttempts) {
       await dependencies.deliveries.suppress({
         outboxId: delivery.outboxId,
         invitationId: delivery.invitationId,
@@ -124,7 +129,7 @@ export async function runInvitationDeliveryCycle(
     }
     await dependencies.queue.retry(
       message.messageId,
-      Math.min(30 * 2 ** (message.attempt - 1), 15 * 60),
+      taskRetryDelaySeconds(message.attempt),
     );
     throw new Error('Invitation delivery failed');
   }
@@ -221,7 +226,7 @@ export async function runSignInCodeDeliveryCycle(
       await dependencies.queue.complete(message.messageId);
       return;
     }
-    if (message.attempt >= 5) {
+    if (message.attempt >= serviceCaps.taskMaxAttempts) {
       await dependencies.deliveries.suppress({
         outboxId: delivery.outboxId,
         challengeId: delivery.challengeId,
@@ -232,7 +237,7 @@ export async function runSignInCodeDeliveryCycle(
     }
     await dependencies.queue.retry(
       message.messageId,
-      Math.min(30 * 2 ** (message.attempt - 1), 15 * 60),
+      taskRetryDelaySeconds(message.attempt),
     );
     throw new Error('Sign-In Code delivery failed');
   }
@@ -317,7 +322,7 @@ export async function runRecordProductionDeliveryCycle(
       await dependencies.queue.complete(message.messageId);
       return;
     }
-    if (message.attempt >= 5) {
+    if (message.attempt >= serviceCaps.taskMaxAttempts) {
       await dependencies.deliveries.suppress({
         outboxId: delivery.outboxId,
         productionId: delivery.productionId,
@@ -327,7 +332,7 @@ export async function runRecordProductionDeliveryCycle(
     }
     await dependencies.queue.retry(
       message.messageId,
-      Math.min(30 * 2 ** (message.attempt - 1), 15 * 60),
+      taskRetryDelaySeconds(message.attempt),
     );
     throw new Error('Record Production delivery failed');
   }

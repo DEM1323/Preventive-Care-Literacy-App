@@ -49,6 +49,9 @@ The audited backend spine has one reproducible verification command. It checks f
 types, module boundaries, deterministic OpenAPI and generated-client artifacts, repeatable
 migrations against ephemeral PostgreSQL, and the focused transactional command test:
 
+Operational readiness and incident recovery: [docs/operations/operational-readiness.md](docs/operations/operational-readiness.md).
+Provider dashboard steps the application cannot perform: `scripts/record-operational-provider-evidence.sh`.
+
 ```bash
 bun run verify:install
 ```

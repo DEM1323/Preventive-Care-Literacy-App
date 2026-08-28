@@ -6,6 +6,7 @@ const owningModules = [
   'learning-progress',
   'records-governance',
   'operator-repair',
+  'operational-readiness',
 ];
 
 module.exports = {

@@ -84,6 +84,23 @@ test('offline-client contract keeps operation identities, exact revisions, and r
   expect(JSON.stringify(repair)).not.toContain('answers');
   expect(JSON.stringify(repair)).not.toContain('sessionHandle');
 
+  expect(schemaOf('/api/v1/operator/service-caps', 'get')?.operationId).toBe(
+    'readServiceCaps',
+  );
+  expect(
+    schemaOf('/api/v1/operator/restore-readiness', 'get')?.operationId,
+  ).toBe('readRestoreReadiness');
+  expect(
+    schemaOf('/api/v1/operator/incidents/resume', 'post')?.operationId,
+  ).toBe('authorizeIncidentResume');
+  const resume = jsonSchema('/api/v1/operator/incidents/resume', 'post');
+  expect(resume.properties?.confirmation).toMatchObject({
+    type: 'string',
+    enum: ['authorize_incident_resume'],
+  });
+  expect(JSON.stringify(resume)).not.toContain('recipient');
+  expect(JSON.stringify(resume)).not.toContain('answers');
+
   const intakeDraft = jsonSchema('/api/v1/student/intake/draft', 'put');
   expect(intakeDraft.required).toEqual(
     expect.arrayContaining([

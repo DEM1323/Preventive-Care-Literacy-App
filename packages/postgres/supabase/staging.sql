@@ -205,3 +205,4 @@ grant execute on function infrastructure.claim_record_production_delivery(uuid, 
 grant execute on function infrastructure.complete_record_production_delivery(uuid, uuid, text, timestamptz) to __WORKER_ROLE__;
 grant execute on function infrastructure.suppress_record_production_delivery(uuid, uuid) to __WORKER_ROLE__;
 grant execute on function infrastructure.expire_record_productions(timestamptz) to __WORKER_ROLE__;
+grant execute on function infrastructure.activity_is_stopped() to __WORKER_ROLE__;

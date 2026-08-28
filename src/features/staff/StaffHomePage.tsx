@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createBrowserApiClient } from '../../../packages/api-client/src/index.ts';
 import { ClinicalReviewSection } from './ClinicalReviewSection';
-import {
-  ClassWorkspace,
-  type ClassDirectoryEntry,
-} from './ClassWorkspace';
+import { ClassWorkspace, type ClassDirectoryEntry } from './ClassWorkspace';
 import { StudentRecordLifecycleSection } from './StudentRecordLifecycleSection';
 
 const client = createBrowserApiClient();
@@ -34,6 +31,7 @@ export function StaffHomePage() {
     StaffDirectoryEntry[] | undefined
   >();
   const [classes, setClasses] = useState<ClassDirectoryEntry[] | undefined>();
+  const [stopMessage, setStopMessage] = useState('');
 
   async function loadClasses() {
     const listing = await client.GET('/api/v1/administration/classes');
@@ -102,6 +100,31 @@ export function StaffHomePage() {
         >
           Sign out
         </button>
+
+        {session.permissions.includes('clinical') ? (
+          <button
+            type="button"
+            onClick={() => {
+              void client
+                .POST('/api/v1/clinical/incident-stop-requests', {
+                  body: { operationId: crypto.randomUUID() },
+                })
+                .then((result) => {
+                  setStopMessage(
+                    result.response.status === 200
+                      ? 'Incident stop requested. The Technical Operator must authorize resume.'
+                      : 'Incident stop could not be requested.',
+                  );
+                });
+            }}
+            className="mt-6 rounded border border-amber-400 px-4 py-2 font-bold text-amber-200"
+          >
+            Request incident stop
+          </button>
+        ) : null}
+        {stopMessage ? (
+          <p className="mt-3 text-sm text-amber-200">{stopMessage}</p>
+        ) : null}
 
         {session.permissions.includes('clinical') ? (
           <ClinicalReviewSection

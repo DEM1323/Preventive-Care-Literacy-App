@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { serviceCaps } from '../../../modules/operational-readiness/index.ts';
 import {
   runInvitationDeliveryCycle,
   runSignInCodeDeliveryCycle,
@@ -41,6 +42,9 @@ connectionUrl.searchParams.delete('sslmode');
 connectionUrl.searchParams.delete('sslrootcert');
 const pool = new Pool({
   connectionString: connectionUrl.toString(),
+  max: serviceCaps.databasePoolMax,
+  idleTimeoutMillis: serviceCaps.databasePoolIdleTimeoutMs,
+  connectionTimeoutMillis: serviceCaps.databasePoolConnectionTimeoutMs,
   ssl: { ca: databaseCaCertificate, rejectUnauthorized: true },
 });
 await assertRestrictedDatabaseRole(pool);
@@ -145,7 +149,22 @@ await recordWorkerArtifactHeartbeat(pool, {
   recordedAt: new Date(),
 });
 
+async function activityIsStopped() {
+  const listed = await pool.query<{ activity_is_stopped: boolean }>(
+    'select infrastructure.activity_is_stopped()',
+  );
+  return listed.rows[0]?.activity_is_stopped === true;
+}
+
 for (;;) {
+  try {
+    if (await activityIsStopped()) {
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+      continue;
+    }
+  } catch {
+    console.error('Incident stop gate failed');
+  }
   try {
     await runInvitationDeliveryCycle(invitationDependencies);
   } catch {

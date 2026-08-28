@@ -900,6 +900,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/clinical/incident-stop-requests': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['requestClinicalIncidentStop'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/clinical/intake-records/current': {
     parameters: {
       query?: never;
@@ -964,6 +980,70 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/operator/alerts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['listOperatorAlerts'];
+    put?: never;
+    post: operations['emitOperatorAlert'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/alerts/acknowledgements': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['acknowledgeOperatorAlert'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/artifact-rollback': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['decideArtifactRollback'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/backup-configuration': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['readBackupConfiguration'];
+    put?: never;
+    post: operations['recordBackupConfiguration'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/operator/golden-journey-evidence': {
     parameters: {
       query?: never;
@@ -974,6 +1054,118 @@ export interface paths {
     get: operations['goldenJourneyOperatorEvidence'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/incidents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['readIncidentDrill'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/incidents/checks': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['recordIncidentChecks'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/incidents/evidence': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['preserveIncidentEvidence'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/incidents/repairs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['recordIncidentRepair'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/incidents/resume': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['authorizeIncidentResume'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/incidents/revocations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['revokeIncidentAccess'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/incidents/stop': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['requestIncidentStop'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1054,6 +1246,54 @@ export interface paths {
     get?: never;
     put?: never;
     post: operations['repairOperatorWork'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/restore-readiness': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['readRestoreReadiness'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/restore-runs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['recordRestoreRun'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operator/service-caps': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['readServiceCaps'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -22884,6 +23124,365 @@ export interface operations {
       };
     };
   };
+  requestClinicalIncidentStop: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            acceptedArtifactDigest: string | null;
+            checks: {
+              check:
+                | 'purge_restore_gate'
+                | 'artifact_identity'
+                | 'secret_generation'
+                | 'backup_configuration';
+              outcome: 'passed' | 'failed';
+            }[];
+            currentArtifactDigest: string | null;
+            deliveryKeyId: string | null;
+            /** Format: uuid */
+            incidentId: string;
+            /** Format: date-time */
+            recordedAt: string;
+            requestedById: string;
+            requestedByType: 'technical_operator' | 'school_nurse';
+            resumeAuthorizedBy: string | null;
+            revokedStaffSessionCount: number;
+            revokedStudentSessionCount: number;
+            secretGeneration: number;
+            secretsRevoked: boolean;
+            status:
+              | 'stopped'
+              | 'secrets_revoked'
+              | 'evidence_preserved'
+              | 'repaired'
+              | 'checks_recorded'
+              | 'resumed';
+            stopped: boolean;
+            wrappingKeyId: string | null;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
   revealCurrentIntakeRecord: {
     parameters: {
       query?: never;
@@ -24288,6 +24887,1344 @@ export interface operations {
       };
     };
   };
+  listOperatorAlerts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            acknowledged: boolean;
+            acknowledgedBy?: string | null;
+            /** Format: uuid */
+            alertId: string;
+            /** @enum {string} */
+            destination: 'technical_operator';
+            kind:
+              | 'uptime'
+              | 'application_error'
+              | 'database_capacity'
+              | 'failed_email';
+            /** Format: date-time */
+            recordedAt: string;
+            summary: string;
+          }[];
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  emitOperatorAlert: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          kind:
+            | 'uptime'
+            | 'application_error'
+            | 'database_capacity'
+            | 'failed_email';
+          summary: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            acknowledged: boolean;
+            acknowledgedBy?: string | null;
+            /** Format: uuid */
+            alertId: string;
+            /** @enum {string} */
+            destination: 'technical_operator';
+            kind:
+              | 'uptime'
+              | 'application_error'
+              | 'database_capacity'
+              | 'failed_email';
+            /** Format: date-time */
+            recordedAt: string;
+            summary: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  acknowledgeOperatorAlert: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          alertId: string;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            acknowledged: boolean;
+            acknowledgedBy?: string | null;
+            /** Format: uuid */
+            alertId: string;
+            /** @enum {string} */
+            destination: 'technical_operator';
+            kind:
+              | 'uptime'
+              | 'application_error'
+              | 'database_capacity'
+              | 'failed_email';
+            /** Format: date-time */
+            recordedAt: string;
+            summary: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  decideArtifactRollback: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          currentArtifactDigest: string;
+          currentSchemaMigrations: string[];
+          targetArtifactDigest: string;
+          targetSchemaMigrations: string[];
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            currentArtifactDigest: string;
+            decision: 'schema_compatible_rollback' | 'roll_forward_only';
+            reason:
+              | 'SAME_SCHEMA'
+              | 'EXPAND_CONTRACT_COMPATIBLE'
+              | 'TARGET_SCHEMA_AHEAD'
+              | 'SCHEMA_DIVERGED';
+            targetArtifactDigest: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  readBackupConfiguration: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            dailyBackupsEnabled: boolean;
+            evidenceDigest: string;
+            pointInTimeRecoveryDays: number;
+            /** @enum {number} */
+            requiredPointInTimeRecoveryDays: 7;
+            source: 'automated_contract' | 'provider_dashboard';
+            status: 'satisfied' | 'unsatisfied';
+          } | null;
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  recordBackupConfiguration: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          dailyBackupsEnabled: boolean;
+          evidenceDigest: string;
+          /** Format: uuid */
+          operationId: string;
+          pointInTimeRecoveryDays: number;
+          source: 'automated_contract' | 'provider_dashboard';
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            dailyBackupsEnabled: boolean;
+            evidenceDigest: string;
+            pointInTimeRecoveryDays: number;
+            /** @enum {number} */
+            requiredPointInTimeRecoveryDays: 7;
+            source: 'automated_contract' | 'provider_dashboard';
+            status: 'satisfied' | 'unsatisfied';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
   goldenJourneyOperatorEvidence: {
     parameters: {
       query: {
@@ -24350,6 +26287,2129 @@ export interface operations {
       };
       /** @description Default Response */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  readIncidentDrill: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            acceptedArtifactDigest: string | null;
+            checks: {
+              check:
+                | 'purge_restore_gate'
+                | 'artifact_identity'
+                | 'secret_generation'
+                | 'backup_configuration';
+              outcome: 'passed' | 'failed';
+            }[];
+            currentArtifactDigest: string | null;
+            deliveryKeyId: string | null;
+            /** Format: uuid */
+            incidentId: string;
+            /** Format: date-time */
+            recordedAt: string;
+            requestedById: string;
+            requestedByType: 'technical_operator' | 'school_nurse';
+            resumeAuthorizedBy: string | null;
+            revokedStaffSessionCount: number;
+            revokedStudentSessionCount: number;
+            secretGeneration: number;
+            secretsRevoked: boolean;
+            status:
+              | 'stopped'
+              | 'secrets_revoked'
+              | 'evidence_preserved'
+              | 'repaired'
+              | 'checks_recorded'
+              | 'resumed';
+            stopped: boolean;
+            wrappingKeyId: string | null;
+          } | null;
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  recordIncidentChecks: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          acceptedArtifactDigest?: string;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            acceptedArtifactDigest: string | null;
+            checks: {
+              check:
+                | 'purge_restore_gate'
+                | 'artifact_identity'
+                | 'secret_generation'
+                | 'backup_configuration';
+              outcome: 'passed' | 'failed';
+            }[];
+            currentArtifactDigest: string | null;
+            deliveryKeyId: string | null;
+            /** Format: uuid */
+            incidentId: string;
+            /** Format: date-time */
+            recordedAt: string;
+            requestedById: string;
+            requestedByType: 'technical_operator' | 'school_nurse';
+            resumeAuthorizedBy: string | null;
+            revokedStaffSessionCount: number;
+            revokedStudentSessionCount: number;
+            secretGeneration: number;
+            secretsRevoked: boolean;
+            status:
+              | 'stopped'
+              | 'secrets_revoked'
+              | 'evidence_preserved'
+              | 'repaired'
+              | 'checks_recorded'
+              | 'resumed';
+            stopped: boolean;
+            wrappingKeyId: string | null;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  preserveIncidentEvidence: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            acceptedArtifactDigest: string | null;
+            checks: {
+              check:
+                | 'purge_restore_gate'
+                | 'artifact_identity'
+                | 'secret_generation'
+                | 'backup_configuration';
+              outcome: 'passed' | 'failed';
+            }[];
+            currentArtifactDigest: string | null;
+            deliveryKeyId: string | null;
+            /** Format: uuid */
+            incidentId: string;
+            /** Format: date-time */
+            recordedAt: string;
+            requestedById: string;
+            requestedByType: 'technical_operator' | 'school_nurse';
+            resumeAuthorizedBy: string | null;
+            revokedStaffSessionCount: number;
+            revokedStudentSessionCount: number;
+            secretGeneration: number;
+            secretsRevoked: boolean;
+            status:
+              | 'stopped'
+              | 'secrets_revoked'
+              | 'evidence_preserved'
+              | 'repaired'
+              | 'checks_recorded'
+              | 'resumed';
+            stopped: boolean;
+            wrappingKeyId: string | null;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  recordIncidentRepair: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            acceptedArtifactDigest: string | null;
+            checks: {
+              check:
+                | 'purge_restore_gate'
+                | 'artifact_identity'
+                | 'secret_generation'
+                | 'backup_configuration';
+              outcome: 'passed' | 'failed';
+            }[];
+            currentArtifactDigest: string | null;
+            deliveryKeyId: string | null;
+            /** Format: uuid */
+            incidentId: string;
+            /** Format: date-time */
+            recordedAt: string;
+            requestedById: string;
+            requestedByType: 'technical_operator' | 'school_nurse';
+            resumeAuthorizedBy: string | null;
+            revokedStaffSessionCount: number;
+            revokedStudentSessionCount: number;
+            secretGeneration: number;
+            secretsRevoked: boolean;
+            status:
+              | 'stopped'
+              | 'secrets_revoked'
+              | 'evidence_preserved'
+              | 'repaired'
+              | 'checks_recorded'
+              | 'resumed';
+            stopped: boolean;
+            wrappingKeyId: string | null;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  authorizeIncidentResume: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          confirmation: 'authorize_incident_resume';
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            acceptedArtifactDigest: string | null;
+            checks: {
+              check:
+                | 'purge_restore_gate'
+                | 'artifact_identity'
+                | 'secret_generation'
+                | 'backup_configuration';
+              outcome: 'passed' | 'failed';
+            }[];
+            currentArtifactDigest: string | null;
+            deliveryKeyId: string | null;
+            /** Format: uuid */
+            incidentId: string;
+            /** Format: date-time */
+            recordedAt: string;
+            requestedById: string;
+            requestedByType: 'technical_operator' | 'school_nurse';
+            resumeAuthorizedBy: string | null;
+            revokedStaffSessionCount: number;
+            revokedStudentSessionCount: number;
+            secretGeneration: number;
+            secretsRevoked: boolean;
+            status:
+              | 'stopped'
+              | 'secrets_revoked'
+              | 'evidence_preserved'
+              | 'repaired'
+              | 'checks_recorded'
+              | 'resumed';
+            stopped: boolean;
+            wrappingKeyId: string | null;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  revokeIncidentAccess: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          deliveryKeyId: string;
+          /** Format: uuid */
+          operationId: string;
+          wrappingKeyId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            acceptedArtifactDigest: string | null;
+            checks: {
+              check:
+                | 'purge_restore_gate'
+                | 'artifact_identity'
+                | 'secret_generation'
+                | 'backup_configuration';
+              outcome: 'passed' | 'failed';
+            }[];
+            currentArtifactDigest: string | null;
+            deliveryKeyId: string | null;
+            /** Format: uuid */
+            incidentId: string;
+            /** Format: date-time */
+            recordedAt: string;
+            requestedById: string;
+            requestedByType: 'technical_operator' | 'school_nurse';
+            resumeAuthorizedBy: string | null;
+            revokedStaffSessionCount: number;
+            revokedStudentSessionCount: number;
+            secretGeneration: number;
+            secretsRevoked: boolean;
+            status:
+              | 'stopped'
+              | 'secrets_revoked'
+              | 'evidence_preserved'
+              | 'repaired'
+              | 'checks_recorded'
+              | 'resumed';
+            stopped: boolean;
+            wrappingKeyId: string | null;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  requestIncidentStop: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            acceptedArtifactDigest: string | null;
+            checks: {
+              check:
+                | 'purge_restore_gate'
+                | 'artifact_identity'
+                | 'secret_generation'
+                | 'backup_configuration';
+              outcome: 'passed' | 'failed';
+            }[];
+            currentArtifactDigest: string | null;
+            deliveryKeyId: string | null;
+            /** Format: uuid */
+            incidentId: string;
+            /** Format: date-time */
+            recordedAt: string;
+            requestedById: string;
+            requestedByType: 'technical_operator' | 'school_nurse';
+            resumeAuthorizedBy: string | null;
+            revokedStaffSessionCount: number;
+            revokedStudentSessionCount: number;
+            secretGeneration: number;
+            secretsRevoked: boolean;
+            status:
+              | 'stopped'
+              | 'secrets_revoked'
+              | 'evidence_preserved'
+              | 'repaired'
+              | 'checks_recorded'
+              | 'resumed';
+            stopped: boolean;
+            wrappingKeyId: string | null;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
         headers: {
           [name: string]: unknown;
         };
@@ -25812,6 +29872,527 @@ export interface operations {
       };
       /** @description Default Response */
       503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  readRestoreReadiness: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            backup: {
+              dailyBackupsEnabled: boolean;
+              evidenceDigest: string;
+              pointInTimeRecoveryDays: number;
+              /** @enum {number} */
+              requiredPointInTimeRecoveryDays: 7;
+              source: 'automated_contract' | 'provider_dashboard';
+              status: 'satisfied' | 'unsatisfied';
+            } | null;
+            purgeRestoreGate:
+              'not_required' | 'pending' | 'verified' | 'failed';
+            restore: {
+              /** Format: date-time */
+              recordedAt: string;
+              succeeded: boolean;
+            } | null;
+            resume: {
+              allowed: boolean;
+              code?:
+                | 'BACKUP_CONFIGURATION_UNSATISFIED'
+                | 'RESTORE_DID_NOT_SUCCEED'
+                | 'PURGE_RESTORE_GATE_NOT_VERIFIED'
+                | 'PURGE_MANIFESTS_NOT_REAPPLIED';
+            };
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  recordRestoreRun: {
+    parameters: {
+      query?: never;
+      header: {
+        'x-prevcare-csrf': '1';
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          source: 'automated_contract' | 'provider_restore';
+          succeeded: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: date-time */
+            recordedAt: string;
+            succeeded: boolean;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingLocations?: {
+              adapter: string;
+              deletion: string;
+              evidenceDigest: string | null;
+              location: string;
+              /** Format: date-time */
+              residualRetentionDeadlineAt: string;
+              verification: string;
+            }[];
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  readServiceCaps: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {number} */
+            databasePoolConnectionTimeoutMs: 5000;
+            /** @enum {number} */
+            databasePoolIdleTimeoutMs: 10000;
+            /** @enum {number} */
+            databasePoolMax: 10;
+            /** @enum {number} */
+            invitationChallengeMaxFailedAttempts: 5;
+            /** @enum {number} */
+            requestBodyLimitBytes: 65536;
+            /** @enum {number} */
+            taskBackoffInitialSeconds: 30;
+            /** @enum {number} */
+            taskBackoffMaxSeconds: 900;
+            /** @enum {number} */
+            taskMaxAttempts: 5;
+            /** @enum {number} */
+            workerConcurrency: 1;
+            /** @enum {number} */
+            workerRequestBodyLimitBytes: 1024;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
         headers: {
           [name: string]: unknown;
         };
