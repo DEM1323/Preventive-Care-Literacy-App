@@ -34,7 +34,11 @@ export const supportedIntakeLocales = supportedLocales;
 export type IntakeLocale = (typeof supportedIntakeLocales)[number];
 
 export type KeyWrappingContext = {
-  purpose: 'intake-draft' | 'intake-record-version';
+  purpose:
+    | 'intake-draft'
+    | 'intake-record-version'
+    | 'record-production'
+    | 'record-amendment';
   workspaceId: string;
   studentId: string;
 };

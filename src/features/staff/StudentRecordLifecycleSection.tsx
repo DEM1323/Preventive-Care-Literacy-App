@@ -50,6 +50,28 @@ type GovernanceStudent = {
     source: string;
     status: 'active' | 'released';
   }[];
+  amendments: {
+    amendmentId: string;
+    caseId: string;
+    decision: string;
+    reasonCode: string;
+    requesterStatementPreserved: boolean;
+  }[];
+  conflictReviews: {
+    reviewId: string;
+    conflictKind: string;
+    status: 'open' | 'resolved';
+    outcome: string | null;
+    subjectStudentId: string;
+    conflictingStudentId: string;
+  }[];
+  productions: {
+    productionId: string;
+    caseId: string;
+    status: string;
+    cleanupStatus: string;
+    purpose: string;
+  }[];
   destructionEligibility:
     'not_eligible' | 'eligible_after_departure' | 'blocked_by_hold';
 };
@@ -131,8 +153,26 @@ export function StudentRecordLifecycleSection() {
     | { kind: 'close-case'; caseId: string }
     | { kind: 'establish-hold' }
     | { kind: 'release-hold'; holdId: string }
+    | { kind: 'resolve-amendment'; caseId: string; decision: string }
+    | { kind: 'authorize-production'; caseId: string }
+    | { kind: 'decide-review'; reviewId: string }
     | undefined
   >();
+  const [amendmentReason, setAmendmentReason] = useState<
+    | 'factual_inaccuracy'
+    | 'identity_dispute'
+    | 'intake_inaccuracy'
+    | 'requester_statement_only'
+    | 'insufficient_evidence'
+    | 'outside_authority'
+  >('factual_inaccuracy');
+  const [challengedFactId, setChallengedFactId] = useState('');
+  const [requesterStatement, setRequesterStatement] = useState('');
+  const [relatedStudentId, setRelatedStudentId] = useState('');
+  const [productionRecipient, setProductionRecipient] = useState('');
+  const [reviewOutcome, setReviewOutcome] = useState<
+    'keep_distinct' | 'referred_for_amendment'
+  >('keep_distinct');
 
   async function load() {
     const listing = await client.GET(
@@ -288,7 +328,7 @@ export function StudentRecordLifecycleSection() {
       setMessage(
         'Record Hold established. Destruction is blocked. Authorized access, amendment, transfer, and disclosure can continue.',
       );
-    } else {
+    } else if (confirm.kind === 'release-hold') {
       const result = await client.POST(
         '/api/v1/administration/students/record-hold-releases',
         {
@@ -302,6 +342,106 @@ export function StudentRecordLifecycleSection() {
         return;
       }
       setMessage('Record Hold released.');
+    } else if (confirm.kind === 'resolve-amendment') {
+      const decision =
+        confirm.decision === 'denied'
+          ? 'challenge_denied'
+          : 'correction_authorized';
+      const result = await client.POST(
+        '/api/v1/administration/students/record-amendments',
+        {
+          body: {
+            operationId,
+            caseId: confirm.caseId,
+            challengedFactKind: scopePortion === 'intake' ? 'intake_record_version' : 'identity',
+            challengedFactId: challengedFactId || selected.studentId,
+            decision,
+            reasonCode: amendmentReason,
+            ...(decision === 'correction_authorized'
+              ? {
+                  effectiveCorrection: {
+                    projectionKind:
+                      scopePortion === 'intake'
+                        ? 'intake_record_version'
+                        : 'identity',
+                    summaryCode: amendmentReason,
+                    challengedFactId: challengedFactId || selected.studentId,
+                  },
+                }
+              : {}),
+            ...(requesterStatement.trim()
+              ? { requesterStatement: requesterStatement.trim() }
+              : {}),
+            ...(relatedStudentId.trim()
+              ? { relatedStudentId: relatedStudentId.trim() }
+              : {}),
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      setRequesterStatement('');
+      setRelatedStudentId('');
+      if (result.response.status === 409) {
+        const problem = result.error as Problem & { reviewId?: string };
+        if (problem?.code === 'RECORD_CONFLICT_REVIEW_REQUIRED') {
+          setMessage(
+            'Conflicting records entered Record Conflict Review. Identities were not merged.',
+          );
+          await load();
+          return;
+        }
+        setMessage('The Record Amendment could not be recorded.');
+        return;
+      }
+      if (result.response.status !== 200) {
+        setMessage('The Record Amendment could not be recorded.');
+        return;
+      }
+      setMessage(
+        'Record Amendment recorded. The original fact and evidence remain.',
+      );
+    } else if (confirm.kind === 'authorize-production') {
+      const result = await client.POST(
+        '/api/v1/administration/students/record-productions',
+        {
+          body: {
+            operationId,
+            caseId: confirm.caseId,
+            recipient: productionRecipient,
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      setProductionRecipient('');
+      if (result.response.status !== 200) {
+        setMessage('The Record Production could not be authorized.');
+        return;
+      }
+      setMessage(
+        'Record Production authorized. The package is delivered through the one-recipient channel only.',
+      );
+    } else {
+      const result = await client.POST(
+        '/api/v1/administration/students/record-conflict-review-decisions',
+        {
+          body: {
+            operationId,
+            reviewId: confirm.reviewId,
+            outcome: reviewOutcome,
+          },
+        },
+      );
+      setBusy(false);
+      setConfirm(undefined);
+      if (result.response.status !== 200) {
+        setMessage('The Record Conflict Review could not be resolved.');
+        return;
+      }
+      setMessage(
+        'Record Conflict Review resolved. Students remain distinct; there is no merge.',
+      );
     }
     await load();
   }
@@ -399,6 +539,45 @@ export function StudentRecordLifecycleSection() {
                             </button>
                           </>
                         ) : null}
+                        {item.caseType === 'amendment' &&
+                        item.decision !== 'pending' ? (
+                          <>
+                            {' '}
+                            <button
+                              type="button"
+                              className="font-bold text-sky-300"
+                              onClick={() =>
+                                setConfirm({
+                                  kind: 'resolve-amendment',
+                                  caseId: item.caseId,
+                                  decision: item.decision,
+                                })
+                              }
+                            >
+                              Resolve Record Amendment
+                            </button>
+                          </>
+                        ) : null}
+                        {(item.caseType === 'access' ||
+                          item.caseType === 'transfer' ||
+                          item.caseType === 'disclosure') &&
+                        item.decision === 'authorized' ? (
+                          <>
+                            {' '}
+                            <button
+                              type="button"
+                              className="font-bold text-sky-300"
+                              onClick={() =>
+                                setConfirm({
+                                  kind: 'authorize-production',
+                                  caseId: item.caseId,
+                                })
+                              }
+                            >
+                              Authorize Record Production
+                            </button>
+                          </>
+                        ) : null}
                       </>
                     ) : null}
                   </li>
@@ -423,6 +602,43 @@ export function StudentRecordLifecycleSection() {
                         </button>
                       </>
                     ) : null}
+                  </li>
+                ))}
+                {selected.amendments.map((item) => (
+                  <li key={item.amendmentId}>
+                    Record Amendment {item.decision} · {item.reasonCode}
+                    {item.requesterStatementPreserved
+                      ? ' · requester statement preserved'
+                      : ''}
+                  </li>
+                ))}
+                {selected.conflictReviews.map((item) => (
+                  <li key={item.reviewId}>
+                    Record Conflict Review {item.conflictKind} · {item.status}
+                    {item.outcome ? ` · ${item.outcome}` : ''}
+                    {item.status === 'open' ? (
+                      <>
+                        {' '}
+                        <button
+                          type="button"
+                          className="font-bold text-sky-300"
+                          onClick={() =>
+                            setConfirm({
+                              kind: 'decide-review',
+                              reviewId: item.reviewId,
+                            })
+                          }
+                        >
+                          Record Conflict Review
+                        </button>
+                      </>
+                    ) : null}
+                  </li>
+                ))}
+                {selected.productions.map((item) => (
+                  <li key={item.productionId}>
+                    Record Production {item.purpose} · {item.status} · cleanup{' '}
+                    {item.cleanupStatus}
                   </li>
                 ))}
               </ul>
@@ -461,7 +677,13 @@ export function StudentRecordLifecycleSection() {
                     ? 'Record Lifecycle Case Outcome'
                     : confirm.kind === 'establish-hold'
                       ? 'Establish Record Hold'
-                      : 'Release Record Hold'}
+                      : confirm.kind === 'resolve-amendment'
+                        ? 'Resolve Record Amendment'
+                        : confirm.kind === 'authorize-production'
+                          ? 'Authorize Record Production'
+                          : confirm.kind === 'decide-review'
+                            ? 'Record Conflict Review'
+                            : 'Release Record Hold'}
             </h3>
             <p className="mt-3 text-sm leading-6 text-slate-300">
               {confirm.kind === 'open-case'
@@ -472,7 +694,13 @@ export function StudentRecordLifecycleSection() {
                     ? 'This records the outcome and closes the Record Lifecycle Case. Automatic Record Holds for this case are released. This does not destroy records.'
                     : confirm.kind === 'establish-hold'
                       ? 'This Record Hold blocks destruction. It does not deny separately authorized access, amendment, transfer, or disclosure.'
-                      : 'Releasing this Record Hold may make destruction eligible if no other Record Hold remains. This does not restore Student access.'}
+                      : confirm.kind === 'resolve-amendment'
+                        ? 'This records an append-only Record Amendment. The original fact stays. Conflicting identities enter Record Conflict Review instead of merge.'
+                        : confirm.kind === 'authorize-production'
+                          ? 'This authorizes a purpose-scoped Record Production from the case. The package is not shown here and is delivered only through the one-recipient channel.'
+                          : confirm.kind === 'decide-review'
+                            ? 'This records a non-merge outcome. Students remain distinct. There is no Administrator merge action.'
+                            : 'Releasing this Record Hold may make destruction eligible if no other Record Hold remains. This does not restore Student access.'}
             </p>
             {confirm.kind === 'open-case' ? (
               <div className="mt-4 grid gap-3">
@@ -616,6 +844,117 @@ export function StudentRecordLifecycleSection() {
                 </select>
               </label>
             ) : null}
+            {confirm.kind === 'resolve-amendment' ? (
+              <div className="mt-4 grid gap-3">
+                <label
+                  className="grid gap-2 font-bold"
+                  htmlFor="amendment-reason"
+                >
+                  Reason
+                  <select
+                    id="amendment-reason"
+                    value={amendmentReason}
+                    onChange={(event) =>
+                      setAmendmentReason(
+                        event.target.value as typeof amendmentReason,
+                      )
+                    }
+                    className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal"
+                  >
+                    <option value="factual_inaccuracy">factual inaccuracy</option>
+                    <option value="identity_dispute">identity dispute</option>
+                    <option value="intake_inaccuracy">intake inaccuracy</option>
+                    <option value="requester_statement_only">
+                      requester statement only
+                    </option>
+                    <option value="insufficient_evidence">
+                      insufficient evidence
+                    </option>
+                    <option value="outside_authority">outside authority</option>
+                  </select>
+                </label>
+                <label
+                  className="grid gap-2 font-bold"
+                  htmlFor="amendment-fact-id"
+                >
+                  Challenged fact
+                  <input
+                    id="amendment-fact-id"
+                    type="text"
+                    value={challengedFactId}
+                    onChange={(event) => setChallengedFactId(event.target.value)}
+                    className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal"
+                  />
+                </label>
+                <label
+                  className="grid gap-2 font-bold"
+                  htmlFor="amendment-statement"
+                >
+                  Requester statement
+                  <textarea
+                    id="amendment-statement"
+                    value={requesterStatement}
+                    onChange={(event) =>
+                      setRequesterStatement(event.target.value)
+                    }
+                    className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal"
+                  />
+                </label>
+                <label
+                  className="grid gap-2 font-bold"
+                  htmlFor="amendment-related-student"
+                >
+                  Related Student
+                  <input
+                    id="amendment-related-student"
+                    type="text"
+                    value={relatedStudentId}
+                    onChange={(event) => setRelatedStudentId(event.target.value)}
+                    className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal"
+                  />
+                </label>
+              </div>
+            ) : null}
+            {confirm.kind === 'authorize-production' ? (
+              <label
+                className="mt-4 grid gap-2 font-bold"
+                htmlFor="production-recipient"
+              >
+                Recipient
+                <input
+                  id="production-recipient"
+                  type="email"
+                  value={productionRecipient}
+                  onChange={(event) =>
+                    setProductionRecipient(event.target.value)
+                  }
+                  className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal"
+                />
+              </label>
+            ) : null}
+            {confirm.kind === 'decide-review' ? (
+              <label
+                className="mt-4 grid gap-2 font-bold"
+                htmlFor="conflict-review-outcome"
+              >
+                Outcome
+                <select
+                  id="conflict-review-outcome"
+                  value={reviewOutcome}
+                  onChange={(event) =>
+                    setReviewOutcome(
+                      event.target.value as typeof reviewOutcome,
+                    )
+                  }
+                  className="rounded border border-slate-600 bg-slate-950 px-3 py-2 font-normal"
+                >
+                  <option value="keep_distinct">keep distinct</option>
+                  <option value="referred_for_amendment">
+                    referred for amendment
+                  </option>
+                </select>
+              </label>
+            ) : null}
             <div className="mt-4 grid gap-3">
               <StudentAccessStepUpFields
                 password={password}
@@ -639,7 +978,13 @@ export function StudentRecordLifecycleSection() {
                       ? 'Record Lifecycle Case Outcome'
                       : confirm.kind === 'establish-hold'
                         ? 'Establish Record Hold'
-                        : 'Release Record Hold'}
+                        : confirm.kind === 'resolve-amendment'
+                          ? 'Resolve Record Amendment'
+                          : confirm.kind === 'authorize-production'
+                            ? 'Authorize Record Production'
+                            : confirm.kind === 'decide-review'
+                              ? 'Record Conflict Review'
+                              : 'Release Record Hold'}
               </button>
               <button
                 type="button"

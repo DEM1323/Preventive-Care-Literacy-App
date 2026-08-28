@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 import {
   runInvitationDeliveryCycle,
   runSignInCodeDeliveryCycle,
+  runRecordProductionDeliveryCycle,
   type InvitationDeliveryDependencies,
   type SignInCodeDeliveryDependencies,
 } from '../../../modules/invitation-delivery/index.ts';
@@ -10,6 +11,7 @@ import { verifyBuildAttestationAtStartup } from '../../../packages/build-attesta
 import { createResendInvitationMail } from '../../../packages/invitation-mail/src/index.ts';
 import {
   decryptInvitationDelivery,
+  decryptRecordProductionDelivery,
   decryptSignInDelivery,
 } from '../../../packages/invitation-secrets/src/index.ts';
 import {
@@ -18,6 +20,7 @@ import {
 } from '../../../packages/postgres/src/golden-journey-evidence.ts';
 import {
   createPostgresInvitationDeliveryPorts,
+  createPostgresRecordProductionDeliveryPorts,
   createPostgresSignInDeliveryPorts,
 } from '../../../packages/postgres/src/invitation-delivery.ts';
 import { assertRestrictedDatabaseRole } from '../../../packages/postgres/src/identity-access.ts';
@@ -92,6 +95,50 @@ const signInDependencies: SignInCodeDeliveryDependencies = {
   clock: { now: () => new Date() },
 };
 
+const productionPorts = createPostgresRecordProductionDeliveryPorts(pool);
+const productionJobs: {
+  messageId: string;
+  outboxId: string;
+  attempt: number;
+}[] = [];
+const productionDependencies = {
+  ...productionPorts,
+  queue: {
+    async send(payload: { outboxId: string }) {
+      if (!productionJobs.some((job) => job.outboxId === payload.outboxId)) {
+        productionJobs.push({
+          messageId: payload.outboxId,
+          outboxId: payload.outboxId,
+          attempt: 1,
+        });
+      }
+    },
+    async receive() {
+      return productionJobs[0];
+    },
+    async complete() {
+      productionJobs.shift();
+    },
+    async retry(_messageId: string, _delaySeconds: number) {
+      const job = productionJobs[0];
+      if (job) job.attempt += 1;
+    },
+  },
+  mail,
+  decrypt: (input: {
+    productionId: string;
+    keyId: string;
+    ciphertext: string;
+  }) =>
+    decryptRecordProductionDelivery({
+      keys,
+      keyId: input.keyId,
+      ciphertext: input.ciphertext,
+      productionId: input.productionId,
+    }),
+  clock: { now: () => new Date() },
+};
+
 await recordWorkerArtifactHeartbeat(pool, {
   artifactDigest: attestation.artifactDigest,
   envelopeAdapter: APPLICATION_LAYER_ENVELOPE_V1,
@@ -109,6 +156,19 @@ for (;;) {
     await runSignInCodeDeliveryCycle(signInDependencies);
   } catch {
     console.error('Sign-In Code delivery cycle failed');
+  }
+  try {
+    await runRecordProductionDeliveryCycle(productionDependencies);
+  } catch {
+    console.error('Record Production delivery cycle failed');
+  }
+  try {
+    await pool.query(
+      'select * from infrastructure.expire_record_productions($1)',
+      [new Date()],
+    );
+  } catch {
+    console.error('Record Production expiry cleanup failed');
   }
   await new Promise((resolve) => setTimeout(resolve, 1_000));
 }

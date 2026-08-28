@@ -228,6 +228,99 @@ export function decryptSignInDelivery(input: {
   });
 }
 
+function recordProductionDeliveryContext(productionId: string) {
+  return `record-production-delivery:${productionId}`;
+}
+
+export type RecordProductionSecrets = {
+  createCapability(): string;
+  digestCapability(capability: string): string;
+  digestRecipient(recipient: string): string;
+  protectDelivery(input: {
+    productionId: string;
+    recipient: string;
+    capability: string;
+  }): { keyId: string; ciphertext: string };
+  revealVerifiedEmailRecipient(input: {
+    workspaceId: string;
+    studentId: string;
+    keyId: string;
+    ciphertext: string;
+  }): string;
+};
+
+export function createRecordProductionSecrets(
+  keys: InvitationSecretKeys,
+): RecordProductionSecrets {
+  const encryptionKey = keys.encryptionKeys[keys.activeEncryptionKeyId];
+  if (
+    !encryptionKey ||
+    encryptionKey.byteLength !== 32 ||
+    keys.hmacKey.byteLength < 32
+  ) {
+    throw new Error(
+      'Record Production secret keys must contain at least 256 bits',
+    );
+  }
+  const protector = createInvitationSecretProtector(keys);
+  return {
+    createCapability: () => randomBytes(32).toString('base64url'),
+    digestCapability(capability) {
+      return createHmac('sha256', keys.hmacKey)
+        .update(`record-production-lookup:${capability}`)
+        .digest('hex');
+    },
+    digestRecipient: (recipient) => protector.digestRecipient(recipient),
+    protectDelivery(input) {
+      const binding = recordProductionDeliveryContext(input.productionId);
+      const nonce = randomBytes(12);
+      const cipher = createCipheriv('aes-256-gcm', encryptionKey, nonce);
+      cipher.setAAD(Buffer.from(binding));
+      const encrypted = Buffer.concat([
+        cipher.update(
+          JSON.stringify({
+            recipient: input.recipient.trim().toLowerCase(),
+            capability: input.capability,
+          }),
+        ),
+        cipher.final(),
+      ]);
+      return {
+        keyId: keys.activeEncryptionKeyId,
+        ciphertext: Buffer.concat([
+          nonce,
+          cipher.getAuthTag(),
+          encrypted,
+        ]).toString('base64url'),
+      };
+    },
+    revealVerifiedEmailRecipient: (input) =>
+      protector.revealVerifiedEmailRecipient(input),
+  };
+}
+
+export function decryptRecordProductionDelivery(input: {
+  keys: Pick<InvitationSecretKeys, 'encryptionKeys'>;
+  keyId: string;
+  ciphertext: string;
+  productionId: string;
+}): { recipient: string; capability: string } {
+  const key = input.keys.encryptionKeys[input.keyId];
+  if (!key) throw new Error('Record Production delivery key is unavailable');
+  const packed = Buffer.from(input.ciphertext, 'base64url');
+  const decipher = createDecipheriv('aes-256-gcm', key, packed.subarray(0, 12));
+  decipher.setAAD(
+    Buffer.from(recordProductionDeliveryContext(input.productionId)),
+  );
+  decipher.setAuthTag(packed.subarray(12, 28));
+  return JSON.parse(
+    Buffer.concat([
+      decipher.update(packed.subarray(28)),
+      decipher.final(),
+    ]).toString('utf8'),
+  ) as { recipient: string; capability: string };
+}
+
 export function decryptInvitationDelivery(input: {
   keys: Pick<InvitationSecretKeys, 'encryptionKeys'>;
   keyId: string;

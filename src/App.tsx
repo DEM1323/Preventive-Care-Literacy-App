@@ -10,6 +10,7 @@ import {
 import { StudentIntakePage } from './features/intake/StudentIntakePage';
 import { StudentLearningPage } from './features/learning/StudentLearningPage';
 import { OperatorConsolePage } from './features/operator/OperatorConsolePage';
+import { RecordProductionRetrievePage } from './features/records/RecordProductionRetrievePage';
 
 function RetiredPrototypePage() {
   return (
@@ -51,6 +52,10 @@ export default function App() {
         <Route
           path="/staff/configuration"
           element={<SchoolConfigurationPage />}
+        />
+        <Route
+          path="/records/productions/retrieve"
+          element={<RecordProductionRetrievePage />}
         />
         <Route path="*" element={<RetiredPrototypePage />} />
       </Routes>

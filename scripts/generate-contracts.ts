@@ -215,6 +215,24 @@ async function renderContracts() {
         listRecordsGovernance: async () => {
           throw new Error('Contract generation does not execute queries');
         },
+        resolveRecordAmendment: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        openRecordConflictReview: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        decideRecordConflictReview: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        authorizeRecordProduction: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        retrieveRecordProduction: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        repairRecordProductionCleanup: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
       },
     },
   );

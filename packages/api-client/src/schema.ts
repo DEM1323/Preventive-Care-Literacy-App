@@ -404,6 +404,54 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/administration/students/record-amendments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['resolveRecordAmendment'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/students/record-conflict-review-decisions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['decideRecordConflictReview'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/students/record-conflict-reviews': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['openRecordConflictReview'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/administration/students/record-hold-releases': {
     parameters: {
       query?: never;
@@ -478,6 +526,38 @@ export interface paths {
     get?: never;
     put?: never;
     post: operations['openRecordLifecycleCase'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/students/record-production-cleanups': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['repairRecordProductionCleanup'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/students/record-productions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['authorizeRecordProduction'];
     delete?: never;
     options?: never;
     head?: never;
@@ -766,6 +846,22 @@ export interface paths {
     get: operations['listOperatorWorkspaces'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/records/productions/retrievals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['retrieveRecordProduction'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1255,6 +1351,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1293,6 +1391,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1331,6 +1431,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1411,6 +1513,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1449,6 +1553,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1487,6 +1593,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1525,6 +1633,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1563,6 +1673,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1639,6 +1751,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1677,6 +1791,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1715,6 +1831,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1753,6 +1871,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1791,6 +1911,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1829,6 +1951,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1867,6 +1991,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1942,6 +2068,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -1980,6 +2108,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2018,6 +2148,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2056,6 +2188,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2094,6 +2228,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2214,6 +2350,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2252,6 +2390,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2290,6 +2430,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2328,6 +2470,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2366,6 +2510,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2404,6 +2550,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2442,6 +2590,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2578,6 +2728,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2616,6 +2768,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2654,6 +2808,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2692,6 +2848,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2730,6 +2888,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2768,6 +2928,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2806,6 +2968,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2844,6 +3008,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2933,6 +3099,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -2971,6 +3139,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3009,6 +3179,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3047,6 +3219,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3085,6 +3259,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3123,6 +3299,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3203,6 +3381,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3241,6 +3421,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3279,6 +3461,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3317,6 +3501,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3355,6 +3541,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3393,6 +3581,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3431,6 +3621,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3504,6 +3696,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3542,6 +3736,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3580,6 +3776,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3618,6 +3816,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3656,6 +3856,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3694,6 +3896,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3773,6 +3977,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3811,6 +4017,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3849,6 +4057,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3887,6 +4097,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3925,6 +4137,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -3963,6 +4177,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4001,6 +4217,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4075,6 +4293,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4113,6 +4333,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4151,6 +4373,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4189,6 +4413,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4227,6 +4453,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4265,6 +4493,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4416,6 +4646,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4454,6 +4686,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4492,6 +4726,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4530,6 +4766,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4773,6 +5011,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4811,6 +5051,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4849,6 +5091,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4887,6 +5131,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4925,6 +5171,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -4963,6 +5211,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5001,6 +5251,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5078,6 +5330,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5116,6 +5370,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5154,6 +5410,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5192,6 +5450,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5230,6 +5490,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5268,6 +5530,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5306,6 +5570,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5480,6 +5746,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5518,6 +5786,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5556,6 +5826,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5594,6 +5866,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5632,6 +5906,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5670,6 +5946,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5708,6 +5986,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5787,6 +6067,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5825,6 +6107,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5863,6 +6147,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5949,6 +6235,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -5987,6 +6275,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6025,6 +6315,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6063,6 +6355,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6101,6 +6395,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6139,6 +6435,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6177,6 +6475,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6270,6 +6570,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6308,6 +6610,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6346,6 +6650,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6384,6 +6690,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6461,6 +6769,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6499,6 +6809,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6537,6 +6849,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6575,6 +6889,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6613,6 +6929,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6651,6 +6969,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6720,6 +7040,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6758,6 +7080,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6796,6 +7120,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6883,6 +7209,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6921,6 +7249,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6959,6 +7289,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -6997,6 +7329,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7035,6 +7369,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7073,6 +7409,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7111,6 +7449,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7191,6 +7531,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7229,6 +7571,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7267,6 +7611,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7305,6 +7651,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7343,6 +7691,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7381,6 +7731,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7419,6 +7771,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7457,6 +7811,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7539,6 +7895,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7577,6 +7935,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7615,6 +7975,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7653,6 +8015,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7691,6 +8055,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7729,6 +8095,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7767,6 +8135,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7805,6 +8175,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7886,6 +8258,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7924,6 +8298,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -7962,6 +8338,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8000,6 +8378,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8038,6 +8418,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8076,6 +8458,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8114,6 +8498,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8152,6 +8538,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8226,6 +8614,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8264,6 +8654,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8302,6 +8694,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8340,6 +8734,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8378,6 +8774,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8416,6 +8814,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8454,6 +8854,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8531,6 +8933,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8569,6 +8973,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8607,6 +9013,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8645,6 +9053,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8683,6 +9093,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8721,6 +9133,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8759,6 +9173,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8834,6 +9250,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8872,6 +9290,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8910,6 +9330,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8948,6 +9370,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -8986,6 +9410,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9024,6 +9450,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9062,6 +9490,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9137,6 +9567,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9175,6 +9607,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9213,6 +9647,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9251,6 +9687,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9289,6 +9727,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9327,6 +9767,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9365,6 +9807,996 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  resolveRecordAmendment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          caseId: string;
+          /** Format: uuid */
+          challengedFactId: string;
+          challengedFactKind:
+            | 'identity'
+            | 'intake_record_version'
+            | 'membership'
+            | 'learning_progress';
+          decision: 'correction_authorized' | 'challenge_denied';
+          effectiveCorrection?: {
+            /** Format: uuid */
+            challengedFactId: string;
+            projectionKind:
+              | 'identity'
+              | 'intake_record_version'
+              | 'membership'
+              | 'learning_progress';
+            summaryCode:
+              | 'factual_inaccuracy'
+              | 'identity_dispute'
+              | 'intake_inaccuracy'
+              | 'requester_statement_only'
+              | 'insufficient_evidence'
+              | 'outside_authority';
+          };
+          /** Format: uuid */
+          operationId: string;
+          reasonCode:
+            | 'factual_inaccuracy'
+            | 'identity_dispute'
+            | 'intake_inaccuracy'
+            | 'requester_statement_only'
+            | 'insufficient_evidence'
+            | 'outside_authority';
+          /** Format: uuid */
+          relatedStudentId?: string;
+          requesterStatement?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            amendmentId: string;
+            /** Format: uuid */
+            caseId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'recorded';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  decideRecordConflictReview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          outcome: 'keep_distinct' | 'referred_for_amendment';
+          /** Format: uuid */
+          reviewId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'resolved';
+            /** Format: uuid */
+            reviewId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  openRecordConflictReview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          conflictingStudentId: string;
+          conflictKind: 'student_identity' | 'intake_record';
+          /** Format: uuid */
+          operationId: string;
+          /** Format: uuid */
+          subjectStudentId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'opened';
+            /** Format: uuid */
+            reviewId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9439,6 +10871,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9477,6 +10911,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9515,6 +10951,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9553,6 +10991,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9591,6 +11031,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9629,6 +11071,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9667,6 +11111,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9745,6 +11191,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9783,6 +11231,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9821,6 +11271,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9859,6 +11311,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9897,6 +11351,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9935,6 +11391,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -9973,6 +11431,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10048,6 +11508,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10086,6 +11548,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10124,6 +11588,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10162,6 +11628,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10200,6 +11668,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10238,6 +11708,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10276,6 +11748,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10351,6 +11825,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10389,6 +11865,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10427,6 +11905,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10465,6 +11945,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10503,6 +11985,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10541,6 +12025,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10579,6 +12065,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10705,6 +12193,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10743,6 +12233,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10781,6 +12273,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10819,6 +12313,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10857,6 +12353,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10895,6 +12393,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10933,6 +12433,642 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  repairRecordProductionCleanup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          /** Format: uuid */
+          productionId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            operationId: string;
+            outcome: 'removed' | 'failed';
+            /** Format: uuid */
+            productionId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  authorizeRecordProduction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          caseId: string;
+          /** Format: uuid */
+          operationId: string;
+          recipient: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            caseId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'authorized';
+            /** Format: uuid */
+            productionId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -10959,6 +13095,36 @@ export interface operations {
           'application/json': {
             students: {
               accessStatus: 'active' | 'disabled';
+              amendments: {
+                /** Format: uuid */
+                amendmentId: string;
+                authorityKind:
+                  'school_administrator' | 'school_nurse' | 'legal_custodian';
+                /** Format: uuid */
+                caseId: string;
+                /** Format: uuid */
+                challengedFactId: string;
+                challengedFactKind:
+                  | 'identity'
+                  | 'intake_record_version'
+                  | 'membership'
+                  | 'learning_progress';
+                decision: 'correction_authorized' | 'challenge_denied';
+                effectiveCorrection: {
+                  /** Format: uuid */
+                  challengedFactId: string;
+                  projectionKind:
+                    | 'identity'
+                    | 'intake_record_version'
+                    | 'membership'
+                    | 'learning_progress';
+                  summaryCode: string;
+                } | null;
+                reasonCode: string;
+                /** Format: date-time */
+                recordedAt: string;
+                requesterStatementPreserved: boolean;
+              }[];
               cases: {
                 authorityKind:
                   'school_administrator' | 'school_nurse' | 'legal_custodian';
@@ -11011,6 +13177,20 @@ export interface operations {
                     | 'scheduled_destruction';
                 };
               }[];
+              conflictReviews: {
+                /** Format: uuid */
+                conflictingStudentId: string;
+                conflictKind: 'student_identity' | 'intake_record';
+                /** Format: date-time */
+                openedAt: string;
+                outcome: 'keep_distinct' | 'referred_for_amendment' | null;
+                resolvedAt: string | null;
+                /** Format: uuid */
+                reviewId: string;
+                status: 'open' | 'resolved';
+                /** Format: uuid */
+                subjectStudentId: string;
+              }[];
               departure: {
                 /** Format: date */
                 effectiveOn: string;
@@ -11038,6 +13218,26 @@ export interface operations {
               /** Format: uuid */
               policyRevisionId: string;
               presence: 'enrolled' | 'departed';
+              productions: {
+                /** Format: uuid */
+                caseId: string;
+                cleanupStatus: 'pending' | 'removed' | 'failed';
+                deliveredAt: string | null;
+                /** Format: date-time */
+                expiresAt: string;
+                portions: string[];
+                /** Format: uuid */
+                productionId: string;
+                purpose: string;
+                removedAt: string | null;
+                retrievedAt: string | null;
+                status:
+                  | 'pending_delivery'
+                  | 'delivered'
+                  | 'retrieved'
+                  | 'expired'
+                  | 'delivery_failed';
+              }[];
               /** Format: uuid */
               studentId: string;
             }[];
@@ -11076,6 +13276,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11114,6 +13316,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11152,6 +13356,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11235,6 +13441,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11273,6 +13481,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11311,6 +13521,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11349,6 +13561,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11387,6 +13601,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11425,6 +13641,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11463,6 +13681,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11530,6 +13750,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11568,6 +13790,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11606,6 +13830,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11644,6 +13870,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11705,6 +13933,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11777,6 +14007,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11815,6 +14047,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11853,6 +14087,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11891,6 +14127,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11929,6 +14167,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -11990,6 +14230,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12028,6 +14270,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12066,6 +14310,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12104,6 +14350,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12172,6 +14420,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12210,6 +14460,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12248,6 +14500,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12286,6 +14540,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12324,6 +14580,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12362,6 +14620,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12430,6 +14690,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12468,6 +14730,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12506,6 +14770,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12544,6 +14810,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12582,6 +14850,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12650,6 +14920,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12688,6 +14960,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12726,6 +15000,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12764,6 +15040,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12802,6 +15080,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12869,6 +15149,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12907,6 +15189,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12945,6 +15229,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -12983,6 +15269,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13051,6 +15339,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13089,6 +15379,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13127,6 +15419,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13165,6 +15459,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13203,6 +15499,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13365,6 +15663,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13403,6 +15703,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13441,6 +15743,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13479,6 +15783,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13517,6 +15823,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13555,6 +15863,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13720,6 +16030,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13758,6 +16070,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13796,6 +16110,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13834,6 +16150,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13872,6 +16190,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -13910,6 +16230,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14000,6 +16322,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14038,6 +16362,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14076,6 +16402,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14165,6 +16493,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14203,6 +16533,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14241,6 +16573,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14279,6 +16613,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14317,6 +16653,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14355,6 +16693,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14455,6 +16795,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14493,6 +16835,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14553,6 +16897,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14632,6 +16978,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14670,6 +17018,242 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  retrieveRecordProduction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          capability: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            package: {
+              [key: string]: unknown;
+            };
+            portions: string[];
+            /** Format: uuid */
+            productionId: string;
+            purpose: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14737,6 +17321,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14775,6 +17361,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14959,6 +17547,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -14997,6 +17587,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15035,6 +17627,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15073,6 +17667,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15158,6 +17754,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15196,6 +17794,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15234,6 +17834,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15272,6 +17874,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15310,6 +17914,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15348,6 +17954,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15386,6 +17994,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15463,6 +18073,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15501,6 +18113,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15539,6 +18153,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15577,6 +18193,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15615,6 +18233,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15653,6 +18273,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15691,6 +18313,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15767,6 +18391,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15805,6 +18431,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15843,6 +18471,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15881,6 +18511,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15919,6 +18551,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15957,6 +18591,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -15995,6 +18631,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16103,6 +18741,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16141,6 +18781,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16179,6 +18821,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16217,6 +18861,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16255,6 +18901,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16293,6 +18941,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16331,6 +18981,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16369,6 +19021,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16435,6 +19089,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16473,6 +19129,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16511,6 +19169,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16549,6 +19209,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16587,6 +19249,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16726,6 +19390,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16764,6 +19430,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16802,6 +19470,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16840,6 +19510,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16923,6 +19595,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16961,6 +19635,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -16999,6 +19675,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -17037,6 +19715,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -17075,6 +19755,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -17113,6 +19795,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -17151,6 +19835,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -17220,6 +19906,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;
@@ -17258,6 +19946,8 @@ export interface operations {
             outcome?: string;
             reason?: string;
             rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
             status: number;
             title: string;
             type: string;

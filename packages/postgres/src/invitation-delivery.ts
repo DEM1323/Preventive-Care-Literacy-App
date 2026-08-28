@@ -147,3 +147,71 @@ export function createPostgresSignInDeliveryPorts(
     },
   };
 }
+
+export function createPostgresRecordProductionDeliveryPorts(
+  pool: Pool,
+): Pick<
+  import('../../../modules/invitation-delivery/index.ts').RecordProductionDeliveryDependencies,
+  'outbox' | 'deliveries'
+> {
+  return {
+    outbox: {
+      async pending() {
+        const result = await pool.query<{ outbox_id: string }>(
+          'select * from infrastructure.pending_record_production_outbox()',
+        );
+        return result.rows.map((row) => ({ outboxId: row.outbox_id }));
+      },
+    },
+    deliveries: {
+      async claim(outboxId, now) {
+        const result = await pool.query<{
+          outcome: 'deliver' | 'suppressed';
+          production_id: string | null;
+          key_id: string | null;
+          ciphertext: string | null;
+          provider_idempotency_key: string | null;
+        }>(
+          'select * from infrastructure.claim_record_production_delivery($1, $2)',
+          [outboxId, now],
+        );
+        const row = result.rows[0];
+        if (!row || row.outcome === 'suppressed')
+          return { outcome: 'suppressed' };
+        if (
+          !row.production_id ||
+          !row.key_id ||
+          !row.ciphertext ||
+          !row.provider_idempotency_key
+        ) {
+          throw new Error('Record Production delivery claim is incomplete');
+        }
+        return {
+          outcome: 'deliver',
+          outboxId,
+          productionId: row.production_id,
+          keyId: row.key_id,
+          ciphertext: row.ciphertext,
+          providerIdempotencyKey: row.provider_idempotency_key,
+        };
+      },
+      async complete(input) {
+        await pool.query(
+          'select infrastructure.complete_record_production_delivery($1, $2, $3, $4)',
+          [
+            input.outboxId,
+            input.productionId,
+            input.providerMessageId,
+            input.deliveredAt,
+          ],
+        );
+      },
+      async suppress(input) {
+        await pool.query(
+          'select infrastructure.suppress_record_production_delivery($1, $2)',
+          [input.outboxId, input.productionId],
+        );
+      },
+    },
+  };
+}
