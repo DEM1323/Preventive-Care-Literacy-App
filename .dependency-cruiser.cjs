@@ -7,6 +7,7 @@ const owningModules = [
   'records-governance',
   'operator-repair',
   'operational-readiness',
+  'release-candidate-evidence',
 ];
 
 module.exports = {

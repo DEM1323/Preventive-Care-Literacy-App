@@ -51,6 +51,8 @@ migrations against ephemeral PostgreSQL, and the focused transactional command t
 
 Operational readiness and incident recovery: [docs/operations/operational-readiness.md](docs/operations/operational-readiness.md).
 Provider dashboard steps the application cannot perform: `scripts/record-operational-provider-evidence.sh`.
+School acceptance and release-candidate evidence: [docs/operations/release-candidate-evidence.md](docs/operations/release-candidate-evidence.md).
+Human School Nurse and native-browser steps: `scripts/run-release-candidate-acceptance-wizard.sh`.
 
 ```bash
 bun run verify:install

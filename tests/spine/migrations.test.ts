@@ -49,6 +49,7 @@ test('migrations apply in order and are repeatable', async () => {
         { name: '031_purge_verification.sql' },
         { name: '032_operator_repair.sql' },
         { name: '033_operational_readiness.sql' },
+        { name: '034_release_candidate_evidence.sql' },
       ]);
     } finally {
       await client.end();

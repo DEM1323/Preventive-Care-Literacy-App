@@ -98,6 +98,13 @@ import {
   nonWaivableIncidentChecks,
   serviceCaps,
 } from '../../../modules/operational-readiness/index.ts';
+import type { ReleaseCandidateEvidencePort } from '../../../modules/release-candidate-evidence/index.ts';
+import {
+  ReleaseCandidateEvidenceError,
+  ReleaseCandidateEvidenceOperationReusedError,
+  createReleaseCandidateEvidence,
+  presentCampaign,
+} from '../../../modules/release-candidate-evidence/index.ts';
 import type { RecordsGovernance } from '../../../modules/records-governance/index.ts';
 import {
   RecordAmendmentDecisionMismatchError,
@@ -188,6 +195,7 @@ import { createPostgresRecordsGovernanceStore } from '../../../packages/postgres
 import { queryGoldenJourneyOperatorEvidence } from '../../../packages/postgres/src/golden-journey-evidence.ts';
 import { createPostgresOperatorRepairStore } from '../../../packages/postgres/src/operator-repair.ts';
 import { createPostgresOperationalReadinessStore } from '../../../packages/postgres/src/operational-readiness.ts';
+import { createPostgresReleaseCandidateEvidenceStore } from '../../../packages/postgres/src/release-candidate-evidence.ts';
 import {
   listOperatorWorkspaces,
   type OperatorWorkspaceSummary,
@@ -649,6 +657,238 @@ const AuthorizeIncidentResumeBody = Type.Object(
   {
     operationId: Type.String({ format: 'uuid' }),
     confirmation: Type.Literal(incidentResumeConfirmation),
+  },
+  { additionalProperties: false },
+);
+
+const AcceptanceCheckOutcomeSchema = Type.Union([
+  Type.Literal('pass'),
+  Type.Literal('fail'),
+  Type.Literal('pending'),
+  Type.Literal('exception'),
+]);
+
+const AcceptanceEvidenceSourceSchema = Type.Union([
+  Type.Literal('automated_synthetic'),
+  Type.Literal('automation_proxy'),
+  Type.Literal('live_staging_pending'),
+  Type.Literal('provider_dashboard_pending'),
+  Type.Literal('provider_dashboard'),
+  Type.Literal('school_nurse_pending'),
+  Type.Literal('school_nurse_recorded'),
+  Type.Literal('human_browser_pending'),
+  Type.Literal('human_browser_recorded'),
+]);
+
+const AcceptanceActorTypeSchema = Type.Union([
+  Type.Literal('technical_operator'),
+  Type.Literal('school_nurse'),
+  Type.Literal('automation'),
+]);
+
+const AcceptanceNonWaivableSchema = Type.Union([
+  Type.Literal('authorization_bypass'),
+  Type.Literal('cross_workspace_disclosure'),
+  Type.Literal('sensitive_data_leak'),
+  Type.Literal('stale_publication'),
+  Type.Literal('false_success'),
+  Type.Literal('history_atomicity_loss'),
+  Type.Literal('failed_required_operation'),
+  Type.Literal('journey_blocking_accessibility'),
+]);
+
+const AcceptanceCheckKindSchema = Type.Union([
+  Type.Literal('journey'),
+  Type.Literal('locale'),
+  Type.Literal('matrix'),
+  Type.Literal('wcag'),
+]);
+
+const AcceptanceObservedSchema = Type.Object(
+  {
+    browser: Type.Optional(Type.String({ minLength: 1, maxLength: 40 })),
+    browserVersion: Type.Optional(Type.String({ minLength: 1, maxLength: 40 })),
+    device: Type.Optional(Type.String({ minLength: 1, maxLength: 40 })),
+    viewport: Type.Optional(Type.String({ minLength: 1, maxLength: 40 })),
+    locale: Type.Optional(Type.String({ minLength: 2, maxLength: 12 })),
+    automationProxy: Type.Optional(
+      Type.Union([
+        Type.Literal('chromium'),
+        Type.Literal('webkit'),
+        Type.Literal('firefox'),
+      ]),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+const AcceptanceCheckRecordSchema = Type.Object(
+  {
+    outcome: AcceptanceCheckOutcomeSchema,
+    source: AcceptanceEvidenceSourceSchema,
+    recordedAt: Type.String({ format: 'date-time' }),
+    actorType: AcceptanceActorTypeSchema,
+    nonWaivableCategory: Type.Optional(AcceptanceNonWaivableSchema),
+    observed: Type.Optional(AcceptanceObservedSchema),
+  },
+  { additionalProperties: false },
+);
+
+const AcceptancePinSchema = Type.Object(
+  {
+    artifactDigest: HexDigest64,
+    environment: Type.Literal('staging'),
+    environmentHost: Type.String({ minLength: 1, maxLength: 253 }),
+    environmentIdentity: Type.String({ minLength: 1, maxLength: 80 }),
+    schemaMigrations: Type.Array(
+      Type.String({ minLength: 1, maxLength: 120 }),
+      {
+        minItems: 1,
+        maxItems: 200,
+      },
+    ),
+    schoolConfigurationReleaseId: Type.String({ format: 'uuid' }),
+    syntheticIdentitySetId: Type.String({ format: 'uuid' }),
+    commit: Type.String({ pattern: '^[0-9a-f]{40}$' }),
+  },
+  { additionalProperties: false },
+);
+
+const AcceptanceSyntheticIdentifiersSchema = Type.Object(
+  {
+    workspaceId: Type.String({ format: 'uuid' }),
+    staffIdentityId: Type.String({ format: 'uuid' }),
+    classId: Type.String({ format: 'uuid' }),
+    studentId: Type.String({ format: 'uuid' }),
+    invitationId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+
+const AcceptanceExceptionSchema = Type.Object(
+  {
+    checkKind: AcceptanceCheckKindSchema,
+    checkId: Type.String({ minLength: 1, maxLength: 80 }),
+    requirement: Type.String({ minLength: 1, maxLength: 200 }),
+    evidence: Type.String({ minLength: 1, maxLength: 400 }),
+    impact: Type.String({ minLength: 1, maxLength: 400 }),
+    mitigation: Type.String({ minLength: 1, maxLength: 400 }),
+    owner: Type.String({ minLength: 1, maxLength: 80 }),
+    expiry: Type.String({ pattern: '^\\d{4}-\\d{2}-\\d{2}$' }),
+    reasonOutsideNonWaivable: Type.String({ minLength: 1, maxLength: 400 }),
+  },
+  { additionalProperties: false },
+);
+
+const AcceptanceSchoolNurseSchema = Type.Object(
+  {
+    status: Type.Union([Type.Literal('recorded'), Type.Literal('missing')]),
+    recordedAt: Type.Optional(Type.String({ format: 'date-time' })),
+    actorId: Type.Optional(Type.String({ format: 'uuid' })),
+  },
+  { additionalProperties: false },
+);
+
+const AcceptanceDecisionSchema = Type.Object(
+  {
+    decision: Type.Union([
+      Type.Literal('go'),
+      Type.Literal('no-go'),
+      Type.Literal('pending'),
+    ]),
+    reasons: Type.Array(Type.String({ minLength: 1, maxLength: 80 }), {
+      maxItems: 20,
+    }),
+    schoolNurseAcceptance: Type.Union([
+      Type.Literal('recorded'),
+      Type.Literal('missing'),
+    ]),
+  },
+  { additionalProperties: false },
+);
+
+const AcceptanceCampaignResponse = Type.Object(
+  {
+    campaignId: Type.String({ format: 'uuid' }),
+    pin: AcceptancePinSchema,
+    syntheticIdentifiers: AcceptanceSyntheticIdentifiersSchema,
+    startedAt: Type.String({ format: 'date-time' }),
+    journeys: Type.Record(Type.String(), AcceptanceCheckRecordSchema),
+    locales: Type.Record(Type.String(), AcceptanceCheckRecordSchema),
+    matrix: Type.Record(Type.String(), AcceptanceCheckRecordSchema),
+    wcag: Type.Record(Type.String(), AcceptanceCheckRecordSchema),
+    exceptions: Type.Array(AcceptanceExceptionSchema, { maxItems: 50 }),
+    schoolNurseAcceptance: AcceptanceSchoolNurseSchema,
+    decision: AcceptanceDecisionSchema,
+  },
+  { additionalProperties: false },
+);
+
+const AcceptanceEvidenceResponse = Type.Object(
+  {
+    schemaVersion: Type.Literal(1),
+    campaignId: Type.String({ format: 'uuid' }),
+    pin: AcceptancePinSchema,
+    syntheticIdentifiers: AcceptanceSyntheticIdentifiersSchema,
+    startedAt: Type.String({ format: 'date-time' }),
+    completedAt: Type.String({ format: 'date-time' }),
+    journeys: Type.Record(Type.String(), AcceptanceCheckRecordSchema),
+    locales: Type.Record(Type.String(), AcceptanceCheckRecordSchema),
+    matrix: Type.Record(Type.String(), AcceptanceCheckRecordSchema),
+    wcag: Type.Record(Type.String(), AcceptanceCheckRecordSchema),
+    exceptions: Type.Array(AcceptanceExceptionSchema, { maxItems: 50 }),
+    schoolNurseAcceptance: AcceptanceSchoolNurseSchema,
+    decision: AcceptanceDecisionSchema,
+  },
+  { additionalProperties: false },
+);
+
+const StartAcceptanceCampaignBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    campaignId: Type.String({ format: 'uuid' }),
+    pin: AcceptancePinSchema,
+    syntheticIdentifiers: AcceptanceSyntheticIdentifiersSchema,
+    replaceExisting: Type.Optional(Type.Boolean()),
+  },
+  { additionalProperties: false },
+);
+
+const RecordAcceptanceCheckBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    kind: AcceptanceCheckKindSchema,
+    checkId: Type.String({ minLength: 1, maxLength: 80 }),
+    outcome: AcceptanceCheckOutcomeSchema,
+    source: AcceptanceEvidenceSourceSchema,
+    actorType: AcceptanceActorTypeSchema,
+    nonWaivableCategory: Type.Optional(AcceptanceNonWaivableSchema),
+    observed: Type.Optional(AcceptanceObservedSchema),
+    pin: Type.Optional(AcceptancePinSchema),
+  },
+  { additionalProperties: false },
+);
+
+const RecordAcceptanceExceptionBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    checkKind: AcceptanceCheckKindSchema,
+    checkId: Type.String({ minLength: 1, maxLength: 80 }),
+    requirement: Type.String({ minLength: 1, maxLength: 200 }),
+    evidence: Type.String({ minLength: 1, maxLength: 400 }),
+    impact: Type.String({ minLength: 1, maxLength: 400 }),
+    mitigation: Type.String({ minLength: 1, maxLength: 400 }),
+    owner: Type.String({ minLength: 1, maxLength: 80 }),
+    expiry: Type.String({ pattern: '^\\d{4}-\\d{2}-\\d{2}$' }),
+    reasonOutsideNonWaivable: Type.String({ minLength: 1, maxLength: 400 }),
+  },
+  { additionalProperties: false },
+);
+
+const RecordSchoolNurseAcceptanceBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    staffIdentityId: Type.String({ format: 'uuid' }),
   },
   { additionalProperties: false },
 );
@@ -3340,6 +3580,7 @@ export async function buildApp(
     listOperatorWorkspaces: () => Promise<OperatorWorkspaceSummary[]>;
     operatorRepair?: OperatorRepair;
     operationalReadiness?: OperationalReadiness;
+    releaseCandidateEvidence?: ReleaseCandidateEvidencePort;
     processSecrets?: { wrappingKeyId: string; deliveryKeyId: string };
     artifactDigest?: string;
   },
@@ -3376,6 +3617,15 @@ export async function buildApp(
       title: 'Operational readiness is unavailable',
       status: 503,
       code: 'OPERATIONAL_READINESS_UNAVAILABLE',
+    });
+  }
+
+  function releaseCandidateEvidenceUnavailable(reply: FastifyReply) {
+    return reply.type('application/problem+json').code(503).send({
+      type: 'https://preventive-care-literacy.example/problems/release-candidate-evidence-unavailable',
+      title: 'Release-candidate evidence is unavailable',
+      status: 503,
+      code: 'RELEASE_CANDIDATE_EVIDENCE_UNAVAILABLE',
     });
   }
 
@@ -4021,6 +4271,29 @@ export async function buildApp(
         type: 'https://preventive-care-literacy.example/problems/operation-id-reused',
         title: error.message,
         status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof ReleaseCandidateEvidenceOperationReusedError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/operation-id-reused',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof ReleaseCandidateEvidenceError) {
+      const status =
+        error.code === 'PROHIBITED_DATA' ||
+        error.code === 'MALFORMED_PIN' ||
+        error.code === 'INCOMPLETE_EXCEPTION' ||
+        error.code === 'UNKNOWN_CHECK'
+          ? 400
+          : 409;
+      return reply.type('application/problem+json').code(status).send({
+        type: 'https://preventive-care-literacy.example/problems/release-candidate-evidence',
+        title: error.message,
+        status,
         code: error.code,
       });
     }
@@ -5194,6 +5467,229 @@ export async function buildApp(
           secretGeneration: incident?.secretGeneration ?? 0,
         },
       });
+    },
+  );
+
+  app.get<{ Headers: Static<typeof OperatorAuthenticationHeaders> }>(
+    '/api/v1/operator/acceptance-campaigns/current',
+    {
+      schema: {
+        operationId: 'readAcceptanceCampaign',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorAuthenticationHeaders,
+        response: {
+          200: Type.Union([AcceptanceCampaignResponse, Type.Null()]),
+          401: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!authenticateOperator(request)) {
+        return operatorAuthenticationRequired(reply);
+      }
+      if (!options.releaseCandidateEvidence) {
+        return releaseCandidateEvidenceUnavailable(reply);
+      }
+      const campaign = await options.releaseCandidateEvidence.readCampaign();
+      return campaign ? presentCampaign(campaign) : null;
+    },
+  );
+
+  app.get<{ Headers: Static<typeof OperatorAuthenticationHeaders> }>(
+    '/api/v1/operator/acceptance-campaigns/current/evidence',
+    {
+      schema: {
+        operationId: 'exportAcceptanceCampaignEvidence',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorAuthenticationHeaders,
+        response: {
+          200: AcceptanceEvidenceResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          409: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!authenticateOperator(request)) {
+        return operatorAuthenticationRequired(reply);
+      }
+      if (!options.releaseCandidateEvidence) {
+        return releaseCandidateEvidenceUnavailable(reply);
+      }
+      return options.releaseCandidateEvidence.exportEvidence();
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof StartAcceptanceCampaignBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/acceptance-campaigns',
+    {
+      schema: {
+        operationId: 'startAcceptanceCampaign',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: StartAcceptanceCampaignBody,
+        response: {
+          200: AcceptanceCampaignResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.releaseCandidateEvidence) {
+        return releaseCandidateEvidenceUnavailable(reply);
+      }
+      const campaign = await options.releaseCandidateEvidence.startCampaign({
+        operationId: request.body.operationId,
+        actorId: actor.id,
+        campaignId: request.body.campaignId,
+        pin: request.body.pin,
+        syntheticIdentifiers: request.body.syntheticIdentifiers,
+        replaceExisting: request.body.replaceExisting,
+      });
+      return presentCampaign(campaign);
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof RecordAcceptanceCheckBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/acceptance-campaigns/checks',
+    {
+      schema: {
+        operationId: 'recordAcceptanceCheck',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: RecordAcceptanceCheckBody,
+        response: {
+          200: AcceptanceCampaignResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.releaseCandidateEvidence) {
+        return releaseCandidateEvidenceUnavailable(reply);
+      }
+      const campaign = await options.releaseCandidateEvidence.recordCheck({
+        operationId: request.body.operationId,
+        actorId: actor.id,
+        input: {
+          kind: request.body.kind,
+          checkId: request.body.checkId,
+          outcome: request.body.outcome,
+          source: request.body.source,
+          recordedAt: new Date().toISOString(),
+          actorType: request.body.actorType,
+          ...(request.body.nonWaivableCategory
+            ? { nonWaivableCategory: request.body.nonWaivableCategory }
+            : {}),
+          ...(request.body.observed ? { observed: request.body.observed } : {}),
+          ...(request.body.pin ? { pin: request.body.pin } : {}),
+        },
+      });
+      return presentCampaign(campaign);
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof RecordAcceptanceExceptionBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/acceptance-campaigns/exceptions',
+    {
+      schema: {
+        operationId: 'recordAcceptanceException',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: RecordAcceptanceExceptionBody,
+        response: {
+          200: AcceptanceCampaignResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.releaseCandidateEvidence) {
+        return releaseCandidateEvidenceUnavailable(reply);
+      }
+      const campaign = await options.releaseCandidateEvidence.recordException({
+        operationId: request.body.operationId,
+        actorId: actor.id,
+        exception: {
+          checkKind: request.body.checkKind,
+          checkId: request.body.checkId,
+          requirement: request.body.requirement,
+          evidence: request.body.evidence,
+          impact: request.body.impact,
+          mitigation: request.body.mitigation,
+          owner: request.body.owner,
+          expiry: request.body.expiry,
+          reasonOutsideNonWaivable: request.body.reasonOutsideNonWaivable,
+        },
+      });
+      return presentCampaign(campaign);
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof RecordSchoolNurseAcceptanceBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/acceptance-campaigns/school-nurse-acceptance',
+    {
+      schema: {
+        operationId: 'recordSchoolNurseAcceptance',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: RecordSchoolNurseAcceptanceBody,
+        response: {
+          200: AcceptanceCampaignResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.releaseCandidateEvidence) {
+        return releaseCandidateEvidenceUnavailable(reply);
+      }
+      const campaign =
+        await options.releaseCandidateEvidence.recordSchoolNurseAcceptance({
+          operationId: request.body.operationId,
+          actorId: actor.id,
+          staffIdentityId: request.body.staffIdentityId,
+        });
+      return presentCampaign(campaign);
     },
   );
 
@@ -7955,6 +8451,10 @@ export async function createServer(options: {
     clock,
     ids,
   });
+  const releaseCandidateEvidence = createReleaseCandidateEvidence({
+    store: createPostgresReleaseCandidateEvidenceStore({ pool }),
+    clock,
+  });
   return buildApp(identityAndAccess, {
     operatorAuthenticator: createOperatorAuthenticator(
       options.operatorCredentials,
@@ -7984,6 +8484,7 @@ export async function createServer(options: {
     listOperatorWorkspaces: () => listOperatorWorkspaces(pool),
     operatorRepair,
     operationalReadiness,
+    releaseCandidateEvidence,
     processSecrets: {
       wrappingKeyId: options.wrappingKeys?.activeWrappingKeyId ?? 'ephemeral',
       deliveryKeyId: invitationSecretKeys.activeEncryptionKeyId,

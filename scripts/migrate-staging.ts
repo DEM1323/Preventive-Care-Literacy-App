@@ -266,6 +266,14 @@ try {
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
+    `grant execute on function infrastructure.read_acceptance_campaign()
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.write_acceptance_campaign(uuid, text, text, text, jsonb, boolean, timestamptz)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
     `grant select, insert on all tables in schema infrastructure
        to ${runtimeRoleIdentifier}`,
   );
