@@ -70,6 +70,16 @@ import {
   LearningUnavailableError,
 } from '../../../modules/learning-progress/index.ts';
 import { createLearningProgress } from '../../../modules/learning-progress/index.ts';
+import type { OperatorRepair } from '../../../modules/operator-repair/index.ts';
+import {
+  OperatorRepairConfirmationRequiredError,
+  OperatorRepairNotFoundError,
+  OperatorRepairNotRepairableError,
+  OperatorRepairOperationReusedError,
+  OperatorRepairPreconditionConflictError,
+  createOperatorRepair,
+  operatorRepairConfirmation,
+} from '../../../modules/operator-repair/index.ts';
 import type { RecordsGovernance } from '../../../modules/records-governance/index.ts';
 import {
   RecordAmendmentDecisionMismatchError,
@@ -158,6 +168,7 @@ import { createPostgresIntakeStore } from '../../../packages/postgres/src/intake
 import { createPostgresLearningProgressStore } from '../../../packages/postgres/src/learning-progress.ts';
 import { createPostgresRecordsGovernanceStore } from '../../../packages/postgres/src/records-governance.ts';
 import { queryGoldenJourneyOperatorEvidence } from '../../../packages/postgres/src/golden-journey-evidence.ts';
+import { createPostgresOperatorRepairStore } from '../../../packages/postgres/src/operator-repair.ts';
 import {
   listOperatorWorkspaces,
   type OperatorWorkspaceSummary,
@@ -279,6 +290,76 @@ const OperatorWorkspaceSummaryResponse = Type.Object(
 const OperatorWorkspaceCatalogResponse = Type.Array(
   OperatorWorkspaceSummaryResponse,
   { maxItems: 500 },
+);
+
+const OperatorRepairKindSchema = Type.Union([
+  Type.Literal('invitation_delivery'),
+  Type.Literal('sign_in_delivery'),
+  Type.Literal('record_production_delivery'),
+  Type.Literal('record_production_cleanup'),
+  Type.Literal('disposition_task'),
+  Type.Literal('purge_verification'),
+  Type.Literal('publication_attempt'),
+]);
+
+const OperatorRepairGuidanceSchema = Type.Union([
+  Type.Literal('RESUME_FAILED_INVITATION_DELIVERY'),
+  Type.Literal('RESUME_DELAYED_INVITATION_DELIVERY'),
+  Type.Literal('RESUME_FAILED_SIGN_IN_DELIVERY'),
+  Type.Literal('RESUME_DELAYED_SIGN_IN_DELIVERY'),
+  Type.Literal('RESUME_FAILED_RECORD_PRODUCTION_DELIVERY'),
+  Type.Literal('RESUME_DELAYED_RECORD_PRODUCTION_DELIVERY'),
+  Type.Literal('RESUME_FAILED_RECORD_PRODUCTION_CLEANUP'),
+  Type.Literal('RESUME_FAILED_DISPOSITION_TASK'),
+  Type.Literal('RESUME_FAILED_PURGE_VERIFICATION'),
+  Type.Literal('RETRY_PUBLICATION_WITH_NEW_OPERATION'),
+]);
+
+const RepairableWorkItemResponse = Type.Object(
+  {
+    workspaceId: Type.String({ format: 'uuid' }),
+    kind: OperatorRepairKindSchema,
+    workId: Type.String({ format: 'uuid' }),
+    failedOperationId: Type.String({ format: 'uuid' }),
+    status: Type.Union([
+      Type.Literal('failed'),
+      Type.Literal('delayed'),
+      Type.Literal('cleanup_failed'),
+    ]),
+    recordedAt: Type.String({ format: 'date-time' }),
+    guidance: OperatorRepairGuidanceSchema,
+  },
+  { additionalProperties: false },
+);
+
+const OperatorRepairableWorkResponse = Type.Array(RepairableWorkItemResponse, {
+  maxItems: 500,
+});
+
+const RepairOperatorWorkBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    workspaceId: Type.String({ format: 'uuid' }),
+    kind: OperatorRepairKindSchema,
+    workId: Type.String({ format: 'uuid' }),
+    failedOperationId: Type.String({ format: 'uuid' }),
+    confirmation: Type.Literal(operatorRepairConfirmation),
+  },
+  { additionalProperties: false },
+);
+
+const RepairOperatorWorkResponse = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    workspaceId: Type.String({ format: 'uuid' }),
+    kind: OperatorRepairKindSchema,
+    workId: Type.String({ format: 'uuid' }),
+    failedOperationId: Type.String({ format: 'uuid' }),
+    outcome: Type.Literal('resumed'),
+    replayed: Type.Optional(Type.Literal(true)),
+    guidance: OperatorRepairGuidanceSchema,
+  },
+  { additionalProperties: false },
 );
 
 const CreateSchoolWorkspaceResponse = Type.Object({
@@ -2966,6 +3047,7 @@ export async function buildApp(
       startedAt: string;
     }) => Promise<unknown>;
     listOperatorWorkspaces: () => Promise<OperatorWorkspaceSummary[]>;
+    operatorRepair?: OperatorRepair;
   },
 ): Promise<FastifyInstance> {
   const publicOrigin = new URL(options.publicOrigin).origin;
@@ -3446,6 +3528,46 @@ export async function buildApp(
     if (error instanceof RecordDispositionNotRepairableError) {
       return reply.type('application/problem+json').code(409).send({
         type: 'https://preventive-care-literacy.example/problems/record-disposition-not-repairable',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof OperatorRepairNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/repair-not-found',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof OperatorRepairNotRepairableError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/repair-not-repairable',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof OperatorRepairPreconditionConflictError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/repair-precondition-conflict',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof OperatorRepairConfirmationRequiredError) {
+      return reply.type('application/problem+json').code(400).send({
+        type: 'https://preventive-care-literacy.example/problems/repair-confirmation-required',
+        title: error.message,
+        status: 400,
+        code: error.code,
+      });
+    }
+    if (error instanceof OperatorRepairOperationReusedError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/operation-id-reused',
         title: error.message,
         status: 409,
         code: error.code,
@@ -4014,6 +4136,77 @@ export async function buildApp(
         return operatorAuthenticationRequired(reply);
       }
       return options.listOperatorWorkspaces();
+    },
+  );
+
+  app.get<{ Headers: Static<typeof OperatorAuthenticationHeaders> }>(
+    '/api/v1/operator/repairable-work',
+    {
+      schema: {
+        operationId: 'listOperatorRepairableWork',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorAuthenticationHeaders,
+        response: {
+          200: OperatorRepairableWorkResponse,
+          401: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!authenticateOperator(request)) {
+        return operatorAuthenticationRequired(reply);
+      }
+      if (!options.operatorRepair) {
+        return reply.type('application/problem+json').code(503).send({
+          type: 'https://preventive-care-literacy.example/problems/operator-repair-unavailable',
+          title: 'Operator repair is unavailable',
+          status: 503,
+          code: 'OPERATOR_REPAIR_UNAVAILABLE',
+        });
+      }
+      return options.operatorRepair.listRepairableWork();
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof RepairOperatorWorkBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/repairs',
+    {
+      schema: {
+        operationId: 'repairOperatorWork',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: RepairOperatorWorkBody,
+        response: {
+          200: RepairOperatorWorkResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.operatorRepair) {
+        return reply.type('application/problem+json').code(503).send({
+          type: 'https://preventive-care-literacy.example/problems/operator-repair-unavailable',
+          title: 'Operator repair is unavailable',
+          status: 503,
+          code: 'OPERATOR_REPAIR_UNAVAILABLE',
+        });
+      }
+      return options.operatorRepair.repairWork({
+        ...request.body,
+        actor,
+      });
     },
   );
 
@@ -6711,6 +6904,11 @@ export async function createServer(options: {
     productionSecrets: createRecordProductionSecrets(invitationSecretKeys),
     purgeRestoreRequired: options.purgeRestoreRequired,
   });
+  const operatorRepair = createOperatorRepair({
+    store: createPostgresOperatorRepairStore({ pool }),
+    clock,
+    ids,
+  });
   return buildApp(identityAndAccess, {
     operatorAuthenticator: createOperatorAuthenticator(
       options.operatorCredentials,
@@ -6738,6 +6936,7 @@ export async function createServer(options: {
     queryGoldenJourneyEvidence: (input) =>
       queryGoldenJourneyOperatorEvidence(pool, input),
     listOperatorWorkspaces: () => listOperatorWorkspaces(pool),
+    operatorRepair,
     onClose: () => pool.end(),
   });
 }

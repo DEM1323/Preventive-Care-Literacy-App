@@ -189,6 +189,15 @@ export async function createRuntimeDatabaseUser(
       `grant execute on function infrastructure.complete_purge_restore_gate(uuid, text, timestamptz, text, text, jsonb) to ${role}`,
     );
     await client.query(
+      `grant execute on function infrastructure.operator_repair_authorized() to ${role}`,
+    );
+    await client.query(
+      `grant execute on function infrastructure.list_repairable_work() to ${role}`,
+    );
+    await client.query(
+      `grant execute on function infrastructure.repair_operator_work(uuid, uuid, text, uuid, uuid, text, uuid, uuid, timestamptz, jsonb) to ${role}`,
+    );
+    await client.query(
       `grant usage, select on all sequences in schema audit, infrastructure, records_governance to ${role}`,
     );
     return `postgres://${role}:${password}@127.0.0.1:${new URL(databaseUrl).port}/${database.rows[0]?.name}`;
