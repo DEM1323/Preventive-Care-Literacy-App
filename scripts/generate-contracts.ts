@@ -135,6 +135,45 @@ async function renderContracts() {
           throw new Error('Contract generation does not execute commands');
         },
       },
+      operationalReadiness: {
+        readBackupConfiguration: async () => undefined,
+        recordBackupConfiguration: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        readRestoreReadiness: async () => {
+          throw new Error('Contract generation does not execute queries');
+        },
+        recordRestoreRun: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        listAlerts: async () => [],
+        emitAlert: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        acknowledgeAlert: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        activityIsStopped: async () => false,
+        readIncident: async () => undefined,
+        requestStop: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        revokeAccess: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        preserveEvidence: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        recordRepair: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        recordChecks: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        authorizeResume: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+      },
       schoolConfiguration: {
         readDraft: async () => undefined,
         stepUp: async () => {

@@ -4,6 +4,7 @@ import {
   recordProviderChecks,
   type Telemetry,
 } from '../../../packages/observability/src/index.ts';
+import { serviceCaps } from '../../../modules/operational-readiness/index.ts';
 import {
   checkProviderProbes,
   createProviderProbes,
@@ -17,7 +18,10 @@ export async function buildWorker(options: {
   clock?: { now(): number };
 }): Promise<FastifyInstance> {
   const clock = options.clock ?? { now: performance.now.bind(performance) };
-  const app = Fastify({ bodyLimit: 1024, logger: false });
+  const app = Fastify({
+    bodyLimit: serviceCaps.workerRequestBodyLimitBytes,
+    logger: false,
+  });
 
   app.addHook('onRequest', async (_request, reply) => {
     reply.header('cache-control', 'no-store');

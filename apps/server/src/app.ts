@@ -80,6 +80,24 @@ import {
   createOperatorRepair,
   operatorRepairConfirmation,
 } from '../../../modules/operator-repair/index.ts';
+import type { OperationalReadiness } from '../../../modules/operational-readiness/index.ts';
+import {
+  BackupConfigurationUnsatisfiedError,
+  IncidentActivityStoppedError,
+  IncidentConfirmationRequiredError,
+  IncidentResumeBlockedError,
+  IncidentResumeNotAuthorizedError,
+  IncidentStopRequesterDeniedError,
+  OperatorAlertNotFoundError,
+  OperationalReadinessOperationReusedError,
+  RestoreResumeNotAllowedError,
+  activityRouteIsAllowedDuringStop,
+  createOperationalReadiness,
+  decideArtifactRollback,
+  incidentResumeConfirmation,
+  nonWaivableIncidentChecks,
+  serviceCaps,
+} from '../../../modules/operational-readiness/index.ts';
 import type { RecordsGovernance } from '../../../modules/records-governance/index.ts';
 import {
   RecordAmendmentDecisionMismatchError,
@@ -169,6 +187,7 @@ import { createPostgresLearningProgressStore } from '../../../packages/postgres/
 import { createPostgresRecordsGovernanceStore } from '../../../packages/postgres/src/records-governance.ts';
 import { queryGoldenJourneyOperatorEvidence } from '../../../packages/postgres/src/golden-journey-evidence.ts';
 import { createPostgresOperatorRepairStore } from '../../../packages/postgres/src/operator-repair.ts';
+import { createPostgresOperationalReadinessStore } from '../../../packages/postgres/src/operational-readiness.ts';
 import {
   listOperatorWorkspaces,
   type OperatorWorkspaceSummary,
@@ -184,7 +203,7 @@ const studentSessionCookie = '__Host-prevcare-student-session' as const;
 const operatorSessionCookie = '__Host-prevcare-operator-session' as const;
 const operatorSessionLifetimeSeconds = 60 * 60;
 
-const requestBodyLimit = 64 * 1024;
+const requestBodyLimit = serviceCaps.requestBodyLimitBytes;
 const securityHeaders = {
   'cache-control': 'no-store',
   'content-security-policy': [
@@ -358,6 +377,278 @@ const RepairOperatorWorkResponse = Type.Object(
     outcome: Type.Literal('resumed'),
     replayed: Type.Optional(Type.Literal(true)),
     guidance: OperatorRepairGuidanceSchema,
+  },
+  { additionalProperties: false },
+);
+
+const HexDigest64 = Type.String({ pattern: '^[0-9a-f]{64}$' });
+
+const BackupConfigurationResponse = Type.Object(
+  {
+    dailyBackupsEnabled: Type.Boolean(),
+    pointInTimeRecoveryDays: Type.Integer({ minimum: 0 }),
+    source: Type.Union([
+      Type.Literal('automated_contract'),
+      Type.Literal('provider_dashboard'),
+    ]),
+    evidenceDigest: HexDigest64,
+    status: Type.Union([
+      Type.Literal('satisfied'),
+      Type.Literal('unsatisfied'),
+    ]),
+    requiredPointInTimeRecoveryDays: Type.Literal(7),
+  },
+  { additionalProperties: false },
+);
+
+const RecordBackupConfigurationBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    dailyBackupsEnabled: Type.Boolean(),
+    pointInTimeRecoveryDays: Type.Integer({ minimum: 0, maximum: 365 }),
+    source: Type.Union([
+      Type.Literal('automated_contract'),
+      Type.Literal('provider_dashboard'),
+    ]),
+    evidenceDigest: HexDigest64,
+  },
+  { additionalProperties: false },
+);
+
+const RecordRestoreRunBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    succeeded: Type.Boolean(),
+    source: Type.Union([
+      Type.Literal('automated_contract'),
+      Type.Literal('provider_restore'),
+    ]),
+  },
+  { additionalProperties: false },
+);
+
+const RestoreRunResponse = Type.Object(
+  {
+    succeeded: Type.Boolean(),
+    recordedAt: Type.String({ format: 'date-time' }),
+  },
+  { additionalProperties: false },
+);
+
+const RestoreResumeDecisionResponse = Type.Object(
+  {
+    allowed: Type.Boolean(),
+    code: Type.Optional(
+      Type.Union([
+        Type.Literal('BACKUP_CONFIGURATION_UNSATISFIED'),
+        Type.Literal('RESTORE_DID_NOT_SUCCEED'),
+        Type.Literal('PURGE_RESTORE_GATE_NOT_VERIFIED'),
+        Type.Literal('PURGE_MANIFESTS_NOT_REAPPLIED'),
+      ]),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+const RestoreReadinessResponse = Type.Object(
+  {
+    backup: Type.Union([BackupConfigurationResponse, Type.Null()]),
+    restore: Type.Union([RestoreRunResponse, Type.Null()]),
+    purgeRestoreGate: Type.Union([
+      Type.Literal('not_required'),
+      Type.Literal('pending'),
+      Type.Literal('verified'),
+      Type.Literal('failed'),
+    ]),
+    resume: RestoreResumeDecisionResponse,
+  },
+  { additionalProperties: false },
+);
+
+const ServiceCapsResponse = Type.Object(
+  {
+    databasePoolMax: Type.Literal(serviceCaps.databasePoolMax),
+    databasePoolIdleTimeoutMs: Type.Literal(
+      serviceCaps.databasePoolIdleTimeoutMs,
+    ),
+    databasePoolConnectionTimeoutMs: Type.Literal(
+      serviceCaps.databasePoolConnectionTimeoutMs,
+    ),
+    requestBodyLimitBytes: Type.Literal(serviceCaps.requestBodyLimitBytes),
+    workerRequestBodyLimitBytes: Type.Literal(
+      serviceCaps.workerRequestBodyLimitBytes,
+    ),
+    workerConcurrency: Type.Literal(serviceCaps.workerConcurrency),
+    taskMaxAttempts: Type.Literal(serviceCaps.taskMaxAttempts),
+    taskBackoffInitialSeconds: Type.Literal(
+      serviceCaps.taskBackoffInitialSeconds,
+    ),
+    taskBackoffMaxSeconds: Type.Literal(serviceCaps.taskBackoffMaxSeconds),
+    invitationChallengeMaxFailedAttempts: Type.Literal(
+      serviceCaps.invitationChallengeMaxFailedAttempts,
+    ),
+  },
+  { additionalProperties: false },
+);
+
+const AlertKindSchema = Type.Union([
+  Type.Literal('uptime'),
+  Type.Literal('application_error'),
+  Type.Literal('database_capacity'),
+  Type.Literal('failed_email'),
+]);
+
+const EmitOperatorAlertBody = Type.Object(
+  {
+    kind: AlertKindSchema,
+    summary: Type.String({ minLength: 1, maxLength: 120 }),
+  },
+  { additionalProperties: false },
+);
+
+const OperatorAlertResponse = Type.Object(
+  {
+    alertId: Type.String({ format: 'uuid' }),
+    kind: AlertKindSchema,
+    summary: Type.String(),
+    destination: Type.Literal('technical_operator'),
+    acknowledged: Type.Boolean(),
+    acknowledgedBy: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+    recordedAt: Type.String({ format: 'date-time' }),
+  },
+  { additionalProperties: false },
+);
+
+const OperatorAlertListResponse = Type.Array(OperatorAlertResponse, {
+  maxItems: 500,
+});
+
+const AcknowledgeOperatorAlertBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    alertId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+
+const ArtifactRollbackBody = Type.Object(
+  {
+    currentSchemaMigrations: Type.Array(Type.String({ minLength: 1 }), {
+      minItems: 1,
+      maxItems: 200,
+    }),
+    targetSchemaMigrations: Type.Array(Type.String({ minLength: 1 }), {
+      minItems: 1,
+      maxItems: 200,
+    }),
+    currentArtifactDigest: HexDigest64,
+    targetArtifactDigest: HexDigest64,
+  },
+  { additionalProperties: false },
+);
+
+const ArtifactRollbackResponse = Type.Object(
+  {
+    decision: Type.Union([
+      Type.Literal('schema_compatible_rollback'),
+      Type.Literal('roll_forward_only'),
+    ]),
+    reason: Type.Union([
+      Type.Literal('SAME_SCHEMA'),
+      Type.Literal('EXPAND_CONTRACT_COMPATIBLE'),
+      Type.Literal('TARGET_SCHEMA_AHEAD'),
+      Type.Literal('SCHEMA_DIVERGED'),
+    ]),
+    currentArtifactDigest: HexDigest64,
+    targetArtifactDigest: HexDigest64,
+  },
+  { additionalProperties: false },
+);
+
+const IncidentStopRequesterSchema = Type.Union([
+  Type.Literal('technical_operator'),
+  Type.Literal('school_nurse'),
+]);
+
+const IncidentStatusSchema = Type.Union([
+  Type.Literal('stopped'),
+  Type.Literal('secrets_revoked'),
+  Type.Literal('evidence_preserved'),
+  Type.Literal('repaired'),
+  Type.Literal('checks_recorded'),
+  Type.Literal('resumed'),
+]);
+
+const IncidentCheckResultResponse = Type.Object(
+  {
+    check: Type.Union([
+      Type.Literal('purge_restore_gate'),
+      Type.Literal('artifact_identity'),
+      Type.Literal('secret_generation'),
+      Type.Literal('backup_configuration'),
+    ]),
+    outcome: Type.Union([Type.Literal('passed'), Type.Literal('failed')]),
+  },
+  { additionalProperties: false },
+);
+
+const IncidentEvidenceResponse = Type.Object(
+  {
+    incidentId: Type.String({ format: 'uuid' }),
+    status: IncidentStatusSchema,
+    stopped: Type.Boolean(),
+    requestedByType: IncidentStopRequesterSchema,
+    requestedById: Type.String(),
+    revokedStaffSessionCount: Type.Integer({ minimum: 0 }),
+    revokedStudentSessionCount: Type.Integer({ minimum: 0 }),
+    secretsRevoked: Type.Boolean(),
+    secretGeneration: Type.Integer({ minimum: 0 }),
+    wrappingKeyId: Type.Union([Type.String(), Type.Null()]),
+    deliveryKeyId: Type.Union([Type.String(), Type.Null()]),
+    acceptedArtifactDigest: Type.Union([HexDigest64, Type.Null()]),
+    currentArtifactDigest: Type.Union([HexDigest64, Type.Null()]),
+    checks: Type.Array(IncidentCheckResultResponse, { maxItems: 20 }),
+    resumeAuthorizedBy: Type.Union([Type.String(), Type.Null()]),
+    recordedAt: Type.String({ format: 'date-time' }),
+  },
+  { additionalProperties: false },
+);
+
+const RequestIncidentStopBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+
+const RevokeIncidentAccessBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    wrappingKeyId: Type.String({ minLength: 1, maxLength: 80 }),
+    deliveryKeyId: Type.String({ minLength: 1, maxLength: 80 }),
+  },
+  { additionalProperties: false },
+);
+
+const IncidentOperatorCommandBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+
+const RecordIncidentChecksBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    acceptedArtifactDigest: Type.Optional(HexDigest64),
+  },
+  { additionalProperties: false },
+);
+
+const AuthorizeIncidentResumeBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    confirmation: Type.Literal(incidentResumeConfirmation),
   },
   { additionalProperties: false },
 );
@@ -3048,6 +3339,9 @@ export async function buildApp(
     }) => Promise<unknown>;
     listOperatorWorkspaces: () => Promise<OperatorWorkspaceSummary[]>;
     operatorRepair?: OperatorRepair;
+    operationalReadiness?: OperationalReadiness;
+    processSecrets?: { wrappingKeyId: string; deliveryKeyId: string };
+    artifactDigest?: string;
   },
 ): Promise<FastifyInstance> {
   const publicOrigin = new URL(options.publicOrigin).origin;
@@ -3073,6 +3367,99 @@ export async function buildApp(
       title: 'Operator authentication required',
       status: 401,
       code: 'OPERATOR_AUTHENTICATION_REQUIRED',
+    });
+  }
+
+  function operationalReadinessUnavailable(reply: FastifyReply) {
+    return reply.type('application/problem+json').code(503).send({
+      type: 'https://preventive-care-literacy.example/problems/operational-readiness-unavailable',
+      title: 'Operational readiness is unavailable',
+      status: 503,
+      code: 'OPERATIONAL_READINESS_UNAVAILABLE',
+    });
+  }
+
+  function loadedSecretIdentity() {
+    return {
+      wrappingKeyId: options.processSecrets?.wrappingKeyId ?? 'unknown',
+      deliveryKeyId: options.processSecrets?.deliveryKeyId ?? 'unknown',
+    };
+  }
+
+  async function recordNonWaivableChecks(
+    actorId: string,
+    operationId: string,
+    acceptedArtifactDigest?: string,
+  ) {
+    const readiness = options.operationalReadiness;
+    if (!readiness) {
+      throw new Error('Operational readiness is unavailable');
+    }
+    const [restore, incident] = await Promise.all([
+      readiness.readRestoreReadiness(),
+      readiness.readIncident(),
+    ]);
+    const processDigest =
+      options.artifactDigest ?? options.buildIdentity?.artifactDigest ?? null;
+    const acceptedDigest = acceptedArtifactDigest ?? processDigest;
+    const secrets = loadedSecretIdentity();
+    const checks = nonWaivableIncidentChecks.map((check) => {
+      if (check === 'backup_configuration') {
+        return {
+          check,
+          outcome:
+            restore.backup?.status === 'satisfied'
+              ? ('passed' as const)
+              : ('failed' as const),
+        };
+      }
+      if (check === 'purge_restore_gate') {
+        const restoreSucceeded = restore.restore?.succeeded === true;
+        const passed =
+          restore.purgeRestoreGate === 'verified' ||
+          (!restoreSucceeded && restore.purgeRestoreGate === 'not_required');
+        return {
+          check,
+          outcome: passed ? ('passed' as const) : ('failed' as const),
+        };
+      }
+      if (check === 'artifact_identity') {
+        const passed =
+          typeof processDigest === 'string' &&
+          typeof acceptedDigest === 'string' &&
+          processDigest === acceptedDigest &&
+          /^[0-9a-f]{64}$/.test(processDigest);
+        return {
+          check,
+          outcome: passed ? ('passed' as const) : ('failed' as const),
+        };
+      }
+      const passed =
+        incident?.secretsRevoked === true &&
+        incident.wrappingKeyId === secrets.wrappingKeyId &&
+        incident.deliveryKeyId === secrets.deliveryKeyId &&
+        incident.secretGeneration > 0;
+      return {
+        check,
+        outcome: passed ? ('passed' as const) : ('failed' as const),
+      };
+    });
+    return readiness.recordChecks({
+      operationId,
+      actorId,
+      checks,
+      acceptedArtifactDigest:
+        acceptedDigest && /^[0-9a-f]{64}$/.test(acceptedDigest)
+          ? acceptedDigest
+          : '0'.repeat(64),
+      currentArtifactDigest:
+        processDigest && /^[0-9a-f]{64}$/.test(processDigest)
+          ? processDigest
+          : '0'.repeat(64),
+      processSecrets: {
+        ...secrets,
+        secretGeneration: incident?.secretGeneration ?? 0,
+      },
     });
   }
 
@@ -3123,6 +3510,14 @@ export async function buildApp(
     }
     if (request.headers['x-prevcare-csrf'] !== '1') {
       throw new UntrustedRequestCsrfError();
+    }
+  });
+  app.addHook('onRequest', async (request) => {
+    if (!options.operationalReadiness) return;
+    const path = (request.url.split('?')[0] ?? request.url) as string;
+    if (activityRouteIsAllowedDuringStop(path)) return;
+    if (await options.operationalReadiness.activityIsStopped()) {
+      throw new IncidentActivityStoppedError();
     }
   });
   if (telemetry) {
@@ -3568,6 +3963,78 @@ export async function buildApp(
     if (error instanceof OperatorRepairOperationReusedError) {
       return reply.type('application/problem+json').code(409).send({
         type: 'https://preventive-care-literacy.example/problems/operation-id-reused',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof IncidentActivityStoppedError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/incident-activity-stopped',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof IncidentStopRequesterDeniedError) {
+      return reply.type('application/problem+json').code(403).send({
+        type: 'https://preventive-care-literacy.example/problems/incident-stop-requester-denied',
+        title: error.message,
+        status: 403,
+        code: error.code,
+      });
+    }
+    if (error instanceof IncidentResumeNotAuthorizedError) {
+      return reply.type('application/problem+json').code(403).send({
+        type: 'https://preventive-care-literacy.example/problems/incident-resume-not-authorized',
+        title: error.message,
+        status: 403,
+        code: error.code,
+      });
+    }
+    if (error instanceof IncidentResumeBlockedError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/incident-resume-blocked',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof IncidentConfirmationRequiredError) {
+      return reply.type('application/problem+json').code(400).send({
+        type: 'https://preventive-care-literacy.example/problems/incident-confirmation-required',
+        title: error.message,
+        status: 400,
+        code: error.code,
+      });
+    }
+    if (error instanceof OperatorAlertNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/operator-alert-not-found',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof OperationalReadinessOperationReusedError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/operation-id-reused',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof BackupConfigurationUnsatisfiedError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/backup-configuration-unsatisfied',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RestoreResumeNotAllowedError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/restore-resume-not-allowed',
         title: error.message,
         status: 409,
         code: error.code,
@@ -4206,6 +4673,576 @@ export async function buildApp(
       return options.operatorRepair.repairWork({
         ...request.body,
         actor,
+      });
+    },
+  );
+
+  app.get<{ Headers: Static<typeof OperatorAuthenticationHeaders> }>(
+    '/api/v1/operator/service-caps',
+    {
+      schema: {
+        operationId: 'readServiceCaps',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorAuthenticationHeaders,
+        response: {
+          200: ServiceCapsResponse,
+          401: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!authenticateOperator(request)) {
+        return operatorAuthenticationRequired(reply);
+      }
+      return serviceCaps;
+    },
+  );
+
+  app.get<{ Headers: Static<typeof OperatorAuthenticationHeaders> }>(
+    '/api/v1/operator/backup-configuration',
+    {
+      schema: {
+        operationId: 'readBackupConfiguration',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorAuthenticationHeaders,
+        response: {
+          200: Type.Union([BackupConfigurationResponse, Type.Null()]),
+          401: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!authenticateOperator(request)) {
+        return operatorAuthenticationRequired(reply);
+      }
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      return (
+        (await options.operationalReadiness.readBackupConfiguration()) ?? null
+      );
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof RecordBackupConfigurationBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/backup-configuration',
+    {
+      schema: {
+        operationId: 'recordBackupConfiguration',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: RecordBackupConfigurationBody,
+        response: {
+          200: BackupConfigurationResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      return options.operationalReadiness.recordBackupConfiguration({
+        operationId: request.body.operationId,
+        actorId: actor.id,
+        evidence: {
+          dailyBackupsEnabled: request.body.dailyBackupsEnabled,
+          pointInTimeRecoveryDays: request.body.pointInTimeRecoveryDays,
+          source: request.body.source,
+          evidenceDigest: request.body.evidenceDigest,
+        },
+      });
+    },
+  );
+
+  app.get<{ Headers: Static<typeof OperatorAuthenticationHeaders> }>(
+    '/api/v1/operator/restore-readiness',
+    {
+      schema: {
+        operationId: 'readRestoreReadiness',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorAuthenticationHeaders,
+        response: {
+          200: RestoreReadinessResponse,
+          401: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!authenticateOperator(request)) {
+        return operatorAuthenticationRequired(reply);
+      }
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      const readiness =
+        await options.operationalReadiness.readRestoreReadiness();
+      return {
+        backup: readiness.backup ?? null,
+        restore: readiness.restore ?? null,
+        purgeRestoreGate: readiness.purgeRestoreGate,
+        resume: readiness.resume,
+      };
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof RecordRestoreRunBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/restore-runs',
+    {
+      schema: {
+        operationId: 'recordRestoreRun',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: RecordRestoreRunBody,
+        response: {
+          200: RestoreRunResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      return options.operationalReadiness.recordRestoreRun({
+        operationId: request.body.operationId,
+        actorId: actor.id,
+        succeeded: request.body.succeeded,
+        source: request.body.source,
+      });
+    },
+  );
+
+  app.get<{ Headers: Static<typeof OperatorAuthenticationHeaders> }>(
+    '/api/v1/operator/alerts',
+    {
+      schema: {
+        operationId: 'listOperatorAlerts',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorAuthenticationHeaders,
+        response: {
+          200: OperatorAlertListResponse,
+          401: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!authenticateOperator(request)) {
+        return operatorAuthenticationRequired(reply);
+      }
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      return options.operationalReadiness.listAlerts();
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof EmitOperatorAlertBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/alerts',
+    {
+      schema: {
+        operationId: 'emitOperatorAlert',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: EmitOperatorAlertBody,
+        response: {
+          200: OperatorAlertResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      return options.operationalReadiness.emitAlert({
+        kind: request.body.kind,
+        summary: request.body.summary,
+      });
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof AcknowledgeOperatorAlertBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/alerts/acknowledgements',
+    {
+      schema: {
+        operationId: 'acknowledgeOperatorAlert',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: AcknowledgeOperatorAlertBody,
+        response: {
+          200: OperatorAlertResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          404: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      return options.operationalReadiness.acknowledgeAlert({
+        operationId: request.body.operationId,
+        alertId: request.body.alertId,
+        actorId: actor.id,
+      });
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof ArtifactRollbackBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/artifact-rollback',
+    {
+      schema: {
+        operationId: 'decideArtifactRollback',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: ArtifactRollbackBody,
+        response: {
+          200: ArtifactRollbackResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          413: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!authenticateOperator(request)) {
+        return operatorAuthenticationRequired(reply);
+      }
+      return decideArtifactRollback(request.body);
+    },
+  );
+
+  app.get<{ Headers: Static<typeof OperatorAuthenticationHeaders> }>(
+    '/api/v1/operator/incidents',
+    {
+      schema: {
+        operationId: 'readIncidentDrill',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorAuthenticationHeaders,
+        response: {
+          200: Type.Union([IncidentEvidenceResponse, Type.Null()]),
+          401: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!authenticateOperator(request)) {
+        return operatorAuthenticationRequired(reply);
+      }
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      return (await options.operationalReadiness.readIncident()) ?? null;
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof RequestIncidentStopBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/incidents/stop',
+    {
+      schema: {
+        operationId: 'requestIncidentStop',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: RequestIncidentStopBody,
+        response: {
+          200: IncidentEvidenceResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      return options.operationalReadiness.requestStop({
+        operationId: request.body.operationId,
+        actorType: 'technical_operator',
+        actorId: actor.id,
+      });
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof RevokeIncidentAccessBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/incidents/revocations',
+    {
+      schema: {
+        operationId: 'revokeIncidentAccess',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: RevokeIncidentAccessBody,
+        response: {
+          200: IncidentEvidenceResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      return options.operationalReadiness.revokeAccess({
+        operationId: request.body.operationId,
+        actorId: actor.id,
+        wrappingKeyId: request.body.wrappingKeyId,
+        deliveryKeyId: request.body.deliveryKeyId,
+      });
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof IncidentOperatorCommandBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/incidents/evidence',
+    {
+      schema: {
+        operationId: 'preserveIncidentEvidence',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: IncidentOperatorCommandBody,
+        response: {
+          200: IncidentEvidenceResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      return options.operationalReadiness.preserveEvidence({
+        operationId: request.body.operationId,
+        actorId: actor.id,
+      });
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof IncidentOperatorCommandBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/incidents/repairs',
+    {
+      schema: {
+        operationId: 'recordIncidentRepair',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: IncidentOperatorCommandBody,
+        response: {
+          200: IncidentEvidenceResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      return options.operationalReadiness.recordRepair({
+        operationId: request.body.operationId,
+        actorId: actor.id,
+      });
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof RecordIncidentChecksBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/incidents/checks',
+    {
+      schema: {
+        operationId: 'recordIncidentChecks',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: RecordIncidentChecksBody,
+        response: {
+          200: IncidentEvidenceResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      return recordNonWaivableChecks(
+        actor.id,
+        request.body.operationId,
+        request.body.acceptedArtifactDigest,
+      );
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof AuthorizeIncidentResumeBody>;
+    Headers: Static<typeof OperatorHeaders>;
+  }>(
+    '/api/v1/operator/incidents/resume',
+    {
+      schema: {
+        operationId: 'authorizeIncidentResume',
+        security: [{ bearerAuth: [] }, { operatorSession: [] }],
+        headers: OperatorHeaders,
+        body: AuthorizeIncidentResumeBody,
+        response: {
+          200: IncidentEvidenceResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const actor = authenticateOperator(request);
+      if (!actor) return operatorAuthenticationRequired(reply);
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      const incident = await options.operationalReadiness.readIncident();
+      const secrets = loadedSecretIdentity();
+      return options.operationalReadiness.authorizeResume({
+        operationId: request.body.operationId,
+        actorId: actor.id,
+        actorType: 'technical_operator',
+        confirmation: request.body.confirmation,
+        processSecrets: {
+          ...secrets,
+          secretGeneration: incident?.secretGeneration ?? 0,
+        },
+      });
+    },
+  );
+
+  app.post<{
+    Body: Static<typeof RequestIncidentStopBody>;
+  }>(
+    '/api/v1/clinical/incident-stop-requests',
+    {
+      schema: {
+        operationId: 'requestClinicalIncidentStop',
+        security: [{ staffSession: [] }],
+        body: RequestIncidentStopBody,
+        response: {
+          200: IncidentEvidenceResponse,
+          400: ProblemResponse,
+          401: ProblemResponse,
+          403: ProblemResponse,
+          409: ProblemResponse,
+          413: ProblemResponse,
+          503: ProblemResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const sessionHandle = readSecureOpaqueCookie(
+        request.headers.cookie,
+        staffSessionCookie,
+      );
+      const session =
+        sessionHandle &&
+        (await identityAndAccess.resolveStaffSession({ sessionHandle }));
+      if (!session) {
+        return reply.type('application/problem+json').code(401).send({
+          type: 'https://preventive-care-literacy.example/problems/staff-session',
+          title: 'Staff session required',
+          status: 401,
+          code: 'STAFF_SESSION_REQUIRED',
+        });
+      }
+      if (!session.permissions.includes('clinical')) {
+        throw new StaffPermissionRequiredError('clinical');
+      }
+      if (!options.operationalReadiness) {
+        return operationalReadinessUnavailable(reply);
+      }
+      return options.operationalReadiness.requestStop({
+        operationId: request.body.operationId,
+        actorType: 'school_nurse',
+        actorId: session.staffIdentityId,
       });
     },
   );
@@ -6816,6 +7853,7 @@ export async function createServer(options: {
   translationAdapter?: TranslationAdapter;
   buildIdentity?: BuildAttestation;
   purgeRestoreRequired?: boolean;
+  artifactDigest?: string;
 }): Promise<FastifyInstance> {
   const connectionUrl = new URL(options.databaseUrl);
   if (options.databaseCaCertificate) {
@@ -6825,6 +7863,9 @@ export async function createServer(options: {
   }
   const pool = new Pool({
     connectionString: connectionUrl.toString(),
+    max: serviceCaps.databasePoolMax,
+    idleTimeoutMillis: serviceCaps.databasePoolIdleTimeoutMs,
+    connectionTimeoutMillis: serviceCaps.databasePoolConnectionTimeoutMs,
     ...(options.databaseCaCertificate
       ? {
           ssl: {
@@ -6909,6 +7950,11 @@ export async function createServer(options: {
     clock,
     ids,
   });
+  const operationalReadiness = createOperationalReadiness({
+    store: createPostgresOperationalReadinessStore({ pool }),
+    clock,
+    ids,
+  });
   return buildApp(identityAndAccess, {
     operatorAuthenticator: createOperatorAuthenticator(
       options.operatorCredentials,
@@ -6937,6 +7983,13 @@ export async function createServer(options: {
       queryGoldenJourneyOperatorEvidence(pool, input),
     listOperatorWorkspaces: () => listOperatorWorkspaces(pool),
     operatorRepair,
+    operationalReadiness,
+    processSecrets: {
+      wrappingKeyId: options.wrappingKeys?.activeWrappingKeyId ?? 'ephemeral',
+      deliveryKeyId: invitationSecretKeys.activeEncryptionKeyId,
+    },
+    artifactDigest:
+      options.artifactDigest ?? options.buildIdentity?.artifactDigest,
     onClose: () => pool.end(),
   });
 }

@@ -206,6 +206,66 @@ try {
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
+    `grant execute on function infrastructure.read_backup_configuration()
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.record_backup_configuration(uuid, text, boolean, integer, text, text, text, timestamptz)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.read_restore_run()
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.record_restore_run(uuid, text, boolean, text, timestamptz)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.list_operator_alerts()
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.emit_operator_alert(uuid, text, text, timestamptz)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.acknowledge_operator_alert(uuid, uuid, text, timestamptz)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.activity_is_stopped()
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.read_incident_drill()
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.request_incident_stop(uuid, uuid, text, text, timestamptz)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.revoke_incident_access(uuid, text, text, text, timestamptz)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.preserve_incident_evidence(uuid, text, timestamptz)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.record_incident_repair(uuid, text, timestamptz)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.record_incident_checks(uuid, text, jsonb, text, text, text, text, integer, timestamptz)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.authorize_incident_resume(uuid, text, text, text, integer, timestamptz)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
     `grant select, insert on all tables in schema infrastructure
        to ${runtimeRoleIdentifier}`,
   );
