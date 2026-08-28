@@ -28,6 +28,23 @@ function operatorLifecycleMessage(
   return 'Staff permissions could not be replaced.';
 }
 
+type RepairableWorkSummary = {
+  workspaceId: string;
+  kind:
+    | 'invitation_delivery'
+    | 'sign_in_delivery'
+    | 'record_production_delivery'
+    | 'record_production_cleanup'
+    | 'disposition_task'
+    | 'purge_verification'
+    | 'publication_attempt';
+  workId: string;
+  failedOperationId: string;
+  status: string;
+  recordedAt: string;
+  guidance: string;
+};
+
 type WorkspaceSummary = {
   workspaceId: string;
   displayName: string;
@@ -79,6 +96,10 @@ export function OperatorConsolePage() {
   }>();
   const [tombstoneCount, setTombstoneCount] = useState<number>();
   const [restoreManifests, setRestoreManifests] = useState('');
+  const [repairableWork, setRepairableWork] = useState<RepairableWorkSummary[]>(
+    [],
+  );
+  const [repairConfirmWorkId, setRepairConfirmWorkId] = useState<string>();
   const workspaceCommand = useRef<
     { operationId: string; workspaceId: string } | undefined
   >(undefined);
@@ -114,6 +135,10 @@ export function OperatorConsolePage() {
     const tombstones = await client.GET('/api/v1/operator/purge-tombstones');
     if (tombstones.response.status === 200 && tombstones.data) {
       setTombstoneCount(tombstones.data.tombstones.length);
+    }
+    const repairable = await client.GET('/api/v1/operator/repairable-work');
+    if (repairable.response.status === 200 && repairable.data) {
+      setRepairableWork(repairable.data);
     }
   }
 
@@ -239,6 +264,47 @@ export function OperatorConsolePage() {
           ? 'Retained manifests must be valid JSON from the exported ledger.'
           : 'The restore gate could not be run.',
       );
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function resumeRepair(work: RepairableWorkSummary) {
+    if (repairConfirmWorkId !== work.workId) {
+      setStatus('Confirm resume of the named failed work before continuing.');
+      return;
+    }
+    setBusy(`repair:${work.workId}`);
+    setStatus('');
+    try {
+      const result = await client.POST('/api/v1/operator/repairs', {
+        params: { header: { 'x-prevcare-csrf': '1' } },
+        body: {
+          operationId: crypto.randomUUID(),
+          workspaceId: work.workspaceId,
+          kind: work.kind,
+          workId: work.workId,
+          failedOperationId: work.failedOperationId,
+          confirmation: 'resume_failed_work',
+        },
+      });
+      if (result.response.status !== 200) {
+        setStatus(
+          result.error && 'code' in result.error
+            ? `Repair could not resume (${result.error.code}).`
+            : 'Repair could not resume the named work.',
+        );
+        return;
+      }
+      setRepairConfirmWorkId(undefined);
+      setStatus(
+        result.data?.replayed
+          ? 'Repair replayed the established receipt.'
+          : 'Named failed work resumed. Delivery or adapters can complete the remaining work.',
+      );
+      await loadWorkspaces();
+    } catch {
+      setStatus('Repair failed. Retry the same named work.');
     } finally {
       setBusy(undefined);
     }
@@ -753,7 +819,9 @@ export function OperatorConsolePage() {
                         <button
                           type="button"
                           disabled={busy !== undefined || !schoolApprover}
-                          onClick={() => void recoverStaff(staff.staffIdentityId)}
+                          onClick={() =>
+                            void recoverStaff(staff.staffIdentityId)
+                          }
                           className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
                         >
                           {busy === `recover:${staff.staffIdentityId}`
@@ -763,7 +831,9 @@ export function OperatorConsolePage() {
                         <button
                           type="button"
                           disabled={busy !== undefined || !schoolApprover}
-                          onClick={() => void disableStaff(staff.staffIdentityId)}
+                          onClick={() =>
+                            void disableStaff(staff.staffIdentityId)
+                          }
                           className="border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
                         >
                           {busy === `disable:${staff.staffIdentityId}`
@@ -833,7 +903,10 @@ export function OperatorConsolePage() {
                   ? ` · ${tombstoneCount} live manifests`
                   : ''}
               </p>
-              <label className="mt-4 block text-sm font-bold" htmlFor="restore-manifests">
+              <label
+                className="mt-4 block text-sm font-bold"
+                htmlFor="restore-manifests"
+              >
                 Retained purge ledger
               </label>
               <textarea
@@ -876,6 +949,67 @@ export function OperatorConsolePage() {
                     : 'Reapply retained manifests'}
                 </button>
               </div>
+            </section>
+          ) : null}
+
+          {authenticated ? (
+            <section className="border-2 border-[#15251f] bg-white p-6">
+              <p className="font-mono text-xs font-bold uppercase">
+                Recoverable work
+              </p>
+              <h2 className="mt-1 text-2xl font-black">Safe repair</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Resume a named failed delivery, task, cleanup, or verification
+                without deleting receipts, rewriting history, or marking
+                success. Confirm the exact work before resuming. Status is
+                non-sensitive.
+              </p>
+              <ul className="mt-4 grid gap-3">
+                {repairableWork.map((work) => (
+                  <li
+                    key={work.workId}
+                    className="border-2 border-[#9aaa99] p-4"
+                  >
+                    <p className="font-black uppercase">{work.kind}</p>
+                    <p className="mt-1 font-mono text-xs">
+                      {work.status} · {work.guidance}
+                    </p>
+                    <p className="mt-1 break-all font-mono text-xs text-slate-600">
+                      {work.workId}
+                    </p>
+                    <label className="mt-3 flex items-center gap-2 text-sm font-bold">
+                      <input
+                        type="checkbox"
+                        checked={repairConfirmWorkId === work.workId}
+                        onChange={(event) =>
+                          setRepairConfirmWorkId(
+                            event.target.checked ? work.workId : undefined,
+                          )
+                        }
+                      />
+                      Confirm resume of this failed work
+                    </label>
+                    <button
+                      type="button"
+                      disabled={
+                        busy !== undefined ||
+                        repairConfirmWorkId !== work.workId
+                      }
+                      onClick={() => void resumeRepair(work)}
+                      className="mt-3 border-2 border-[#15251f] bg-white px-3 py-1 font-bold disabled:opacity-50"
+                    >
+                      {busy === `repair:${work.workId}`
+                        ? 'Resuming...'
+                        : 'Resume named work'}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {repairableWork.length === 0 ? (
+                <p className="mt-3 text-sm text-slate-600">
+                  No failed or delayed recoverable work is visible.
+                </p>
+              ) : null}
             </section>
           ) : null}
 

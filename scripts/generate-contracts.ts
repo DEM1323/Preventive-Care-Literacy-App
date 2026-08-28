@@ -129,6 +129,12 @@ async function renderContracts() {
         createSession: () => 'contract-generator-session',
       },
       listOperatorWorkspaces: async () => [],
+      operatorRepair: {
+        listRepairableWork: async () => [],
+        repairWork: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+      },
       schoolConfiguration: {
         readDraft: async () => undefined,
         stepUp: async () => {

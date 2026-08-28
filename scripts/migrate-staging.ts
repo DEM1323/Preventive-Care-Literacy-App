@@ -194,6 +194,18 @@ try {
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
+    `grant execute on function infrastructure.operator_repair_authorized()
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.list_repairable_work()
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function infrastructure.repair_operator_work(uuid, uuid, text, uuid, uuid, text, uuid, uuid, timestamptz, jsonb)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
     `grant select, insert on all tables in schema infrastructure
        to ${runtimeRoleIdentifier}`,
   );

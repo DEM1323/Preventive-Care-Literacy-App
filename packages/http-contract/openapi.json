@@ -47456,6 +47456,1161 @@
         "security": [{ "bearerAuth": [] }, { "operatorSession": [] }]
       }
     },
+    "/api/v1/operator/repairable-work": {
+      "get": {
+        "operationId": "listOperatorRepairableWork",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "failedOperationId": {
+                        "format": "uuid",
+                        "type": "string"
+                      },
+                      "guidance": {
+                        "anyOf": [
+                          {
+                            "enum": ["RESUME_FAILED_INVITATION_DELIVERY"],
+                            "type": "string"
+                          },
+                          {
+                            "enum": ["RESUME_DELAYED_INVITATION_DELIVERY"],
+                            "type": "string"
+                          },
+                          {
+                            "enum": ["RESUME_FAILED_SIGN_IN_DELIVERY"],
+                            "type": "string"
+                          },
+                          {
+                            "enum": ["RESUME_DELAYED_SIGN_IN_DELIVERY"],
+                            "type": "string"
+                          },
+                          {
+                            "enum": [
+                              "RESUME_FAILED_RECORD_PRODUCTION_DELIVERY"
+                            ],
+                            "type": "string"
+                          },
+                          {
+                            "enum": [
+                              "RESUME_DELAYED_RECORD_PRODUCTION_DELIVERY"
+                            ],
+                            "type": "string"
+                          },
+                          {
+                            "enum": ["RESUME_FAILED_RECORD_PRODUCTION_CLEANUP"],
+                            "type": "string"
+                          },
+                          {
+                            "enum": ["RESUME_FAILED_DISPOSITION_TASK"],
+                            "type": "string"
+                          },
+                          {
+                            "enum": ["RESUME_FAILED_PURGE_VERIFICATION"],
+                            "type": "string"
+                          },
+                          {
+                            "enum": ["RETRY_PUBLICATION_WITH_NEW_OPERATION"],
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "kind": {
+                        "anyOf": [
+                          { "enum": ["invitation_delivery"], "type": "string" },
+                          { "enum": ["sign_in_delivery"], "type": "string" },
+                          {
+                            "enum": ["record_production_delivery"],
+                            "type": "string"
+                          },
+                          {
+                            "enum": ["record_production_cleanup"],
+                            "type": "string"
+                          },
+                          { "enum": ["disposition_task"], "type": "string" },
+                          { "enum": ["purge_verification"], "type": "string" },
+                          { "enum": ["publication_attempt"], "type": "string" }
+                        ]
+                      },
+                      "recordedAt": { "format": "date-time", "type": "string" },
+                      "status": {
+                        "anyOf": [
+                          { "enum": ["failed"], "type": "string" },
+                          { "enum": ["delayed"], "type": "string" },
+                          { "enum": ["cleanup_failed"], "type": "string" }
+                        ]
+                      },
+                      "workId": { "format": "uuid", "type": "string" },
+                      "workspaceId": { "format": "uuid", "type": "string" }
+                    },
+                    "required": [
+                      "workspaceId",
+                      "kind",
+                      "workId",
+                      "failedOperationId",
+                      "status",
+                      "recordedAt",
+                      "guidance"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 500,
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "blockingLocations": {
+                      "items": {
+                        "properties": {
+                          "adapter": { "type": "string" },
+                          "deletion": { "type": "string" },
+                          "evidenceDigest": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }]
+                          },
+                          "location": { "type": "string" },
+                          "residualRetentionDeadlineAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "verification": { "type": "string" }
+                        },
+                        "required": [
+                          "adapter",
+                          "location",
+                          "deletion",
+                          "verification",
+                          "residualRetentionDeadlineAt",
+                          "evidenceDigest"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "blockingReasons": {
+                      "items": { "type": "string" },
+                      "type": "array"
+                    },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "reviewId": { "format": "uuid", "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "blockingLocations": {
+                      "items": {
+                        "properties": {
+                          "adapter": { "type": "string" },
+                          "deletion": { "type": "string" },
+                          "evidenceDigest": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }]
+                          },
+                          "location": { "type": "string" },
+                          "residualRetentionDeadlineAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "verification": { "type": "string" }
+                        },
+                        "required": [
+                          "adapter",
+                          "location",
+                          "deletion",
+                          "verification",
+                          "residualRetentionDeadlineAt",
+                          "evidenceDigest"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "blockingReasons": {
+                      "items": { "type": "string" },
+                      "type": "array"
+                    },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "reviewId": { "format": "uuid", "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "bearerAuth": [] }, { "operatorSession": [] }]
+      }
+    },
+    "/api/v1/operator/repairs": {
+      "post": {
+        "operationId": "repairOperatorWork",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-prevcare-csrf",
+            "required": true,
+            "schema": { "enum": ["1"], "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "confirmation": {
+                    "enum": ["resume_failed_work"],
+                    "type": "string"
+                  },
+                  "failedOperationId": { "format": "uuid", "type": "string" },
+                  "kind": {
+                    "anyOf": [
+                      { "enum": ["invitation_delivery"], "type": "string" },
+                      { "enum": ["sign_in_delivery"], "type": "string" },
+                      {
+                        "enum": ["record_production_delivery"],
+                        "type": "string"
+                      },
+                      {
+                        "enum": ["record_production_cleanup"],
+                        "type": "string"
+                      },
+                      { "enum": ["disposition_task"], "type": "string" },
+                      { "enum": ["purge_verification"], "type": "string" },
+                      { "enum": ["publication_attempt"], "type": "string" }
+                    ]
+                  },
+                  "operationId": { "format": "uuid", "type": "string" },
+                  "workId": { "format": "uuid", "type": "string" },
+                  "workspaceId": { "format": "uuid", "type": "string" }
+                },
+                "required": [
+                  "operationId",
+                  "workspaceId",
+                  "kind",
+                  "workId",
+                  "failedOperationId",
+                  "confirmation"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "failedOperationId": { "format": "uuid", "type": "string" },
+                    "guidance": {
+                      "anyOf": [
+                        {
+                          "enum": ["RESUME_FAILED_INVITATION_DELIVERY"],
+                          "type": "string"
+                        },
+                        {
+                          "enum": ["RESUME_DELAYED_INVITATION_DELIVERY"],
+                          "type": "string"
+                        },
+                        {
+                          "enum": ["RESUME_FAILED_SIGN_IN_DELIVERY"],
+                          "type": "string"
+                        },
+                        {
+                          "enum": ["RESUME_DELAYED_SIGN_IN_DELIVERY"],
+                          "type": "string"
+                        },
+                        {
+                          "enum": ["RESUME_FAILED_RECORD_PRODUCTION_DELIVERY"],
+                          "type": "string"
+                        },
+                        {
+                          "enum": ["RESUME_DELAYED_RECORD_PRODUCTION_DELIVERY"],
+                          "type": "string"
+                        },
+                        {
+                          "enum": ["RESUME_FAILED_RECORD_PRODUCTION_CLEANUP"],
+                          "type": "string"
+                        },
+                        {
+                          "enum": ["RESUME_FAILED_DISPOSITION_TASK"],
+                          "type": "string"
+                        },
+                        {
+                          "enum": ["RESUME_FAILED_PURGE_VERIFICATION"],
+                          "type": "string"
+                        },
+                        {
+                          "enum": ["RETRY_PUBLICATION_WITH_NEW_OPERATION"],
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "kind": {
+                      "anyOf": [
+                        { "enum": ["invitation_delivery"], "type": "string" },
+                        { "enum": ["sign_in_delivery"], "type": "string" },
+                        {
+                          "enum": ["record_production_delivery"],
+                          "type": "string"
+                        },
+                        {
+                          "enum": ["record_production_cleanup"],
+                          "type": "string"
+                        },
+                        { "enum": ["disposition_task"], "type": "string" },
+                        { "enum": ["purge_verification"], "type": "string" },
+                        { "enum": ["publication_attempt"], "type": "string" }
+                      ]
+                    },
+                    "operationId": { "format": "uuid", "type": "string" },
+                    "outcome": { "enum": ["resumed"], "type": "string" },
+                    "replayed": { "enum": [true], "type": "boolean" },
+                    "workId": { "format": "uuid", "type": "string" },
+                    "workspaceId": { "format": "uuid", "type": "string" }
+                  },
+                  "required": [
+                    "operationId",
+                    "workspaceId",
+                    "kind",
+                    "workId",
+                    "failedOperationId",
+                    "outcome",
+                    "guidance"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "blockingLocations": {
+                      "items": {
+                        "properties": {
+                          "adapter": { "type": "string" },
+                          "deletion": { "type": "string" },
+                          "evidenceDigest": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }]
+                          },
+                          "location": { "type": "string" },
+                          "residualRetentionDeadlineAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "verification": { "type": "string" }
+                        },
+                        "required": [
+                          "adapter",
+                          "location",
+                          "deletion",
+                          "verification",
+                          "residualRetentionDeadlineAt",
+                          "evidenceDigest"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "blockingReasons": {
+                      "items": { "type": "string" },
+                      "type": "array"
+                    },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "reviewId": { "format": "uuid", "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "blockingLocations": {
+                      "items": {
+                        "properties": {
+                          "adapter": { "type": "string" },
+                          "deletion": { "type": "string" },
+                          "evidenceDigest": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }]
+                          },
+                          "location": { "type": "string" },
+                          "residualRetentionDeadlineAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "verification": { "type": "string" }
+                        },
+                        "required": [
+                          "adapter",
+                          "location",
+                          "deletion",
+                          "verification",
+                          "residualRetentionDeadlineAt",
+                          "evidenceDigest"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "blockingReasons": {
+                      "items": { "type": "string" },
+                      "type": "array"
+                    },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "reviewId": { "format": "uuid", "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "blockingLocations": {
+                      "items": {
+                        "properties": {
+                          "adapter": { "type": "string" },
+                          "deletion": { "type": "string" },
+                          "evidenceDigest": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }]
+                          },
+                          "location": { "type": "string" },
+                          "residualRetentionDeadlineAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "verification": { "type": "string" }
+                        },
+                        "required": [
+                          "adapter",
+                          "location",
+                          "deletion",
+                          "verification",
+                          "residualRetentionDeadlineAt",
+                          "evidenceDigest"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "blockingReasons": {
+                      "items": { "type": "string" },
+                      "type": "array"
+                    },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "reviewId": { "format": "uuid", "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "blockingLocations": {
+                      "items": {
+                        "properties": {
+                          "adapter": { "type": "string" },
+                          "deletion": { "type": "string" },
+                          "evidenceDigest": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }]
+                          },
+                          "location": { "type": "string" },
+                          "residualRetentionDeadlineAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "verification": { "type": "string" }
+                        },
+                        "required": [
+                          "adapter",
+                          "location",
+                          "deletion",
+                          "verification",
+                          "residualRetentionDeadlineAt",
+                          "evidenceDigest"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "blockingReasons": {
+                      "items": { "type": "string" },
+                      "type": "array"
+                    },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "reviewId": { "format": "uuid", "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "blockingLocations": {
+                      "items": {
+                        "properties": {
+                          "adapter": { "type": "string" },
+                          "deletion": { "type": "string" },
+                          "evidenceDigest": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }]
+                          },
+                          "location": { "type": "string" },
+                          "residualRetentionDeadlineAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "verification": { "type": "string" }
+                        },
+                        "required": [
+                          "adapter",
+                          "location",
+                          "deletion",
+                          "verification",
+                          "residualRetentionDeadlineAt",
+                          "evidenceDigest"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "blockingReasons": {
+                      "items": { "type": "string" },
+                      "type": "array"
+                    },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "reviewId": { "format": "uuid", "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "blockingLocations": {
+                      "items": {
+                        "properties": {
+                          "adapter": { "type": "string" },
+                          "deletion": { "type": "string" },
+                          "evidenceDigest": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }]
+                          },
+                          "location": { "type": "string" },
+                          "residualRetentionDeadlineAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "verification": { "type": "string" }
+                        },
+                        "required": [
+                          "adapter",
+                          "location",
+                          "deletion",
+                          "verification",
+                          "residualRetentionDeadlineAt",
+                          "evidenceDigest"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "blockingReasons": {
+                      "items": { "type": "string" },
+                      "type": "array"
+                    },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "reviewId": { "format": "uuid", "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "properties": {
+                    "activeIntakeForm": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "activeReleaseId": {
+                      "anyOf": [
+                        { "format": "uuid", "type": "string" },
+                        { "type": "null" }
+                      ]
+                    },
+                    "activeSchoolConfigurationReleaseId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "activeSubmissionAttestation": {
+                      "properties": {
+                        "resourceId": { "format": "uuid", "type": "string" },
+                        "revisionNumber": { "minimum": 1, "type": "integer" }
+                      },
+                      "required": ["resourceId", "revisionNumber"],
+                      "type": "object"
+                    },
+                    "affectedValue": { "type": "string" },
+                    "blockingLocations": {
+                      "items": {
+                        "properties": {
+                          "adapter": { "type": "string" },
+                          "deletion": { "type": "string" },
+                          "evidenceDigest": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }]
+                          },
+                          "location": { "type": "string" },
+                          "residualRetentionDeadlineAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "verification": { "type": "string" }
+                        },
+                        "required": [
+                          "adapter",
+                          "location",
+                          "deletion",
+                          "verification",
+                          "residualRetentionDeadlineAt",
+                          "evidenceDigest"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "blockingReasons": {
+                      "items": { "type": "string" },
+                      "type": "array"
+                    },
+                    "candidateFingerprint": { "type": "string" },
+                    "code": { "type": "string" },
+                    "compatibility": {
+                      "anyOf": [
+                        {
+                          "enum": ["presentation-equivalent"],
+                          "type": "string"
+                        },
+                        { "enum": ["canonical-change"], "type": "string" }
+                      ]
+                    },
+                    "currentIntakeRecordVersionId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "draftRevision": { "minimum": 0, "type": "integer" },
+                    "draftVersion": { "minimum": 0, "type": "integer" },
+                    "impactedFieldIds": {
+                      "items": { "format": "uuid", "type": "string" },
+                      "type": "array"
+                    },
+                    "outcome": { "type": "string" },
+                    "reason": { "type": "string" },
+                    "rebaseRequired": { "type": "boolean" },
+                    "reviewId": { "format": "uuid", "type": "string" },
+                    "status": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "type": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status", "code"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [{ "bearerAuth": [] }, { "operatorSession": [] }]
+      }
+    },
     "/api/v1/operator/session": {
       "get": {
         "operationId": "operatorSession",
