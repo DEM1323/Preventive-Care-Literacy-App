@@ -233,6 +233,24 @@ async function renderContracts() {
         repairRecordProductionCleanup: async () => {
           throw new Error('Contract generation does not execute commands');
         },
+        completeRecordDispositionNotice: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        completeRecordDispositionCopyOpportunity: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        scheduleRecordDisposition: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        cancelRecordDisposition: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        executeRecordDisposition: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
+        retryRecordDisposition: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
       },
     },
   );

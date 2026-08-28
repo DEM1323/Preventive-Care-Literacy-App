@@ -77,6 +77,14 @@ import {
   RecordConflictReviewNotFoundError,
   RecordConflictReviewNotOpenError,
   RecordConflictReviewRequiredError,
+  RecordDispositionCancellationWindowOpenError,
+  RecordDispositionConfirmationRequiredError,
+  RecordDispositionNotCancellableError,
+  RecordDispositionNotExecutableError,
+  RecordDispositionNotFoundError,
+  RecordDispositionNotRepairableError,
+  RecordDispositionNotSchedulableError,
+  RecordDispositionVersionConflictError,
   RecordHoldNotActiveError,
   RecordHoldNotFoundError,
   RecordHoldNotReleasableError,
@@ -1010,6 +1018,112 @@ const RepairRecordProductionCleanupResponse = Type.Object({
   productionId: Type.String({ format: 'uuid' }),
   outcome: Type.Union([Type.Literal('removed'), Type.Literal('failed')]),
 });
+const CompleteRecordDispositionNoticeBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    studentId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+const CompleteRecordDispositionNoticeResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  studentId: Type.String({ format: 'uuid' }),
+  noticeId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('completed'),
+});
+const CompleteRecordDispositionCopyOpportunityBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    studentId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+const CompleteRecordDispositionCopyOpportunityResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  studentId: Type.String({ format: 'uuid' }),
+  copyOpportunityId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('completed'),
+});
+const ScheduleRecordDispositionBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    studentId: Type.String({ format: 'uuid' }),
+    caseId: Type.String({ format: 'uuid' }),
+    confirmation: Type.Literal('schedule_destruction'),
+  },
+  { additionalProperties: false },
+);
+const ScheduleRecordDispositionResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  studentId: Type.String({ format: 'uuid' }),
+  dispositionId: Type.String({ format: 'uuid' }),
+  cancellationDeadlineAt: Type.String({ format: 'date-time' }),
+  outcome: Type.Literal('scheduled'),
+});
+const CancelRecordDispositionBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    dispositionId: Type.String({ format: 'uuid' }),
+    expectedVersion: Type.Integer({ minimum: 1 }),
+  },
+  { additionalProperties: false },
+);
+const CancelRecordDispositionResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  dispositionId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('cancelled'),
+});
+const ExecuteRecordDispositionBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    dispositionId: Type.String({ format: 'uuid' }),
+    expectedVersion: Type.Integer({ minimum: 1 }),
+    confirmation: Type.Literal('execute_destruction'),
+  },
+  { additionalProperties: false },
+);
+const ExecuteRecordDispositionResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  dispositionId: Type.String({ format: 'uuid' }),
+  outcome: Type.Union([Type.Literal('purged'), Type.Literal('failed')]),
+});
+const RetryRecordDispositionBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    dispositionId: Type.String({ format: 'uuid' }),
+    expectedVersion: Type.Integer({ minimum: 1 }),
+    confirmation: Type.Literal('execute_destruction'),
+  },
+  { additionalProperties: false },
+);
+const RetryRecordDispositionResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  dispositionId: Type.String({ format: 'uuid' }),
+  outcome: Type.Union([Type.Literal('purged'), Type.Literal('failed')]),
+});
+const RecordDispositionPurgeEntrySchema = Type.Object({
+  location: Type.String(),
+  adapter: Type.Union([
+    Type.Literal('identity_access'),
+    Type.Literal('memberships'),
+    Type.Literal('intake'),
+    Type.Literal('learning_progress'),
+    Type.Literal('clinical_access_evidence'),
+    Type.Literal('productions'),
+    Type.Literal('projections'),
+  ]),
+  status: Type.Union([
+    Type.Literal('pending'),
+    Type.Literal('purged'),
+    Type.Literal('failed'),
+  ]),
+  count: Type.Integer({ minimum: 0 }),
+  verification: Type.Union([
+    Type.Literal('pending'),
+    Type.Literal('verified'),
+    Type.Literal('failed'),
+  ]),
+});
 const RecordsGovernanceDirectoryResponse = Type.Object({
   students: Type.Array(
     Type.Object({
@@ -1169,6 +1283,56 @@ const RecordsGovernanceDirectoryResponse = Type.Object({
           ]),
         }),
       ),
+      dispositions: Type.Array(
+        Type.Object({
+          dispositionId: Type.String({ format: 'uuid' }),
+          caseId: Type.String({ format: 'uuid' }),
+          status: Type.Union([
+            Type.Literal('scheduled'),
+            Type.Literal('executing'),
+            Type.Literal('cancelled'),
+            Type.Literal('failed'),
+            Type.Literal('purged'),
+          ]),
+          version: Type.Integer({ minimum: 1 }),
+          scheduledAt: Type.String({ format: 'date-time' }),
+          cancellationDeadlineAt: Type.String({ format: 'date-time' }),
+          cancelledAt: Type.Union([
+            Type.String({ format: 'date-time' }),
+            Type.Null(),
+          ]),
+          executionStartedAt: Type.Union([
+            Type.String({ format: 'date-time' }),
+            Type.Null(),
+          ]),
+          completedAt: Type.Union([
+            Type.String({ format: 'date-time' }),
+            Type.Null(),
+          ]),
+          policyRevisionId: Type.String({ format: 'uuid' }),
+          purgeManifest: Type.Array(RecordDispositionPurgeEntrySchema),
+        }),
+      ),
+      dispositionPrerequisites: Type.Object({
+        blockingReasons: Type.Array(
+          Type.Union([
+            Type.Literal('missing_policy'),
+            Type.Literal('missing_student_departure'),
+            Type.Literal('open_hold'),
+            Type.Literal('incomplete_notice'),
+            Type.Literal('incomplete_copy_opportunity'),
+            Type.Literal('missing_structured_authority'),
+            Type.Literal('open_lifecycle_case'),
+          ]),
+        ),
+        noticeCompleted: Type.Boolean(),
+        copyOpportunityCompleted: Type.Boolean(),
+        hasPolicy: Type.Boolean(),
+        hasQualifyingDeparture: Type.Boolean(),
+        hasStructuredAuthority: Type.Boolean(),
+        openHold: Type.Boolean(),
+        openLifecycleCase: Type.Boolean(),
+      }),
       destructionEligibility: Type.Union([
         Type.Literal('not_eligible'),
         Type.Literal('eligible_after_departure'),
@@ -2155,6 +2319,7 @@ const ProblemDetails = Type.Object({
   outcome: Type.Optional(Type.String()),
   reason: Type.Optional(Type.String()),
   reviewId: Type.Optional(Type.String({ format: 'uuid' })),
+  blockingReasons: Type.Optional(Type.Array(Type.String())),
 });
 
 const ProblemResponse = {
@@ -3058,6 +3223,71 @@ export async function buildApp(
         type: 'https://preventive-care-literacy.example/problems/record-production-cleanup-failed',
         title: error.message,
         status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordDispositionNotSchedulableError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-disposition-not-schedulable',
+        title: error.message,
+        status: 409,
+        code: error.code,
+        blockingReasons: error.blockingReasons,
+      });
+    }
+    if (error instanceof RecordDispositionNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/record-disposition-not-found',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordDispositionNotCancellableError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-disposition-not-cancellable',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordDispositionCancellationWindowOpenError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-disposition-cancellation-window-open',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordDispositionNotExecutableError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-disposition-not-executable',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordDispositionNotRepairableError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-disposition-not-repairable',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordDispositionVersionConflictError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-disposition-version-conflict',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordDispositionConfirmationRequiredError) {
+      return reply.type('application/problem+json').code(400).send({
+        type: 'https://preventive-care-literacy.example/problems/record-disposition-confirmation-required',
+        title: error.message,
+        status: 400,
         code: error.code,
       });
     }
@@ -4949,6 +5179,186 @@ export async function buildApp(
         const sessionHandle = requireStaffCookie(request, reply);
         if (typeof sessionHandle !== 'string') return sessionHandle;
         return recordsGovernance.repairRecordProductionCleanup({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof CompleteRecordDispositionNoticeBody> }>(
+      '/api/v1/administration/students/record-disposition-notices',
+      {
+        schema: {
+          operationId: 'completeRecordDispositionNotice',
+          security: [{ staffSession: [] }],
+          body: CompleteRecordDispositionNoticeBody,
+          response: {
+            200: CompleteRecordDispositionNoticeResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.completeRecordDispositionNotice({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{
+      Body: Static<typeof CompleteRecordDispositionCopyOpportunityBody>;
+    }>(
+      '/api/v1/administration/students/record-disposition-copy-opportunities',
+      {
+        schema: {
+          operationId: 'completeRecordDispositionCopyOpportunity',
+          security: [{ staffSession: [] }],
+          body: CompleteRecordDispositionCopyOpportunityBody,
+          response: {
+            200: CompleteRecordDispositionCopyOpportunityResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.completeRecordDispositionCopyOpportunity({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof ScheduleRecordDispositionBody> }>(
+      '/api/v1/administration/students/record-dispositions',
+      {
+        schema: {
+          operationId: 'scheduleRecordDisposition',
+          security: [{ staffSession: [] }],
+          body: ScheduleRecordDispositionBody,
+          response: {
+            200: ScheduleRecordDispositionResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.scheduleRecordDisposition({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof CancelRecordDispositionBody> }>(
+      '/api/v1/administration/students/record-disposition-cancellations',
+      {
+        schema: {
+          operationId: 'cancelRecordDisposition',
+          security: [{ staffSession: [] }],
+          body: CancelRecordDispositionBody,
+          response: {
+            200: CancelRecordDispositionResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.cancelRecordDisposition({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof ExecuteRecordDispositionBody> }>(
+      '/api/v1/administration/students/record-disposition-executions',
+      {
+        schema: {
+          operationId: 'executeRecordDisposition',
+          security: [{ staffSession: [] }],
+          body: ExecuteRecordDispositionBody,
+          response: {
+            200: ExecuteRecordDispositionResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.executeRecordDisposition({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof RetryRecordDispositionBody> }>(
+      '/api/v1/administration/students/record-disposition-retries',
+      {
+        schema: {
+          operationId: 'retryRecordDisposition',
+          security: [{ staffSession: [] }],
+          body: RetryRecordDispositionBody,
+          response: {
+            200: RetryRecordDispositionResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.retryRecordDisposition({
           ...request.body,
           sessionHandle,
         });

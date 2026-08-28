@@ -140,6 +140,24 @@ try {
        to ${runtimeRoleIdentifier}`,
   );
   await client.query(
+    `grant delete on identity_access.verified_email_addresses,
+          identity_access.student_sessions, identity_access.class_memberships,
+          identity_access.invitations, identity_access.invitation_challenges,
+          identity_access.invitation_deliveries,
+          identity_access.sign_in_challenges,
+          identity_access.sign_in_challenge_codes,
+          identity_access.sign_in_deliveries,
+          identity_access.sign_in_send_attempts,
+          intake.intake_record_versions, intake.intake_operation_receipts,
+          learning_progress.item_completions,
+          learning_progress.item_completion_receipts
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
+    `grant execute on function records_governance.disposition_purge_authorized(uuid, uuid)
+       to ${runtimeRoleIdentifier}`,
+  );
+  await client.query(
     `grant select, insert on all tables in schema infrastructure
        to ${runtimeRoleIdentifier}`,
   );

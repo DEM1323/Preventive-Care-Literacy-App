@@ -452,6 +452,102 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/administration/students/record-disposition-cancellations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['cancelRecordDisposition'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/students/record-disposition-copy-opportunities': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['completeRecordDispositionCopyOpportunity'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/students/record-disposition-executions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['executeRecordDisposition'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/students/record-disposition-notices': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['completeRecordDispositionNotice'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/students/record-disposition-retries': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['retryRecordDisposition'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/administration/students/record-dispositions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['scheduleRecordDisposition'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/administration/students/record-hold-releases': {
     parameters: {
       query?: never;
@@ -1340,6 +1436,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1380,6 +1477,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1420,6 +1518,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1502,6 +1601,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1542,6 +1642,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1582,6 +1683,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1622,6 +1724,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1662,6 +1765,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1740,6 +1844,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1780,6 +1885,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1820,6 +1926,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1860,6 +1967,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1900,6 +2008,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1940,6 +2049,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -1980,6 +2090,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2057,6 +2168,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2097,6 +2209,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2137,6 +2250,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2177,6 +2291,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2217,6 +2332,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2339,6 +2455,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2379,6 +2496,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2419,6 +2537,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2459,6 +2578,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2499,6 +2619,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2539,6 +2660,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2579,6 +2701,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2717,6 +2840,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2757,6 +2881,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2797,6 +2922,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2837,6 +2963,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2877,6 +3004,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2917,6 +3045,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2957,6 +3086,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -2997,6 +3127,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3088,6 +3219,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3128,6 +3260,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3168,6 +3301,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3208,6 +3342,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3248,6 +3383,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3288,6 +3424,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3370,6 +3507,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3410,6 +3548,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3450,6 +3589,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3490,6 +3630,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3530,6 +3671,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3570,6 +3712,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3610,6 +3753,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3685,6 +3829,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3725,6 +3870,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3765,6 +3911,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3805,6 +3952,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3845,6 +3993,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3885,6 +4034,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -3966,6 +4116,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4006,6 +4157,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4046,6 +4198,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4086,6 +4239,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4126,6 +4280,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4166,6 +4321,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4206,6 +4362,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4282,6 +4439,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4322,6 +4480,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4362,6 +4521,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4402,6 +4562,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4442,6 +4603,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4482,6 +4644,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4635,6 +4798,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4675,6 +4839,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4715,6 +4880,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -4755,6 +4921,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5000,6 +5167,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5040,6 +5208,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5080,6 +5249,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5120,6 +5290,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5160,6 +5331,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5200,6 +5372,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5240,6 +5413,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5319,6 +5493,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5359,6 +5534,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5399,6 +5575,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5439,6 +5616,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5479,6 +5657,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5519,6 +5698,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5559,6 +5739,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5735,6 +5916,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5775,6 +5957,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5815,6 +5998,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5855,6 +6039,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5895,6 +6080,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5935,6 +6121,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -5975,6 +6162,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6056,6 +6244,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6096,6 +6285,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6136,6 +6326,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6224,6 +6415,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6264,6 +6456,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6304,6 +6497,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6344,6 +6538,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6384,6 +6579,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6424,6 +6620,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6464,6 +6661,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6559,6 +6757,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6599,6 +6798,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6639,6 +6839,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6679,6 +6880,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6758,6 +6960,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6798,6 +7001,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6838,6 +7042,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6878,6 +7083,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6918,6 +7124,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -6958,6 +7165,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7029,6 +7237,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7069,6 +7278,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7109,6 +7319,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7198,6 +7409,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7238,6 +7450,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7278,6 +7491,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7318,6 +7532,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7358,6 +7573,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7398,6 +7614,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7438,6 +7655,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7520,6 +7738,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7560,6 +7779,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7600,6 +7820,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7640,6 +7861,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7680,6 +7902,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7720,6 +7943,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7760,6 +7984,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7800,6 +8025,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7884,6 +8110,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7924,6 +8151,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -7964,6 +8192,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8004,6 +8233,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8044,6 +8274,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8084,6 +8315,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8124,6 +8356,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8164,6 +8397,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8247,6 +8481,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8287,6 +8522,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8327,6 +8563,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8367,6 +8604,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8407,6 +8645,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8447,6 +8686,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8487,6 +8727,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8527,6 +8768,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8603,6 +8845,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8643,6 +8886,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8683,6 +8927,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8723,6 +8968,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8763,6 +9009,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8803,6 +9050,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8843,6 +9091,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8922,6 +9171,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -8962,6 +9212,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9002,6 +9253,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9042,6 +9294,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9082,6 +9335,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9122,6 +9376,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9162,6 +9417,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9239,6 +9495,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9279,6 +9536,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9319,6 +9577,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9359,6 +9618,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9399,6 +9659,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9439,6 +9700,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9479,6 +9741,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9556,6 +9819,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9596,6 +9860,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9636,6 +9901,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9676,6 +9942,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9716,6 +9983,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9756,6 +10024,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9796,6 +10065,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9908,6 +10178,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9948,6 +10219,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -9988,6 +10260,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10028,6 +10301,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10068,6 +10342,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10108,6 +10383,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10148,6 +10424,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10225,6 +10502,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10265,6 +10543,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10305,6 +10584,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10345,6 +10625,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10385,6 +10666,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10425,6 +10707,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10465,6 +10748,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10544,6 +10828,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10584,6 +10869,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10624,6 +10910,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10664,6 +10951,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10704,6 +10992,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10744,6 +11033,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10784,6 +11074,1962 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  cancelRecordDisposition: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          dispositionId: string;
+          expectedVersion: number;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            dispositionId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'cancelled';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  completeRecordDispositionCopyOpportunity: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          /** Format: uuid */
+          studentId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            copyOpportunityId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'completed';
+            /** Format: uuid */
+            studentId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  executeRecordDisposition: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          confirmation: 'execute_destruction';
+          /** Format: uuid */
+          dispositionId: string;
+          expectedVersion: number;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            dispositionId: string;
+            /** Format: uuid */
+            operationId: string;
+            outcome: 'purged' | 'failed';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  completeRecordDispositionNotice: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          /** Format: uuid */
+          studentId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            noticeId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'completed';
+            /** Format: uuid */
+            studentId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  retryRecordDisposition: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          confirmation: 'execute_destruction';
+          /** Format: uuid */
+          dispositionId: string;
+          expectedVersion: number;
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            dispositionId: string;
+            /** Format: uuid */
+            operationId: string;
+            outcome: 'purged' | 'failed';
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+    };
+  };
+  scheduleRecordDisposition: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          caseId: string;
+          /** @enum {string} */
+          confirmation: 'schedule_destruction';
+          /** Format: uuid */
+          operationId: string;
+          /** Format: uuid */
+          studentId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: date-time */
+            cancellationDeadlineAt: string;
+            /** Format: uuid */
+            dispositionId: string;
+            /** Format: uuid */
+            operationId: string;
+            /** @enum {string} */
+            outcome: 'scheduled';
+            /** Format: uuid */
+            studentId: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
+            candidateFingerprint?: string;
+            code: string;
+            compatibility?: 'presentation-equivalent' | 'canonical-change';
+            /** Format: uuid */
+            currentIntakeRecordVersionId?: string;
+            draftRevision?: number;
+            draftVersion?: number;
+            impactedFieldIds?: string[];
+            outcome?: string;
+            reason?: string;
+            rebaseRequired?: boolean;
+            /** Format: uuid */
+            reviewId?: string;
+            status: number;
+            title: string;
+            type: string;
+          };
+        };
+      };
+      /** @description Default Response */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            activeIntakeForm?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            activeReleaseId?: string | null;
+            /** Format: uuid */
+            activeSchoolConfigurationReleaseId?: string;
+            activeSubmissionAttestation?: {
+              /** Format: uuid */
+              resourceId: string;
+              revisionNumber: number;
+            };
+            affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10860,6 +13106,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10900,6 +13147,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10940,6 +13188,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -10980,6 +13229,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11020,6 +13270,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11060,6 +13311,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11100,6 +13352,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11180,6 +13433,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11220,6 +13474,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11260,6 +13515,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11300,6 +13556,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11340,6 +13597,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11380,6 +13638,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11420,6 +13679,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11497,6 +13757,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11537,6 +13798,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11577,6 +13839,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11617,6 +13880,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11657,6 +13921,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11697,6 +13962,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11737,6 +14003,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11814,6 +14081,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11854,6 +14122,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11894,6 +14163,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11934,6 +14204,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -11974,6 +14245,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12014,6 +14286,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12054,6 +14327,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12182,6 +14456,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12222,6 +14497,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12262,6 +14538,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12302,6 +14579,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12342,6 +14620,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12382,6 +14661,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12422,6 +14702,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12497,6 +14778,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12537,6 +14819,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12577,6 +14860,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12617,6 +14901,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12657,6 +14942,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12697,6 +14983,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12737,6 +15024,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12816,6 +15104,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12856,6 +15145,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12896,6 +15186,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12936,6 +15227,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -12976,6 +15268,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13016,6 +15309,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13056,6 +15350,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13200,6 +15495,56 @@ export interface operations {
               } | null;
               destructionEligibility:
                 'not_eligible' | 'eligible_after_departure' | 'blocked_by_hold';
+              dispositionPrerequisites: {
+                blockingReasons: (
+                  | 'missing_policy'
+                  | 'missing_student_departure'
+                  | 'open_hold'
+                  | 'incomplete_notice'
+                  | 'incomplete_copy_opportunity'
+                  | 'missing_structured_authority'
+                  | 'open_lifecycle_case'
+                )[];
+                copyOpportunityCompleted: boolean;
+                hasPolicy: boolean;
+                hasQualifyingDeparture: boolean;
+                hasStructuredAuthority: boolean;
+                noticeCompleted: boolean;
+                openHold: boolean;
+                openLifecycleCase: boolean;
+              };
+              dispositions: {
+                /** Format: date-time */
+                cancellationDeadlineAt: string;
+                cancelledAt: string | null;
+                /** Format: uuid */
+                caseId: string;
+                completedAt: string | null;
+                /** Format: uuid */
+                dispositionId: string;
+                executionStartedAt: string | null;
+                /** Format: uuid */
+                policyRevisionId: string;
+                purgeManifest: {
+                  adapter:
+                    | 'identity_access'
+                    | 'memberships'
+                    | 'intake'
+                    | 'learning_progress'
+                    | 'clinical_access_evidence'
+                    | 'productions'
+                    | 'projections';
+                  count: number;
+                  location: string;
+                  status: 'pending' | 'purged' | 'failed';
+                  verification: 'pending' | 'verified' | 'failed';
+                }[];
+                /** Format: date-time */
+                scheduledAt: string;
+                status:
+                  'scheduled' | 'executing' | 'cancelled' | 'failed' | 'purged';
+                version: number;
+              }[];
               holds: {
                 caseId: string | null;
                 /** Format: date-time */
@@ -13265,6 +15610,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13305,6 +15651,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13345,6 +15692,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13430,6 +15778,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13470,6 +15819,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13510,6 +15860,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13550,6 +15901,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13590,6 +15942,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13630,6 +15983,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13670,6 +16024,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13739,6 +16094,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13779,6 +16135,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13819,6 +16176,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13859,6 +16217,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13922,6 +16281,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -13996,6 +16356,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14036,6 +16397,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14076,6 +16438,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14116,6 +16479,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14156,6 +16520,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14219,6 +16584,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14259,6 +16625,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14299,6 +16666,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14339,6 +16707,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14409,6 +16778,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14449,6 +16819,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14489,6 +16860,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14529,6 +16901,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14569,6 +16942,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14609,6 +16983,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14679,6 +17054,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14719,6 +17095,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14759,6 +17136,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14799,6 +17177,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14839,6 +17218,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14909,6 +17289,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14949,6 +17330,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -14989,6 +17371,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15029,6 +17412,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15069,6 +17453,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15138,6 +17523,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15178,6 +17564,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15218,6 +17605,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15258,6 +17646,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15328,6 +17717,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15368,6 +17758,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15408,6 +17799,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15448,6 +17840,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15488,6 +17881,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15652,6 +18046,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15692,6 +18087,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15732,6 +18128,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15772,6 +18169,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15812,6 +18210,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -15852,6 +18251,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16019,6 +18419,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16059,6 +18460,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16099,6 +18501,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16139,6 +18542,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16179,6 +18583,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16219,6 +18624,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16311,6 +18717,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16351,6 +18758,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16391,6 +18799,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16482,6 +18891,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16522,6 +18932,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16562,6 +18973,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16602,6 +19014,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16642,6 +19055,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16682,6 +19096,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16784,6 +19199,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16824,6 +19240,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16886,6 +19303,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -16967,6 +19385,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17007,6 +19426,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17081,6 +19501,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17121,6 +19542,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17161,6 +19583,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17201,6 +19624,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17241,6 +19665,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17310,6 +19735,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17350,6 +19776,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17536,6 +19963,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17576,6 +20004,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17616,6 +20045,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17656,6 +20086,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17743,6 +20174,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17783,6 +20215,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17823,6 +20256,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17863,6 +20297,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17903,6 +20338,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17943,6 +20379,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -17983,6 +20420,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18062,6 +20500,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18102,6 +20541,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18142,6 +20582,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18182,6 +20623,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18222,6 +20664,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18262,6 +20705,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18302,6 +20746,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18380,6 +20825,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18420,6 +20866,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18460,6 +20907,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18500,6 +20948,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18540,6 +20989,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18580,6 +21030,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18620,6 +21071,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18730,6 +21182,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18770,6 +21223,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18810,6 +21264,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18850,6 +21305,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18890,6 +21346,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18930,6 +21387,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -18970,6 +21428,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19010,6 +21469,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19078,6 +21538,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19118,6 +21579,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19158,6 +21620,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19198,6 +21661,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19238,6 +21702,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19379,6 +21844,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19419,6 +21885,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19459,6 +21926,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19499,6 +21967,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19584,6 +22053,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19624,6 +22094,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19664,6 +22135,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19704,6 +22176,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19744,6 +22217,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19784,6 +22258,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19824,6 +22299,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19895,6 +22371,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
@@ -19935,6 +22412,7 @@ export interface operations {
               revisionNumber: number;
             };
             affectedValue?: string;
+            blockingReasons?: string[];
             candidateFingerprint?: string;
             code: string;
             compatibility?: 'presentation-equivalent' | 'canonical-change';
