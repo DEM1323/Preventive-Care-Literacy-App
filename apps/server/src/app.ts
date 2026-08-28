@@ -72,6 +72,11 @@ import {
 import { createLearningProgress } from '../../../modules/learning-progress/index.ts';
 import type { RecordsGovernance } from '../../../modules/records-governance/index.ts';
 import {
+  RecordAmendmentDecisionMismatchError,
+  RecordAmendmentNotApplicableError,
+  RecordConflictReviewNotFoundError,
+  RecordConflictReviewNotOpenError,
+  RecordConflictReviewRequiredError,
   RecordHoldNotActiveError,
   RecordHoldNotFoundError,
   RecordHoldNotReleasableError,
@@ -79,6 +84,9 @@ import {
   RecordLifecycleCaseNotFoundError,
   RecordLifecycleCaseNotOpenError,
   RecordLifecycleCaseRequestMismatchError,
+  RecordProductionCleanupFailedError,
+  RecordProductionNotAuthorizedError,
+  RecordProductionUnavailableError,
   StudentAlreadyDepartedError,
   StudentNotDepartedError,
 } from '../../../modules/records-governance/index.ts';
@@ -119,6 +127,7 @@ import {
 } from '../../../packages/postgres/src/identity-access.ts';
 import {
   createInvitationSecretProtector,
+  createRecordProductionSecrets,
   type InvitationSecretKeys,
 } from '../../../packages/invitation-secrets/src/index.ts';
 import { createSchoolConfiguration } from '../../../modules/school-configuration/index.ts';
@@ -874,6 +883,133 @@ const ReleaseRecordHoldResponse = Type.Object({
   holdId: Type.String({ format: 'uuid' }),
   outcome: Type.Literal('released'),
 });
+const ResolveRecordAmendmentBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    caseId: Type.String({ format: 'uuid' }),
+    challengedFactKind: Type.Union([
+      Type.Literal('identity'),
+      Type.Literal('intake_record_version'),
+      Type.Literal('membership'),
+      Type.Literal('learning_progress'),
+    ]),
+    challengedFactId: Type.String({ format: 'uuid' }),
+    decision: Type.Union([
+      Type.Literal('correction_authorized'),
+      Type.Literal('challenge_denied'),
+    ]),
+    reasonCode: Type.Union([
+      Type.Literal('factual_inaccuracy'),
+      Type.Literal('identity_dispute'),
+      Type.Literal('intake_inaccuracy'),
+      Type.Literal('requester_statement_only'),
+      Type.Literal('insufficient_evidence'),
+      Type.Literal('outside_authority'),
+    ]),
+    effectiveCorrection: Type.Optional(
+      Type.Object({
+        projectionKind: Type.Union([
+          Type.Literal('identity'),
+          Type.Literal('intake_record_version'),
+          Type.Literal('membership'),
+          Type.Literal('learning_progress'),
+        ]),
+        summaryCode: Type.Union([
+          Type.Literal('factual_inaccuracy'),
+          Type.Literal('identity_dispute'),
+          Type.Literal('intake_inaccuracy'),
+          Type.Literal('requester_statement_only'),
+          Type.Literal('insufficient_evidence'),
+          Type.Literal('outside_authority'),
+        ]),
+        challengedFactId: Type.String({ format: 'uuid' }),
+      }),
+    ),
+    requesterStatement: Type.Optional(Type.String({ maxLength: 4000 })),
+    relatedStudentId: Type.Optional(Type.String({ format: 'uuid' })),
+  },
+  { additionalProperties: false },
+);
+const ResolveRecordAmendmentResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  caseId: Type.String({ format: 'uuid' }),
+  amendmentId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('recorded'),
+});
+const OpenRecordConflictReviewBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    conflictKind: Type.Union([
+      Type.Literal('student_identity'),
+      Type.Literal('intake_record'),
+    ]),
+    subjectStudentId: Type.String({ format: 'uuid' }),
+    conflictingStudentId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+const OpenRecordConflictReviewResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  reviewId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('opened'),
+});
+const DecideRecordConflictReviewBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    reviewId: Type.String({ format: 'uuid' }),
+    outcome: Type.Union([
+      Type.Literal('keep_distinct'),
+      Type.Literal('referred_for_amendment'),
+    ]),
+  },
+  { additionalProperties: false },
+);
+const DecideRecordConflictReviewResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  reviewId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('resolved'),
+});
+const AuthorizeRecordProductionBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    caseId: Type.String({ format: 'uuid' }),
+    recipient: Type.String({
+      maxLength: 322,
+      pattern: '^\\s*[^\\s@]+@[^\\s@]+\\s*$',
+    }),
+  },
+  { additionalProperties: false },
+);
+const AuthorizeRecordProductionResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  caseId: Type.String({ format: 'uuid' }),
+  productionId: Type.String({ format: 'uuid' }),
+  outcome: Type.Literal('authorized'),
+});
+const RetrieveRecordProductionBody = Type.Object(
+  {
+    capability: Type.String({ minLength: 16, maxLength: 128 }),
+  },
+  { additionalProperties: false },
+);
+const RetrieveRecordProductionResponse = Type.Object({
+  productionId: Type.String({ format: 'uuid' }),
+  purpose: Type.String(),
+  portions: Type.Array(Type.String()),
+  package: Type.Record(Type.String(), Type.Unknown()),
+});
+const RepairRecordProductionCleanupBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    productionId: Type.String({ format: 'uuid' }),
+  },
+  { additionalProperties: false },
+);
+const RepairRecordProductionCleanupResponse = Type.Object({
+  operationId: Type.String({ format: 'uuid' }),
+  productionId: Type.String({ format: 'uuid' }),
+  outcome: Type.Union([Type.Literal('removed'), Type.Literal('failed')]),
+});
 const RecordsGovernanceDirectoryResponse = Type.Object({
   students: Type.Array(
     Type.Object({
@@ -939,6 +1075,95 @@ const RecordsGovernanceDirectoryResponse = Type.Object({
           caseId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
           establishedAt: Type.String({ format: 'date-time' }),
           releasedAt: Type.Union([
+            Type.String({ format: 'date-time' }),
+            Type.Null(),
+          ]),
+        }),
+      ),
+      amendments: Type.Array(
+        Type.Object({
+          amendmentId: Type.String({ format: 'uuid' }),
+          caseId: Type.String({ format: 'uuid' }),
+          challengedFactKind: Type.Union([
+            Type.Literal('identity'),
+            Type.Literal('intake_record_version'),
+            Type.Literal('membership'),
+            Type.Literal('learning_progress'),
+          ]),
+          challengedFactId: Type.String({ format: 'uuid' }),
+          decision: Type.Union([
+            Type.Literal('correction_authorized'),
+            Type.Literal('challenge_denied'),
+          ]),
+          reasonCode: Type.String(),
+          authorityKind: RecordLifecycleAuthorityKindSchema,
+          effectiveCorrection: Type.Union([
+            Type.Object({
+              projectionKind: Type.Union([
+                Type.Literal('identity'),
+                Type.Literal('intake_record_version'),
+                Type.Literal('membership'),
+                Type.Literal('learning_progress'),
+              ]),
+              summaryCode: Type.String(),
+              challengedFactId: Type.String({ format: 'uuid' }),
+            }),
+            Type.Null(),
+          ]),
+          requesterStatementPreserved: Type.Boolean(),
+          recordedAt: Type.String({ format: 'date-time' }),
+        }),
+      ),
+      conflictReviews: Type.Array(
+        Type.Object({
+          reviewId: Type.String({ format: 'uuid' }),
+          conflictKind: Type.Union([
+            Type.Literal('student_identity'),
+            Type.Literal('intake_record'),
+          ]),
+          subjectStudentId: Type.String({ format: 'uuid' }),
+          conflictingStudentId: Type.String({ format: 'uuid' }),
+          status: Type.Union([Type.Literal('open'), Type.Literal('resolved')]),
+          outcome: Type.Union([
+            Type.Literal('keep_distinct'),
+            Type.Literal('referred_for_amendment'),
+            Type.Null(),
+          ]),
+          openedAt: Type.String({ format: 'date-time' }),
+          resolvedAt: Type.Union([
+            Type.String({ format: 'date-time' }),
+            Type.Null(),
+          ]),
+        }),
+      ),
+      productions: Type.Array(
+        Type.Object({
+          productionId: Type.String({ format: 'uuid' }),
+          caseId: Type.String({ format: 'uuid' }),
+          status: Type.Union([
+            Type.Literal('pending_delivery'),
+            Type.Literal('delivered'),
+            Type.Literal('retrieved'),
+            Type.Literal('expired'),
+            Type.Literal('delivery_failed'),
+          ]),
+          cleanupStatus: Type.Union([
+            Type.Literal('pending'),
+            Type.Literal('removed'),
+            Type.Literal('failed'),
+          ]),
+          portions: Type.Array(Type.String()),
+          purpose: Type.String(),
+          expiresAt: Type.String({ format: 'date-time' }),
+          deliveredAt: Type.Union([
+            Type.String({ format: 'date-time' }),
+            Type.Null(),
+          ]),
+          retrievedAt: Type.Union([
+            Type.String({ format: 'date-time' }),
+            Type.Null(),
+          ]),
+          removedAt: Type.Union([
             Type.String({ format: 'date-time' }),
             Type.Null(),
           ]),
@@ -1929,6 +2154,7 @@ const ProblemDetails = Type.Object({
   affectedValue: Type.Optional(Type.String()),
   outcome: Type.Optional(Type.String()),
   reason: Type.Optional(Type.String()),
+  reviewId: Type.Optional(Type.String({ format: 'uuid' })),
 });
 
 const ProblemResponse = {
@@ -2765,6 +2991,71 @@ export async function buildApp(
     if (error instanceof RecordHoldNotReleasableError) {
       return reply.type('application/problem+json').code(409).send({
         type: 'https://preventive-care-literacy.example/problems/record-hold-not-releasable',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordAmendmentNotApplicableError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-amendment-not-applicable',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordAmendmentDecisionMismatchError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-amendment-decision-mismatch',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordConflictReviewRequiredError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-conflict-review-required',
+        title: error.message,
+        status: 409,
+        code: error.code,
+        reviewId: error.reviewId,
+      });
+    }
+    if (error instanceof RecordConflictReviewNotFoundError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/record-conflict-review-not-found',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordConflictReviewNotOpenError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-conflict-review-not-open',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordProductionNotAuthorizedError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-production-not-authorized',
+        title: error.message,
+        status: 409,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordProductionUnavailableError) {
+      return reply.type('application/problem+json').code(404).send({
+        type: 'https://preventive-care-literacy.example/problems/record-production-unavailable',
+        title: error.message,
+        status: 404,
+        code: error.code,
+      });
+    }
+    if (error instanceof RecordProductionCleanupFailedError) {
+      return reply.type('application/problem+json').code(409).send({
+        type: 'https://preventive-care-literacy.example/problems/record-production-cleanup-failed',
         title: error.message,
         status: 409,
         code: error.code,
@@ -4518,6 +4809,173 @@ export async function buildApp(
         });
       },
     );
+
+    app.post<{ Body: Static<typeof ResolveRecordAmendmentBody> }>(
+      '/api/v1/administration/students/record-amendments',
+      {
+        schema: {
+          operationId: 'resolveRecordAmendment',
+          security: [{ staffSession: [] }],
+          body: ResolveRecordAmendmentBody,
+          response: {
+            200: ResolveRecordAmendmentResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.resolveRecordAmendment({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof OpenRecordConflictReviewBody> }>(
+      '/api/v1/administration/students/record-conflict-reviews',
+      {
+        schema: {
+          operationId: 'openRecordConflictReview',
+          security: [{ staffSession: [] }],
+          body: OpenRecordConflictReviewBody,
+          response: {
+            200: OpenRecordConflictReviewResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.openRecordConflictReview({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof DecideRecordConflictReviewBody> }>(
+      '/api/v1/administration/students/record-conflict-review-decisions',
+      {
+        schema: {
+          operationId: 'decideRecordConflictReview',
+          security: [{ staffSession: [] }],
+          body: DecideRecordConflictReviewBody,
+          response: {
+            200: DecideRecordConflictReviewResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.decideRecordConflictReview({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof AuthorizeRecordProductionBody> }>(
+      '/api/v1/administration/students/record-productions',
+      {
+        schema: {
+          operationId: 'authorizeRecordProduction',
+          security: [{ staffSession: [] }],
+          body: AuthorizeRecordProductionBody,
+          response: {
+            200: AuthorizeRecordProductionResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.authorizeRecordProduction({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof RepairRecordProductionCleanupBody> }>(
+      '/api/v1/administration/students/record-production-cleanups',
+      {
+        schema: {
+          operationId: 'repairRecordProductionCleanup',
+          security: [{ staffSession: [] }],
+          body: RepairRecordProductionCleanupBody,
+          response: {
+            200: RepairRecordProductionCleanupResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = requireStaffCookie(request, reply);
+        if (typeof sessionHandle !== 'string') return sessionHandle;
+        return recordsGovernance.repairRecordProductionCleanup({
+          ...request.body,
+          sessionHandle,
+        });
+      },
+    );
+
+    app.post<{ Body: Static<typeof RetrieveRecordProductionBody> }>(
+      '/api/v1/records/productions/retrievals',
+      {
+        schema: {
+          operationId: 'retrieveRecordProduction',
+          body: RetrieveRecordProductionBody,
+          response: {
+            200: RetrieveRecordProductionResponse,
+            400: ProblemResponse,
+            404: ProblemResponse,
+            409: ProblemResponse,
+            413: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        reply.header('cache-control', 'no-store');
+        return recordsGovernance.retrieveRecordProduction(request.body);
+      },
+    );
   }
 
   if (options.schoolConfiguration) {
@@ -5287,6 +5745,20 @@ export async function createServer(options: {
   }
   const clock = options.clock ?? { now: () => new Date() };
   const ids = options.ids ?? { create: randomUUID };
+  const invitationSecretKeys = options.invitationSecrets ?? {
+    hmacKey: randomBytes(32),
+    encryptionKeys: { ephemeral: randomBytes(32) },
+    activeEncryptionKeyId: 'ephemeral',
+  };
+  const envelopeKeys =
+    options.applicationKeys ??
+    createEnvelopeKeyManagement(
+      options.wrappingKeys ?? {
+        wrappingKeys: { ephemeral: randomBytes(32) },
+        activeWrappingKeyId: 'ephemeral',
+        idempotencyKey: randomBytes(32),
+      },
+    );
   const identityAndAccess = createPostgresIdentityAndAccess({
     pool,
     staffAuth: options.staffAuth,
@@ -5296,13 +5768,7 @@ export async function createServer(options: {
       create: () => randomBytes(32).toString('base64url'),
       hash: sha256SessionHandle,
     },
-    invitationSecrets: createInvitationSecretProtector(
-      options.invitationSecrets ?? {
-        hmacKey: randomBytes(32),
-        encryptionKeys: { ephemeral: randomBytes(32) },
-        activeEncryptionKeyId: 'ephemeral',
-      },
-    ),
+    invitationSecrets: createInvitationSecretProtector(invitationSecretKeys),
   });
   const schoolConfiguration = createSchoolConfiguration({
     identityAndAccess,
@@ -5320,15 +5786,7 @@ export async function createServer(options: {
     resolveStudentSession: (command) =>
       identityAndAccess.resolveStudentSession(command),
     store: createPostgresIntakeStore({ pool }),
-    keys:
-      options.applicationKeys ??
-      createEnvelopeKeyManagement(
-        options.wrappingKeys ?? {
-          wrappingKeys: { ephemeral: randomBytes(32) },
-          activeWrappingKeyId: 'ephemeral',
-          idempotencyKey: randomBytes(32),
-        },
-      ),
+    keys: envelopeKeys,
     clock,
     ids,
     hashSessionHandle: sha256SessionHandle,
@@ -5345,6 +5803,8 @@ export async function createServer(options: {
     store: createPostgresRecordsGovernanceStore({ pool }),
     clock,
     ids,
+    keys: envelopeKeys,
+    productionSecrets: createRecordProductionSecrets(invitationSecretKeys),
   });
   return buildApp(identityAndAccess, {
     operatorAuthenticator: createOperatorAuthenticator(

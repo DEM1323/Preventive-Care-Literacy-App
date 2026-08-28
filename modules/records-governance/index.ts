@@ -9,6 +9,10 @@ import {
   StudentNotFoundError,
   type StudentPresence,
 } from '../identity-access/index.ts';
+import type {
+  ApplicationKeyManagement,
+  SealedRecord,
+} from '../intake/index.ts';
 
 export { AuthenticationFreshnessRequiredError, StudentNotFoundError };
 export type { StudentPresence };
@@ -252,6 +256,111 @@ export type RecordHoldView = {
   releasedAt: string | null;
 };
 
+export const recordAmendmentDecisions = [
+  'correction_authorized',
+  'challenge_denied',
+] as const;
+export type RecordAmendmentDecision = (typeof recordAmendmentDecisions)[number];
+
+export const recordAmendmentReasonCodes = [
+  'factual_inaccuracy',
+  'identity_dispute',
+  'intake_inaccuracy',
+  'requester_statement_only',
+  'insufficient_evidence',
+  'outside_authority',
+] as const;
+export type RecordAmendmentReasonCode =
+  (typeof recordAmendmentReasonCodes)[number];
+
+export const recordAmendmentFactKinds = [
+  'identity',
+  'intake_record_version',
+  'membership',
+  'learning_progress',
+] as const;
+export type RecordAmendmentFactKind = (typeof recordAmendmentFactKinds)[number];
+
+export const recordConflictKinds = [
+  'student_identity',
+  'intake_record',
+] as const;
+export type RecordConflictKind = (typeof recordConflictKinds)[number];
+
+export const recordConflictOutcomes = [
+  'keep_distinct',
+  'referred_for_amendment',
+] as const;
+export type RecordConflictOutcome = (typeof recordConflictOutcomes)[number];
+
+export const recordProductionStatuses = [
+  'pending_delivery',
+  'delivered',
+  'retrieved',
+  'expired',
+  'delivery_failed',
+] as const;
+export type RecordProductionStatus = (typeof recordProductionStatuses)[number];
+
+export const recordProductionCleanupStatuses = [
+  'pending',
+  'removed',
+  'failed',
+] as const;
+export type RecordProductionCleanupStatus =
+  (typeof recordProductionCleanupStatuses)[number];
+
+export const recordProductionTtlMs = 10 * 60 * 1000;
+
+export const recordProductionCaseTypes = [
+  'access',
+  'transfer',
+  'disclosure',
+] as const;
+
+export type RecordAmendmentEffectiveCorrection = {
+  projectionKind: RecordAmendmentFactKind;
+  summaryCode: RecordAmendmentReasonCode;
+  challengedFactId: string;
+};
+
+export type RecordAmendmentView = {
+  amendmentId: string;
+  caseId: string;
+  challengedFactKind: RecordAmendmentFactKind;
+  challengedFactId: string;
+  decision: RecordAmendmentDecision;
+  reasonCode: RecordAmendmentReasonCode;
+  authorityKind: RecordLifecycleAuthorityKind;
+  effectiveCorrection: RecordAmendmentEffectiveCorrection | null;
+  requesterStatementPreserved: boolean;
+  recordedAt: string;
+};
+
+export type RecordConflictReviewView = {
+  reviewId: string;
+  conflictKind: RecordConflictKind;
+  subjectStudentId: string;
+  conflictingStudentId: string;
+  status: 'open' | 'resolved';
+  outcome: RecordConflictOutcome | null;
+  openedAt: string;
+  resolvedAt: string | null;
+};
+
+export type RecordProductionView = {
+  productionId: string;
+  caseId: string;
+  status: RecordProductionStatus;
+  cleanupStatus: RecordProductionCleanupStatus;
+  portions: RecordLifecycleScopePortion[];
+  purpose: RecordLifecycleScopePurpose;
+  expiresAt: string;
+  deliveredAt: string | null;
+  retrievedAt: string | null;
+  removedAt: string | null;
+};
+
 export type StudentRecordsGovernanceView = {
   studentId: string;
   presence: StudentPresence;
@@ -263,6 +372,9 @@ export type StudentRecordsGovernanceView = {
   } | null;
   cases: RecordLifecycleCaseView[];
   holds: RecordHoldView[];
+  amendments: RecordAmendmentView[];
+  conflictReviews: RecordConflictReviewView[];
+  productions: RecordProductionView[];
   destructionEligibility: DestructionEligibility;
   policyRevisionId: string;
 };
@@ -353,6 +465,235 @@ export class RecordHoldNotReleasableError extends Error {
     this.name = 'RecordHoldNotReleasableError';
   }
 }
+
+export class RecordAmendmentNotApplicableError extends Error {
+  readonly code = 'RECORD_AMENDMENT_NOT_APPLICABLE';
+
+  constructor() {
+    super(
+      'Record Amendment can only resolve an open amendment Record Lifecycle Case',
+    );
+    this.name = 'RecordAmendmentNotApplicableError';
+  }
+}
+
+export class RecordAmendmentDecisionMismatchError extends Error {
+  readonly code = 'RECORD_AMENDMENT_DECISION_MISMATCH';
+
+  constructor() {
+    super(
+      'Record Amendment decision must match the Record Lifecycle Case decision',
+    );
+    this.name = 'RecordAmendmentDecisionMismatchError';
+  }
+}
+
+export class RecordConflictReviewRequiredError extends Error {
+  readonly code = 'RECORD_CONFLICT_REVIEW_REQUIRED';
+  readonly reviewId: string;
+
+  constructor(reviewId: string) {
+    super(
+      'Conflicting Student identities or Intake Records need explicit audited review',
+    );
+    this.name = 'RecordConflictReviewRequiredError';
+    this.reviewId = reviewId;
+  }
+}
+
+export class RecordConflictReviewNotFoundError extends Error {
+  readonly code = 'RECORD_CONFLICT_REVIEW_NOT_FOUND';
+
+  constructor() {
+    super('Record Conflict Review was not found');
+    this.name = 'RecordConflictReviewNotFoundError';
+  }
+}
+
+export class RecordConflictReviewNotOpenError extends Error {
+  readonly code = 'RECORD_CONFLICT_REVIEW_NOT_OPEN';
+
+  constructor() {
+    super('Record Conflict Review is not open');
+    this.name = 'RecordConflictReviewNotOpenError';
+  }
+}
+
+export class RecordProductionNotAuthorizedError extends Error {
+  readonly code = 'RECORD_PRODUCTION_NOT_AUTHORIZED';
+
+  constructor() {
+    super(
+      'Record Production requires an authorized access, transfer, or disclosure Record Lifecycle Case',
+    );
+    this.name = 'RecordProductionNotAuthorizedError';
+  }
+}
+
+export class RecordProductionUnavailableError extends Error {
+  readonly code = 'RECORD_PRODUCTION_UNAVAILABLE';
+
+  constructor() {
+    super('Record Production is unavailable');
+    this.name = 'RecordProductionUnavailableError';
+  }
+}
+
+export class RecordProductionCleanupFailedError extends Error {
+  readonly code = 'RECORD_PRODUCTION_CLEANUP_FAILED';
+
+  constructor() {
+    super('Record Production package removal is incomplete');
+    this.name = 'RecordProductionCleanupFailedError';
+  }
+}
+
+export type ResolveRecordAmendmentCommand = {
+  sessionHandle: string;
+  operationId: string;
+  caseId: string;
+  challengedFactKind: RecordAmendmentFactKind;
+  challengedFactId: string;
+  decision: RecordAmendmentDecision;
+  reasonCode: RecordAmendmentReasonCode;
+  effectiveCorrection?: RecordAmendmentEffectiveCorrection;
+  requesterStatement?: string;
+  relatedStudentId?: string;
+};
+
+export type ResolveRecordAmendmentResult = {
+  operationId: string;
+  caseId: string;
+  amendmentId: string;
+  outcome: 'recorded';
+};
+
+export type OpenRecordConflictReviewCommand = {
+  sessionHandle: string;
+  operationId: string;
+  conflictKind: RecordConflictKind;
+  subjectStudentId: string;
+  conflictingStudentId: string;
+};
+
+export type OpenRecordConflictReviewResult = {
+  operationId: string;
+  reviewId: string;
+  outcome: 'opened';
+};
+
+export type DecideRecordConflictReviewCommand = {
+  sessionHandle: string;
+  operationId: string;
+  reviewId: string;
+  outcome: RecordConflictOutcome;
+};
+
+export type DecideRecordConflictReviewResult = {
+  operationId: string;
+  reviewId: string;
+  outcome: 'resolved';
+};
+
+export type AuthorizeRecordProductionCommand = {
+  sessionHandle: string;
+  operationId: string;
+  caseId: string;
+  recipient: string;
+};
+
+export type AuthorizeRecordProductionResult = {
+  operationId: string;
+  caseId: string;
+  productionId: string;
+  outcome: 'authorized';
+};
+
+export type RetrieveRecordProductionCommand = {
+  capability: string;
+};
+
+export type RetrieveRecordProductionResult = {
+  productionId: string;
+  purpose: RecordLifecycleScopePurpose;
+  portions: RecordLifecycleScopePortion[];
+  package: Record<string, unknown>;
+};
+
+export type RepairRecordProductionCleanupCommand = {
+  sessionHandle: string;
+  operationId: string;
+  productionId: string;
+};
+
+export type RepairRecordProductionCleanupResult = {
+  operationId: string;
+  productionId: string;
+  outcome: 'removed' | 'failed';
+};
+
+export type RecordProductionSecrets = {
+  createCapability(): string;
+  digestCapability(capability: string): string;
+  digestRecipient(recipient: string): string;
+  protectDelivery(input: {
+    productionId: string;
+    recipient: string;
+    capability: string;
+  }): { keyId: string; ciphertext: string };
+  revealVerifiedEmailRecipient(input: {
+    workspaceId: string;
+    studentId: string;
+    keyId: string;
+    ciphertext: string;
+  }): string;
+};
+
+export type RecordProductionMaterials = {
+  studentId: string;
+  identity?: {
+    studentId: string;
+    presence: StudentPresence;
+    accessStatus: 'active' | 'disabled';
+    emails: {
+      status: 'current' | 'historical';
+      keyId: string;
+      ciphertext: string;
+    }[];
+  };
+  membership?: {
+    classId: string;
+    status: 'active' | 'inactive';
+    activatedAt: string;
+  }[];
+  intake?: {
+    versions: {
+      intakeRecordVersionId: string;
+      versionNumber: number;
+      acceptedAt: string;
+      supersededAt: string | null;
+      wrappingKeyId: string;
+      wrappedDataKey: string;
+      ciphertext: string;
+    }[];
+    draft?: {
+      wrappingKeyId: string;
+      wrappedDataKey: string;
+      ciphertext: string;
+      updatedAt: string;
+    } | null;
+  };
+  learningProgress?: {
+    itemId: string;
+    itemRevisionNumber: number;
+    completedAt: string;
+  }[];
+  auditEvidence?: {
+    occurredAt: string;
+    actorType: string;
+    eventType: string;
+  }[];
+};
 
 export const recordLifecycleRequestByType = {
   access: 'lawful_access',
@@ -501,6 +842,129 @@ export type RecordsGovernanceStore = {
     workspaceId: string;
     staffIdentityId: string;
   }): Promise<RecordsGovernanceDirectory>;
+  resolveAmendment(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    caseId: string;
+    challengedFactKind: RecordAmendmentFactKind;
+    challengedFactId: string;
+    decision: RecordAmendmentDecision;
+    reasonCode: RecordAmendmentReasonCode;
+    authorityKind: RecordLifecycleAuthorityKind;
+    effectiveCorrection: RecordAmendmentEffectiveCorrection | null;
+    requesterStatementPreserved: boolean;
+    sealSensitive: (studentId: string) => {
+      statementSealed: SealedRecord | null;
+      correctionSealed: SealedRecord | null;
+    };
+    relatedStudentId: string | null;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    amendmentId: string;
+    reviewId: string;
+    result: ResolveRecordAmendmentResult;
+  }): Promise<
+    | { outcome: 'applied' | 'replayed'; result: ResolveRecordAmendmentResult }
+    | { outcome: 'not_found' }
+    | { outcome: 'not_applicable' }
+    | { outcome: 'decision_mismatch' }
+    | { outcome: 'conflict'; reviewId: string }
+  >;
+  openConflictReview(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    conflictKind: RecordConflictKind;
+    subjectStudentId: string;
+    conflictingStudentId: string;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    reviewId: string;
+    result: OpenRecordConflictReviewResult;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: OpenRecordConflictReviewResult;
+      }
+    | { outcome: 'not_found' }
+  >;
+  decideConflictReview(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    reviewId: string;
+    reviewOutcome: RecordConflictOutcome;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    result: DecideRecordConflictReviewResult;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: DecideRecordConflictReviewResult;
+      }
+    | { outcome: 'not_found' }
+    | { outcome: 'not_open' }
+  >;
+  authorizeProduction(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    caseId: string;
+    recipientDigest: string;
+    capabilityDigest: string;
+    delivery: { keyId: string; ciphertext: string };
+    productionId: string;
+    expiresAt: Date;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    result: AuthorizeRecordProductionResult;
+    buildPackage: (
+      materials: RecordProductionMaterials,
+    ) => Promise<SealedRecord>;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: AuthorizeRecordProductionResult;
+      }
+    | { outcome: 'not_found' }
+    | { outcome: 'not_authorized' }
+  >;
+  retrieveProduction(request: {
+    capabilityDigest: string;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    openPackage: (input: {
+      sealed: SealedRecord;
+      workspaceId: string;
+      studentId: string;
+    }) => Promise<Record<string, unknown>>;
+  }): Promise<
+    | { outcome: 'retrieved'; result: RetrieveRecordProductionResult }
+    | { outcome: 'unavailable' }
+    | { outcome: 'cleanup_failed' }
+  >;
+  repairProductionCleanup(request: {
+    workspaceId: string;
+    staffIdentityId: string;
+    operationId: string;
+    productionId: string;
+    occurredAt: Date;
+    auditId: string;
+    outboxId: string;
+    result: RepairRecordProductionCleanupResult;
+  }): Promise<
+    | {
+        outcome: 'applied' | 'replayed';
+        result: RepairRecordProductionCleanupResult;
+      }
+    | { outcome: 'not_found' }
+  >;
 };
 
 export type RecordsGovernance = {
@@ -525,6 +989,24 @@ export type RecordsGovernance = {
   releaseRecordHold(
     command: ReleaseRecordHoldCommand,
   ): Promise<ReleaseRecordHoldResult>;
+  resolveRecordAmendment(
+    command: ResolveRecordAmendmentCommand,
+  ): Promise<ResolveRecordAmendmentResult>;
+  openRecordConflictReview(
+    command: OpenRecordConflictReviewCommand,
+  ): Promise<OpenRecordConflictReviewResult>;
+  decideRecordConflictReview(
+    command: DecideRecordConflictReviewCommand,
+  ): Promise<DecideRecordConflictReviewResult>;
+  authorizeRecordProduction(
+    command: AuthorizeRecordProductionCommand,
+  ): Promise<AuthorizeRecordProductionResult>;
+  retrieveRecordProduction(
+    command: RetrieveRecordProductionCommand,
+  ): Promise<RetrieveRecordProductionResult>;
+  repairRecordProductionCleanup(
+    command: RepairRecordProductionCleanupCommand,
+  ): Promise<RepairRecordProductionCleanupResult>;
   listRecordsGovernance(command: {
     sessionHandle: string;
   }): Promise<RecordsGovernanceDirectory>;
@@ -542,11 +1024,34 @@ function requireFresh(session: {
   }
 }
 
+export function authorizedProductionPortions(
+  scope: RecordLifecycleScope,
+): RecordLifecycleScopePortion[] {
+  if (scope.portions.includes('complete_bundle')) {
+    return [
+      'identity',
+      'membership',
+      'intake',
+      'learning_progress',
+      'audit_evidence',
+    ];
+  }
+  return [...scope.portions];
+}
+
+async function bytesOf(
+  value: Uint8Array | Promise<Uint8Array>,
+): Promise<Uint8Array> {
+  return value;
+}
+
 export function createRecordsGovernance(dependencies: {
   identityAndAccess: Pick<IdentityAndAccess, 'requireAdministrativeSession'>;
   store: RecordsGovernanceStore;
   clock: Clock;
   ids: IdGenerator;
+  keys: ApplicationKeyManagement;
+  productionSecrets: RecordProductionSecrets;
 }): RecordsGovernance {
   async function requireFreshAdministrator(sessionHandle: string) {
     const session =
@@ -760,6 +1265,240 @@ export function createRecordsGovernance(dependencies: {
       return released.result;
     },
 
+    async resolveRecordAmendment(command) {
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const amendmentId = dependencies.ids.create();
+      const statement = command.requesterStatement?.trim() ?? '';
+      const result: ResolveRecordAmendmentResult = {
+        operationId: command.operationId,
+        caseId: command.caseId,
+        amendmentId,
+        outcome: 'recorded',
+      };
+      const recorded = await dependencies.store.resolveAmendment({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        caseId: command.caseId,
+        challengedFactKind: command.challengedFactKind,
+        challengedFactId: command.challengedFactId,
+        decision: command.decision,
+        reasonCode: command.reasonCode,
+        authorityKind: 'school_administrator',
+        effectiveCorrection: command.effectiveCorrection ?? null,
+        requesterStatementPreserved: statement.length > 0,
+        sealSensitive: (studentId) => ({
+          statementSealed:
+            statement.length > 0
+              ? dependencies.keys.seal(Buffer.from(statement, 'utf8'), {
+                  purpose: 'record-amendment',
+                  workspaceId: session.workspaceId,
+                  studentId,
+                })
+              : null,
+          correctionSealed: command.effectiveCorrection
+            ? dependencies.keys.seal(
+                Buffer.from(
+                  JSON.stringify(command.effectiveCorrection),
+                  'utf8',
+                ),
+                {
+                  purpose: 'record-amendment',
+                  workspaceId: session.workspaceId,
+                  studentId,
+                },
+              )
+            : null,
+        }),
+        relatedStudentId: command.relatedStudentId ?? null,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        amendmentId,
+        reviewId: dependencies.ids.create(),
+        result,
+      });
+      if (recorded.outcome === 'not_found') {
+        throw new RecordLifecycleCaseNotFoundError();
+      }
+      if (recorded.outcome === 'not_applicable') {
+        throw new RecordAmendmentNotApplicableError();
+      }
+      if (recorded.outcome === 'decision_mismatch') {
+        throw new RecordAmendmentDecisionMismatchError();
+      }
+      if (recorded.outcome === 'conflict') {
+        throw new RecordConflictReviewRequiredError(recorded.reviewId);
+      }
+      return recorded.result;
+    },
+
+    async openRecordConflictReview(command) {
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const reviewId = dependencies.ids.create();
+      const result: OpenRecordConflictReviewResult = {
+        operationId: command.operationId,
+        reviewId,
+        outcome: 'opened',
+      };
+      const opened = await dependencies.store.openConflictReview({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        conflictKind: command.conflictKind,
+        subjectStudentId: command.subjectStudentId,
+        conflictingStudentId: command.conflictingStudentId,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        reviewId,
+        result,
+      });
+      if (opened.outcome === 'not_found') throw new StudentNotFoundError();
+      return opened.result;
+    },
+
+    async decideRecordConflictReview(command) {
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const result: DecideRecordConflictReviewResult = {
+        operationId: command.operationId,
+        reviewId: command.reviewId,
+        outcome: 'resolved',
+      };
+      const decided = await dependencies.store.decideConflictReview({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        reviewId: command.reviewId,
+        reviewOutcome: command.outcome,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        result,
+      });
+      if (decided.outcome === 'not_found') {
+        throw new RecordConflictReviewNotFoundError();
+      }
+      if (decided.outcome === 'not_open') {
+        throw new RecordConflictReviewNotOpenError();
+      }
+      return decided.result;
+    },
+
+    async authorizeRecordProduction(command) {
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const productionId = dependencies.ids.create();
+      const capability = dependencies.productionSecrets.createCapability();
+      const delivery = dependencies.productionSecrets.protectDelivery({
+        productionId,
+        recipient: command.recipient,
+        capability,
+      });
+      const result: AuthorizeRecordProductionResult = {
+        operationId: command.operationId,
+        caseId: command.caseId,
+        productionId,
+        outcome: 'authorized',
+      };
+      const authorized = await dependencies.store.authorizeProduction({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        caseId: command.caseId,
+        recipientDigest: dependencies.productionSecrets.digestRecipient(
+          command.recipient,
+        ),
+        capabilityDigest:
+          dependencies.productionSecrets.digestCapability(capability),
+        delivery,
+        productionId,
+        expiresAt: new Date(
+          dependencies.clock.now().getTime() + recordProductionTtlMs,
+        ),
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        result,
+        async buildPackage(materials) {
+          const produced = await assembleRecordProductionPackage({
+            keys: dependencies.keys,
+            secrets: dependencies.productionSecrets,
+            workspaceId: session.workspaceId,
+            materials,
+          });
+          return dependencies.keys.seal(
+            Buffer.from(JSON.stringify(produced), 'utf8'),
+            {
+              purpose: 'record-production',
+              workspaceId: session.workspaceId,
+              studentId: materials.studentId,
+            },
+          );
+        },
+      });
+      if (authorized.outcome === 'not_found') {
+        throw new RecordLifecycleCaseNotFoundError();
+      }
+      if (authorized.outcome === 'not_authorized') {
+        throw new RecordProductionNotAuthorizedError();
+      }
+      return authorized.result;
+    },
+
+    async retrieveRecordProduction(command) {
+      const retrieved = await dependencies.store.retrieveProduction({
+        capabilityDigest: dependencies.productionSecrets.digestCapability(
+          command.capability,
+        ),
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        async openPackage(input) {
+          const opened = await bytesOf(
+            dependencies.keys.open(input.sealed, {
+              purpose: 'record-production',
+              workspaceId: input.workspaceId,
+              studentId: input.studentId,
+            }),
+          );
+          return JSON.parse(Buffer.from(opened).toString('utf8')) as Record<
+            string,
+            unknown
+          >;
+        },
+      });
+      if (retrieved.outcome === 'unavailable') {
+        throw new RecordProductionUnavailableError();
+      }
+      if (retrieved.outcome === 'cleanup_failed') {
+        throw new RecordProductionCleanupFailedError();
+      }
+      return retrieved.result;
+    },
+
+    async repairRecordProductionCleanup(command) {
+      const session = await requireFreshAdministrator(command.sessionHandle);
+      const result: RepairRecordProductionCleanupResult = {
+        operationId: command.operationId,
+        productionId: command.productionId,
+        outcome: 'removed',
+      };
+      const repaired = await dependencies.store.repairProductionCleanup({
+        workspaceId: session.workspaceId,
+        staffIdentityId: session.staffIdentityId,
+        operationId: command.operationId,
+        productionId: command.productionId,
+        occurredAt: dependencies.clock.now(),
+        auditId: dependencies.ids.create(),
+        outboxId: dependencies.ids.create(),
+        result,
+      });
+      if (repaired.outcome === 'not_found') {
+        throw new RecordProductionUnavailableError();
+      }
+      return repaired.result;
+    },
+
     async listRecordsGovernance(command) {
       const session =
         await dependencies.identityAndAccess.requireAdministrativeSession({
@@ -771,4 +1510,97 @@ export function createRecordsGovernance(dependencies: {
       });
     },
   };
+}
+
+async function assembleRecordProductionPackage(input: {
+  keys: ApplicationKeyManagement;
+  secrets: RecordProductionSecrets;
+  workspaceId: string;
+  materials: RecordProductionMaterials;
+}): Promise<Record<string, unknown>> {
+  const packageBody: Record<string, unknown> = {
+    schema: 'record-production/v1',
+  };
+  const materials = input.materials;
+  if (materials.identity) {
+    const identity = materials.identity;
+    packageBody.identity = {
+      studentId: identity.studentId,
+      presence: identity.presence,
+      accessStatus: identity.accessStatus,
+      emails: identity.emails.map((email) => ({
+        status: email.status,
+        address: input.secrets.revealVerifiedEmailRecipient({
+          workspaceId: input.workspaceId,
+          studentId: identity.studentId,
+          keyId: email.keyId,
+          ciphertext: email.ciphertext,
+        }),
+      })),
+    };
+  }
+  if (materials.membership) {
+    packageBody.membership = materials.membership;
+  }
+  if (materials.intake) {
+    const studentId = materials.studentId;
+    const versions = [];
+    for (const version of materials.intake.versions) {
+      const opened = studentId
+        ? await bytesOf(
+            input.keys.open(
+              {
+                wrappingKeyId: version.wrappingKeyId,
+                wrappedDataKey: version.wrappedDataKey,
+                ciphertext: version.ciphertext,
+              },
+              {
+                purpose: 'intake-record-version',
+                workspaceId: input.workspaceId,
+                studentId,
+              },
+            ),
+          )
+        : undefined;
+      versions.push({
+        intakeRecordVersionId: version.intakeRecordVersionId,
+        versionNumber: version.versionNumber,
+        acceptedAt: version.acceptedAt,
+        supersededAt: version.supersededAt,
+        current: version.supersededAt === null,
+        answers: opened
+          ? (JSON.parse(Buffer.from(opened).toString('utf8')) as unknown)
+          : undefined,
+      });
+    }
+    let draft: unknown;
+    if (materials.intake.draft && studentId) {
+      const opened = await bytesOf(
+        input.keys.open(
+          {
+            wrappingKeyId: materials.intake.draft.wrappingKeyId,
+            wrappedDataKey: materials.intake.draft.wrappedDataKey,
+            ciphertext: materials.intake.draft.ciphertext,
+          },
+          {
+            purpose: 'intake-draft',
+            workspaceId: input.workspaceId,
+            studentId,
+          },
+        ),
+      );
+      draft = {
+        updatedAt: materials.intake.draft.updatedAt,
+        answers: JSON.parse(Buffer.from(opened).toString('utf8')) as unknown,
+      };
+    }
+    packageBody.intake = { versions, draft: draft ?? null };
+  }
+  if (materials.learningProgress) {
+    packageBody.learningProgress = materials.learningProgress;
+  }
+  if (materials.auditEvidence) {
+    packageBody.auditEvidence = materials.auditEvidence;
+  }
+  return packageBody;
 }

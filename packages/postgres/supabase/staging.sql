@@ -194,3 +194,14 @@ grant execute on function infrastructure.enqueue_sign_in_delivery(uuid) to __WOR
 grant execute on function infrastructure.read_sign_in_delivery() to __WORKER_ROLE__;
 grant execute on function infrastructure.complete_sign_in_delivery_message(bigint) to __WORKER_ROLE__;
 grant execute on function infrastructure.retry_sign_in_delivery_message(bigint, integer) to __WORKER_ROLE__;
+
+revoke all on function infrastructure.pending_record_production_outbox() from public;
+revoke all on function infrastructure.claim_record_production_delivery(uuid, timestamptz) from public;
+revoke all on function infrastructure.complete_record_production_delivery(uuid, uuid, text, timestamptz) from public;
+revoke all on function infrastructure.suppress_record_production_delivery(uuid, uuid) from public;
+revoke all on function infrastructure.expire_record_productions(timestamptz) from public;
+grant execute on function infrastructure.pending_record_production_outbox() to __WORKER_ROLE__;
+grant execute on function infrastructure.claim_record_production_delivery(uuid, timestamptz) to __WORKER_ROLE__;
+grant execute on function infrastructure.complete_record_production_delivery(uuid, uuid, text, timestamptz) to __WORKER_ROLE__;
+grant execute on function infrastructure.suppress_record_production_delivery(uuid, uuid) to __WORKER_ROLE__;
+grant execute on function infrastructure.expire_record_productions(timestamptz) to __WORKER_ROLE__;

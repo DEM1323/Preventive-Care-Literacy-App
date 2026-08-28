@@ -1,12 +1,17 @@
 import type { Pool, PoolClient } from 'pg';
 import type {
   DestructionEligibility,
+  RecordAmendmentView,
+  RecordConflictReviewView,
   RecordHoldView,
   RecordLifecycleCaseView,
+  RecordProductionMaterials,
+  RecordProductionView,
   RecordsGovernanceDirectory,
   RecordsGovernanceStore,
   StudentRecordsGovernanceView,
 } from '../../../modules/records-governance/index.ts';
+import { authorizedProductionPortions } from '../../../modules/records-governance/index.ts';
 
 const recordsPolicyPayload = {
   schema: 'records-policy/v1',
@@ -69,6 +74,7 @@ async function writeAudit(
     actorId: string;
     occurredAt: Date;
     details: unknown;
+    actorType?: 'staff' | 'recipient';
   },
 ) {
   await client.query(
@@ -76,13 +82,14 @@ async function writeAudit(
        (audit_id, workspace_id, operation_id, event_type, actor_type,
         actor_id, occurred_at, details, record_owner, record_classification,
         disposal_class)
-     values ($1, $2, $3, $4, 'staff', $5, $6, $7::jsonb,
+     values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb,
              'school', 'audit_evidence', 'workspace_audit_evidence')`,
     [
       input.auditId,
       input.workspaceId,
       input.operationId,
       input.eventType,
+      input.actorType ?? 'staff',
       input.actorId,
       input.occurredAt,
       JSON.stringify(input.details),
@@ -1037,6 +1044,861 @@ export function createPostgresRecordsGovernanceStore(options: {
       }
     },
 
+    async resolveAmendment(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:${request.operationId}`],
+        );
+        const existing = await readReceipt<typeof request.result>(
+          client,
+          request.workspaceId,
+          request.operationId,
+          'resolveRecordAmendment',
+        );
+        if (existing) {
+          await client.query('commit');
+          return { outcome: 'replayed' as const, result: existing };
+        }
+        const existingReview = await client.query<{ review_id: string }>(
+          `select review_id from records_governance.record_conflict_reviews
+            where workspace_id = $1 and operation_id = $2`,
+          [request.workspaceId, request.operationId],
+        );
+        if (existingReview.rows[0]) {
+          await client.query('commit');
+          return {
+            outcome: 'conflict' as const,
+            reviewId: existingReview.rows[0].review_id,
+          };
+        }
+        const current = await client.query<{
+          student_id: string;
+          case_type: string;
+          decision: string;
+          outcome: string;
+          authority_kind:
+            'school_administrator' | 'school_nurse' | 'legal_custodian';
+        }>(
+          `select student_id, case_type, decision, outcome, authority_kind
+             from records_governance.record_lifecycle_cases
+            where case_id = $1 and workspace_id = $2 for update`,
+          [request.caseId, request.workspaceId],
+        );
+        const selected = current.rows[0];
+        if (!selected) {
+          await client.query('rollback');
+          return { outcome: 'not_found' };
+        }
+        if (selected.case_type !== 'amendment' || selected.outcome !== 'open') {
+          await client.query('rollback');
+          return { outcome: 'not_applicable' };
+        }
+        const expectedDecision =
+          request.decision === 'correction_authorized'
+            ? 'authorized'
+            : 'denied';
+        if (selected.decision !== expectedDecision) {
+          await client.query('rollback');
+          return { outcome: 'decision_mismatch' };
+        }
+        await setLocal(client, 'app.student_id', selected.student_id);
+        if (
+          request.relatedStudentId &&
+          request.relatedStudentId !== selected.student_id
+        ) {
+          const related = await client.query<{ student_id: string }>(
+            `select student_id from identity_access.students
+              where student_id = $1 and workspace_id = $2 for update`,
+            [request.relatedStudentId, request.workspaceId],
+          );
+          if (!related.rows[0]) {
+            await client.query('rollback');
+            return { outcome: 'not_found' };
+          }
+          await client.query(
+            `insert into records_governance.record_conflict_reviews
+               (review_id, workspace_id, conflict_kind, subject_student_id,
+                conflicting_student_id, status, outcome, opened_at, resolved_at,
+                actor_staff_identity_id, operation_id, record_owner,
+                record_classification, disposal_class)
+             values ($1, $2, $3, $4, $5, 'open', null, $6, null, $7, $8,
+                     'school', 'student_record', 'record_conflict_review')`,
+            [
+              request.reviewId,
+              request.workspaceId,
+              request.challengedFactKind === 'intake_record_version'
+                ? 'intake_record'
+                : 'student_identity',
+              selected.student_id,
+              request.relatedStudentId,
+              request.occurredAt,
+              request.staffIdentityId,
+              request.operationId,
+            ],
+          );
+          await client.query(
+            `insert into records_governance.record_conflict_review_events
+               (review_event_id, review_id, workspace_id, event_kind, outcome,
+                occurred_at, actor_staff_identity_id, operation_id, details,
+                record_owner, record_classification, disposal_class)
+             values ($1, $2, $3, 'opened', null, $4, $5, $6, $7::jsonb,
+                     'school', 'student_record', 'record_conflict_review_event')`,
+            [
+              crypto.randomUUID(),
+              request.reviewId,
+              request.workspaceId,
+              request.occurredAt,
+              request.staffIdentityId,
+              request.operationId,
+              JSON.stringify({ caseId: request.caseId }),
+            ],
+          );
+          await writeAudit(client, {
+            auditId: request.auditId,
+            workspaceId: request.workspaceId,
+            operationId: request.operationId,
+            eventType: 'record_conflict_review.opened',
+            actorId: request.staffIdentityId,
+            occurredAt: request.occurredAt,
+            details: {
+              reviewId: request.reviewId,
+              caseId: request.caseId,
+            },
+          });
+          await writeOutbox(client, {
+            outboxId: request.outboxId,
+            workspaceId: request.workspaceId,
+            operationId: request.operationId,
+            topic: 'record_conflict_review.opened',
+            payload: { reviewId: request.reviewId, caseId: request.caseId },
+            occurredAt: request.occurredAt,
+          });
+          await client.query('commit');
+          return { outcome: 'conflict', reviewId: request.reviewId };
+        }
+        const sealed = request.sealSensitive(selected.student_id);
+        await client.query(
+          `insert into records_governance.record_amendments
+             (amendment_id, case_id, workspace_id, student_id,
+              challenged_fact_kind, challenged_fact_id, decision, reason_code,
+              authority_kind, effective_correction, requester_statement_preserved,
+              statement_wrapping_key_id, statement_wrapped_data_key,
+              statement_ciphertext, correction_wrapping_key_id,
+              correction_wrapped_data_key, correction_ciphertext, recorded_at,
+              actor_staff_identity_id, operation_id, record_owner,
+              record_classification, disposal_class)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13,
+                   $14, $15, $16, $17, $18, $19, $20, 'school', 'student_record',
+                   'record_amendment')`,
+          [
+            request.amendmentId,
+            request.caseId,
+            request.workspaceId,
+            selected.student_id,
+            request.challengedFactKind,
+            request.challengedFactId,
+            request.decision,
+            request.reasonCode,
+            selected.authority_kind,
+            request.effectiveCorrection
+              ? JSON.stringify(request.effectiveCorrection)
+              : null,
+            request.requesterStatementPreserved,
+            sealed.statementSealed?.wrappingKeyId ?? null,
+            sealed.statementSealed?.wrappedDataKey ?? null,
+            sealed.statementSealed?.ciphertext ?? null,
+            sealed.correctionSealed?.wrappingKeyId ?? null,
+            sealed.correctionSealed?.wrappedDataKey ?? null,
+            sealed.correctionSealed?.ciphertext ?? null,
+            request.occurredAt,
+            request.staffIdentityId,
+            request.operationId,
+          ],
+        );
+        await writeReceipt(client, {
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          commandName: 'resolveRecordAmendment',
+          result: request.result,
+          occurredAt: request.occurredAt,
+        });
+        await writeAudit(client, {
+          auditId: request.auditId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          eventType: 'record_amendment.recorded',
+          actorId: request.staffIdentityId,
+          occurredAt: request.occurredAt,
+          details: {
+            amendmentId: request.amendmentId,
+            caseId: request.caseId,
+            studentId: selected.student_id,
+            decision: request.decision,
+            reasonCode: request.reasonCode,
+            challengedFactKind: request.challengedFactKind,
+            requesterStatementPreserved: request.requesterStatementPreserved,
+          },
+        });
+        await writeOutbox(client, {
+          outboxId: request.outboxId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          topic: 'record_amendment.recorded',
+          payload: {
+            amendmentId: request.amendmentId,
+            caseId: request.caseId,
+            studentId: selected.student_id,
+            decision: request.decision,
+          },
+          occurredAt: request.occurredAt,
+        });
+        await client.query('commit');
+        return { outcome: 'applied', result: request.result };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async openConflictReview(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:${request.operationId}`],
+        );
+        const existing = await readReceipt<typeof request.result>(
+          client,
+          request.workspaceId,
+          request.operationId,
+          'openRecordConflictReview',
+        );
+        if (existing) {
+          await client.query('commit');
+          return { outcome: 'replayed' as const, result: existing };
+        }
+        const students = await client.query<{ student_id: string }>(
+          `select student_id from identity_access.students
+            where workspace_id = $1 and student_id in ($2, $3) for update`,
+          [
+            request.workspaceId,
+            request.subjectStudentId,
+            request.conflictingStudentId,
+          ],
+        );
+        if (students.rows.length !== 2) {
+          await client.query('rollback');
+          return { outcome: 'not_found' };
+        }
+        await client.query(
+          `insert into records_governance.record_conflict_reviews
+             (review_id, workspace_id, conflict_kind, subject_student_id,
+              conflicting_student_id, status, outcome, opened_at, resolved_at,
+              actor_staff_identity_id, operation_id, record_owner,
+              record_classification, disposal_class)
+           values ($1, $2, $3, $4, $5, 'open', null, $6, null, $7, $8, 'school',
+                   'student_record', 'record_conflict_review')`,
+          [
+            request.reviewId,
+            request.workspaceId,
+            request.conflictKind,
+            request.subjectStudentId,
+            request.conflictingStudentId,
+            request.occurredAt,
+            request.staffIdentityId,
+            request.operationId,
+          ],
+        );
+        await client.query(
+          `insert into records_governance.record_conflict_review_events
+             (review_event_id, review_id, workspace_id, event_kind, outcome,
+              occurred_at, actor_staff_identity_id, operation_id, details,
+              record_owner, record_classification, disposal_class)
+           values ($1, $2, $3, 'opened', null, $4, $5, $6, $7::jsonb, 'school',
+                   'student_record', 'record_conflict_review_event')`,
+          [
+            crypto.randomUUID(),
+            request.reviewId,
+            request.workspaceId,
+            request.occurredAt,
+            request.staffIdentityId,
+            request.operationId,
+            JSON.stringify({ conflictKind: request.conflictKind }),
+          ],
+        );
+        await writeReceipt(client, {
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          commandName: 'openRecordConflictReview',
+          result: request.result,
+          occurredAt: request.occurredAt,
+        });
+        await writeAudit(client, {
+          auditId: request.auditId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          eventType: 'record_conflict_review.opened',
+          actorId: request.staffIdentityId,
+          occurredAt: request.occurredAt,
+          details: {
+            reviewId: request.reviewId,
+            conflictKind: request.conflictKind,
+          },
+        });
+        await writeOutbox(client, {
+          outboxId: request.outboxId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          topic: 'record_conflict_review.opened',
+          payload: { reviewId: request.reviewId },
+          occurredAt: request.occurredAt,
+        });
+        await client.query('commit');
+        return { outcome: 'applied', result: request.result };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async decideConflictReview(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:${request.operationId}`],
+        );
+        const existing = await readReceipt<typeof request.result>(
+          client,
+          request.workspaceId,
+          request.operationId,
+          'decideRecordConflictReview',
+        );
+        if (existing) {
+          await client.query('commit');
+          return { outcome: 'replayed' as const, result: existing };
+        }
+        const current = await client.query<{ status: string }>(
+          `select status from records_governance.record_conflict_reviews
+            where review_id = $1 and workspace_id = $2 for update`,
+          [request.reviewId, request.workspaceId],
+        );
+        const selected = current.rows[0];
+        if (!selected) {
+          await client.query('rollback');
+          return { outcome: 'not_found' };
+        }
+        if (selected.status !== 'open') {
+          await client.query('rollback');
+          return { outcome: 'not_open' };
+        }
+        await client.query(
+          `update records_governance.record_conflict_reviews
+              set status = 'resolved', outcome = $2, resolved_at = $3
+            where review_id = $1`,
+          [request.reviewId, request.reviewOutcome, request.occurredAt],
+        );
+        await client.query(
+          `insert into records_governance.record_conflict_review_events
+             (review_event_id, review_id, workspace_id, event_kind, outcome,
+              occurred_at, actor_staff_identity_id, operation_id, details,
+              record_owner, record_classification, disposal_class)
+           values ($1, $2, $3, 'resolved', $4, $5, $6, $7, $8::jsonb, 'school',
+                   'student_record', 'record_conflict_review_event')`,
+          [
+            crypto.randomUUID(),
+            request.reviewId,
+            request.workspaceId,
+            request.reviewOutcome,
+            request.occurredAt,
+            request.staffIdentityId,
+            request.operationId,
+            JSON.stringify({ outcome: request.reviewOutcome }),
+          ],
+        );
+        await writeReceipt(client, {
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          commandName: 'decideRecordConflictReview',
+          result: request.result,
+          occurredAt: request.occurredAt,
+        });
+        await writeAudit(client, {
+          auditId: request.auditId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          eventType: 'record_conflict_review.resolved',
+          actorId: request.staffIdentityId,
+          occurredAt: request.occurredAt,
+          details: {
+            reviewId: request.reviewId,
+            outcome: request.reviewOutcome,
+          },
+        });
+        await writeOutbox(client, {
+          outboxId: request.outboxId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          topic: 'record_conflict_review.resolved',
+          payload: {
+            reviewId: request.reviewId,
+            outcome: request.reviewOutcome,
+          },
+          occurredAt: request.occurredAt,
+        });
+        await client.query('commit');
+        return { outcome: 'applied', result: request.result };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async authorizeProduction(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:${request.operationId}`],
+        );
+        const existing = await readReceipt<typeof request.result>(
+          client,
+          request.workspaceId,
+          request.operationId,
+          'authorizeRecordProduction',
+        );
+        if (existing) {
+          await client.query('commit');
+          return { outcome: 'replayed' as const, result: existing };
+        }
+        const current = await client.query<{
+          student_id: string;
+          case_type: string;
+          decision: string;
+          outcome: string;
+          scope: RecordProductionMaterials extends never
+            ? never
+            : {
+                portions: (
+                  | 'identity'
+                  | 'membership'
+                  | 'intake'
+                  | 'learning_progress'
+                  | 'audit_evidence'
+                  | 'complete_bundle'
+                )[];
+                purpose:
+                  | 'lawful_access'
+                  | 'amendment_challenge'
+                  | 'transfer'
+                  | 'disclosure'
+                  | 'preservation'
+                  | 'scheduled_destruction';
+              };
+        }>(
+          `select student_id, case_type, decision, outcome, scope
+             from records_governance.record_lifecycle_cases
+            where case_id = $1 and workspace_id = $2 for update`,
+          [request.caseId, request.workspaceId],
+        );
+        const selected = current.rows[0];
+        if (!selected) {
+          await client.query('rollback');
+          return { outcome: 'not_found' };
+        }
+        if (
+          selected.outcome !== 'open' ||
+          selected.decision !== 'authorized' ||
+          !['access', 'transfer', 'disclosure'].includes(selected.case_type)
+        ) {
+          await client.query('rollback');
+          return { outcome: 'not_authorized' };
+        }
+        await setLocal(client, 'app.student_id', selected.student_id);
+        await setLocal(client, 'app.record_production_case_id', request.caseId);
+        const portions = authorizedProductionPortions(selected.scope);
+        const materials = await loadProductionMaterials(client, {
+          workspaceId: request.workspaceId,
+          studentId: selected.student_id,
+          portions,
+          includeDraft: selected.scope.portions.includes('complete_bundle'),
+        });
+        const sealed = await request.buildPackage(materials);
+        await client.query(
+          `insert into records_governance.record_productions
+             (production_id, workspace_id, student_id, case_id, status,
+              cleanup_status, portions, purpose, recipient_digest,
+              capability_digest, wrapping_key_id, wrapped_data_key, ciphertext,
+              delivery_key_id, delivery_ciphertext, expires_at, authorized_at,
+              actor_staff_identity_id, operation_id, record_owner,
+              record_classification, disposal_class)
+           values ($1, $2, $3, $4, 'pending_delivery', 'pending', $5::jsonb, $6,
+                   $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'school',
+                   'student_record', 'record_production')`,
+          [
+            request.productionId,
+            request.workspaceId,
+            selected.student_id,
+            request.caseId,
+            JSON.stringify(portions),
+            selected.scope.purpose,
+            request.recipientDigest,
+            request.capabilityDigest,
+            sealed.wrappingKeyId,
+            sealed.wrappedDataKey,
+            sealed.ciphertext,
+            request.delivery.keyId,
+            request.delivery.ciphertext,
+            request.expiresAt,
+            request.occurredAt,
+            request.staffIdentityId,
+            request.operationId,
+          ],
+        );
+        await client.query(
+          `insert into records_governance.record_production_events
+             (production_event_id, production_id, workspace_id, student_id,
+              event_kind, occurred_at, actor_staff_identity_id, operation_id,
+              details, record_owner, record_classification, disposal_class)
+           values ($1, $2, $3, $4, 'authorized', $5, $6, $7, $8::jsonb, 'school',
+                   'student_record', 'record_production_event')`,
+          [
+            crypto.randomUUID(),
+            request.productionId,
+            request.workspaceId,
+            selected.student_id,
+            request.occurredAt,
+            request.staffIdentityId,
+            request.operationId,
+            JSON.stringify({ portions, purpose: selected.scope.purpose }),
+          ],
+        );
+        await writeReceipt(client, {
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          commandName: 'authorizeRecordProduction',
+          result: request.result,
+          occurredAt: request.occurredAt,
+        });
+        await writeAudit(client, {
+          auditId: request.auditId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          eventType: 'record_production.authorized',
+          actorId: request.staffIdentityId,
+          occurredAt: request.occurredAt,
+          details: {
+            productionId: request.productionId,
+            caseId: request.caseId,
+            studentId: selected.student_id,
+            portions,
+            purpose: selected.scope.purpose,
+          },
+        });
+        await writeOutbox(client, {
+          outboxId: request.outboxId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          topic: 'record_production.delivery_requested',
+          payload: { productionId: request.productionId },
+          occurredAt: request.occurredAt,
+        });
+        await client.query('commit');
+        return { outcome: 'applied', result: request.result };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async retrieveProduction(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(
+          client,
+          'app.record_production_capability_digest',
+          request.capabilityDigest,
+        );
+        const current = await client.query<{
+          production_id: string;
+          workspace_id: string;
+          student_id: string;
+          status: string;
+          cleanup_status: string;
+          portions: unknown;
+          purpose:
+            | 'lawful_access'
+            | 'amendment_challenge'
+            | 'transfer'
+            | 'disclosure'
+            | 'preservation'
+            | 'scheduled_destruction';
+          wrapping_key_id: string | null;
+          wrapped_data_key: string | null;
+          ciphertext: string | null;
+          expires_at: Date;
+        }>(
+          `select production_id, workspace_id, student_id, status, cleanup_status,
+                  portions, purpose, wrapping_key_id, wrapped_data_key, ciphertext,
+                  expires_at
+             from records_governance.record_productions
+            where capability_digest = $1
+            for update`,
+          [request.capabilityDigest],
+        );
+        const selected = current.rows[0];
+        if (!selected) {
+          await client.query('rollback');
+          return { outcome: 'unavailable' };
+        }
+        await setLocal(client, 'app.workspace_id', selected.workspace_id);
+        const expired =
+          selected.expires_at.getTime() <= request.occurredAt.getTime();
+        if (
+          expired ||
+          selected.status === 'retrieved' ||
+          selected.status === 'expired' ||
+          selected.ciphertext === null
+        ) {
+          if (selected.ciphertext !== null) {
+            try {
+              await clearProductionArtifacts(client, {
+                productionId: selected.production_id,
+                workspaceId: selected.workspace_id,
+                studentId: selected.student_id,
+                occurredAt: request.occurredAt,
+                operationId: request.auditId,
+                status: 'expired',
+                eventKind: 'expired',
+              });
+            } catch {
+              await client.query('rollback');
+              return { outcome: 'cleanup_failed' };
+            }
+          }
+          await writeAudit(client, {
+            auditId: request.auditId,
+            workspaceId: selected.workspace_id,
+            operationId: request.auditId,
+            eventType: 'record_production.unavailable',
+            actorId: 'record-production-recipient',
+            occurredAt: request.occurredAt,
+            details: { productionId: selected.production_id },
+            actorType: 'recipient',
+          });
+          await client.query('commit');
+          return { outcome: 'unavailable' };
+        }
+        const pack = await request.openPackage({
+          sealed: {
+            wrappingKeyId: selected.wrapping_key_id!,
+            wrappedDataKey: selected.wrapped_data_key!,
+            ciphertext: selected.ciphertext,
+          },
+          workspaceId: selected.workspace_id,
+          studentId: selected.student_id,
+        });
+        try {
+          await clearProductionArtifacts(client, {
+            productionId: selected.production_id,
+            workspaceId: selected.workspace_id,
+            studentId: selected.student_id,
+            occurredAt: request.occurredAt,
+            operationId: request.auditId,
+            status: 'retrieved',
+            eventKind: 'retrieved',
+          });
+        } catch {
+          await client.query('rollback');
+          return { outcome: 'cleanup_failed' };
+        }
+        await writeAudit(client, {
+          auditId: request.auditId,
+          workspaceId: selected.workspace_id,
+          operationId: request.auditId,
+          eventType: 'record_production.retrieved',
+          actorId: 'record-production-recipient',
+          occurredAt: request.occurredAt,
+          details: { productionId: selected.production_id },
+          actorType: 'recipient',
+        });
+        await writeOutbox(client, {
+          outboxId: request.outboxId,
+          workspaceId: selected.workspace_id,
+          operationId: request.auditId,
+          topic: 'record_production.retrieved',
+          payload: { productionId: selected.production_id },
+          occurredAt: request.occurredAt,
+        });
+        await client.query('commit');
+        return {
+          outcome: 'retrieved',
+          result: {
+            productionId: selected.production_id,
+            purpose: selected.purpose,
+            portions: parseJsonArray<
+              | 'identity'
+              | 'membership'
+              | 'intake'
+              | 'learning_progress'
+              | 'audit_evidence'
+              | 'complete_bundle'
+            >(selected.portions),
+            package: pack,
+          },
+        };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async repairProductionCleanup(request) {
+      const client = await options.pool.connect();
+      try {
+        await client.query('begin');
+        await setLocal(client, 'app.workspace_id', request.workspaceId);
+        await setLocal(
+          client,
+          'app.staff_identity_id',
+          request.staffIdentityId,
+        );
+        await client.query(
+          'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`${request.workspaceId}:${request.operationId}`],
+        );
+        const existing = await readReceipt<typeof request.result>(
+          client,
+          request.workspaceId,
+          request.operationId,
+          'repairRecordProductionCleanup',
+        );
+        if (existing) {
+          await client.query('commit');
+          return { outcome: 'replayed' as const, result: existing };
+        }
+        const current = await client.query<{
+          student_id: string;
+          cleanup_status: string;
+          ciphertext: string | null;
+        }>(
+          `select student_id, cleanup_status, ciphertext
+             from records_governance.record_productions
+            where production_id = $1 and workspace_id = $2 for update`,
+          [request.productionId, request.workspaceId],
+        );
+        const selected = current.rows[0];
+        if (!selected) {
+          await client.query('rollback');
+          return { outcome: 'not_found' };
+        }
+        let outcome: 'removed' | 'failed' = 'removed';
+        if (
+          selected.ciphertext !== null ||
+          selected.cleanup_status !== 'removed'
+        ) {
+          try {
+            await clearProductionArtifacts(client, {
+              productionId: request.productionId,
+              workspaceId: request.workspaceId,
+              studentId: selected.student_id,
+              occurredAt: request.occurredAt,
+              operationId: request.operationId,
+              status: 'expired',
+              eventKind: 'removed',
+            });
+          } catch {
+            await client.query(
+              `update records_governance.record_productions
+                  set cleanup_status = 'failed'
+                where production_id = $1`,
+              [request.productionId],
+            );
+            outcome = 'failed';
+          }
+        }
+        const result = { ...request.result, outcome };
+        await writeReceipt(client, {
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          commandName: 'repairRecordProductionCleanup',
+          result,
+          occurredAt: request.occurredAt,
+        });
+        await writeAudit(client, {
+          auditId: request.auditId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          eventType:
+            outcome === 'removed'
+              ? 'record_production.removed'
+              : 'record_production.cleanup_failed',
+          actorId: request.staffIdentityId,
+          occurredAt: request.occurredAt,
+          details: { productionId: request.productionId, outcome },
+        });
+        await writeOutbox(client, {
+          outboxId: request.outboxId,
+          workspaceId: request.workspaceId,
+          operationId: request.operationId,
+          topic:
+            outcome === 'removed'
+              ? 'record_production.removed'
+              : 'record_production.cleanup_failed',
+          payload: { productionId: request.productionId, outcome },
+          occurredAt: request.occurredAt,
+        });
+        await client.query('commit');
+        return { outcome: 'applied', result };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
     async list(request) {
       const client = await options.pool.connect();
       try {
@@ -1061,6 +1923,9 @@ export function createPostgresRecordsGovernanceStore(options: {
           departure_recorded_at: Date | null;
           cases: unknown;
           holds: unknown;
+          amendments: unknown;
+          conflict_reviews: unknown;
+          productions: unknown;
           active_hold_count: string;
         }>(
           `select student.student_id, student.presence, student.status,
@@ -1107,6 +1972,69 @@ export function createPostgresRecordsGovernanceStore(options: {
                      where hold.student_id = student.student_id
                        and hold.workspace_id = student.workspace_id
                   ), '[]'::json) as holds,
+                  coalesce((
+                    select json_agg(json_build_object(
+                      'amendmentId', amendment.amendment_id,
+                      'caseId', amendment.case_id,
+                      'challengedFactKind', amendment.challenged_fact_kind,
+                      'challengedFactId', amendment.challenged_fact_id,
+                      'decision', amendment.decision,
+                      'reasonCode', amendment.reason_code,
+                      'authorityKind', amendment.authority_kind,
+                      'effectiveCorrection', amendment.effective_correction,
+                      'requesterStatementPreserved',
+                        amendment.requester_statement_preserved,
+                      'recordedAt', to_char(amendment.recorded_at at time zone 'UTC',
+                                            'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+                    ) order by amendment.recorded_at, amendment.amendment_id)
+                      from records_governance.record_amendments amendment
+                     where amendment.student_id = student.student_id
+                       and amendment.workspace_id = student.workspace_id
+                  ), '[]'::json) as amendments,
+                  coalesce((
+                    select json_agg(json_build_object(
+                      'reviewId', review.review_id,
+                      'conflictKind', review.conflict_kind,
+                      'subjectStudentId', review.subject_student_id,
+                      'conflictingStudentId', review.conflicting_student_id,
+                      'status', review.status,
+                      'outcome', review.outcome,
+                      'openedAt', to_char(review.opened_at at time zone 'UTC',
+                                          'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+                      'resolvedAt', case when review.resolved_at is null then null
+                        else to_char(review.resolved_at at time zone 'UTC',
+                                     'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') end
+                    ) order by review.opened_at, review.review_id)
+                      from records_governance.record_conflict_reviews review
+                     where review.workspace_id = student.workspace_id
+                       and student.student_id in (
+                         review.subject_student_id, review.conflicting_student_id
+                       )
+                  ), '[]'::json) as conflict_reviews,
+                  coalesce((
+                    select json_agg(json_build_object(
+                      'productionId', production.production_id,
+                      'caseId', production.case_id,
+                      'status', production.status,
+                      'cleanupStatus', production.cleanup_status,
+                      'portions', production.portions,
+                      'purpose', production.purpose,
+                      'expiresAt', to_char(production.expires_at at time zone 'UTC',
+                                           'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+                      'deliveredAt', case when production.delivered_at is null then null
+                        else to_char(production.delivered_at at time zone 'UTC',
+                                     'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') end,
+                      'retrievedAt', case when production.retrieved_at is null then null
+                        else to_char(production.retrieved_at at time zone 'UTC',
+                                     'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') end,
+                      'removedAt', case when production.removed_at is null then null
+                        else to_char(production.removed_at at time zone 'UTC',
+                                     'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') end
+                    ) order by production.authorized_at, production.production_id)
+                      from records_governance.record_productions production
+                     where production.student_id = student.student_id
+                       and production.workspace_id = student.workspace_id
+                  ), '[]'::json) as productions,
                   (select count(*) from records_governance.record_holds hold
                     where hold.student_id = student.student_id
                       and hold.workspace_id = student.workspace_id
@@ -1130,6 +2058,15 @@ export function createPostgresRecordsGovernanceStore(options: {
           students: students.rows.map((row) => {
             const cases = parseJsonArray<RecordLifecycleCaseView>(row.cases);
             const holds = parseJsonArray<RecordHoldView>(row.holds);
+            const amendments = parseJsonArray<RecordAmendmentView>(
+              row.amendments,
+            );
+            const conflictReviews = parseJsonArray<RecordConflictReviewView>(
+              row.conflict_reviews,
+            );
+            const productions = parseJsonArray<RecordProductionView>(
+              row.productions,
+            );
             const activeHolds = Number(row.active_hold_count);
             const destructionEligibility: DestructionEligibility =
               activeHolds > 0
@@ -1154,6 +2091,9 @@ export function createPostgresRecordsGovernanceStore(options: {
                   : null,
               cases,
               holds,
+              amendments,
+              conflictReviews,
+              productions,
               destructionEligibility,
               policyRevisionId,
             };
@@ -1169,6 +2109,216 @@ export function createPostgresRecordsGovernanceStore(options: {
       }
     },
   };
+}
+
+async function loadProductionMaterials(
+  client: PoolClient,
+  input: {
+    workspaceId: string;
+    studentId: string;
+    portions: (
+      | 'identity'
+      | 'membership'
+      | 'intake'
+      | 'learning_progress'
+      | 'audit_evidence'
+      | 'complete_bundle'
+    )[];
+    includeDraft?: boolean;
+  },
+): Promise<RecordProductionMaterials> {
+  const materials: RecordProductionMaterials = { studentId: input.studentId };
+  const include = new Set(input.portions);
+  const student = await client.query<{
+    presence: 'enrolled' | 'departed';
+    status: 'active' | 'disabled';
+  }>(
+    `select presence, status from identity_access.students
+      where student_id = $1 and workspace_id = $2`,
+    [input.studentId, input.workspaceId],
+  );
+  const selected = student.rows[0];
+  if (include.has('identity') && selected) {
+    const emails = await client.query<{
+      status: 'current' | 'historical';
+      key_id: string;
+      ciphertext: string;
+    }>(
+      `select status, key_id, ciphertext
+         from identity_access.verified_email_addresses
+        where student_id = $1 and workspace_id = $2
+        order by verified_at, verified_email_address_id`,
+      [input.studentId, input.workspaceId],
+    );
+    materials.identity = {
+      studentId: input.studentId,
+      presence: selected.presence,
+      accessStatus: selected.status,
+      emails: emails.rows.map((row) => ({
+        status: row.status,
+        keyId: row.key_id,
+        ciphertext: row.ciphertext,
+      })),
+    };
+  }
+  if (include.has('membership')) {
+    const memberships = await client.query<{
+      class_id: string;
+      status: 'active' | 'inactive';
+      activated_at: Date;
+    }>(
+      `select class_id, status, activated_at
+         from identity_access.class_memberships
+        where student_id = $1 and workspace_id = $2
+        order by activated_at, class_membership_id`,
+      [input.studentId, input.workspaceId],
+    );
+    materials.membership = memberships.rows.map((row) => ({
+      classId: row.class_id,
+      status: row.status,
+      activatedAt: row.activated_at.toISOString(),
+    }));
+  }
+  if (include.has('intake')) {
+    const versions = await client.query<{
+      intake_record_version_id: string;
+      version_number: number;
+      accepted_at: Date;
+      superseded_at: Date | null;
+      wrapping_key_id: string;
+      wrapped_data_key: string;
+      ciphertext: string;
+    }>(
+      `select intake_record_version_id, version_number, accepted_at, superseded_at,
+              wrapping_key_id, wrapped_data_key, ciphertext
+         from intake.intake_record_versions
+        where student_id = $1 and workspace_id = $2
+        order by version_number`,
+      [input.studentId, input.workspaceId],
+    );
+    materials.intake = {
+      versions: versions.rows.map((row) => ({
+        intakeRecordVersionId: row.intake_record_version_id,
+        versionNumber: row.version_number,
+        acceptedAt: row.accepted_at.toISOString(),
+        supersededAt: row.superseded_at?.toISOString() ?? null,
+        wrappingKeyId: row.wrapping_key_id,
+        wrappedDataKey: row.wrapped_data_key,
+        ciphertext: row.ciphertext,
+      })),
+      draft: null,
+    };
+  }
+  if (input.includeDraft) {
+    const draft = await client.query<{
+      wrapping_key_id: string;
+      wrapped_data_key: string;
+      ciphertext: string;
+      updated_at: Date;
+    }>(
+      `select wrapping_key_id, wrapped_data_key, ciphertext, updated_at
+         from intake.intake_drafts
+        where student_id = $1 and workspace_id = $2`,
+      [input.studentId, input.workspaceId],
+    );
+    const row = draft.rows[0];
+    if (!materials.intake) {
+      materials.intake = { versions: [], draft: null };
+    }
+    if (row) {
+      materials.intake.draft = {
+        wrappingKeyId: row.wrapping_key_id,
+        wrappedDataKey: row.wrapped_data_key,
+        ciphertext: row.ciphertext,
+        updatedAt: row.updated_at.toISOString(),
+      };
+    }
+  }
+  if (include.has('learning_progress')) {
+    const completions = await client.query<{
+      item_id: string;
+      item_revision_number: number;
+      completed_at: Date;
+    }>(
+      `select item_id, item_revision_number, completed_at
+         from learning_progress.item_completions
+        where student_id = $1 and workspace_id = $2
+        order by completed_at, item_completion_id`,
+      [input.studentId, input.workspaceId],
+    );
+    materials.learningProgress = completions.rows.map((row) => ({
+      itemId: row.item_id,
+      itemRevisionNumber: row.item_revision_number,
+      completedAt: row.completed_at.toISOString(),
+    }));
+  }
+  if (include.has('audit_evidence')) {
+    const evidence = await client.query<{
+      occurred_at: Date;
+      actor_type: string;
+      event_type: string;
+    }>(
+      `select occurred_at, actor_type, event_type
+         from audit.evidence
+        where workspace_id = $1
+          and details->>'studentId' = $2
+        order by occurred_at, audit_id
+        limit 100`,
+      [input.workspaceId, input.studentId],
+    );
+    materials.auditEvidence = evidence.rows.map((row) => ({
+      occurredAt: row.occurred_at.toISOString(),
+      actorType: row.actor_type,
+      eventType: row.event_type,
+    }));
+  }
+  return materials;
+}
+
+async function clearProductionArtifacts(
+  client: PoolClient,
+  input: {
+    productionId: string;
+    workspaceId: string;
+    studentId: string;
+    occurredAt: Date;
+    operationId: string;
+    status: 'retrieved' | 'expired';
+    eventKind: 'retrieved' | 'expired' | 'removed';
+  },
+) {
+  await client.query(
+    `update records_governance.record_productions
+        set wrapping_key_id = null,
+            wrapped_data_key = null,
+            ciphertext = null,
+            delivery_key_id = null,
+            delivery_ciphertext = null,
+            status = $2,
+            cleanup_status = 'removed',
+            retrieved_at = case when $2 = 'retrieved' then $3 else retrieved_at end,
+            removed_at = $3
+      where production_id = $1`,
+    [input.productionId, input.status, input.occurredAt],
+  );
+  await client.query(
+    `insert into records_governance.record_production_events
+       (production_event_id, production_id, workspace_id, student_id, event_kind,
+        occurred_at, actor_staff_identity_id, operation_id, details, record_owner,
+        record_classification, disposal_class)
+     values ($1, $2, $3, $4, $5, $6, null, $7, $8::jsonb, 'school',
+             'student_record', 'record_production_event')`,
+    [
+      crypto.randomUUID(),
+      input.productionId,
+      input.workspaceId,
+      input.studentId,
+      input.eventKind,
+      input.occurredAt,
+      input.operationId,
+      JSON.stringify({ cleanup: 'removed' }),
+    ],
+  );
 }
 
 function parseJsonArray<T>(value: unknown): T[] {

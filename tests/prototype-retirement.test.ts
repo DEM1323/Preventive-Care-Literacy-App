@@ -109,6 +109,7 @@ test('browser exposes only the server-authoritative Student access routes', () =
     '/student/intake',
     '/student/learning',
     '/staff/configuration',
+    '/records/productions/retrieve',
     '*',
   ]);
 });
