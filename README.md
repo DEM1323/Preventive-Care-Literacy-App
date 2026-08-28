@@ -1,8 +1,6 @@
 # PrevCare - Preventive Care Literacy App
 
-Multilingual static prototype for K-12 English Learners: health intake and micro-lessons (Knowledge → Skills → Application).
-
-> **Synthetic data only.** The prototype has no production authority. Never enter real Student information. See [the retirement and cutover record](docs/security/prototype-retirement.md).
+Multilingual preventive-care literacy application for K-12 English Learners: health intake and micro-lessons (Knowledge → Skills → Application).
 
 ## Stack
 
@@ -31,10 +29,10 @@ Keep local configuration outside the repository. For example, place it at `~/.co
 | `/student/invitation`  | Delivered Invitation Code redemption                                         |
 | `/student/sign-in`     | Sign-In Code starts a Student Session and restores durable school state      |
 | `/student`             | Server-authoritative Student access restoration                              |
-| `/student/intake`      | Synthetic Student Intake Draft and submission                                |
+| `/student/intake`      | Student Intake Draft and submission                                          |
 | `/student/learning`    | Server-confirmed Item Completion for one item                                |
 | `/staff/configuration` | Administrator authoring, preview, and freshness-gated publication            |
-| All other routes       | Prototype retirement notice                                                  |
+| All other routes       | Not-found page                                                               |
 
 ## Verification
 
@@ -66,6 +64,9 @@ The Supabase and Railway staging topology is documented in
 [`docs/operations/staging.md`](docs/operations/staging.md). Railway builds the repository's
 source through its checked-in Dockerfile and runs one same-origin web/API process. GitHub's
 manual staging workflow verifies the deployed HTTP security controls.
+
+The isolated production topology and first-workspace flow are documented in
+[`docs/operations/production.md`](docs/operations/production.md).
 
 The API process must use a separate PostgreSQL login without `SUPERUSER` or `BYPASSRLS`.
 Starting the API also requires an operator-only provisioning token of at least 32 characters

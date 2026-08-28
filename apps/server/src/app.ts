@@ -2696,6 +2696,14 @@ const ImportSchoolConfigurationDraftBody = Type.Object(
   },
   { additionalProperties: false },
 );
+const InitializeSchoolConfigurationDraftBody = Type.Object(
+  {
+    operationId: Type.String({ format: 'uuid' }),
+    displayName: Type.String({ minLength: 1, maxLength: 200 }),
+    shortName: Type.String({ minLength: 1, maxLength: 80 }),
+  },
+  { additionalProperties: false },
+);
 const ExactResourceResponse = Type.Object({
   resourceId: Type.String({ format: 'uuid' }),
   revisionNumber: Type.Integer({ minimum: 1 }),
@@ -7798,6 +7806,40 @@ export async function buildApp(
         );
         if (!sessionHandle) throw new StaffAuthenticationFailedError();
         const result = await schoolConfiguration.importDraft({
+          ...request.body,
+          sessionHandle,
+        });
+        return reply.code(201).send(result);
+      },
+    );
+
+    app.post<{
+      Body: Static<typeof InitializeSchoolConfigurationDraftBody>;
+    }>(
+      '/api/v1/administration/school-configuration/initializations',
+      {
+        schema: {
+          operationId: 'initializeSchoolConfigurationDraft',
+          security: [{ staffSession: [] }],
+          body: InitializeSchoolConfigurationDraftBody,
+          response: {
+            201: ImportSchoolConfigurationDraftResponse,
+            400: ProblemResponse,
+            401: ProblemResponse,
+            403: ProblemResponse,
+            409: ProblemResponse,
+            422: ProblemResponse,
+            500: ProblemResponse,
+          },
+        },
+      },
+      async (request, reply) => {
+        const sessionHandle = readSecureOpaqueCookie(
+          request.headers.cookie,
+          staffSessionCookie,
+        );
+        if (!sessionHandle) throw new StaffAuthenticationFailedError();
+        const result = await schoolConfiguration.initializeDraft({
           ...request.body,
           sessionHandle,
         });

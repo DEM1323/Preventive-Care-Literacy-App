@@ -1,0 +1,172 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify source
+        run: bun run check
+
+      - name: Verify required deployment secrets
+        env:
+          OPERATOR_PROVISIONING_TOKEN: ${{ secrets.OPERATOR_PROVISIONING_TOKEN }}
+        run: bun scripts/preflight-deploy-staging.ts
+
+      - name: Record source identity
+        id: source
+        run: |
+          TREE=$(git rev-parse 'HEAD^{tree}')
+          echo "commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "tree=$TREE" >> "$GITHUB_OUTPUT"
+
+      - name: Bake production attestation
+        id: attestation
+        env:
+          SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
+          SOURCE_TREE: ${{ steps.source.outputs.tree }}
+          PRODUCTION_ATTESTATION_PATH: artifacts/production-attestation.json
+        run: |
+          DIGEST=$(bun scripts/bake-production-attestation.ts)
+          echo "artifact_digest=$DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: Apply production migrations and runtime grants
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_MIGRATION_DATABASE_URL }}
+          RUNTIME_DATABASE_URL: ${{ secrets.SUPABASE_RUNTIME_DATABASE_URL }}
+          WORKER_DATABASE_URL: ${{ secrets.SUPABASE_WORKER_DATABASE_URL }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          DATABASE_CA_CERT: ${{ secrets.DATABASE_CA_CERT }}
+        run: bun scripts/migrate-production.ts
+
+      - name: Restore Railway session
+        env:
+          RAILWAY_CONFIG_B64: ${{ secrets.RAILWAY_CONFIG_B64 }}
+        run: |
+          mkdir -p "$HOME/.railway"
+          printf '%s' "$RAILWAY_CONFIG_B64" | base64 --decode > "$HOME/.railway/config.json"
+
+      - name: Synchronize public service variables
+        env:
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+          RAILWAY_PUBLIC_SERVICE_ID: ${{ vars.RAILWAY_PUBLIC_SERVICE_ID }}
+          DATABASE_URL: ${{ secrets.SUPABASE_RUNTIME_DATABASE_URL }}
+          DATABASE_CA_CERT: ${{ secrets.DATABASE_CA_CERT }}
+          PUBLIC_ORIGIN: ${{ vars.PRODUCTION_ORIGIN }}
+          OPERATOR_PROVISIONING_TOKEN: ${{ secrets.OPERATOR_PROVISIONING_TOKEN }}
+          OPERATOR_ID: ${{ vars.OPERATOR_ID }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          INVITATION_HMAC_KEY: ${{ secrets.INVITATION_HMAC_KEY }}
+          INVITATION_DELIVERY_KEY_ID: ${{ vars.INVITATION_DELIVERY_KEY_ID }}
+          INVITATION_DELIVERY_KEY: ${{ secrets.INVITATION_DELIVERY_KEY }}
+          APPLICATION_WRAPPING_KEY_ID: ${{ vars.APPLICATION_WRAPPING_KEY_ID }}
+          APPLICATION_WRAPPING_KEY: ${{ secrets.APPLICATION_WRAPPING_KEY }}
+          APPLICATION_IDEMPOTENCY_KEY: ${{ secrets.APPLICATION_IDEMPOTENCY_KEY }}
+          SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
+          SOURCE_TREE: ${{ steps.source.outputs.tree }}
+        run: |
+          bunx @railway/cli@5.43.2 variables set --skip-deploys \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment production \
+            --service "$RAILWAY_PUBLIC_SERVICE_ID" \
+            "DATABASE_URL=$DATABASE_URL" \
+            "DATABASE_CA_CERT=$DATABASE_CA_CERT" \
+            "PUBLIC_ORIGIN=$PUBLIC_ORIGIN" \
+            "OPERATOR_PROVISIONING_TOKEN=$OPERATOR_PROVISIONING_TOKEN" \
+            "OPERATOR_ID=$OPERATOR_ID" \
+            "SUPABASE_URL=$SUPABASE_URL" \
+            "SUPABASE_SECRET_KEY=$SUPABASE_SECRET_KEY" \
+            "INVITATION_HMAC_KEY=$INVITATION_HMAC_KEY" \
+            "INVITATION_DELIVERY_KEY_ID=$INVITATION_DELIVERY_KEY_ID" \
+            "INVITATION_DELIVERY_KEY=$INVITATION_DELIVERY_KEY" \
+            "APPLICATION_WRAPPING_KEY_ID=$APPLICATION_WRAPPING_KEY_ID" \
+            "APPLICATION_WRAPPING_KEY=$APPLICATION_WRAPPING_KEY" \
+            "APPLICATION_IDEMPOTENCY_KEY=$APPLICATION_IDEMPOTENCY_KEY" \
+            "SOURCE_COMMIT=$SOURCE_COMMIT" \
+            "SOURCE_TREE=$SOURCE_TREE"
+
+      - name: Synchronize private worker variables
+        env:
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+          RAILWAY_WORKER_SERVICE_ID: ${{ vars.RAILWAY_WORKER_SERVICE_ID }}
+          WORKER_DATABASE_URL: ${{ secrets.SUPABASE_WORKER_DATABASE_URL }}
+          DATABASE_CA_CERT: ${{ secrets.DATABASE_CA_CERT }}
+          INVITATION_DELIVERY_KEY_ID: ${{ vars.INVITATION_DELIVERY_KEY_ID }}
+          INVITATION_DELIVERY_KEY: ${{ secrets.INVITATION_DELIVERY_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          INVITATION_EMAIL_FROM: ${{ secrets.INVITATION_EMAIL_FROM }}
+          SOURCE_COMMIT: ${{ steps.source.outputs.commit }}
+          SOURCE_TREE: ${{ steps.source.outputs.tree }}
+        run: |
+          bunx @railway/cli@5.43.2 variables set --skip-deploys \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment production \
+            --service "$RAILWAY_WORKER_SERVICE_ID" \
+            "WORKER_DATABASE_URL=$WORKER_DATABASE_URL" \
+            "DATABASE_CA_CERT=$DATABASE_CA_CERT" \
+            "INVITATION_DELIVERY_KEY_ID=$INVITATION_DELIVERY_KEY_ID" \
+            "INVITATION_DELIVERY_KEY=$INVITATION_DELIVERY_KEY" \
+            "RESEND_API_KEY=$RESEND_API_KEY" \
+            "INVITATION_EMAIL_FROM=$INVITATION_EMAIL_FROM" \
+            "SERVICE_ROLE=invitation-worker" \
+            "SOURCE_COMMIT=$SOURCE_COMMIT" \
+            "SOURCE_TREE=$SOURCE_TREE"
+
+      - name: Deploy public service
+        env:
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+          RAILWAY_PUBLIC_SERVICE_ID: ${{ vars.RAILWAY_PUBLIC_SERVICE_ID }}
+        run: |
+          bunx @railway/cli@5.43.2 up --ci \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment production \
+            --service "$RAILWAY_PUBLIC_SERVICE_ID" \
+            --message "Deploy production $GITHUB_SHA"
+
+      - name: Deploy private worker
+        env:
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+          RAILWAY_WORKER_SERVICE_ID: ${{ vars.RAILWAY_WORKER_SERVICE_ID }}
+        run: |
+          bunx @railway/cli@5.43.2 up --ci \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment production \
+            --service "$RAILWAY_WORKER_SERVICE_ID" \
+            --message "Deploy production worker $GITHUB_SHA"
+
+      - name: Verify production HTTP controls
+        env:
+          DEPLOYMENT_WEB_URL: ${{ vars.PRODUCTION_ORIGIN }}
+        run: bun scripts/check-staging.ts
+
+      - name: Verify deployed production application
+        env:
+          PRODUCTION_ORIGIN: ${{ vars.PRODUCTION_ORIGIN }}
+          EXPECTED_ARTIFACT_DIGEST: ${{ steps.attestation.outputs.artifact_digest }}
+          OPERATOR_PROVISIONING_TOKEN: ${{ secrets.OPERATOR_PROVISIONING_TOKEN }}
+        run: bun scripts/check-production.ts
+
+      - name: Remove Railway session
+        if: always()
+        run: rm -f "$HOME/.railway/config.json"

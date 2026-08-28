@@ -129,7 +129,7 @@ test('operator console keeps the provisioning credential out of browser storage'
   expect(source).not.toContain('VITE_');
 });
 
-test('an empty Staff workspace can install the bundled synthetic draft', () => {
+test('an empty Staff workspace can start a school-authored draft', () => {
   const source = readFileSync(
     new URL(
       '../src/features/admin/SchoolConfigurationPage.tsx',
@@ -137,13 +137,11 @@ test('an empty Staff workspace can install the bundled synthetic draft', () => {
     ),
     'utf8',
   );
-  expect(source).toContain('Install synthetic demo draft');
+  expect(source).toContain('Start school configuration');
   expect(source).toContain(
-    "'/api/v1/administration/school-configuration/draft-imports'",
+    "'/api/v1/administration/school-configuration/initializations'",
   );
-  expect(source).toContain(
-    'workspace: { ...fixtureWorkspace, id: workspaceId }',
-  );
+  expect(source).not.toContain('Install synthetic demo draft');
   expect(source).toContain(
     "'/api/v1/administration/school-configuration/draft-edits'",
   );

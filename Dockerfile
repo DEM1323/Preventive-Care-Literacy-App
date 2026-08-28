@@ -45,4 +45,4 @@ COPY --from=build --chown=bun:bun /app/package.json ./package.json
 COPY --from=attest --chown=bun:bun /app/build-attestation.json ./build-attestation.json
 USER bun
 EXPOSE 8080
-CMD ["bun", "apps/server/src/api.ts"]
+CMD ["bun", "scripts/start-service.ts"]

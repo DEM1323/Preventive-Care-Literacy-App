@@ -1,6 +1,9 @@
 import { assertNoProhibitedData } from './staging-data-policy.ts';
 
-const webUrl = requiredEnvironment('STAGING_WEB_URL');
+const deploymentUrlName = process.env.DEPLOYMENT_WEB_URL
+  ? 'DEPLOYMENT_WEB_URL'
+  : 'STAGING_WEB_URL';
+const webUrl = requiredEnvironment(deploymentUrlName);
 
 function requiredEnvironment(name: string): string {
   const value = process.env[name];
@@ -101,9 +104,9 @@ async function checkWeb(): Promise<void> {
       await schemaRejection.text(),
       await oversized.text(),
     ].join('\n'),
-    'Staging response',
+    'Deployment response',
   );
 }
 
 await checkWeb();
-console.log('Staging HTTP security checks passed.');
+console.log('Deployment HTTP security checks passed.');

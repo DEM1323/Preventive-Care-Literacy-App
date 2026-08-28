@@ -3,7 +3,8 @@ create extension if not exists pg_cron;
 
 do $$
 begin
-  if not exists (
+  if current_setting('app.deployment_environment', true) <> 'production'
+    and not exists (
     select 1 from pgmq.list_queues() where queue_name = 'provider-smoke'
   ) then
     perform pgmq.create('provider-smoke');
@@ -23,7 +24,8 @@ $$;
 
 do $$
 begin
-  if not exists (
+  if current_setting('app.deployment_environment', true) <> 'production'
+    and not exists (
     select 1 from cron.job where jobname = 'provider-smoke'
   ) then
     perform cron.schedule('provider-smoke', '* * * * *', 'select 1');

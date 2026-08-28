@@ -317,6 +317,13 @@ export type ImportSchoolConfigurationDraftCommand = {
   candidate: unknown;
 };
 
+export type InitializeSchoolConfigurationDraftCommand = {
+  sessionHandle: string;
+  operationId: string;
+  displayName: string;
+  shortName: string;
+};
+
 export type ImportSchoolConfigurationDraftResult = {
   operationId: string;
   draftVersion: number;
@@ -1432,6 +1439,109 @@ function createIntakeField(
     label: createEnglishLocalized(ids, label),
     visibility: null,
     ...(options.length > 0 ? { options } : {}),
+  };
+}
+
+export function createInitialSchoolConfigurationCandidate(input: {
+  workspaceId: string;
+  displayName: string;
+  shortName: string;
+  actorId: string;
+  ids: IdGenerator;
+}): unknown {
+  const displayName = input.displayName.trim();
+  const shortName = input.shortName.trim();
+  if (!displayName || !shortName) {
+    throw new InvalidSchoolConfigurationError('workspace.branding');
+  }
+  assertSafeRichText(displayName, 'workspace.branding.displayName.en-US');
+  assertSafeRichText(shortName, 'workspace.branding.shortName.en-US');
+  const generatedTextMark =
+    displayName
+      .split(/\s+/)
+      .map((part) => part.match(/[A-Za-z0-9]/)?.[0] ?? '')
+      .join('')
+      .slice(0, 4)
+      .toUpperCase() || 'SCH';
+  const section = createIntakeSection(input.ids, 'Student information');
+  const sectionId = String(section.id);
+
+  return {
+    manifestVersion: 1,
+    reviewProvenance: {
+      id: input.ids.create(),
+      type: 'school-configuration-draft',
+      scope: 'Unpublished School Configuration Draft',
+      actor: input.actorId,
+      assertions: [],
+    },
+    workspace: {
+      id: input.workspaceId,
+      revision: 1,
+      kind: 'school-workspace',
+      branding: {
+        id: input.ids.create(),
+        revision: 1,
+        displayName: createEnglishLocalized(input.ids, displayName),
+        shortName: createEnglishLocalized(input.ids, shortName),
+        generatedTextMark,
+        primaryColor: '#075985',
+        accentColor: '#854D0E',
+        officialInstitutionalMarks: [],
+        secondaryMark: null,
+        affiliationDisclaimer: '',
+      },
+    },
+    release: {
+      id: input.ids.create(),
+      revision: 1,
+      releaseNumber: 1,
+      canonicalLocale: 'en-US',
+      supportedLocales: [...supportedLocales],
+      modules: [
+        createLearningModule(
+          input.ids,
+          'New learning module',
+          'Describe this learning module.',
+        ),
+      ],
+      intakeForm: {
+        id: input.ids.create(),
+        revision: 1,
+        title: createEnglishLocalized(input.ids, 'Student health intake'),
+        sections: [section],
+        fields: [
+          createIntakeField(
+            input.ids,
+            sectionId,
+            'text',
+            'Add the first intake question',
+          ),
+        ],
+      },
+      submissionAttestation: {
+        id: input.ids.create(),
+        revision: 1,
+        text: createEnglishLocalized(
+          input.ids,
+          'Replace this text with the school-approved submission notice.',
+        ),
+      },
+    },
+  };
+}
+
+export function createSchoolConfigurationInitializationIds(
+  operationId: string,
+): IdGenerator {
+  let identityIndex = 0;
+  return {
+    create: () => {
+      const digest = sha256(
+        `school-configuration-initialization/v1:${operationId}:${identityIndex++}`,
+      );
+      return `${digest.slice(0, 8)}-${digest.slice(8, 12)}-4${digest.slice(13, 16)}-8${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
+    },
   };
 }
 
@@ -2955,6 +3065,34 @@ export function createSchoolConfiguration(dependencies: {
           referencedIds,
         ),
       };
+    },
+
+    async initializeDraft(command: InitializeSchoolConfigurationDraftCommand) {
+      const session =
+        await dependencies.identityAndAccess.requireAdministrativeSession(
+          command,
+        );
+      const candidate = createInitialSchoolConfigurationCandidate({
+        workspaceId: session.workspaceId,
+        displayName: command.displayName,
+        shortName: command.shortName,
+        actorId: session.staffIdentityId,
+        ids: createSchoolConfigurationInitializationIds(command.operationId),
+      });
+      const candidateFingerprint = fingerprintCandidate(candidate);
+      return dependencies.store.importDraft({
+        session,
+        operationId: command.operationId,
+        requestFingerprint: sha256(
+          canonicalJson({ initialization: true, candidateFingerprint }),
+        ),
+        expectedDraftVersion: 0,
+        candidate,
+        candidateFingerprint,
+        resources: extractExactResources(candidate),
+        reviews: [],
+        changedAt: dependencies.clock.now(),
+      });
     },
 
     async importDraft(command: ImportSchoolConfigurationDraftCommand) {

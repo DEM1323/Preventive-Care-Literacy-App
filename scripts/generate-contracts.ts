@@ -197,6 +197,9 @@ async function renderContracts() {
         stepUp: async () => {
           throw new Error('Contract generation does not execute commands');
         },
+        initializeDraft: async () => {
+          throw new Error('Contract generation does not execute commands');
+        },
         importDraft: async () => {
           throw new Error('Contract generation does not execute commands');
         },

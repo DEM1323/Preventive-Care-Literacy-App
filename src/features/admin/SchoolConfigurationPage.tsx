@@ -252,7 +252,10 @@ function intakeFormFieldsFrom(
   };
 }
 
-function sameIntakeForm(left: IntakeFormFields, right: IntakeFormFields): boolean {
+function sameIntakeForm(
+  left: IntakeFormFields,
+  right: IntakeFormFields,
+): boolean {
   return left.title === right.title && left.attestation === right.attestation;
 }
 
@@ -342,11 +345,15 @@ export function SchoolConfigurationPage() {
   const navigate = useNavigate();
   const [draft, setDraft] = useState<Draft>();
   const [workspaceId, setWorkspaceId] = useState<string>();
+  const [initialDisplayName, setInitialDisplayName] = useState('');
+  const [initialShortName, setInitialShortName] = useState('');
   const [locale, setLocale] = useState<Locale>('en-US');
   const [width, setWidth] = useState<'desktop' | 'mobile'>('desktop');
   const [resource, setResource] = useState<ResourceKey>('branding');
   const [moduleId, setModuleId] = useState<string>();
-  const [inspectorTab, setInspectorTab] = useState<'edit' | 'readiness'>('edit');
+  const [inspectorTab, setInspectorTab] = useState<'edit' | 'readiness'>(
+    'edit',
+  );
   const [mobileSurface, setMobileSurface] = useState<
     'edit' | 'preview' | 'readiness'
   >('preview');
@@ -491,34 +498,21 @@ export function SchoolConfigurationPage() {
     }
   }
 
-  async function installDemoDraft() {
+  async function initializeDraft() {
     if (!workspaceId) return;
-    setStatus(
-      'Installing the synthetic demo configuration as a shared draft...',
-    );
+    if (!initialDisplayName.trim() || !initialShortName.trim()) {
+      setStatus('Enter the school display name and short name.');
+      return;
+    }
+    setStatus('Starting the shared School Configuration Draft...');
     try {
-      const { default: demoConfigurationText } =
-        await import('../../../docs/fixtures/umb-demo-school-configuration-release-1.json?raw');
-      const fixture = JSON.parse(demoConfigurationText) as Record<
-        string,
-        unknown
-      >;
-      const fixtureWorkspace = fixture.workspace;
-      if (!fixtureWorkspace || typeof fixtureWorkspace !== 'object') {
-        setStatus('The bundled demo configuration is malformed.');
-        return;
-      }
-      const candidate = {
-        ...fixture,
-        workspace: { ...fixtureWorkspace, id: workspaceId },
-      };
       const result = await client.POST(
-        '/api/v1/administration/school-configuration/draft-imports',
+        '/api/v1/administration/school-configuration/initializations',
         {
           body: {
             operationId: initializationOperationId.current,
-            expectedDraftVersion: 0,
-            candidate,
+            displayName: initialDisplayName.trim(),
+            shortName: initialShortName.trim(),
           },
         },
       );
@@ -527,7 +521,7 @@ export function SchoolConfigurationPage() {
         setStatus(
           problem?.code === 'DRAFT_VERSION_CONFLICT'
             ? 'A configuration draft now exists. Reloading it...'
-            : 'The demo configuration could not be installed.',
+            : 'The School Configuration Draft could not be started.',
         );
         if (problem?.code === 'DRAFT_VERSION_CONFLICT') await loadDraft();
         return;
@@ -536,7 +530,7 @@ export function SchoolConfigurationPage() {
       await loadDraft();
     } catch {
       setStatus(
-        'Demo configuration installation failed. Retry preserves this operation.',
+        'School Configuration initialization failed. Retry preserves this operation.',
       );
     }
   }
@@ -1187,16 +1181,39 @@ export function SchoolConfigurationPage() {
             'No shared School Configuration Draft has been assembled yet.' ? (
             <>
               <p className="mt-4 text-sm leading-6 text-slate-400">
-                Install the bundled synthetic configuration to validate this
-                workspace end to end. It is test content, not real-world
-                publication approval.
+                Start with a new unpublished draft, then author the school's
+                branding, intake form, learning modules, and translations.
               </p>
+              <label
+                className="mt-5 block text-sm font-bold"
+                htmlFor="initial-school-name"
+              >
+                School display name
+              </label>
+              <input
+                id="initial-school-name"
+                value={initialDisplayName}
+                onChange={(event) => setInitialDisplayName(event.target.value)}
+                className="mt-2 w-full rounded border border-slate-600 bg-slate-950 px-3 py-2"
+              />
+              <label
+                className="mt-4 block text-sm font-bold"
+                htmlFor="initial-school-short-name"
+              >
+                Short name
+              </label>
+              <input
+                id="initial-school-short-name"
+                value={initialShortName}
+                onChange={(event) => setInitialShortName(event.target.value)}
+                className="mt-2 w-full rounded border border-slate-600 bg-slate-950 px-3 py-2"
+              />
               <button
                 type="button"
-                onClick={() => void installDemoDraft()}
+                onClick={() => void initializeDraft()}
                 className="mt-6 rounded bg-emerald-400 px-4 py-3 font-black text-slate-950"
               >
-                Install synthetic demo draft
+                Start school configuration
               </button>
             </>
           ) : null}
@@ -1236,7 +1253,9 @@ export function SchoolConfigurationPage() {
   const previewLocaleWork =
     locale === 'en-US'
       ? undefined
-      : draft.managedTranslations.locales.find((item) => item.locale === locale);
+      : draft.managedTranslations.locales.find(
+          (item) => item.locale === locale,
+        );
   const intakePreview = evaluateIntakePreview(
     candidate.release.intakeForm.fields.map((field) => ({
       id: field.id,
@@ -1283,7 +1302,7 @@ export function SchoolConfigurationPage() {
     setReadinessTarget(
       surface === 'preview' && location.previewScreen === 'module'
         ? location.moduleId
-        : location.resourceId ?? location.moduleId,
+        : (location.resourceId ?? location.moduleId),
     );
     if (surface === 'preview') {
       setMobileSurface('preview');
@@ -1530,10 +1549,7 @@ export function SchoolConfigurationPage() {
                   </p>
                 </div>
               ) : previewScreen === 'module' && selectedModule ? (
-                <div
-                  data-readiness-target={selectedModule.id}
-                  tabIndex={-1}
-                >
+                <div data-readiness-target={selectedModule.id} tabIndex={-1}>
                   <p className="text-xs font-black uppercase tracking-widest text-emerald-700">
                     Knowledge · Skills · Application
                   </p>
@@ -1629,9 +1645,13 @@ export function SchoolConfigurationPage() {
                                           type="button"
                                           key={option.id}
                                           onClick={() => {
-                                            if (field.type === 'multiple-choice') {
+                                            if (
+                                              field.type === 'multiple-choice'
+                                            ) {
                                               const codes =
-                                                selectedIntakeOptionCodes(value);
+                                                selectedIntakeOptionCodes(
+                                                  value,
+                                                );
                                               const next = codes.includes(
                                                 option.code,
                                               )
@@ -1753,27 +1773,21 @@ export function SchoolConfigurationPage() {
                 void editDraft({
                   type: 'restore-active-revision',
                   resourceId,
-                  expectedResourceRevisions: [
-                    { resourceId, revisionNumber },
-                  ],
+                  expectedResourceRevisions: [{ resourceId, revisionNumber }],
                 })
               }
               onDiscard={(resourceId, revisionNumber) =>
                 void editDraft({
                   type: 'discard-authored-resource',
                   resourceId,
-                  expectedResourceRevisions: [
-                    { resourceId, revisionNumber },
-                  ],
+                  expectedResourceRevisions: [{ resourceId, revisionNumber }],
                 })
               }
               onArchive={(resourceId, revisionNumber) =>
                 void editDraft({
                   type: 'archive-authored-resource',
                   resourceId,
-                  expectedResourceRevisions: [
-                    { resourceId, revisionNumber },
-                  ],
+                  expectedResourceRevisions: [{ resourceId, revisionNumber }],
                 })
               }
               onPatchBranding={patchBranding}
@@ -1981,7 +1995,9 @@ export function SchoolConfigurationPage() {
                       key={comparison.resourceId}
                       className="rounded-xl bg-slate-50 p-3 text-sm"
                     >
-                      <strong className="capitalize">{comparison.change}</strong>
+                      <strong className="capitalize">
+                        {comparison.change}
+                      </strong>
                       <span className="mt-1 block font-bold text-slate-800">
                         {comparison.label || comparison.kind}
                       </span>
@@ -2130,7 +2146,10 @@ function EditorPane(props: {
     section: IntakeSection,
     patch: Partial<IntakeSectionFields>,
   ): void;
-  onPatchIntakeField(field: IntakeField, patch: Partial<IntakeFieldFields>): void;
+  onPatchIntakeField(
+    field: IntakeField,
+    patch: Partial<IntakeFieldFields>,
+  ): void;
   onPatchIntakeOption(
     option: IntakeOption,
     patch: Partial<IntakeOptionFields>,
@@ -2748,7 +2767,11 @@ function IntakeFormEditor(props: {
     isChoiceIntakeFieldType(field.type),
   );
   return (
-    <div className="mt-6 space-y-4" data-readiness-target={form.id} tabIndex={-1}>
+    <div
+      className="mt-6 space-y-4"
+      data-readiness-target={form.id}
+      tabIndex={-1}
+    >
       <p className="text-xs text-slate-500">Stable ID: {form.id}</p>
       <label className="block text-sm font-bold">
         English title
@@ -3142,8 +3165,8 @@ function ReadinessPane(props: {
       <div className="mt-5 space-y-2">
         {blockers.length === 0 ? (
           <p className="rounded-xl border border-emerald-100 p-3 text-sm font-bold">
-            No publication blockers for branding, content, or constrained
-            safety checks.
+            No publication blockers for branding, content, or constrained safety
+            checks.
           </p>
         ) : (
           blockers.map((blocker) => (

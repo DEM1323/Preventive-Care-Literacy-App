@@ -12,20 +12,18 @@ import { StudentLearningPage } from './features/learning/StudentLearningPage';
 import { OperatorConsolePage } from './features/operator/OperatorConsolePage';
 import { RecordProductionRetrievePage } from './features/records/RecordProductionRetrievePage';
 
-function RetiredPrototypePage() {
+function NotFoundPage() {
   return (
     <main className="min-h-full bg-slate-950 px-6 py-20 text-slate-100">
       <section className="mx-auto max-w-2xl border-l-4 border-amber-400 bg-slate-900 p-8 shadow-2xl">
         <p className="text-sm font-black uppercase tracking-[0.24em] text-amber-300">
-          Prototype retired
+          Page not found
         </p>
         <h1 className="mt-4 text-4xl font-black tracking-tight">
-          Student data entry is disabled.
+          This page is not available.
         </h1>
         <p className="mt-5 text-lg leading-8 text-slate-300">
-          This prototype has no production authority and accepts no Student
-          information. Only synthetic, local-only interface exploration is
-          permitted.
+          Use your invitation, sign-in link, or staff workspace to continue.
         </p>
       </section>
     </main>
@@ -57,7 +55,7 @@ export default function App() {
           path="/records/productions/retrieve"
           element={<RecordProductionRetrievePage />}
         />
-        <Route path="*" element={<RetiredPrototypePage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

@@ -15,6 +15,10 @@ const workerDatabaseUrl = requiredEnvironment('WORKER_DATABASE_URL');
 const projectRef = requiredEnvironment('SUPABASE_PROJECT_REF');
 const supabaseUrl = requiredEnvironment('SUPABASE_URL');
 const databaseCaCertificate = requiredEnvironment('DATABASE_CA_CERT');
+const deploymentEnvironment =
+  process.env.DEPLOYMENT_ENVIRONMENT === 'production'
+    ? 'production'
+    : 'staging';
 assertSupabaseDatabaseTarget({
   databaseUrl,
   projectRef,
@@ -60,6 +64,56 @@ try {
     throw new Error('Worker database role has an invalid name');
   }
   const workerRoleIdentifier = `"${workerRole}"`;
+  if (deploymentEnvironment === 'production') {
+    const migrationConnection = new URL(databaseUrl);
+    const decodedMigrationUsername = decodeURIComponent(
+      migrationConnection.username,
+    );
+    const migrationRole = decodedMigrationUsername.endsWith(poolerSuffix)
+      ? decodedMigrationUsername.slice(0, -poolerSuffix.length)
+      : decodedMigrationUsername;
+    if (
+      new Set([migrationRole, runtimeRole, workerRole]).size !== 3 ||
+      runtimeRole === 'postgres' ||
+      workerRole === 'postgres'
+    ) {
+      throw new Error(
+        'Migration, runtime, and worker database roles must be distinct',
+      );
+    }
+    for (const role of [
+      {
+        name: runtimeRole,
+        identifier: runtimeRoleIdentifier,
+        password: decodeURIComponent(runtimeConnection.password),
+      },
+      {
+        name: workerRole,
+        identifier: workerRoleIdentifier,
+        password: decodeURIComponent(workerConnection.password),
+      },
+    ]) {
+      if (!role.password) throw new Error('Database role password is required');
+      const existing = await client.query(
+        'select 1 from pg_roles where rolname = $1',
+        [role.name],
+      );
+      const quoted = await client.query<{ value: string }>(
+        'select quote_literal($1) as value',
+        [role.password],
+      );
+      const passwordLiteral = quoted.rows[0]?.value;
+      if (!passwordLiteral)
+        throw new Error('Database role password is invalid');
+      await client.query(
+        existing.rowCount
+          ? `alter role ${role.identifier} with password ${passwordLiteral}`
+          : `create role ${role.identifier}
+              with login nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls
+              password ${passwordLiteral}`,
+      );
+    }
+  }
   const platformSql = (
     await readFile(
       new URL('../packages/postgres/supabase/staging.sql', import.meta.url),
@@ -68,6 +122,10 @@ try {
   )
     .replaceAll('__RUNTIME_ROLE__', runtimeRoleIdentifier)
     .replaceAll('__WORKER_ROLE__', workerRoleIdentifier);
+  await client.query(
+    `select set_config('app.deployment_environment', $1, false)`,
+    [deploymentEnvironment],
+  );
   await client.query(platformSql);
   await client.query(
     `grant usage on schema identity_access, school_configuration, intake, learning_progress, records_governance, infrastructure, audit
